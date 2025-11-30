@@ -1,15 +1,15 @@
-FROM node:20-alpine AS builder
+FROM node:24.11.1-alpine AS builder
 
 WORKDIR /usr/src/app
 
 COPY package*.json ./
 
-RUN npm ci
-
 COPY . .
+RUN corepack enable
+RUN yarn install
 
-RUN npm run build
+RUN yarn build
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start"]
+CMD ["yarn", "start"]
