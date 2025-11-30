@@ -1,4 +1,4 @@
-import { importX } from "eslint-plugin-import-x";
+import { importX } from 'eslint-plugin-import-x';
 
 // This file is used to configure the import-x plugin.
 

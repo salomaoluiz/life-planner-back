@@ -14,10 +14,14 @@
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "test": "jest",
+    "prettier": "prettier . --check",
+    "prettier:fix": "prettier . --write",
+    "type-check": "tsc --noEmit",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "prepare": "husky"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.1",
@@ -53,7 +57,9 @@
     "eslint-plugin-import-x": "^4.6.1",
     "eslint-plugin-perfectionist": "^4.10.1",
     "eslint-plugin-prettier": "^5.2.3",
+    "husky": "^9.1.7",
     "jest": "^29.5.0",
+    "lint-staged": "^16.2.7",
     "prettier": "^3.5.1",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",

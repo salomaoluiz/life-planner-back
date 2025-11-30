@@ -1,0 +1,3 @@
+yarn lint-staged
+yarn type-check
+yarn test --passWithNoTests $(git diff --name-only --cached | xargs)
