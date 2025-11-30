@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 
-import OwnerEntity, { OwnerType } from '@shared/domain/entity/OwnerEntity';
+import OwnerEntity, { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 class OwnerEntityFixture {
   value = {} as OwnerEntity;
