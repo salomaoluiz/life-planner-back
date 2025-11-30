@@ -1,6 +1,6 @@
 export type ValidationErrorDetail = {
   code: string;
-  expected: unknown;
+  field: string;
   message: string;
 };
 

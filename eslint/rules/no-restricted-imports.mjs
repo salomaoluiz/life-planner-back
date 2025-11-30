@@ -21,11 +21,7 @@ const allowedInternalPatterns = internalModules.flatMap((module) => [
   `!${module}/**`,
 ]);
 
-const allowedTestPatterns = [
-  '!jest',
-  '!@faker-js',
-  '!@faker-js/**',
-];
+const allowedTestPatterns = ['!jest', '!@faker-js', '!@faker-js/**'];
 
 const allowedAbsolutePatterns = ['!./', '!../', '!./**', '!../**'];
 
@@ -44,6 +40,7 @@ const preventInfraLibsImports = {
               '!@shared/infra/**',
               '!@nestjs',
               '!@nestjs/**',
+              '!zod',
               ...allowedTestPatterns,
               ...allowedAbsolutePatterns,
               ...allowedInternalPatterns,
