@@ -20,6 +20,7 @@ module.exports = {
   moduleDirectories: ['node_modules', 'src'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^@api/(.*)$': '<rootDir>/src/api/$1',
     '^@family/(.*)$': '<rootDir>/src/modules/family/$1',
     '^@finance/(.*)$': '<rootDir>/src/modules/finance/$1',
     '^@shared/(.*)$': '<rootDir>/src/shared/$1',
