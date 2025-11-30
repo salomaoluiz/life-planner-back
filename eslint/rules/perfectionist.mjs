@@ -1,6 +1,5 @@
 import perfectionist from 'eslint-plugin-perfectionist';
-
-const internalModules = ['@shared', '@finance', '@family', '@stock', '@user'];
+import { internalModules } from './constants.mjs';
 
 const defaultSortRule = {
   level: 'error',

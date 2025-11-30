@@ -1,3 +1,5 @@
+import { internalModules } from './constants.mjs';
+
 const preventAbsoluteImports = {
   rules: {
     'no-restricted-imports': [
@@ -14,16 +16,42 @@ const preventAbsoluteImports = {
   },
 };
 
+const allowedInternalPatterns = internalModules.flatMap((module) => [
+  `!${module}`,
+  `!${module}/**`,
+]);
+
+const allowedTestPatterns = [
+  '!jest',
+  '!@faker-js',
+  '!@faker-js/**',
+];
+
+const allowedAbsolutePatterns = ['!./', '!../', '!./**', '!../**'];
+
 const preventInfraLibsImports = {
-  files: ['**/*.{js,ts,tsx,jsx}'],
+  files: ['**/*.ts'],
   ignores: ['src/shared/infra/**/*'],
   rules: {
     'no-restricted-imports': [
       'error',
-      // {
-      //   message: 'Please, use `@infrastructure/monitoring` instead',
-      //   name: '@sentry/react-native',
-      // },
+      {
+        patterns: [
+          {
+            group: [
+              '*',
+              '!@shared/infra',
+              '!@shared/infra/**',
+              '!@nestjs',
+              '!@nestjs/**',
+              ...allowedTestPatterns,
+              ...allowedAbsolutePatterns,
+              ...allowedInternalPatterns,
+            ],
+            message: 'Please, import this lib from "@shared/infra" instead',
+          },
+        ],
+      },
     ],
   },
 };
