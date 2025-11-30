@@ -1,9 +1,9 @@
 import { faker } from '@faker-js/faker';
 
-import UserProfileEntity from '@user/domain/entity/UserProfileEntity';
+import UserEntity from '@user/domain/entity/UserEntity';
 
 class UserEntityFixture {
-  value = {} as UserProfileEntity;
+  value = {} as UserEntity;
 
   constructor() {
     this.withDefault();
