@@ -1,11 +1,9 @@
 services:
   api:
-    container_name: life-planner
-    build:
-      context: .
-      dockerfile: Dockerfile
+    container_name: life-planner-back
+    build: .
     ports:
-      - '3000:3000'
+      - '1009:3000'
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3000/api/health']
