@@ -25,6 +25,8 @@ const allowedTestPatterns = ['!jest', '!@faker-js', '!@faker-js/**'];
 
 const allowedAbsolutePatterns = ['!./', '!../', '!./**', '!../**'];
 
+const nestPatterns = ['!@nestjs', '!@nestjs/**', '@nestjs/config'];
+
 const preventInfraLibsImports = {
   files: ['**/*.ts'],
   ignores: ['src/shared/infra/**/*'],
@@ -38,9 +40,8 @@ const preventInfraLibsImports = {
               '*',
               '!@shared/infra',
               '!@shared/infra/**',
-              '!@nestjs',
-              '!@nestjs/**',
               '!zod',
+              ...nestPatterns,
               ...allowedTestPatterns,
               ...allowedAbsolutePatterns,
               ...allowedInternalPatterns,
