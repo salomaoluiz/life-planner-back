@@ -2,7 +2,7 @@ import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
 import { EnvService } from '@shared/infra/env/env.service';
-import { IJwtProvider, JwtUserPayload } from '@shared/infra/jwt/types';
+import { IJwtProvider, JwtPayload } from '@shared/infra/jwt/types';
 import { ILogger, LogLevel } from '@shared/infra/logger/types';
 
 @Injectable()
@@ -13,16 +13,16 @@ export class NestJwtProvider implements IJwtProvider {
     private readonly jwtService: JwtService,
   ) {}
 
-  async sign(payload: JwtUserPayload): Promise<string> {
+  async sign(payload: JwtPayload): Promise<string> {
     return this.jwtService.signAsync(payload, {
       expiresIn: this.env.jwtExpiresIn,
       secret: this.env.jwtSecret,
     });
   }
 
-  async verify<T = NestJwtProvider>(token: string): Promise<JwtUserPayload & T> {
+  async verify<T = NestJwtProvider>(token: string): Promise<JwtPayload & T> {
     try {
-      return this.jwtService.verifyAsync<JwtUserPayload & T>(token, {
+      return this.jwtService.verifyAsync<JwtPayload & T>(token, {
         secret: this.env.jwtSecret,
       });
     } catch (error: unknown) {

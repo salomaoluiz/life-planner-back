@@ -1,7 +1,9 @@
 export interface IJwtProvider {
-  sign(payload: JwtUserPayload): Promise<string>;
-  verify<T = JwtUserPayload>(token: string): Promise<T>;
+  sign(payload: JwtPayload): Promise<string>;
+  verify<T = JwtPayload>(token: string): Promise<T>;
 }
-export interface JwtUserPayload {
-  id: string;
+export interface JwtPayload {
+  user: {
+    id: string;
+  };
 }
