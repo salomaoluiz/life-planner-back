@@ -20,7 +20,8 @@ class UserEntityFixture {
       email: faker.internet.email(),
       id: faker.string.uuid(),
       name: faker.person.fullName(),
-      photoUrl: faker.image.personPortrait(),
+      passwordHash: faker.string.alpha(20),
+      photoUrl: undefined,
     };
     return this;
   }
@@ -42,7 +43,12 @@ class UserEntityFixture {
     return this;
   }
 
-  withPhotoUrl(photoUrl: string) {
+  withPasswordHash(passwordHash: string) {
+    this.value.passwordHash = passwordHash;
+    return this;
+  }
+
+  withPhotoUrl(photoUrl: string = faker.image.personPortrait()) {
     this.value.photoUrl = photoUrl;
     return this;
   }
