@@ -34,6 +34,39 @@ describe('GIVEN an Generic Error', () => {
   });
 });
 
+describe('GIVEN a ValidationError', () => {
+  beforeEach(() => {
+    setup.catch(mocks.exceptions.validationError, mocks.argumentsHost);
+  });
+
+  it('SHOULD log WARN with details', () => {
+    expect(mocks.logger.log).toHaveBeenCalledTimes(1);
+    expect(mocks.logger.log).toHaveBeenCalledWith(LogLevel.WARN, 'Http Error: Validation Failed', {
+      details: [
+        {
+          code: 'invalid_type',
+          field: 'age',
+          message: 'Expected number, received string',
+        },
+      ],
+      module: 'AllExceptionsFilter',
+    });
+  });
+
+  it('SHOULD reply with Bad Request (400)', () => {
+    expect(mocks.httpAdapterHost.httpAdapter.reply).toHaveBeenCalledTimes(1);
+    expect(mocks.httpAdapterHost.httpAdapter.reply).toHaveBeenCalledWith(
+      mocks.getResponse,
+      {
+        message: 'Validation Failed',
+        path: '/test-url',
+        statusCode: 400,
+        timestamp: '2025-11-30T12:00:00.000Z',
+      },
+      HttpStatus.BAD_REQUEST,
+    );
+  });
+});
 describe('GIVEN an HttpException with status < 500', () => {
   beforeEach(() => {
     setup.catch(mocks.exceptions.badRequest, mocks.argumentsHost);
@@ -41,7 +74,7 @@ describe('GIVEN an HttpException with status < 500', () => {
 
   it('SHOULD log WARN', () => {
     expect(mocks.logger.log).toHaveBeenCalledTimes(1);
-    expect(mocks.logger.log).toHaveBeenCalledWith(LogLevel.WARN, 'Http Error: "Bad Request"', {
+    expect(mocks.logger.log).toHaveBeenCalledWith(LogLevel.WARN, 'Http Error: Bad Request', {
       module: 'AllExceptionsFilter',
     });
   });

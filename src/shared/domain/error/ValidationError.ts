@@ -1,10 +1,12 @@
+import { BadRequestException } from '@nestjs/common';
+
 export type ValidationErrorDetail = {
   code: string;
   field: string;
   message: string;
 };
 
-export class ValidationError extends Error {
+export class ValidationError extends BadRequestException {
   public readonly details: ValidationErrorDetail[];
 
   constructor(details: ValidationErrorDetail[]) {

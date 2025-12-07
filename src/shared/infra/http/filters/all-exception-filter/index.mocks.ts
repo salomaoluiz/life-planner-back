@@ -2,6 +2,7 @@ import { ArgumentsHost, HttpException } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 
+import { ValidationError } from '@shared/domain/error/ValidationError';
 import { AllExceptionsFilter } from '@shared/infra/http/filters/all-exception-filter/index';
 
 // region Mocks
@@ -32,6 +33,13 @@ const loggerMock = {
 
 const httpBadRequestMock = new HttpException('Bad Request', 400);
 const httpInternalServerErrorMock = new HttpException('Internal Server Error', 500);
+const validationErrorMock = new ValidationError([
+  {
+    code: 'invalid_type',
+    field: 'age',
+    message: 'Expected number, received string',
+  },
+]);
 const genericExceptionMock = 'Generic Error';
 
 // endregion Mocks
@@ -68,6 +76,7 @@ const mocks = {
     badRequest: httpBadRequestMock,
     generic: genericExceptionMock,
     internalServerError: httpInternalServerErrorMock,
+    validationError: validationErrorMock,
   },
   getResponse: getResponseMock,
   httpAdapterHost: httpAdapterHostMock,
