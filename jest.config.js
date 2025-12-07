@@ -26,6 +26,7 @@ module.exports = {
     '^@shared/(.*)$': '<rootDir>/src/shared/$1',
     '^@stock/(.*)$': '<rootDir>/src/modules/stock/$1',
     '^@user/(.*)$': '<rootDir>/src/modules/user/$1',
+    '^@db/(.*)$': '<rootDir>/generated/prisma/$1',
   },
   preset: 'ts-jest',
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
