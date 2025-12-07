@@ -58,8 +58,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
     switch (true) {
       case exception instanceof HttpException:
         return exception.message;
-      case exception instanceof ValidationError:
-        return exception.message;
       default:
         return 'Internal Server Error';
     }

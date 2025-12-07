@@ -35,6 +35,33 @@ class StockEntityFixture {
 
   // Builder methods
 
+  withDescription(description: string) {
+    this.value.description = description;
+    return this;
+  }
+
+  withId(id: string) {
+    this.value.id = id;
+    return this;
+  }
+
+  withOwnerId(ownerId: string) {
+    this.value.ownerId = ownerId;
+    return this;
+  }
+
+  withQuantity(quantity: number) {
+    this.value.quantity = quantity;
+    return this;
+  }
+
+  withUnit(unit: StockUnits) {
+    this.value.unit = unit;
+    return this;
+  }
+
+  // Optional properties
+
   withBarcode(barcode: string = faker.string.numeric({ length: 13 })) {
     this.value.barcode = barcode;
     return this;
@@ -45,18 +72,8 @@ class StockEntityFixture {
     return this;
   }
 
-  withDescription(description: string) {
-    this.value.description = description;
-    return this;
-  }
-
   withExpirationDate(expirationDate: Date = faker.date.soon({ days: 60 })) {
     this.value.expirationDate = expirationDate;
-    return this;
-  }
-
-  withId(id: string) {
-    this.value.id = id;
     return this;
   }
 
@@ -70,23 +87,8 @@ class StockEntityFixture {
     return this;
   }
 
-  withOwnerId(ownerId: string) {
-    this.value.ownerId = ownerId;
-    return this;
-  }
-
   withPurchaseDate(purchaseDate: Date) {
     this.value.purchaseDate = purchaseDate;
-    return this;
-  }
-
-  withQuantity(quantity: number) {
-    this.value.quantity = quantity;
-    return this;
-  }
-
-  withUnit(unit: StockUnits) {
-    this.value.unit = unit;
     return this;
   }
 }

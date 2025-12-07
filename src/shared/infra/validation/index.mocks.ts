@@ -4,7 +4,7 @@ import { validate } from './index';
 
 type Props = Parameters<typeof validate>;
 
-// region mocks
+// region Mocks
 
 const schemaMock = z.object({
   testField: z.string(),
@@ -14,11 +14,11 @@ const dataMock = {
 };
 const defaultProps = [schemaMock, dataMock] as Props;
 
-// endregion mocks
+// endregion Mocks
 
-// region spies
+// region Spies
 
-// endregion spies
+// endregion Spies
 
 beforeEach(() => {
   jest.clearAllMocks();

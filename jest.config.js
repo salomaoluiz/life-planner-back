@@ -7,6 +7,8 @@ module.exports = {
     '!**/*.fixtures.ts',
     '!**/*.mock.ts',
     '!**/*.mocks.ts',
+    '!**/*.module.ts',
+    '!srch/main.ts',
   ],
   coverageDirectory: './coverage',
   coverageThreshold: {
