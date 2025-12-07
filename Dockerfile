@@ -5,8 +5,10 @@ WORKDIR /app
 COPY package*.json ./
 
 COPY . .
+RUN mkdir generated/prisma
 RUN corepack enable
 RUN yarn install
+
 
 RUN yarn build
 
