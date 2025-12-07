@@ -1,1 +1,10 @@
-export const internalModules = ['@shared', '@finance', '@family', '@stock', '@user', '@api'];
+export const internalModules = [
+  '@shared',
+  '@api',
+  '@auth',
+  '@db',
+  '@family',
+  '@finance',
+  '@stock',
+  '@user',
+];

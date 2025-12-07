@@ -6,10 +6,14 @@ export const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
 
   // Database
-  DATABASE_URL: z.url(),
+  DB_HOST: z.string(),
+  DB_NAME: z.string(),
+  DB_PASSWORD: z.string(),
+  DB_PORT: z.string(),
+  DB_USER: z.string(),
 
   // JWT
-  JWT_EXPIRES_IN: z.number().default(3600),
+  JWT_EXPIRES_IN: z.coerce.number().default(3600),
   JWT_SECRET: z.string().min(10),
 });
 

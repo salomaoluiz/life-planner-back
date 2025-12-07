@@ -8,7 +8,7 @@ const preventAbsoluteImports = {
         patterns: [
           {
             group: ['../../*', '../../'],
-            message: 'Please use absolute imports',
+            message: 'Please use alias imports',
           },
         ],
       },
@@ -41,6 +41,7 @@ const preventInfraLibsImports = {
               '!@shared/infra',
               '!@shared/infra/**',
               '!zod',
+              '!nestjs-zod',
               ...nestPatterns,
               ...allowedTestPatterns,
               ...allowedAbsolutePatterns,

@@ -8,6 +8,8 @@ COPY . .
 RUN corepack enable
 RUN yarn install
 
+RUN yarn prisma migrate deploy
+RUN yarn prisma generate
 RUN yarn build
 
 EXPOSE 3000

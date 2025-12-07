@@ -18,8 +18,24 @@ export class EnvService {
 
   // Database
 
-  get databaseUrl(): Env['DATABASE_URL'] {
-    return this.nestConfigService.get('DATABASE_URL');
+  get dbHost(): Env['DB_HOST'] {
+    return this.nestConfigService.get('DB_HOST');
+  }
+
+  get dbName(): Env['DB_NAME'] {
+    return this.nestConfigService.get('DB_NAME');
+  }
+
+  get dbPassword(): Env['DB_PASSWORD'] {
+    return this.nestConfigService.get('DB_PASSWORD');
+  }
+
+  get dbPort(): Env['DB_PORT'] {
+    return this.nestConfigService.get('DB_PORT');
+  }
+
+  get dbUser(): Env['DB_USER'] {
+    return this.nestConfigService.get('DB_USER');
   }
 
   // JWT

@@ -8,3 +8,4 @@ dist
 README.md
 tests
 .env
+generated/prisma
