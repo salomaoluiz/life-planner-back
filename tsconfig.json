@@ -2,6 +2,7 @@
   "compilerOptions": {
     "module": "commonjs",
     "moduleResolution": "node",
+    "target": "ES6",
     "strict": true,
     "declaration": false,
     "removeComments": true,
