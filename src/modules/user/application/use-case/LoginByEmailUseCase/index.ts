@@ -29,7 +29,7 @@ export class LoginByEmailUseCase implements UseCaseWithParams<
       throw new UnauthorizedException('Invalid Credentials');
     }
 
-    const isEqual = await this.passwordHasher.compare(params.password, user.passwordHash);
+    const isEqual = await this.passwordHasher.compare(params.password, user.passwordHash ?? '');
 
     if (!isEqual) {
       throw new UnauthorizedException('Invalid Credentials');
