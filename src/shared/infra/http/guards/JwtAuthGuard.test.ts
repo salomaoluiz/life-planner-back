@@ -23,16 +23,13 @@ describe('JwtAuthGuard', () => {
     const result = await guard.canActivate(mocks.context);
 
     expect(result).toBe(true);
-    expect(spies.headersGet).toHaveBeenCalledTimes(1);
-    expect(spies.headersGet).toHaveBeenCalledWith('Authorization');
     expect(spies.jwtVerify).toHaveBeenCalledTimes(1);
     expect(spies.jwtVerify).toHaveBeenCalledWith('valid_token');
     expect(mocks.request['user']).toEqual(mocks.user);
   });
 
   it('SHOULD throw UnauthorizedException WHEN authorization header is missing', async () => {
-    spies.headersGet.mockReturnValue(undefined);
-
+    mocks.switchToHttp.getRequest.mockReturnValueOnce({ headers: {} });
     const result = await throwableSetup();
 
     expect(result).toBeInstanceOf(UnauthorizedException);
@@ -40,7 +37,9 @@ describe('JwtAuthGuard', () => {
   });
 
   it('SHOULD throw UnauthorizedException WHEN token type is not Bearer', async () => {
-    spies.headersGet.mockReturnValue('Basic some_token');
+    mocks.switchToHttp.getRequest.mockReturnValueOnce({
+      headers: { authorization: 'Basic some_token' },
+    });
 
     const result = await throwableSetup();
 
@@ -49,7 +48,7 @@ describe('JwtAuthGuard', () => {
   });
 
   it('SHOULD throw UnauthorizedException WHEN token verification fails', async () => {
-    spies.jwtVerify.mockRejectedValue(new Error('Invalid token'));
+    spies.jwtVerify.mockRejectedValueOnce(new Error('Invalid token'));
 
     const result = await throwableSetup();
 
