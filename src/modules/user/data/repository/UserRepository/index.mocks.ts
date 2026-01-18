@@ -23,9 +23,10 @@ const userPersistenceMock = {
 } as ReturnType<typeof UserMapper.toPersistence>;
 
 const userDatasourceMock = {
-  findByEmail: jest.fn(),
-  findById: jest.fn(),
-  save: jest.fn(),
+  create: jest.fn().mockResolvedValue(userPersistenceMock),
+  findByEmail: jest.fn().mockResolvedValue(userPersistenceMock),
+  findById: jest.fn().mockResolvedValue(userPersistenceMock),
+  update: jest.fn().mockResolvedValue(userPersistenceMock),
 };
 
 // endregion Mocks

@@ -54,7 +54,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   // Default behaviors
   reflectorGetAllAndOverrideSpy.mockReturnValue(false); // Not public by default
-  jwtVerifySpy.mockResolvedValue(userMock); // Valid token verification by default
+  jwtVerifySpy.mockResolvedValue({ user: userMock }); // Valid token verification by default
 });
 
 function setup() {

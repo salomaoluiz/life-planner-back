@@ -21,6 +21,7 @@ class UserEntityFixture {
       id: faker.string.uuid(),
       name: faker.person.fullName(),
       passwordHash: faker.string.alpha(20),
+      // Optional Fields
       photoUrl: undefined,
     };
     return this;
@@ -47,6 +48,8 @@ class UserEntityFixture {
     this.value.passwordHash = passwordHash;
     return this;
   }
+
+  // Optional Fields
 
   withPhotoUrl(photoUrl: string = faker.image.personPortrait()) {
     this.value.photoUrl = photoUrl;
