@@ -1,4 +1,4 @@
-import StockEntity, { StockUnits } from './StockEntity';
+import StockEntity, { StockUnits } from './index';
 
 // region Mocks
 
