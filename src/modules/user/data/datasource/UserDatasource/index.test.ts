@@ -69,7 +69,13 @@ describe('Method create', () => {
     expect(result).toEqual(mocks.user);
     expect(spies.create).toHaveBeenCalledTimes(1);
     expect(spies.create).toHaveBeenCalledWith({
-      data: mocks.user,
+      data: {
+        email: mocks.user.email,
+        id: mocks.user.id,
+        name: mocks.user.name,
+        password_hash: mocks.user.password_hash,
+        photo_url: mocks.user.photo_url,
+      },
     });
   });
 });
@@ -83,7 +89,12 @@ describe('Method update', () => {
     expect(result).toEqual(mocks.user);
     expect(spies.update).toHaveBeenCalledTimes(1);
     expect(spies.update).toHaveBeenCalledWith({
-      data: mocks.user,
+      data: {
+        email: mocks.user.email,
+        name: mocks.user.name,
+        password_hash: mocks.user.password_hash,
+        photo_url: mocks.user.photo_url,
+      },
       where: {
         id: mocks.user.id,
       },

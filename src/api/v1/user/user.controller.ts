@@ -32,7 +32,7 @@ export class UserController {
 
   @Patch(':id')
   @ZodResponse({ status: 200, type: UpdateUserOutput })
-  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserInput) {
+  async update(@Param('id', ParseUUIDPipe) id: string, @Body() updateUserDto: UpdateUserInput) {
     return this.userService.update(id, updateUserDto);
   }
 }

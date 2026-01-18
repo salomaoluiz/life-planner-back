@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const UpdateUserSchema = z.object({
   email: z.email().optional(),
   id: z.uuid(),
-  name: z.string().optional(),
+  name: z.string().min(1).max(100).optional(),
   photoUrl: z.url().optional(),
 });
 

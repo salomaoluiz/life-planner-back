@@ -9,8 +9,15 @@ export class UserDatasource implements IUserDatasource {
   constructor(private readonly db: Database) {}
 
   async create(user: User): Promise<User> {
+    const { email, id, name, password_hash, photo_url } = user;
     return this.db.client.user.create({
-      data: user,
+      data: {
+        email,
+        id,
+        name,
+        password_hash,
+        photo_url,
+      },
     });
   }
 
@@ -31,10 +38,17 @@ export class UserDatasource implements IUserDatasource {
   }
 
   async update(user: User): Promise<User> {
+    const { email, id, name, password_hash, photo_url } = user;
+
     return this.db.client.user.update({
-      data: user,
+      data: {
+        email,
+        name,
+        password_hash,
+        photo_url,
+      },
       where: {
-        id: user.id,
+        id: id,
       },
     });
   }
