@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 
-import { LoginByEmailUseCase } from '@user/application/user-cases/LoginByEmailUseCase';
-import { SignUpByEmailUseCase } from '@user/application/user-cases/SignUpByEmailUseCase';
+import { LoginByEmailUseCase } from '@user/application/use-cases/LoginByEmailUseCase';
+import { SignUpByEmailUseCase } from '@user/application/use-cases/SignUpByEmailUseCase';
 
 import { AuthService } from './auth.service';
 

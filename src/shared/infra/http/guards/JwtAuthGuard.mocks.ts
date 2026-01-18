@@ -23,7 +23,7 @@ const reflectorMock = {
 } as unknown as Reflector;
 
 const headersMapMock = {
-  get: jest.fn(),
+  authorization: 'Bearer valid_token',
 };
 
 const requestMock = {
@@ -47,7 +47,6 @@ const executionContextMock = {
 
 const jwtVerifySpy = jest.mocked(jwtProviderMock.verify);
 const reflectorGetAllAndOverrideSpy = jest.mocked(reflectorMock.getAllAndOverride);
-const headersGetSpy = jest.mocked(headersMapMock.get);
 
 // endregion Spies
 
@@ -55,7 +54,6 @@ beforeEach(() => {
   jest.clearAllMocks();
   // Default behaviors
   reflectorGetAllAndOverrideSpy.mockReturnValue(false); // Not public by default
-  headersGetSpy.mockReturnValue('Bearer valid_token'); // Valid header by default
   jwtVerifySpy.mockResolvedValue(userMock); // Valid token verification by default
 });
 
@@ -72,7 +70,6 @@ async function throwableSetup() {
 }
 
 const spies = {
-  headersGet: headersGetSpy,
   jwtVerify: jwtVerifySpy,
   reflectorGetAllAndOverride: reflectorGetAllAndOverrideSpy,
 };
@@ -85,6 +82,7 @@ const mocks = {
   jwtProvider: jwtProviderMock,
   reflector: reflectorMock,
   request: requestMock,
+  switchToHttp: switchToHttpMock,
   user: userMock,
 };
 
