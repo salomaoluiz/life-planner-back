@@ -16,16 +16,12 @@ export class UpdateUserUseCase implements UseCaseWithParams<UpdateUserInput, Upd
       throw new NotFoundException();
     }
 
-    const hasEmail = 'email' in params && email !== undefined;
-    const hasName = 'name' in params && name !== undefined;
-    const hasPhotoUrl = 'photoUrl' in params;
-
     const userToUpdate = new UserEntity({
-      email: hasEmail ? email : user.email,
+      email: email ?? user.email,
       id,
-      name: hasName ? name : user.name,
+      name: name ?? user.name,
       passwordHash: user.passwordHash,
-      photoUrl: hasPhotoUrl ? photoUrl : user.photoUrl,
+      photoUrl: photoUrl ?? user.photoUrl,
     });
 
     const updatedUser = await this.userRepository.updateUser(userToUpdate);
