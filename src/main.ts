@@ -7,7 +7,20 @@ import { AppModule } from './modules/app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const config = new DocumentBuilder().setVersion('1.0').addBearerAuth().build();
+  const config = new DocumentBuilder()
+    .setVersion('1.0')
+    .addBearerAuth(
+      {
+        bearerFormat: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+        name: 'JWT',
+        scheme: 'bearer',
+        type: 'http',
+      },
+      'JWT',
+    )
+    .build();
 
   function documentFactory() {
     return SwaggerModule.createDocument(app, config);
