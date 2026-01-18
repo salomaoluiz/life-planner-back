@@ -4,8 +4,6 @@ import UserEntity from './';
 
 // region Mocks
 
-const dateMock = new Date('2025-01-01T12:00:00Z');
-
 const paramsMock: UserEntity = {
   email: 'test@gmail.com',
   id: faker.string.uuid(),
@@ -33,7 +31,6 @@ function setup(params = paramsMock) {
 }
 
 const mocks = {
-  date: dateMock,
   mandatoryParams: mandatoryParamsMock,
   params: paramsMock,
 };
