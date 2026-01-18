@@ -18,7 +18,7 @@ export class UserMapper {
       email: raw.email,
       id: raw.id,
       name: raw.name,
-      password_hash: raw.passwordHash,
+      password_hash: raw.passwordHash ?? '',
       // Optional fields
       created_at: null,
       photo_url: raw.photoUrl ?? null,

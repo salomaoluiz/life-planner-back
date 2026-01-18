@@ -60,16 +60,33 @@ describe('Method findById', () => {
   });
 });
 
-describe('Method save', () => {
+describe('Method create', () => {
   it('SHOULD save AND return the user', async () => {
     spies.create.mockResolvedValue(mocks.user);
 
-    const result = await setup.save(mocks.user);
+    const result = await setup.create(mocks.user);
 
     expect(result).toEqual(mocks.user);
     expect(spies.create).toHaveBeenCalledTimes(1);
     expect(spies.create).toHaveBeenCalledWith({
       data: mocks.user,
+    });
+  });
+});
+
+describe('Method update', () => {
+  it('SHOULD update AND return the user', async () => {
+    spies.update.mockResolvedValue(mocks.user);
+
+    const result = await setup.update(mocks.user);
+
+    expect(result).toEqual(mocks.user);
+    expect(spies.update).toHaveBeenCalledTimes(1);
+    expect(spies.update).toHaveBeenCalledWith({
+      data: mocks.user,
+      where: {
+        id: mocks.user.id,
+      },
     });
   });
 });

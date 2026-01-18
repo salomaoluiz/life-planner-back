@@ -8,6 +8,12 @@ import { IUserDatasource } from '@user/data/repository/datasource/IUserDatasourc
 export class UserDatasource implements IUserDatasource {
   constructor(private readonly db: Database) {}
 
+  async create(user: User): Promise<User> {
+    return this.db.client.user.create({
+      data: user,
+    });
+  }
+
   async findByEmail(email: string): Promise<null | User> {
     return this.db.client.user.findFirst({
       where: {
@@ -24,9 +30,12 @@ export class UserDatasource implements IUserDatasource {
     });
   }
 
-  async save(user: User): Promise<User> {
-    return this.db.client.user.create({
+  async update(user: User): Promise<User> {
+    return this.db.client.user.update({
       data: user,
+      where: {
+        id: user.id,
+      },
     });
   }
 }
