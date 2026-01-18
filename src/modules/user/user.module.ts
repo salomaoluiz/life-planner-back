@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 
-import { LoginByEmailUseCase } from '@user/application/use-cases/LoginByEmailUseCase';
-import { SignUpByEmailUseCase } from '@user/application/use-cases/SignUpByEmailUseCase';
+import { LoginByEmailUseCase } from '@user/application/use-case/LoginByEmailUseCase';
+import { SignUpByEmailUseCase } from '@user/application/use-case/SignUpByEmailUseCase';
 import { UserDatasource } from '@user/data/datasource/UserDatasource';
 import { PasswordHasherRepository } from '@user/data/repository/PasswordHasherRepository';
 import { UserRepository } from '@user/data/repository/UserRepository';

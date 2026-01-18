@@ -40,7 +40,7 @@ Each module follows this internal structure:
 modules/{module-name}/
 ├── application/          # Application layer
 │   ├── dto/              # Data Transfer Objects
-│   └── use-cases/       # Use cases (business logic)
+│   └── use-case/       # Use cases (business logic)
 │       └── {UseCase}/
 │           ├── index.ts
 │           ├── index.test.ts
@@ -187,7 +187,7 @@ The codebase uses consistent patterns for organizing related files:
 ### Use Case Pattern
 
 ```
-use-cases/SignUpByEmailUseCase/
+use-case/SignUpByEmailUseCase/
 ├── index.ts          # Use case implementation
 ├── index.test.ts     # Unit tests
 └── index.mocks.ts    # Mock data for tests

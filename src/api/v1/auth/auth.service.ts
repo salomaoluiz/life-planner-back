@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 
 import { LoginWithEmailApiInput, LoginWithEmailApiOutput } from '@api/v1/auth/dto/login.dto';
 import { SignUpWithEmailApiInput, SignUpWithEmailApiOutput } from '@api/v1/auth/dto/signup.dto';
-import { LoginByEmailUseCase } from '@user/application/use-cases/LoginByEmailUseCase';
-import { SignUpByEmailUseCase } from '@user/application/use-cases/SignUpByEmailUseCase';
+import { LoginByEmailUseCase } from '@user/application/use-case/LoginByEmailUseCase';
+import { SignUpByEmailUseCase } from '@user/application/use-case/SignUpByEmailUseCase';
 
 @Injectable()
 export class AuthService {

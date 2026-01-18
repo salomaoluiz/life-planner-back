@@ -1,5 +1,5 @@
-import StockEntity from './StockEntity';
-import { mocks, setup } from './StockEntity.mocks';
+import StockEntity from './index';
+import { mocks, setup } from './index.mocks';
 
 describe('StockEntity', () => {
   it('SHOULD create an instance of StockEntity with all properties', () => {
