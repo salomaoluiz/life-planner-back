@@ -101,3 +101,20 @@ describe('Method update', () => {
     });
   });
 });
+
+describe('Method update', () => {
+  it('SHOULD update AND return the user', async () => {
+    spies.update.mockResolvedValue(mocks.user);
+
+    const result = await setup.update(mocks.user);
+
+    expect(result).toEqual(mocks.user);
+    expect(spies.update).toHaveBeenCalledTimes(1);
+    expect(spies.update).toHaveBeenCalledWith({
+      data: mocks.user,
+      where: {
+        id: mocks.user.id,
+      },
+    });
+  });
+});
