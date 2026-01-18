@@ -24,9 +24,10 @@ const idMock = 'user-id-123';
 
 // region Spies
 
+const createSpy = jest.fn();
 const findFirstSpy = jest.fn();
 const findUniqueSpy = jest.fn();
-const createSpy = jest.fn();
+const updateSpy = jest.fn();
 
 // endregion Spies
 
@@ -36,6 +37,7 @@ const databaseMock = {
       create: createSpy,
       findFirst: findFirstSpy,
       findUnique: findUniqueSpy,
+      update: updateSpy,
     },
   },
 } as unknown as Database;
@@ -69,6 +71,7 @@ const spies = {
   create: createSpy,
   findFirst: findFirstSpy,
   findUnique: findUniqueSpy,
+  update: updateSpy,
 };
 
 export { mocks, setup, spies };

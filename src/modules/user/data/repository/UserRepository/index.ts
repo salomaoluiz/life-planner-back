@@ -11,7 +11,7 @@ export class UserRepository implements IUserRepository {
 
   async createUser(params: UserEntity): Promise<{ id: string }> {
     const user = UserMapper.toPersistence(params);
-    const result = await this.userDatasource.save(user);
+    const result = await this.userDatasource.create(user);
 
     return { id: result.id };
   }
@@ -26,5 +26,13 @@ export class UserRepository implements IUserRepository {
     const result = await this.userDatasource.findById(id);
 
     return result ? UserMapper.toDomain(result) : undefined;
+  }
+
+  async updateUser(params: UserEntity): Promise<UserEntity> {
+    const user = UserMapper.toPersistence(params);
+
+    const result = await this.userDatasource.update(user);
+
+    return UserMapper.toDomain(result);
   }
 }
