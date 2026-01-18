@@ -1,40 +1,41 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { ILogger, LogLevel } from '@shared/infra/logger/types';
-
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { FindUserByIdOutput } from '@api/v1/user/dto/find-user-by-id.dto';
+import { UpdateUserInput, UpdateUserOutput } from '@api/v1/user/dto/update-user.dto';
+import { FindUserByIdUseCase } from '@user/application/use-case/FindUserByIdUseCase';
+import { UpdateUserUseCase } from '@user/application/use-case/UpdateUserUseCase';
 
 @Injectable()
 export class UserService {
-  constructor(@Inject('ILogger') private readonly logger: ILogger) {}
+  constructor(
+    private readonly findUserByIdUseCase: FindUserByIdUseCase,
+    private readonly updateUserUseCase: UpdateUserUseCase,
+  ) {}
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+  async findById(id: string): Promise<FindUserByIdOutput> {
+    const user = await this.findUserByIdUseCase.execute({ id });
+
+    return {
+      email: user.email,
+      id: user.id,
+      name: user.name,
+      photoUrl: user.photoUrl,
+    };
   }
 
-  findAll() {
-    this.logger.log(LogLevel.INFO, 'Creating a new user', {
-      data: {
-        test: 'value',
-      },
-      module: UserService.name,
+  async update(id: string, updateUserDto: UpdateUserInput): Promise<UpdateUserOutput> {
+    const updatedUser = await this.updateUserUseCase.execute({
+      email: updateUserDto.email,
+      id,
+      name: updateUserDto.name,
+      photoUrl: updateUserDto.photoUrl,
     });
 
-    return `This action returns all user`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} user`;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+    return {
+      email: updatedUser.email,
+      id: updatedUser.id,
+      name: updatedUser.name,
+      photoUrl: updatedUser.photoUrl,
+    };
   }
 }
