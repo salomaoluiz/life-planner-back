@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
-import { FindUserByIdOutput } from '@api/v1/user/dto/find-user-by-id.dto';
-import { UpdateUserInput, UpdateUserOutput } from '@api/v1/user/dto/update-user.dto';
+import { FindUserByIdOutput } from '@api/user/v1/dto/find-user-by-id.dto';
+import { UpdateUserInput, UpdateUserOutput } from '@api/user/v1/dto/update-user.dto';
 import { FindUserByIdUseCase } from '@user/application/use-case/FindUserByIdUseCase';
 import { UpdateUserUseCase } from '@user/application/use-case/UpdateUserUseCase';
 

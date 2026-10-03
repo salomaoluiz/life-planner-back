@@ -1,6 +1,12 @@
+import { VERSION_METADATA } from '@nestjs/common/constants';
+
 import { mocks, setup, spies } from './auth.controller.mocks';
 
 describe('AuthController', () => {
+  it('SHOULD be served under URI version 1', () => {
+    expect(Reflect.getMetadata(VERSION_METADATA, setup.constructor)).toBe('1');
+  });
+
   describe('POST login/email', () => {
     it('SHOULD return the token WHEN login is successful', async () => {
       const controller = setup;

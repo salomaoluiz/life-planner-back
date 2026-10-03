@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 
-import { UpdateUserInput } from '@api/v1/user/dto/update-user.dto';
+import { UpdateUserInput } from '@api/user/v1/dto/update-user.dto';
 import { FindUserByIdUseCase } from '@user/application/use-case/FindUserByIdUseCase';
 import { UpdateUserUseCase } from '@user/application/use-case/UpdateUserUseCase';
 
