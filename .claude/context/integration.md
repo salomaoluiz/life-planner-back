@@ -19,14 +19,14 @@ The frontend currently talks to **Supabase** directly (auth with Google Sign-In,
 
 ## Domain concept mapping
 
-| Concept         | Frontend (`src/domain/entities`)                 | Backend (`src/modules`)                                                      | Backend state                          |
-| --------------- | ------------------------------------------------ | ---------------------------------------------------------------------------- | -------------------------------------- |
-| User / auth     | `user`, `auth` (Supabase + Google)               | `user` + `api/v1/auth`, `api/v1/user` (legacy layout) (email/password + JWT) | implemented                            |
-| Family          | `family`                                         | `family` (`FamilyEntity`)                                                    | domain only                            |
-| Family member   | `familyMember`                                   | `family` (`FamilyMemberEntity`)                                              | domain only                            |
-| Finance         | `financial` (accounts, categories, transactions) | `finance` (`TransactionEntity`, `CategoryEntity`)                            | domain only; **no Account entity yet** |
-| Stock (storage) | `stock`                                          | `stock` (`StockEntity`)                                                      | domain only                            |
-| Ownership       | `OwnerType` `USER` \| `FAMILY` + `ownerId`       | `OwnerType` / `OwnerEntity` (`@shared/domain`)                               | shared enum, same values               |
+| Concept         | Frontend (`src/domain/entities`)                 | Backend (`src/modules`)                                      | Backend state                          |
+| --------------- | ------------------------------------------------ | ------------------------------------------------------------ | -------------------------------------- |
+| User / auth     | `user`, `auth` (Supabase + Google)               | `user` + `api/auth/v1`, `api/user/v1` (email/password + JWT) | implemented                            |
+| Family          | `family`                                         | `family` (`FamilyEntity`)                                    | domain only                            |
+| Family member   | `familyMember`                                   | `family` (`FamilyMemberEntity`)                              | domain only                            |
+| Finance         | `financial` (accounts, categories, transactions) | `finance` (`TransactionEntity`, `CategoryEntity`)            | domain only; **no Account entity yet** |
+| Stock (storage) | `stock`                                          | `stock` (`StockEntity`)                                      | domain only                            |
+| Ownership       | `OwnerType` `USER` \| `FAMILY` + `ownerId`       | `OwnerType` / `OwnerEntity` (`@shared/domain`)               | shared enum, same values               |
 
 Keep enum **values** identical across repos (`USER`, `FAMILY`, `EXPENSE`, `INCOME`, …). Ids are UUID strings. Field names in JSON are camelCase on the API (`photoUrl`); DB columns are snake_case.
 

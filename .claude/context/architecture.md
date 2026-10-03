@@ -6,12 +6,10 @@
 src/
 ├── main.ts                  # bootstrap: URI versioning, global prefix `api`, Swagger at /swagger
 ├── api/                     # HTTP layer (controllers, services, API DTOs)
-│   ├── api.module.ts        # imports HealthModule + V1Module
+│   ├── api.module.ts        # imports HealthModule + auth/user API modules
 │   ├── health/              # GET /api/health (public, terminus)
-│   ├── <name>/v<N>/         # NEW convention: version is the inner folder; controller uses `version: 'N'`
-│   └── v1/                  # LEGACY (auth, user): v1.module.ts registers routes with RouterModule (path 'v1'); migrate to api/<name>/v1
-│       ├── auth/            # auth.controller/.service/.module + dto/
-│       └── user/            # user.controller/.service/.module + dto/
+│   ├── auth/                # auth.module.ts + v1/ (controller, service, dto/)
+│   └── user/                # user.module.ts + v1/ (controller, service, dto/)
 ├── modules/                 # bounded contexts
 │   ├── app.module.ts        # imports ApiModule + SharedModule
 │   └── {user|family|finance|stock}/
@@ -51,7 +49,7 @@ Request flow: `Controller` (validate, extract `req.user.id`) → `Service` (api 
 
 - `providers`: the use cases + `{ provide: 'I<Name>Repository', useClass }` + `{ provide: 'I<Name>Datasource', useClass }`.
 - `exports`: the use cases only.
-- An `api/<name>/<name>.module.ts` (new convention) imports the domain module(s) and declares the controllers + services of each version in `api/<name>/v<N>/`; import it in `ApiModule`. Legacy `api/v1/<name>/` modules are registered in `v1.module.ts` with `RouterModule` (`path: 'v1'`) until migrated. See `api.md`.
+- An `api/<name>/<name>.module.ts` imports the domain module(s) and declares the controllers + services of each version in `api/<name>/v<N>/`; import it in `ApiModule`. See `api.md`.
 - New domain module → add it to the aliases (see below) and, if it needs shared infra, rely on the `@Global` `SharedModule` (don't re-provide Database/Logger/JWT).
 
 ## DI tokens in use
@@ -72,6 +70,6 @@ Adding a new module alias = update **all three** places (tsconfig `paths`, jest 
 | Concept with identity/invariants    | `modules/<m>/domain/entity/`                         |
 | Persistence contract                | `modules/<m>/domain/repository/I<Name>Repository.ts` |
 | Prisma query                        | `modules/<m>/data/datasource/`                       |
-| HTTP route, request/response schema | `api/<name>/v<N>/` (legacy: `api/v1/<name>/`)        |
+| HTTP route, request/response schema | `api/<name>/v<N>/`                                   |
 | Wrapper around an npm lib           | `shared/infra/<name>/` (+ interface in `types.ts`)   |
 | Used by 2+ modules, domain-level    | `shared/domain` / `shared/application`               |

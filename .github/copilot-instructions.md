@@ -20,8 +20,8 @@ This project follows **Clean Architecture** and **Domain-Driven Design (DDD)** p
 src/
 ├── api/              # API Layer (Controllers, DTOs, HTTP concerns)
 │   ├── health/       # Health check endpoints
-│   ├── <name>/v<N>/  # New convention: version is the inner folder (e.g. user/v1, user/v2)
-│   └── v1/           # Legacy layout (auth, user) until migrated to <name>/v1
+│   ├── auth/         # auth.module.ts + v1/ (version is the inner folder)
+│   └── user/         # user.module.ts + v1/ (e.g. later user/v2)
 ├── modules/          # Business Modules (bounded contexts)
 │   ├── user/
 │   ├── family/

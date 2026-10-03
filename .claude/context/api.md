@@ -11,7 +11,7 @@ Global prefix `api`, URI versioning, Swagger UI at `/swagger` (bearer scheme nam
 - Version is declared on the controller: `@Controller({ path: '<name>', version: '1' })` (URI versioning is already enabled in `main.ts`). **Do not** register new modules in `RouterModule`/`v1.module.ts`.
 - Each `api/<name>/` has its own `<name>.module.ts` (e.g. `api/user/user.module.ts`) that imports the domain module(s) and lists the controllers/services of every version; import it directly in `ApiModule` (`src/api/api.module.ts`).
 - A new version copies only what changes (DTOs/controller/service of that resource); unchanged endpoints stay in the old version folder and keep working. Mark the old version deprecated (`@ApiOperation({ deprecated: true })`) and note it in the endpoint table before removing it.
-- **Legacy layout `api/v1/<name>/`** (today: `auth`, `user`, registered through `v1.module.ts` + `RouterModule`) stays until migrated to `api/<name>/v1/`. When migrating, move files, drop the `RouterModule` entry, add `version: '1'` to the controller, import the module in `ApiModule`, and update aliases/imports/tests; URLs must not change. Don't mix both layouts for the same resource.
+- All resources (`auth`, `user`) already use this layout; there is no `v1.module.ts`/`RouterModule` any more. Never add a global `api/v1/<name>/` folder.
 
 ## Controller + service pairs (`api/<name>/v<N>/`)
 
@@ -24,12 +24,10 @@ api/<name>/
     └── dto/<kebab-name>.dto.ts
 ```
 
-(Legacy `api/v1/<name>/` keeps controller/service/module/dto in one folder.)
-
-- **Controller**: routing, input validation, extracting `req.user.id`, response typing. No business logic. Class decorators: `@Controller({ path: 'user', version: '1' })` (legacy `api/v1/*` controllers omit `version`; it comes from `RouterModule` path `v1`), `@ApiBearerAuth('JWT')` on protected controllers.
+- **Controller**: routing, input validation, extracting `req.user.id`, response typing. No business logic. Class decorators: `@Controller({ path: 'user', version: '1' })`, `@ApiBearerAuth('JWT')` on protected controllers.
 - **Service** (`@Injectable()`): calls use cases exported by one **or several** modules and aggregates/maps their outputs to the API output shape. This is the only api-layer class that knows use cases. Aggregation only — no business rules, no repository/datasource access; if a rule is needed, add/extend a use case in the owning module. Don't make modules import each other to avoid composing here.
 - An API module imports every domain module whose use cases it needs. Cross-module writes and partial-failure handling on aggregated reads are intentionally **not defined yet**; ask the user before building the first such endpoint.
-- Register: new layout → import the `api/<name>` module in `ApiModule`. Legacy layout only → `v1.module.ts` (`imports` + `RouterModule.register([{ module, path: 'v1' }])`).
+- Register: import the `api/<name>` module in `ApiModule`.
 
 ## DTOs (Zod)
 

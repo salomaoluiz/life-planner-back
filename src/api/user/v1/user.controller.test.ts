@@ -1,6 +1,12 @@
+import { VERSION_METADATA } from '@nestjs/common/constants';
+
 import { mocks, setup } from './user.controller.mocks';
 
 describe('UserController', () => {
+  it('SHOULD be served under URI version 1', () => {
+    expect(Reflect.getMetadata(VERSION_METADATA, setup.constructor)).toBe('1');
+  });
+
   describe('findMe', () => {
     it('SHOULD return the current logged user', async () => {
       const result = await setup.findMe(mocks.request);

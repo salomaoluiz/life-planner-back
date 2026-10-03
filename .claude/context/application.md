@@ -29,7 +29,7 @@ Rules:
 
 ## Application DTOs (`application/dto/<UseCaseName>.ts`)
 
-Zod schema + inferred types; independent from API DTOs (those live in `src/api/<name>/v<N>/dto`; legacy `src/api/v1/**/dto`).
+Zod schema + inferred types; independent from API DTOs (those live in `src/api/<name>/v<N>/dto`).
 
 ```ts
 export const UpdateUserSchema = z.object({

@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 
+import { AuthAPIModule } from '@api/auth/auth.module';
+import { UserAPIModule } from '@api/user/user.module';
+
 import { HealthModule } from './health/health.module';
-import { V1Module } from './v1/v1.module';
 
 @Module({
-  imports: [HealthModule, V1Module],
+  imports: [HealthModule, AuthAPIModule, UserAPIModule],
 })
 export class ApiModule {}

@@ -14,7 +14,7 @@
 | API DTO                          | kebab-case + `.dto.ts`                           | `update-user.dto.ts`                                      |
 | Tests / mocks / fixtures         | `.test.ts` / `.mocks.ts` / `<Entity>.fixture.ts` | `index.test.ts`, `UserEntity.fixture.ts`                  |
 
-Module folders: `user`, `family`, `finance`, `stock`. API: `src/api/<name>/v<N>` (legacy `src/api/v1/<name>` for auth/user until migrated).
+Module folders: `user`, `family`, `finance`, `stock`. API: `src/api/<name>/v<N>`.
 
 ## ESLint / Prettier rules that bite
 

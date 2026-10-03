@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 
-import { LoginWithEmailApiSchema } from '@api/v1/auth/dto/login.dto';
-import { SignUpWithEmailApiSchema } from '@api/v1/auth/dto/signup.dto';
+import { LoginWithEmailApiSchema } from '@api/auth/v1/dto/login.dto';
+import { SignUpWithEmailApiSchema } from '@api/auth/v1/dto/signup.dto';
 import { validate } from '@shared/infra/validation';
 
 import { AuthController } from './auth.controller';
@@ -10,8 +10,8 @@ import { AuthService } from './auth.service';
 // region Mocks
 
 jest.mock('@shared/infra/validation');
-jest.mock('@api/v1/auth/dto/login.dto');
-jest.mock('@api/v1/auth/dto/signup.dto');
+jest.mock('@api/auth/v1/dto/login.dto');
+jest.mock('@api/auth/v1/dto/signup.dto');
 
 const loginInputMock = {
   email: 'test@example.com',

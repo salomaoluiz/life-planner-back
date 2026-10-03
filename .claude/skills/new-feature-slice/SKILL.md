@@ -5,7 +5,7 @@ description: Use when adding a new entity/CRUD feature or finishing a module in 
 
 # New feature slice (end-to-end checklist)
 
-Reference implementation to mirror: the **`user` module** (`src/modules/user`, `src/api/v1/user`).
+Reference implementation to mirror: the **`user` module** (`src/modules/user`, `src/api/user/v1`).
 Read each context file only when you reach its step. Write keys/members alphabetically (lint). Use path aliases, never `../../`.
 
 Placeholders: `<m>` module (e.g. `finance`), `X` PascalCase entity, `x` camelCase/kebab, `<UseCase>` e.g. `CreateTransaction`.
@@ -44,7 +44,7 @@ Placeholders: `<m>` module (e.g. `finance`), `X` PascalCase entity, `x` camelCas
 - [ ] `api/<x>/v1/dto/<x>.dto.ts` (zod + `createZodDto`, `@ApiProperty` where needed)
 - [ ] `api/<x>/v1/<x>.service.ts` (+ test, mocks) — maps use-case output to API output
 - [ ] `api/<x>/v1/<x>.controller.ts` (+ test, mocks) — `@Controller({ path, version: '1' })`, `@ApiBearerAuth('JWT')`, `@ZodResponse`, `ParseUUIDPipe`, `req.user.id`; no `@Public()` unless intended
-- [ ] `api/<x>/<x>.module.ts` (imports the domain module(s), lists controllers/services); import it in `src/api/api.module.ts` — don't use `v1.module.ts`/`RouterModule` (legacy)
+- [ ] `api/<x>/<x>.module.ts` (imports the domain module(s), lists controllers/services); import it in `src/api/api.module.ts` — no global `v1.module.ts`/`RouterModule`
 - [ ] Update the endpoint table in `api.md`
 
 ## 6. Tests → `.claude/context/testing.md`

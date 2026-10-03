@@ -4,18 +4,18 @@ import {
   LoginWithEmailApiInput,
   LoginWithEmailApiOutput,
   LoginWithEmailApiSchema,
-} from '@api/v1/auth/dto/login.dto';
+} from '@api/auth/v1/dto/login.dto';
 import {
   SignUpWithEmailApiInput,
   SignUpWithEmailApiOutput,
   SignUpWithEmailApiSchema,
-} from '@api/v1/auth/dto/signup.dto';
+} from '@api/auth/v1/dto/signup.dto';
 import { Public } from '@shared/infra/http/decorators/Public';
 import { validate } from '@shared/infra/validation';
 
 import { AuthService } from './auth.service';
 
-@Controller('auth')
+@Controller({ path: 'auth', version: '1' })
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
