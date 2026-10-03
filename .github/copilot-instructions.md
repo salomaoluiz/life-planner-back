@@ -20,7 +20,8 @@ This project follows **Clean Architecture** and **Domain-Driven Design (DDD)** p
 src/
 ├── api/              # API Layer (Controllers, DTOs, HTTP concerns)
 │   ├── health/       # Health check endpoints
-│   └── v1/           # API version 1
+│   ├── <name>/v<N>/  # New convention: version is the inner folder (e.g. user/v1, user/v2)
+│   └── v1/           # Legacy layout (auth, user) until migrated to <name>/v1
 ├── modules/          # Business Modules (bounded contexts)
 │   ├── user/
 │   ├── family/
@@ -58,6 +59,8 @@ modules/{module-name}/
 ```
 
 ### Key Architectural Principles
+
+0. **API as entrance (BFF)**: `src/api` is the single entrance and may aggregate use cases from several modules in one endpoint. It must only validate, call exported use cases and shape the response — no business rules, no repository/datasource access. Business rules stay inside the modules, and modules must not depend on each other. (Cross-module writes and partial-failure handling on aggregated reads are intentionally deferred.)
 
 1. **Use Cases**: All business logic must be encapsulated in use cases that extend `UseCase<Output>` or `UseCaseWithParams<Input, Output>` from `@shared/application/use-case/types`
 
