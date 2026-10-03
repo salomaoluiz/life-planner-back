@@ -18,4 +18,15 @@ describe('UserEntity', () => {
     // Validating optional properties are undefined
     expect(result.photoUrl).toBeUndefined();
   });
+
+  it('SHOULD generate an id WHEN none is provided', () => {
+    const result = new UserEntity({
+      email: mocks.params.email,
+      name: mocks.params.name,
+      passwordHash: mocks.params.passwordHash,
+    });
+
+    expect(result.id).toEqual(expect.any(String));
+    expect(result.id).not.toBe('');
+  });
 });
