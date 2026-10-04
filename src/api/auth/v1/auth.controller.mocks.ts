@@ -37,7 +37,18 @@ const authServiceMock = {
 
 // region Spies
 
-const validateSpy = jest.mocked(validate);
+const parsedLoginMock = { email: 'test@example.com', password: 'password123' };
+const parsedSignUpMock = {
+  email: 'newuser@example.com',
+  name: 'New User',
+  password: 'password123',
+};
+
+const validateSpy = jest
+  .mocked(validate)
+  .mockImplementation((schema) =>
+    schema === LoginWithEmailApiSchema ? parsedLoginMock : parsedSignUpMock,
+  );
 // Mocking the schemas imports to ensure we can verify they are passed
 jest.mocked(LoginWithEmailApiSchema);
 jest.mocked(SignUpWithEmailApiSchema);
@@ -68,6 +79,10 @@ const mocks = {
   inputs: {
     login: loginInputMock,
     signUp: signUpInputMock,
+  },
+  parsed: {
+    login: parsedLoginMock,
+    signUp: parsedSignUpMock,
   },
   schemas: {
     login: LoginWithEmailApiSchema,

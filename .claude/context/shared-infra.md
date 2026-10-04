@@ -15,7 +15,9 @@ The only place allowed to import third-party libs directly (ESLint `no-restricte
 
 ## Environment variables (`env/env.schema.ts`)
 
-`NODE_ENV`, `PORT`, `DB_HOST`, `DB_NAME`, `DB_PASSWORD`, `DB_PORT`, `DB_USER`, `JWT_SECRET` (min 10 chars), `JWT_EXPIRES_IN` (seconds, default 3600). `prisma.config.ts` and `docker-compose.yml` read the same `DB_*` names.
+`NODE_ENV`, `PORT`, `CORS_ORIGINS`, `DB_HOST`, `DB_NAME`, `DB_PASSWORD`, `DB_PORT`, `DB_USER`, `JWT_SECRET` (min 10 chars), `JWT_EXPIRES_IN` (seconds, default 3600). `prisma.config.ts` and `docker-compose.yml` read the same `DB_*` names.
+
+`CORS_ORIGINS` (optional, default empty) feeds `http/cors` `buildCorsOptions()`, called from `main.ts`. `validation/email.ts` exports `emailSchema` (trim → lowercase → email, max 254) used by all auth schemas.
 
 Adding a variable: `envSchema` → `EnvService` getter (+ its test/fixtures) → `docker-compose.yml` `environment` → placeholder in `.env.example`. Values never go in source.
 

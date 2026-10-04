@@ -22,9 +22,9 @@ export class AuthController {
   @Post('login/email')
   @Public()
   async loginWithEmail(@Body() login: LoginWithEmailApiInput): Promise<LoginWithEmailApiOutput> {
-    validate(LoginWithEmailApiSchema, login);
+    const input = validate(LoginWithEmailApiSchema, login);
 
-    const result = await this.authService.loginWithEmail(login);
+    const result = await this.authService.loginWithEmail(input);
 
     return { token: result.token };
   }
@@ -34,8 +34,8 @@ export class AuthController {
   async signUpWithEmail(
     @Body() signUp: SignUpWithEmailApiInput,
   ): Promise<SignUpWithEmailApiOutput> {
-    validate(SignUpWithEmailApiSchema, signUp);
+    const input = validate(SignUpWithEmailApiSchema, signUp);
 
-    await this.authService.signUpWithEmail(signUp);
+    await this.authService.signUpWithEmail(input);
   }
 }

@@ -32,9 +32,9 @@ Keep enum **values** identical across repos (`USER`, `FAMILY`, `EXPENSE`, `INCOM
 
 ## Auth contract
 
-- Login/signup with email: `POST /api/v1/auth/login/email` → `{ token }`; `POST /api/v1/auth/signup/email`. The token is a JWT with payload `{ user: { id } }`, lifetime `JWT_EXPIRES_IN` seconds (default 3600), no refresh token yet.
+- Login/signup with email: `POST /api/v1/auth/login/email` → `{ token }`; `POST /api/v1/auth/signup/email`. The token is a JWT with payload `{ user: { id } }`, lifetime `JWT_EXPIRES_IN` seconds (default 3600), no refresh token yet (recommended server config meanwhile: `JWT_EXPIRES_IN=604800`, 7 days). The app signs up with email/password, then logs in; email is normalized (trim + lowercase) server-side. Web builds need `CORS_ORIGINS` to include the app origin.
 - All other endpoints: `Authorization: Bearer <token>`; 401 when missing/invalid/expired.
-- The frontend's Google Sign-In flow has **no backend equivalent yet** — adding it means a new public endpoint + use case here and a new `LoginRepository` datasource there.
+- Google Sign-In was dropped: the app uses email/password only (spec 002); there is no Google endpoint and none is planned.
 
 ## Cross-repo change checklist
 

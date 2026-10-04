@@ -68,3 +68,11 @@ describe('GIVEN invalid credentials', () => {
     expect(mocks.jwtProvider.sign).not.toHaveBeenCalled();
   });
 });
+
+describe('GIVEN an email with spaces and uppercase', () => {
+  it('SHOULD look the user up with the normalized email', async () => {
+    await setup({ email: '  Test@Example.COM ', password: mocks.data.input.password });
+
+    expect(mocks.userRepository.getUserByEmail).toHaveBeenCalledWith('test@example.com');
+  });
+});

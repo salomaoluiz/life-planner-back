@@ -17,6 +17,7 @@ class EnvServiceFixture {
 
   withDefault() {
     this.value = {
+      corsOrigins: '',
       dbHost: faker.internet.ipv4(),
       dbName: faker.string.alphanumeric(10),
       dbPassword: faker.internet.password(),
@@ -31,6 +32,11 @@ class EnvServiceFixture {
   }
 
   // Builder methods
+
+  withCorsOrigins(corsOrigins: string) {
+    this.value.corsOrigins = corsOrigins;
+    return this;
+  }
 
   withDbHost(dbHost: string) {
     this.value.dbHost = dbHost;

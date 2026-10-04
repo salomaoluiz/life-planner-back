@@ -6,6 +6,7 @@ import { EnvService } from './env.service';
 // region Mocks
 
 const envVarsMock = {
+  CORS_ORIGINS: 'http://localhost:8081',
   DB_HOST: 'localhost',
   DB_NAME: 'test_db',
   DB_PASSWORD: 'password',

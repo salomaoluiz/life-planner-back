@@ -8,6 +8,10 @@ export class EnvService {
   constructor(private readonly nestConfigService: NestConfigService<Env, true>) {}
 
   // App
+  get corsOrigins(): Env['CORS_ORIGINS'] {
+    return this.nestConfigService.get('CORS_ORIGINS');
+  }
+
   get environment(): Env['NODE_ENV'] {
     return this.nestConfigService.get('NODE_ENV');
   }

@@ -3,10 +3,19 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { cleanupOpenApiDoc } from 'nestjs-zod';
 
+import { EnvService } from '@shared/infra/env/env.service';
+import { buildCorsOptions } from '@shared/infra/http/cors';
+
 import { AppModule } from './modules/app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const corsOptions = buildCorsOptions(app.get(EnvService).corsOrigins);
+
+  if (corsOptions) {
+    app.enableCors(corsOptions);
+  }
+
   const config = new DocumentBuilder()
     .setVersion('1.0')
     .addBearerAuth(
