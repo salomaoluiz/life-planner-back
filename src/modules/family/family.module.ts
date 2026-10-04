@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 
+import { AcceptFamilyInviteUseCase } from '@family/application/use-case/AcceptFamilyInviteUseCase';
 import { CheckFamilyMembershipUseCase } from '@family/application/use-case/CheckFamilyMembershipUseCase';
 import { CreateFamilyUseCase } from '@family/application/use-case/CreateFamilyUseCase';
 import { DeleteFamilyMemberUseCase } from '@family/application/use-case/DeleteFamilyMemberUseCase';
 import { DeleteFamilyUseCase } from '@family/application/use-case/DeleteFamilyUseCase';
 import { EnsureFamilyOwnerUseCase } from '@family/application/use-case/EnsureFamilyOwnerUseCase';
 import { GetFamilyByIdUseCase } from '@family/application/use-case/GetFamilyByIdUseCase';
+import { GetFamilyInvitePreviewUseCase } from '@family/application/use-case/GetFamilyInvitePreviewUseCase';
 import { GetFamilyMembersUseCase } from '@family/application/use-case/GetFamilyMembersUseCase';
 import { GetUserFamiliesUseCase } from '@family/application/use-case/GetUserFamiliesUseCase';
 import { GetUserFamilyIdsUseCase } from '@family/application/use-case/GetUserFamilyIdsUseCase';
@@ -17,12 +19,14 @@ import { FamilyMemberRepository } from '@family/data/repository/FamilyMemberRepo
 import { FamilyRepository } from '@family/data/repository/FamilyRepository';
 
 const useCases = [
+  AcceptFamilyInviteUseCase,
   CheckFamilyMembershipUseCase,
   CreateFamilyUseCase,
   DeleteFamilyMemberUseCase,
   DeleteFamilyUseCase,
   EnsureFamilyOwnerUseCase,
   GetFamilyByIdUseCase,
+  GetFamilyInvitePreviewUseCase,
   GetFamilyMembersUseCase,
   GetUserFamiliesUseCase,
   GetUserFamilyIdsUseCase,
