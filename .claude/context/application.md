@@ -47,3 +47,7 @@ Add the class to the module's `useCases` array (`providers` + `exports`) — see
 ## Existing use cases (user module)
 
 `LoginByEmailUseCase` (verifies hash, signs JWT `{ user: { id } }`), `SignUpByEmailUseCase`, `FindUserByIdUseCase`, `UpdateUserUseCase`.
+
+## Family module use cases
+
+`CreateFamilyUseCase` (validates name 1–50 trimmed), `GetUserFamiliesUseCase` (sorted), `GetFamilyByIdUseCase` (404 for non-members), `EnsureFamilyOwnerUseCase` (404 → 403), `UpdateFamilyUseCase`, `DeleteFamilyUseCase`, plus the exported cross-module contract composed only in `src/api`: `GetUserFamilyIdsUseCase.execute(userId) → string[]` and `CheckFamilyMembershipUseCase.execute({ userId, familyId }) → boolean`.

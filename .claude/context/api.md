@@ -51,14 +51,21 @@ Path params: `@Param('id', ParseUUIDPipe)`.
 
 ## Existing endpoints
 
-| Method | Path                        | Auth   | Notes                                                                                                                                                                        |
-| ------ | --------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/health`               | public | terminus                                                                                                                                                                     |
-| POST   | `/api/v1/auth/login/email`  | public | `{ email, password }` → `201 { token }` (Nest default POST status); email trimmed+lowercased; password 1–72; `401 "Invalid Credentials"` for unknown email or wrong password |
-| POST   | `/api/v1/auth/signup/email` | public | `{ email, name, password, photoURL? }` → 201 empty. Email trimmed+lowercased (max 254), name trimmed 1–100, password 8–72; `400` validation; `422 "Email already in use"`    |
-| GET    | `/api/v1/user/me`           | JWT    | current user                                                                                                                                                                 |
-| GET    | `/api/v1/user/:id`          | JWT    | ⚠ no ownership check                                                                                                                                                         |
-| PATCH  | `/api/v1/user/:id`          | JWT    | ⚠ no ownership check; partial update                                                                                                                                         |
+| Method | Path                         | Auth   | Notes                                                                                                                                                                        |
+| ------ | ---------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/health`                | public | terminus                                                                                                                                                                     |
+| POST   | `/api/v1/auth/login/email`   | public | `{ email, password }` → `201 { token }` (Nest default POST status); email trimmed+lowercased; password 1–72; `401 "Invalid Credentials"` for unknown email or wrong password |
+| POST   | `/api/v1/auth/signup/email`  | public | `{ email, name, password, photoURL? }` → 201 empty. Email trimmed+lowercased (max 254), name trimmed 1–100, password 8–72; `400` validation; `422 "Email already in use"`    |
+| GET    | `/api/v1/user/me`            | JWT    | current user                                                                                                                                                                 |
+| GET    | `/api/v1/user/:id`           | JWT    | ⚠ no ownership check                                                                                                                                                         |
+| PATCH  | `/api/v1/user/:id`           | JWT    | ⚠ no ownership check; partial update                                                                                                                                         |
+| GET    | `/api/v1/families`           | JWT    | families the user belongs to (joined memberships), sorted by name (case-insensitive) then `createdAt`; `[]` if none                                                          |
+| POST   | `/api/v1/families`           | JWT    | `{ name }` (trimmed, 1–50) → `201 FamilyOutput`; creates family + owner membership atomically; `400` invalid name                                                            |
+| GET    | `/api/v1/families/:familyId` | JWT    | `200 FamilyOutput`; `400` bad UUID; `404` unknown or non-member                                                                                                              |
+| PATCH  | `/api/v1/families/:familyId` | JWT    | `{ name }` → `200 FamilyOutput`; owner only: `403` member non-owner, `404` non-member                                                                                        |
+| DELETE | `/api/v1/families/:familyId` | JWT    | `204`; owner only; order `404 → 403 → 409`; `409 "Family still owns records"` when a registered owned-records check is true                                                  |
+
+**Family delete composition:** `FamilyService.delete` runs `EnsureFamilyOwnerUseCase` (404/403), then every check in the `FAMILY_OWNED_RECORDS_CHECKS` list (token + `IOwnedRecordsCheck { execute({ owner, ownerId }) → boolean }` in `src/api/family/v1/family-records-checks.ts`), then `DeleteFamilyUseCase`. The list is empty until specs 005/006 register their module-level use case in `FamilyAPIModule`.
 
 Errors come out of `AllExceptionsFilter` as `{ message, path, statusCode, timestamp }` (5xx hidden behind "Internal Server Error", validation failures are 400 "Validation Failed").
 **CORS:** enabled in `main.ts` only when `CORS_ORIGINS` (comma-separated origins) is non-empty; methods `GET, POST, PATCH, PUT, DELETE, OPTIONS`, headers `Authorization, Content-Type`, no credentials (the token travels in `Authorization`). Empty = disabled.
