@@ -26,6 +26,7 @@ const userDatasourceMock = {
   create: jest.fn().mockResolvedValue(userPersistenceMock),
   findByEmail: jest.fn().mockResolvedValue(userPersistenceMock),
   findById: jest.fn().mockResolvedValue(userPersistenceMock),
+  findByIds: jest.fn().mockResolvedValue([userPersistenceMock]),
   update: jest.fn().mockResolvedValue(userPersistenceMock),
 };
 

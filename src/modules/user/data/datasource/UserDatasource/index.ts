@@ -37,6 +37,10 @@ export class UserDatasource implements IUserDatasource {
     });
   }
 
+  async findByIds(ids: string[]): Promise<User[]> {
+    return this.db.client.user.findMany({ where: { id: { in: ids } } });
+  }
+
   async update(user: User): Promise<User> {
     const { email, id, name, password_hash, photo_url } = user;
 
