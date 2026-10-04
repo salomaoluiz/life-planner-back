@@ -6,6 +6,7 @@ describe('validateEnvironment', () => {
 
     expect(result).toEqual({
       ...mocks.validConfig,
+      CORS_ORIGINS: '',
       JWT_EXPIRES_IN: 7200, // Coerced
       PORT: 4000, // Coerced
     });
@@ -15,10 +16,17 @@ describe('validateEnvironment', () => {
     const result = setup(mocks.partialConfig);
 
     expect(result).toMatchObject({
+      CORS_ORIGINS: '',
       JWT_EXPIRES_IN: 3600,
       NODE_ENV: 'development',
       PORT: 3000,
     });
+  });
+
+  it('SHOULD keep CORS_ORIGINS WHEN provided', () => {
+    const result = setup({ ...mocks.validConfig, CORS_ORIGINS: 'http://localhost:8081' });
+
+    expect(result.CORS_ORIGINS).toBe('http://localhost:8081');
   });
 
   it('SHOULD throw Error WHEN config is invalid', () => {
