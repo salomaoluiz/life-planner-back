@@ -15,11 +15,18 @@ class FamilyEntityFixture {
     return temp;
   }
 
+  withCreatedAt(createdAt: Date) {
+    this.value.createdAt = createdAt;
+    return this;
+  }
+
   withDefault() {
     this.value = {
+      createdAt: faker.date.past(),
       id: faker.string.uuid(),
       name: `Family ${faker.person.lastName()}`,
       ownerId: faker.string.uuid(),
+      updatedAt: faker.date.recent(),
     };
     return this;
   }
@@ -36,6 +43,11 @@ class FamilyEntityFixture {
 
   withOwnerId(ownerId: string) {
     this.value.ownerId = ownerId;
+    return this;
+  }
+
+  withUpdatedAt(updatedAt: Date) {
+    this.value.updatedAt = updatedAt;
     return this;
   }
 }
