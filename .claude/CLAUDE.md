@@ -30,9 +30,9 @@ Reference implementation for any new work: **`user` module** (the only one compl
 ## Current state (keep updated)
 
 - **Migration target:** this API replaces the frontend's legacy Supabase backend. New data/features belong here; port Supabase rules (RLS ownership, triggers, `validate_owner`) into use cases. See `integration.md`.
-- Implemented end-to-end: `user` (find by id / me, update, login/signup by email), `auth` API, `health`. Auth input is normalized (email trimmed+lowercased, name 1–100, password 8–72, signup duplicate → 422 "Email already in use") and CORS is enabled via `CORS_ORIGINS`.
-- Domain only (entities, fixtures, repository interfaces; **no use cases, data layer, module or controller yet**): `finance` (Transaction, Category), `family` (Family, FamilyMember), `stock` (Stock).
-- Prisma schema has only the `User` model. Other modules need models + migration before a data layer.
+- Implemented end-to-end: `user` (find by id / me, update, login/signup by email), `auth` API, `health`, `family` (families CRUD at `/api/v1/families`; members/invites are spec 004). Auth input is normalized (email trimmed+lowercased, name 1–100, password 8–72, signup duplicate → 422 "Email already in use") and CORS is enabled via `CORS_ORIGINS`.
+- Domain only (entities, fixtures, repository interfaces; **no use cases, data layer, module or controller yet**): `finance` (Transaction, Category), `family` members (FamilyMember), `stock` (Stock).
+- Prisma schema has `User`, `Family`, `FamilyMember`; migrations are committed (see `database.md` for the baseline note). Other modules need models + migration before a data layer.
 
 ## Golden rules (non-negotiable)
 

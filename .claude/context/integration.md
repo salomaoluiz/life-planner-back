@@ -19,14 +19,14 @@ The frontend currently talks to **Supabase** directly (auth with Google Sign-In,
 
 ## Domain concept mapping
 
-| Concept         | Frontend (`src/domain/entities`)                 | Backend (`src/modules`)                                      | Backend state                          |
-| --------------- | ------------------------------------------------ | ------------------------------------------------------------ | -------------------------------------- |
-| User / auth     | `user`, `auth` (Supabase + Google)               | `user` + `api/auth/v1`, `api/user/v1` (email/password + JWT) | implemented                            |
-| Family          | `family`                                         | `family` (`FamilyEntity`)                                    | domain only                            |
-| Family member   | `familyMember`                                   | `family` (`FamilyMemberEntity`)                              | domain only                            |
-| Finance         | `financial` (accounts, categories, transactions) | `finance` (`TransactionEntity`, `CategoryEntity`)            | domain only; **no Account entity yet** |
-| Stock (storage) | `stock`                                          | `stock` (`StockEntity`)                                      | domain only                            |
-| Ownership       | `OwnerType` `USER` \| `FAMILY` + `ownerId`       | `OwnerType` / `OwnerEntity` (`@shared/domain`)               | shared enum, same values               |
+| Concept         | Frontend (`src/domain/entities`)                 | Backend (`src/modules`)                                      | Backend state                                                                     |
+| --------------- | ------------------------------------------------ | ------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| User / auth     | `user`, `auth` (Supabase + Google)               | `user` + `api/auth/v1`, `api/user/v1` (email/password + JWT) | implemented                                                                       |
+| Family          | `family`                                         | `family` (`FamilyEntity`)                                    | implemented (`/api/v1/families`; `family_name` → `name`, + `createdAt/updatedAt`) |
+| Family member   | `familyMember`                                   | `family` (`FamilyMemberEntity`)                              | domain only (base table created by spec 003; features in spec 004)                |
+| Finance         | `financial` (accounts, categories, transactions) | `finance` (`TransactionEntity`, `CategoryEntity`)            | domain only; **no Account entity yet**                                            |
+| Stock (storage) | `stock`                                          | `stock` (`StockEntity`)                                      | domain only                                                                       |
+| Ownership       | `OwnerType` `USER` \| `FAMILY` + `ownerId`       | `OwnerType` / `OwnerEntity` (`@shared/domain`)               | shared enum, same values                                                          |
 
 Keep enum **values** identical across repos (`USER`, `FAMILY`, `EXPENSE`, `INCOME`, …). Ids are UUID strings. Field names in JSON are camelCase on the API (`photoUrl`); DB columns are snake_case.
 
@@ -50,3 +50,7 @@ When a **frontend** change needs new data/behavior, check here first for an exis
 ## Local dev
 
 Backend: `yarn install`, `.env` with `DB_*`, `JWT_SECRET`, `PORT`; `yarn prisma generate`, `yarn start:dev` → `http://localhost:3000/api`, Swagger `http://localhost:3000/swagger` (docker-compose maps `1009:3000`). The mobile app must reach the host by LAN IP (not `localhost`) on a device/emulator. Any frontend base-URL setting belongs in its `.env` as an `EXPO_PUBLIC_*` placeholder in `.env.example` — never a real URL or secret in tracked files.
+
+## Families (spec 003)
+
+The frontend must stop creating the owner's member itself (the API does it atomically on `POST /api/v1/families`) and map `409` on delete to `FamilyHasRecords`. See `../life-planner/docs/superpowers/plans/2026-10-04-family-api-datasource.md`.

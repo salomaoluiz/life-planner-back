@@ -38,7 +38,7 @@ export type IUserRepository = {
 };
 ```
 
-Existing contracts that still need an implementation: `FinanceTransactionRepository`, `FamilyRepository`, `FamilyMemberRepository`, `StockRepository` (these use a non-`I` prefixed name; **new repositories use the `I` prefix** per `.github/copilot-instructions.md`).
+Existing contracts that still need an implementation: `FinanceTransactionRepository`, `FamilyMemberRepository`, `StockRepository` (`IFamilyRepository` is implemented) (these use a non-`I` prefixed name; **new repositories use the `I` prefix** per `.github/copilot-instructions.md`).
 
 ## Errors
 
