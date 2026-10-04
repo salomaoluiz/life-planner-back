@@ -7,7 +7,7 @@
 ## Current models
 
 `User { id uuid, email unique, name, password_hash, photo_url?, created_at?, updated_at? }`.
-`Family` (table `families`: `id, name, owner_id → User ON DELETE CASCADE, created_at, updated_at`) and `FamilyMember` (table `family_members`, base columns only: `id, family_id → families CASCADE, email, user_id? → User CASCADE, joined_at?, invite_token? unique, created_at, updated_at`, unique `(family_id, email)`). Spec 004 may add columns in its own migration but must not redefine these. Ids and FKs are `text` holding UUID strings because `User.id` is `text`.
+`Family` (table `families`: `id, name, owner_id → User ON DELETE CASCADE, created_at, updated_at`) and `FamilyMember` (table `family_members`, base columns + `invite_expires_at timestamptz?` (migration `20261004000200_family_member_invites`; `invite_token` stores the **SHA-256 hex hash**, never the raw token; also unique `(family_id, user_id)`): `id, family_id → families CASCADE, email, user_id? → User CASCADE, joined_at?, invite_token? unique, created_at, updated_at`, unique `(family_id, email)`). Spec 004 may add columns in its own migration but must not redefine these. Ids and FKs are `text` holding UUID strings because `User.id` is `text`.
 
 ## Conventions
 

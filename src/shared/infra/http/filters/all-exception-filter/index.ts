@@ -9,6 +9,7 @@ import {
 import { HttpAdapterHost } from '@nestjs/core';
 
 import { ValidationError } from '@shared/domain/error/ValidationError';
+import { redactSensitivePath } from '@shared/infra/http/redact-path';
 import { ILogger, LogLevel } from '@shared/infra/logger/types';
 
 @Catch()
@@ -46,7 +47,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const responseBody = {
       message,
-      path: httpAdapter.getRequestUrl(ctx.getRequest()),
+      path: redactSensitivePath(httpAdapter.getRequestUrl(ctx.getRequest())),
       statusCode: httpStatus,
       timestamp: new Date().toISOString(),
     };

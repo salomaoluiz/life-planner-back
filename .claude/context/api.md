@@ -65,6 +65,14 @@ Path params: `@Param('id', ParseUUIDPipe)`.
 | PATCH  | `/api/v1/families/:familyId` | JWT    | `{ name }` → `200 FamilyOutput`; owner only: `403` member non-owner, `404` non-member                                                                                        |
 | DELETE | `/api/v1/families/:familyId` | JWT    | `204`; owner only; order `404 → 403 → 409`; `409 "Family still owns records"` when a registered owned-records check is true                                                  |
 
+| GET | `/api/v1/families/:familyId/members` | JWT | `200 FamilyMember[]` (owner first, joined by `joinedAt`, pending by `createdAt`; derived `role`/`status`/`inviteExpired`; `user: { name, photoUrl } \| null`); `400` bad UUID; `404` unknown family or non-member (pending invitees too) |
+| POST | `/api/v1/families/:familyId/members` | JWT | `{ email }` (trimmed, lower-cased, ≤254) → `201 { member, inviteToken, inviteExpiresAt }` (raw token returned **once**, only its SHA-256 is stored; expires in 7 days); `400`; `403` member non-owner; `404`; `409 FAMILY_MEMBER_ALREADY_EXISTS` |
+| DELETE | `/api/v1/family-members/:memberId` | JWT | `204`; owner removes/cancels any row but their own (`409 FAMILY_OWNER_CANNOT_BE_REMOVED`); a member may delete only their own row (leave); other rows `403`; strangers/unknown ids `404` |
+| GET | `/api/v1/family-invites/:token` | JWT | `200 { familyId, familyName, email, inviteExpiresAt, emailMatches }`; does not consume the token; `400` malformed token; `404 INVITE_NOT_FOUND`; `410 INVITE_EXPIRED` |
+| POST | `/api/v1/family-invites/:token/accept` | JWT | empty body → `200 FamilyMember` (`JOINED`); `400`; `403 INVITE_EMAIL_MISMATCH`; `404 INVITE_NOT_FOUND`; `409 FAMILY_MEMBER_ALREADY_EXISTS`; `410 INVITE_EXPIRED`; single-use, concurrency-safe |
+
+**Invite security:** token = 32 CSPRNG bytes base64url (43 chars) from `@shared/infra/token`; only its SHA-256 is stored. The error-body `path` is redacted for `/family-invites/*`; the API has no request logger and tokens must never be logged.
+
 **Family delete composition:** `FamilyService.delete` runs `EnsureFamilyOwnerUseCase` (404/403), then every check in the `FAMILY_OWNED_RECORDS_CHECKS` list (token + `IOwnedRecordsCheck { execute({ owner, ownerId }) → boolean }` in `src/api/family/v1/family-records-checks.ts`), then `DeleteFamilyUseCase`. The list is empty until specs 005/006 register their module-level use case in `FamilyAPIModule`.
 
 Errors come out of `AllExceptionsFilter` as `{ message, path, statusCode, timestamp }` (5xx hidden behind "Internal Server Error", validation failures are 400 "Validation Failed").

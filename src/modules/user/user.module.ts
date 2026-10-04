@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { FindUserByIdUseCase } from '@user/application/use-case/FindUserByIdUseCase';
+import { FindUsersByIdsUseCase } from '@user/application/use-case/FindUsersByIdsUseCase';
 import { LoginByEmailUseCase } from '@user/application/use-case/LoginByEmailUseCase';
 import { SignUpByEmailUseCase } from '@user/application/use-case/SignUpByEmailUseCase';
 import { UpdateUserUseCase } from '@user/application/use-case/UpdateUserUseCase';
@@ -12,6 +13,7 @@ const useCases = [
   LoginByEmailUseCase,
   SignUpByEmailUseCase,
   FindUserByIdUseCase,
+  FindUsersByIdsUseCase,
   UpdateUserUseCase,
 ];
 
