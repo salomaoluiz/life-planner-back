@@ -40,7 +40,7 @@ const passwordHasherRepositoryMock = {
 
 // region Spies
 
-const validateSpy = jest.mocked(validate);
+const validateSpy = jest.mocked(validate).mockImplementation((schema, data) => schema.parse(data));
 const userEntitySpy = jest.mocked(UserEntity).mockImplementation(() => userEntityInstanceMock);
 
 // endregion Spies

@@ -21,20 +21,20 @@ export class SignUpByEmailUseCase implements UseCaseWithParams<
   ) {}
 
   async execute(params: SignUpByEmailInput): Promise<SignUpByEmailOutput> {
-    validate(SignUpByEmailSchema, params);
-    const exists = await this.userRepository.getUserByEmail(params.email);
+    const input = validate(SignUpByEmailSchema, params);
+    const exists = await this.userRepository.getUserByEmail(input.email);
 
     if (exists) {
-      throw new UnprocessableEntityException('Invalid credentials');
+      throw new UnprocessableEntityException('Email already in use');
     }
 
-    const passwordHash = await this.passwordHasher.hash(params.password);
+    const passwordHash = await this.passwordHasher.hash(input.password);
 
     const user = new UserEntity({
-      email: params.email,
-      name: params.name,
+      email: input.email,
+      name: input.name,
       passwordHash,
-      photoUrl: params.photoURL,
+      photoUrl: input.photoURL,
     });
 
     await this.userRepository.createUser(user);

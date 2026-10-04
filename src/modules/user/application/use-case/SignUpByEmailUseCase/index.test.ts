@@ -47,10 +47,33 @@ describe('GIVEN a SignUp request with existing email', () => {
     expect(mocks.userRepository.getUserByEmail).toHaveBeenCalledTimes(1);
 
     expect(result).toBeInstanceOf(UnprocessableEntityException);
-    expect((result as UnprocessableEntityException).message).toBe('Invalid credentials');
+    expect((result as UnprocessableEntityException).message).toBe('Email already in use');
 
     expect(mocks.passwordHasherRepository.hash).not.toHaveBeenCalled();
     expect(spies.userEntity).not.toHaveBeenCalled();
     expect(mocks.userRepository.createUser).not.toHaveBeenCalled();
+  });
+});
+
+describe('GIVEN a SignUp request with spaces and uppercase', () => {
+  it('SHOULD use the normalized email and trimmed name for lookup and creation', async () => {
+    mocks.userRepository.getUserByEmail.mockResolvedValue(null);
+
+    const useCase = await setup();
+    await useCase.execute({ ...mocks.input, email: ' Test@Example.COM ', name: '  Test User ' });
+
+    expect(mocks.userRepository.getUserByEmail).toHaveBeenCalledWith('test@example.com');
+    expect(spies.userEntity).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'test@example.com', name: 'Test User' }),
+    );
+  });
+
+  it('SHOULD detect an existing account regardless of letter case', async () => {
+    mocks.userRepository.getUserByEmail.mockResolvedValue({ id: 'existing_id' });
+
+    const result = await throwableSetup({ ...mocks.input, email: 'TEST@EXAMPLE.COM' });
+
+    expect(mocks.userRepository.getUserByEmail).toHaveBeenCalledWith('test@example.com');
+    expect(result).toBeInstanceOf(UnprocessableEntityException);
   });
 });

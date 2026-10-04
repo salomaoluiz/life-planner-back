@@ -8,6 +8,7 @@ type EnvVarKey = keyof typeof mocks.envVars;
 const testCases: { key: EnvVarKey; method: EnvServiceKey }[] = [
   { key: 'NODE_ENV', method: 'environment' },
   { key: 'PORT', method: 'port' },
+  { key: 'CORS_ORIGINS', method: 'corsOrigins' },
   { key: 'DB_HOST', method: 'dbHost' },
   { key: 'DB_NAME', method: 'dbName' },
   { key: 'DB_PASSWORD', method: 'dbPassword' },
