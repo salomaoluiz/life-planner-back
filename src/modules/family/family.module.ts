@@ -9,6 +9,8 @@ import { GetUserFamiliesUseCase } from '@family/application/use-case/GetUserFami
 import { GetUserFamilyIdsUseCase } from '@family/application/use-case/GetUserFamilyIdsUseCase';
 import { UpdateFamilyUseCase } from '@family/application/use-case/UpdateFamilyUseCase';
 import { FamilyDatasource } from '@family/data/datasource/FamilyDatasource';
+import { FamilyMemberDatasource } from '@family/data/datasource/FamilyMemberDatasource';
+import { FamilyMemberRepository } from '@family/data/repository/FamilyMemberRepository';
 import { FamilyRepository } from '@family/data/repository/FamilyRepository';
 
 const useCases = [
@@ -28,6 +30,8 @@ const useCases = [
     ...useCases,
     { provide: 'IFamilyRepository', useClass: FamilyRepository },
     { provide: 'IFamilyDatasource', useClass: FamilyDatasource },
+    { provide: 'IFamilyMemberRepository', useClass: FamilyMemberRepository },
+    { provide: 'IFamilyMemberDatasource', useClass: FamilyMemberDatasource },
   ],
 })
 export class FamilyModule {}
