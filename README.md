@@ -58,6 +58,20 @@ $ yarn run test:e2e
 $ yarn run test:cov
 ```
 
+## Database migrations
+
+Migrations live in `prisma/migrations` and `yarn start` runs `prisma migrate deploy` first.
+
+**Existing databases:** if your database already has the `"User"` table (created before migrations were committed, e.g. via `db push`), mark the baseline as applied once, otherwise `yarn start` fails and a Docker container restart-loops:
+
+```bash
+yarn prisma migrate resolve --applied 20261004000000_baseline_user
+# when the container will not start:
+docker compose run --rm --entrypoint "yarn prisma migrate resolve --applied 20261004000000_baseline_user" api
+```
+
+Then start the app normally; `migrate deploy` applies the remaining migrations.
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
