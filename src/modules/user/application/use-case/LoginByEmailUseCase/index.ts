@@ -22,14 +22,14 @@ export class LoginByEmailUseCase implements UseCaseWithParams<
   ) {}
 
   async execute(params: LoginByEmailInput): Promise<LoginByEmailOutput> {
-    validate(LoginByEmailSchema, params);
-    const user = await this.userRepository.getUserByEmail(params.email);
+    const input = validate(LoginByEmailSchema, params);
+    const user = await this.userRepository.getUserByEmail(input.email);
 
     if (!user) {
       throw new UnauthorizedException('Invalid Credentials');
     }
 
-    const isEqual = await this.passwordHasher.compare(params.password, user.passwordHash ?? '');
+    const isEqual = await this.passwordHasher.compare(input.password, user.passwordHash ?? '');
 
     if (!isEqual) {
       throw new UnauthorizedException('Invalid Credentials');

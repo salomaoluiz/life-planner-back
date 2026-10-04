@@ -25,13 +25,13 @@ describe('AuthController', () => {
       expect(spies.validate).toHaveBeenCalledWith(mocks.schemas.login, mocks.inputs.login);
     });
 
-    it('SHOULD call authService.loginWithEmail with correct parameters', async () => {
+    it('SHOULD call authService.loginWithEmail with the parsed (normalized) input', async () => {
       const controller = setup;
 
-      await controller.loginWithEmail(mocks.inputs.login);
+      await controller.loginWithEmail({ ...mocks.inputs.login, email: ' RAW@Example.com ' });
 
       expect(mocks.authService.loginWithEmail).toHaveBeenCalledTimes(1);
-      expect(mocks.authService.loginWithEmail).toHaveBeenCalledWith(mocks.inputs.login);
+      expect(mocks.authService.loginWithEmail).toHaveBeenCalledWith(mocks.parsed.login);
     });
   });
 
@@ -53,13 +53,13 @@ describe('AuthController', () => {
       expect(spies.validate).toHaveBeenCalledWith(mocks.schemas.signUp, mocks.inputs.signUp);
     });
 
-    it('SHOULD call authService.signUpWithEmail with correct parameters', async () => {
+    it('SHOULD call authService.signUpWithEmail with the parsed (normalized) input', async () => {
       const controller = setup;
 
-      await controller.signUpWithEmail(mocks.inputs.signUp);
+      await controller.signUpWithEmail({ ...mocks.inputs.signUp, email: ' RAW@Example.com ' });
 
       expect(mocks.authService.signUpWithEmail).toHaveBeenCalledTimes(1);
-      expect(mocks.authService.signUpWithEmail).toHaveBeenCalledWith(mocks.inputs.signUp);
+      expect(mocks.authService.signUpWithEmail).toHaveBeenCalledWith(mocks.parsed.signUp);
     });
   });
 });

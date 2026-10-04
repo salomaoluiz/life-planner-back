@@ -39,7 +39,7 @@ const jwtProviderMock = {
 
 // region Spies
 
-const validateSpy = jest.mocked(validate);
+const validateSpy = jest.mocked(validate).mockImplementation((schema, data) => schema.parse(data));
 
 // endregion Spies
 
