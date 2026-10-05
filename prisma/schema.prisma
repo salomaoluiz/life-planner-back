@@ -137,12 +137,13 @@ model FinancialTransaction {
   @@map("financial_transactions")
 }
 
+// Lowercase members on purpose: the client validates against member names, so they must equal the DB/wire values.
 enum StockUnit {
-  UNIT       @map("unit")
-  GRAM       @map("gram")
-  KILOGRAM   @map("kilogram")
-  LITER      @map("liter")
-  MILLILITER @map("milliliter")
+  unit
+  gram
+  kilogram
+  liter
+  milliliter
 }
 
 // `owner_id` points to a user or a family, so it has no FK. Unit values are lowercase in the DB and on the wire.
