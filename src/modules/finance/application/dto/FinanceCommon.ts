@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export const INT4_MAX = 2147483647;
@@ -13,3 +14,5 @@ export const IconSchema = z.string().trim().min(1).max(50);
 export const NameSchema = z.string().trim().min(1).max(60);
 export const OwnerIdSchema = z.string().min(1);
 export const OwnerTypeSchema = z.enum(OwnerType);
+export const IconColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
+export const TransactionTypeSchema = z.enum(TransactionType);
