@@ -57,3 +57,29 @@ model FamilyMember {
   @@index([user_id])
   @@map("family_members")
 }
+
+enum OwnerType {
+  USER
+  FAMILY
+}
+
+enum AccountStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+// `owner_id` points to a user or a family, so it has no FK.
+model FinancialAccount {
+  id         String        @id @default(uuid())
+  name       String
+  icon       String
+  balance    Int           @default(0)
+  status     AccountStatus @default(ACTIVE)
+  owner      OwnerType
+  owner_id   String
+  created_at DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at DateTime      @updatedAt @db.Timestamptz(6)
+
+  @@index([owner, owner_id])
+  @@map("financial_accounts")
+}
