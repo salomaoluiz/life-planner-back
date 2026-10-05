@@ -68,6 +68,10 @@ Path params: `@Param('id', ParseUUIDPipe)`.
 | POST | `/api/v1/finance/accounts` | JWT | `{ name 1–60, icon 1–50, balance? int cents (default 0, may be negative), status? ACTIVE\|ARCHIVED, owner, ownerId }` → `201 Account`; `403` owner not accessible; `400` non-integer / out-of-int4 balance |
 | PATCH | `/api/v1/finance/accounts/:id` | JWT | any of `name`, `icon`, `balance`, `status` → `200 Account`; `400` empty body or `owner`/`ownerId`/unknown key; `404` not found or not accessible |
 | DELETE | `/api/v1/finance/accounts/:id` | JWT | `204`; `404` |
+| GET | `/api/v1/finance/categories` | JWT | `200 Category[]` (`parentId` null for roots, read-only `depthLevel`), sorted by `type` then name (case-insensitive); filters `?type=EXPENSE\|INCOME`, repeated `?ownerId` |
+| POST | `/api/v1/finance/categories` | JWT | `{ name, icon, iconColor? '#RRGGBB' (default '#000000'), type, parentId?, owner, ownerId }` → `201`; `403` owner; `404` parent not found/accessible; `400` parent with another owner/ownerId/type |
+| PATCH | `/api/v1/finance/categories/:id` | JWT | any of `name`, `icon`, `iconColor`, `type`, `parentId` (`null` = make root; moving recomputes the subtree depth) → `200`; `400` owner fields / cycle / parent mismatch; `404`; `409` type change not allowed |
+| DELETE | `/api/v1/finance/categories/:id` | JWT | `204`, deletes the whole subtree of subcategories (FK cascade); `404` |
 
 **Family delete composition:** `FamilyService.delete` runs `EnsureFamilyOwnerUseCase` (404/403), then every check in the `FAMILY_OWNED_RECORDS_CHECKS` list (token + `IOwnedRecordsCheck { execute({ owner, ownerId }) → boolean }` in `src/api/family/v1/family-records-checks.ts`), then `DeleteFamilyUseCase`. The list is empty until specs 005/006 register their module-level use case in `FamilyAPIModule`.
 
