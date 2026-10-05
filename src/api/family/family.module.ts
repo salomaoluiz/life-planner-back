@@ -6,18 +6,23 @@ import { FamilyService } from '@api/family/v1/family.service';
 import { FamilyModule } from '@family/family.module';
 import { HasFinanceDataByOwnerUseCase } from '@finance/application/use-case/HasFinanceDataByOwnerUseCase';
 import { FinanceModule } from '@finance/finance.module';
+import { HasStockItemsByOwnerUseCase } from '@stock/application/use-case/HasStockItemsByOwnerUseCase';
+import { StockModule } from '@stock/stock.module';
 import { UserModule } from '@user/user.module';
 
 @Module({
   controllers: [FamilyController],
-  imports: [FamilyModule, FinanceModule, UserModule],
+  imports: [FamilyModule, FinanceModule, StockModule, UserModule],
   providers: [
     FamilyService,
     {
-      // Spec 005 (stock) appends its own check to this list.
-      inject: [HasFinanceDataByOwnerUseCase],
+      // One "does the family still own records?" check per owned module (409 on family delete).
+      inject: [HasFinanceDataByOwnerUseCase, HasStockItemsByOwnerUseCase],
       provide: FAMILY_OWNED_RECORDS_CHECKS,
-      useFactory: (hasFinanceData: HasFinanceDataByOwnerUseCase) => [hasFinanceData],
+      useFactory: (
+        hasFinanceData: HasFinanceDataByOwnerUseCase,
+        hasStockItems: HasStockItemsByOwnerUseCase,
+      ) => [hasFinanceData, hasStockItems],
     },
   ],
 })
