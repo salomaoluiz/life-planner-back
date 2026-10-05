@@ -121,3 +121,26 @@ describe('GIVEN an HttpException with status >= 500', () => {
     );
   });
 });
+
+describe('GIVEN an error on an invite URL', () => {
+  const token = 'q3Jx0b9S2v1mA8kQ7rT4yU6pL5nW0zE3cF2hD1gB9aI';
+
+  beforeEach(() => {
+    mocks.httpAdapterHost.httpAdapter.getRequestUrl.mockReturnValueOnce(
+      `/api/v1/family-invites/${token}/accept`,
+    );
+    setup.catch(mocks.exceptions.badRequest, mocks.argumentsHost);
+  });
+
+  it('SHOULD redact the token in the replied path', () => {
+    expect(mocks.httpAdapterHost.httpAdapter.reply).toHaveBeenCalledWith(
+      mocks.getResponse,
+      expect.objectContaining({ path: '/api/v1/family-invites/:token/accept' }),
+      HttpStatus.BAD_REQUEST,
+    );
+  });
+
+  it('SHOULD never pass the token to the logger', () => {
+    expect(JSON.stringify(mocks.logger.log.mock.calls)).not.toContain(token);
+  });
+});

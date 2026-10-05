@@ -123,3 +123,14 @@ describe('Method update', () => {
     });
   });
 });
+
+describe('Method findByIds', () => {
+  it('SHOULD fetch all users whose id is in the list', async () => {
+    spies.findMany.mockResolvedValue([mocks.user]);
+
+    const result = await setup.findByIds(mocks.ids);
+
+    expect(result).toEqual([mocks.user]);
+    expect(spies.findMany).toHaveBeenCalledWith({ where: { id: { in: mocks.ids } } });
+  });
+});
