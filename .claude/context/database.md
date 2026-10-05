@@ -9,9 +9,12 @@
 `User { id uuid, email unique, name, password_hash, photo_url?, created_at?, updated_at? }`.
 `Family` (table `families`: `id, name, owner_id → User ON DELETE CASCADE, created_at, updated_at`) and `FamilyMember` (table `family_members`, base columns only: `id, family_id → families CASCADE, email, user_id? → User CASCADE, joined_at?, invite_token? unique, created_at, updated_at`, unique `(family_id, email)`). Spec 004 may add columns in its own migration but must not redefine these. Ids and FKs are `text` holding UUID strings because `User.id` is `text`.
 
+Enums `OwnerType` (`USER` | `FAMILY`) and `AccountStatus` (`ACTIVE` | `ARCHIVED`). `FinancialAccount` (table `financial_accounts`: `id, name, icon, balance int cents, status, owner, owner_id (no FK), created_at, updated_at`, index `(owner, owner_id)`; migration `finance_accounts`).
+
 ## Conventions
 
 - Model names PascalCase, **column/field names snake_case** (matches existing `password_hash`, `photo_url`), `id String @id @default(uuid())`, `created_at DateTime? @default(now())`, `updated_at DateTime? @updatedAt`.
+- Money is stored as integer minor units (cents, BRL implied) in Postgres `integer`; `owner_id` of owned rows has no FK (it points to a user or a family).
 - Owned rows (finance, stock) follow the shared owner model: `owner` (`USER` | `FAMILY`) + `owner_id`, same naming as the frontend's Supabase tables (see `integration.md`). Prisma `enum` for fixed sets.
 - Add `@@map("table_name")` / `@map` only if a table must match an existing external name; otherwise keep Prisma defaults consistent with `User`.
 - Never edit a migration that was already applied/committed; add a new one.

@@ -64,6 +64,10 @@ Path params: `@Param('id', ParseUUIDPipe)`.
 | GET    | `/api/v1/families/:familyId` | JWT    | `200 FamilyOutput`; `400` bad UUID; `404` unknown or non-member                                                                                                              |
 | PATCH  | `/api/v1/families/:familyId` | JWT    | `{ name }` → `200 FamilyOutput`; owner only: `403` member non-owner, `404` non-member                                                                                        |
 | DELETE | `/api/v1/families/:familyId` | JWT    | `204`; owner only; order `404 → 403 → 409`; `409 "Family still owns records"` when a registered owned-records check is true                                                  |
+| GET | `/api/v1/finance/accounts` | JWT | `200 Account[]` of the caller's accessible owners (USER + joined families), ACTIVE first then name (case-insensitive); optional repeated `?ownerId=<uuid>` narrows it (inaccessible ids ignored; non-uuid → `400`) |
+| POST | `/api/v1/finance/accounts` | JWT | `{ name 1–60, icon 1–50, balance? int cents (default 0, may be negative), status? ACTIVE\|ARCHIVED, owner, ownerId }` → `201 Account`; `403` owner not accessible; `400` non-integer / out-of-int4 balance |
+| PATCH | `/api/v1/finance/accounts/:id` | JWT | any of `name`, `icon`, `balance`, `status` → `200 Account`; `400` empty body or `owner`/`ownerId`/unknown key; `404` not found or not accessible |
+| DELETE | `/api/v1/finance/accounts/:id` | JWT | `204`; `404` |
 
 **Family delete composition:** `FamilyService.delete` runs `EnsureFamilyOwnerUseCase` (404/403), then every check in the `FAMILY_OWNED_RECORDS_CHECKS` list (token + `IOwnedRecordsCheck { execute({ owner, ownerId }) → boolean }` in `src/api/family/v1/family-records-checks.ts`), then `DeleteFamilyUseCase`. The list is empty until specs 005/006 register their module-level use case in `FamilyAPIModule`.
 
