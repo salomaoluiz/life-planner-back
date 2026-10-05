@@ -1,5 +1,6 @@
 import { faker } from '@faker-js/faker';
 
+import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import StockEntity, { StockUnits } from '@stock/domain/entity/StockEntity';
 
 class StockEntityFixture {
@@ -17,11 +18,14 @@ class StockEntityFixture {
 
   withDefault() {
     this.value = {
+      createdAt: faker.date.past(),
       description: faker.commerce.product(),
       id: faker.string.uuid(),
+      owner: OwnerType.USER,
       ownerId: faker.string.uuid(),
       quantity: faker.number.int({ max: 50, min: 1 }),
       unit: StockUnits.UNIT,
+      updatedAt: faker.date.recent(),
       // Optional properties
       barcode: undefined,
       brand: undefined,
@@ -42,6 +46,11 @@ class StockEntityFixture {
 
   withId(id: string) {
     this.value.id = id;
+    return this;
+  }
+
+  withOwner(owner: OwnerType) {
+    this.value.owner = owner;
     return this;
   }
 

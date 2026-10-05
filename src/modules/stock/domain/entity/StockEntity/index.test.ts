@@ -1,3 +1,5 @@
+import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
+
 import StockEntity from './index';
 import { mocks, setup } from './index.mocks';
 
@@ -9,6 +11,9 @@ describe('StockEntity', () => {
     expect(result).toEqual(mocks.params);
     expect(result.unit).toBe(mocks.params.unit);
     expect(result.expirationDate).toBe(mocks.date);
+    expect(result.owner).toBe(OwnerType.FAMILY);
+    expect(result.createdAt).toBe(mocks.date);
+    expect(result.updatedAt).toBe(mocks.date);
   });
 
   it('SHOULD create an instance with only mandatory properties AND optional properties undefined', () => {
