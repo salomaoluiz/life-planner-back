@@ -1,4 +1,5 @@
 import { TransactionType } from '@finance/domain/enum';
+import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { mocks, setup } from './category.service.mocks';
 
@@ -8,7 +9,7 @@ describe('create', () => {
       icon: 'cart',
       iconColor: '#2E7D32',
       name: 'Groceries',
-      owner: 'USER' as const,
+      owner: OwnerType.USER,
       ownerId: mocks.userId,
       type: TransactionType.EXPENSE,
     };
