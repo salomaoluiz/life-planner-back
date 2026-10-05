@@ -1,38 +1,31 @@
+import { TransactionType } from '@finance/domain/enum';
+import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
+
 import CategoryEntity from './index';
 
 // region Mocks
 
 const paramsMock: CategoryEntity = {
+  createdAt: new Date('2026-10-04T12:00:00.000Z'),
   depthLevel: 1,
-  icon: 'icon-uuid',
-  id: 'category-id-123',
-  name: 'Category Name',
-  ownerId: 'owner-id-123',
-  parentId: 'parent-category-id-123',
-};
-
-const mandatoryParamsMock: CategoryEntity = {
-  icon: 'icon-uuid-2',
-  id: 'category-id-456',
-  name: 'Mandatory Category',
-  ownerId: 'owner-id-456',
+  icon: 'cart',
+  iconColor: '#2E7D32',
+  id: 'category-uuid-123',
+  name: 'Groceries',
+  owner: OwnerType.FAMILY,
+  ownerId: 'owner-uuid-456',
+  parentId: 'parent-uuid-789',
+  type: TransactionType.EXPENSE,
+  updatedAt: new Date('2026-10-04T13:00:00.000Z'),
 };
 
 // endregion Mocks
-
-// region Spies
-
-// endregion Spies
 
 function setup(params = paramsMock) {
   return new CategoryEntity(params);
 }
 
-const mocks = {
-  mandatoryParams: mandatoryParamsMock,
-  params: paramsMock,
-};
-
+const mocks = { params: paramsMock };
 const spies = {};
 
 export { mocks, setup, spies };

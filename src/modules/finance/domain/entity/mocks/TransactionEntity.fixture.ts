@@ -1,6 +1,8 @@
 import { faker } from '@faker-js/faker';
 
-import TransactionEntity, { TransactionType } from '@finance/domain/entity/TransactionEntity';
+import TransactionEntity from '@finance/domain/entity/TransactionEntity';
+import { TransactionType } from '@finance/domain/enum';
+import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 class TransactionEntityFixture {
   value = {} as TransactionEntity;
@@ -12,64 +14,75 @@ class TransactionEntityFixture {
   build() {
     const temp = { ...this.value };
     this.withDefault();
-    return { ...temp };
+    return temp;
+  }
+
+  withAccountId(accountId: string) {
+    this.value.accountId = accountId;
+    this.value.account = { ...this.value.account, id: accountId };
+    return this;
+  }
+
+  withCategoryId(categoryId: string) {
+    this.value.categoryId = categoryId;
+    this.value.category = { ...this.value.category, id: categoryId };
+    return this;
+  }
+
+  withDate(date: string) {
+    this.value.date = date;
+    return this;
   }
 
   withDefault() {
+    const accountId = faker.string.uuid();
+    const categoryId = faker.string.uuid();
+
     this.value = {
-      category: faker.commerce.product(),
-      date: faker.date.soon({ days: 10 }).toISOString(),
-      description: faker.commerce.productDescription(),
+      account: { icon: 'bank', id: accountId, name: faker.finance.accountName() },
+      accountId,
+      category: {
+        icon: 'cart',
+        iconColor: '#2E7D32',
+        id: categoryId,
+        name: faker.commerce.department(),
+      },
+      categoryId,
+      createdAt: faker.date.past(),
+      date: '2026-10-03',
+      description: faker.commerce.productDescription().slice(0, 100),
       id: faker.string.uuid(),
+      owner: OwnerType.USER,
       ownerId: faker.string.uuid(),
-      type: faker.helpers.arrayElement([TransactionType.EXPENSE, TransactionType.INCOME]),
-      value: faker.finance.amount({ dec: 2, max: 1000, min: 10 }),
+      type: TransactionType.EXPENSE,
+      updatedAt: faker.date.recent(),
+      value: faker.number.int({ max: 100_000, min: 1 }),
     };
-
-    return this;
-  }
-
-  // Builder methods
-
-  withCategory(category: string) {
-    this.value.category = category;
-
-    return this;
-  }
-
-  withDate(date: Date) {
-    this.value.date = date.toISOString();
-
-    return this;
-  }
-
-  withDescription(description: string) {
-    this.value.description = description;
-
     return this;
   }
 
   withId(id: string) {
     this.value.id = id;
+    return this;
+  }
 
+  withOwner(owner: OwnerType) {
+    this.value.owner = owner;
     return this;
   }
 
   withOwnerId(ownerId: string) {
     this.value.ownerId = ownerId;
-
     return this;
   }
 
   withType(type: TransactionType) {
     this.value.type = type;
-
     return this;
   }
 
-  withValue(value: string) {
+  withValue(value: number) {
     this.value.value = value;
-
     return this;
   }
 }

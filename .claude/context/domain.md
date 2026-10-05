@@ -43,3 +43,7 @@ Existing contracts that still need an implementation: `FinanceTransactionReposit
 ## Errors
 
 Not-found / conflict / auth errors are thrown from **use cases** as Nest HTTP exceptions (`NotFoundException`, `UnauthorizedException`, `ConflictException`…); the global `AllExceptionsFilter` maps them. Don't return error objects. Never leak internals in messages.
+
+## Owner access input (finance)
+
+Finance use cases take `accessibleOwners: OwnerAccess[]` (`{ owner, ownerId }`) resolved by the API service from the family module, instead of calling other modules.
