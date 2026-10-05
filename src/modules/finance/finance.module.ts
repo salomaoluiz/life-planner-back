@@ -12,16 +12,30 @@ import { FinanceAccountDatasource } from '@finance/data/datasource/FinanceAccoun
 import { FinanceCategoryDatasource } from '@finance/data/datasource/FinanceCategoryDatasource';
 import { FinanceAccountRepository } from '@finance/data/repository/FinanceAccountRepository';
 import { FinanceCategoryRepository } from '@finance/data/repository/FinanceCategoryRepository';
+import { CreateTransactionUseCase } from '@finance/application/use-case/CreateTransactionUseCase';
+import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
+import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
+import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransactionsUseCase';
+import { HasFinanceDataByOwnerUseCase } from '@finance/application/use-case/HasFinanceDataByOwnerUseCase';
+import { UpdateTransactionUseCase } from '@finance/application/use-case/UpdateTransactionUseCase';
+import { FinanceTransactionDatasource } from '@finance/data/datasource/FinanceTransactionDatasource';
+import { FinanceTransactionRepository } from '@finance/data/repository/FinanceTransactionRepository';
 
 const useCases = [
   CreateAccountUseCase,
   CreateCategoryUseCase,
+  CreateTransactionUseCase,
   DeleteAccountUseCase,
   DeleteCategoryUseCase,
+  DeleteTransactionUseCase,
+  EnsureTransactionConsistencyUseCase,
   GetAccountsUseCase,
   GetCategoriesUseCase,
+  GetTransactionsUseCase,
+  HasFinanceDataByOwnerUseCase,
   UpdateAccountUseCase,
   UpdateCategoryUseCase,
+  UpdateTransactionUseCase,
 ];
 
 @Module({
@@ -32,6 +46,8 @@ const useCases = [
     { provide: 'IFinanceAccountDatasource', useClass: FinanceAccountDatasource },
     { provide: 'IFinanceCategoryRepository', useClass: FinanceCategoryRepository },
     { provide: 'IFinanceCategoryDatasource', useClass: FinanceCategoryDatasource },
+    { provide: 'IFinanceTransactionRepository', useClass: FinanceTransactionRepository },
+    { provide: 'IFinanceTransactionDatasource', useClass: FinanceTransactionDatasource },
   ],
 })
 export class FinanceModule {}
