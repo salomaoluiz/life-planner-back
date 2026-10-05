@@ -136,3 +136,32 @@ model FinancialTransaction {
   @@index([owner, owner_id, date])
   @@map("financial_transactions")
 }
+
+enum StockUnit {
+  UNIT       @map("unit")
+  GRAM       @map("gram")
+  KILOGRAM   @map("kilogram")
+  LITER      @map("liter")
+  MILLILITER @map("milliliter")
+}
+
+// `owner_id` points to a user or a family, so it has no FK. Unit values are lowercase in the DB and on the wire.
+model StockItem {
+  id              String    @id @default(uuid())
+  owner           OwnerType
+  owner_id        String
+  description     String
+  quantity        Int
+  unit            StockUnit
+  brand           String?
+  barcode         String?
+  notes           String?
+  purchase_date   DateTime? @db.Timestamptz(6)
+  opening_date    DateTime? @db.Timestamptz(6)
+  expiration_date DateTime? @db.Timestamptz(6)
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @updatedAt @db.Timestamptz(6)
+
+  @@index([owner, owner_id])
+  @@map("stock_items")
+}
