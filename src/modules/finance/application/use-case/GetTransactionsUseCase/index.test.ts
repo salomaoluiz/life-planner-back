@@ -5,9 +5,7 @@ import { mocks, setup } from './index.mocks';
 it('SHOULD return the repository result as-is (the repository already sorts date desc, createdAt desc)', async () => {
   const result = await setup.execute({ accessibleOwners: mocks.accessibleOwners });
 
-  expect(mocks.transactionRepository.findTransactions).toHaveBeenCalledWith(
-    mocks.accessibleOwners,
-  );
+  expect(mocks.transactionRepository.findTransactions).toHaveBeenCalledWith(mocks.accessibleOwners);
   expect(result).toBe(mocks.transactions);
 });
 

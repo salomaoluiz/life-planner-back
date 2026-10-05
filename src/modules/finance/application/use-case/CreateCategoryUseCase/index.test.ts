@@ -77,7 +77,10 @@ it.each([
     'another owner type (accessible FAMILY parent for a USER category)',
     { ...mocks.parent, owner: OwnerType.FAMILY, ownerId: 'family-id' },
   ],
-  ['another type (INCOME parent, EXPENSE child)', { ...mocks.parent, type: TransactionType.INCOME }],
+  [
+    'another type (INCOME parent, EXPENSE child)',
+    { ...mocks.parent, type: TransactionType.INCOME },
+  ],
 ])('SHOULD throw BadRequest (400) WHEN the parent has %s', async (_label, found) => {
   mocks.categoryRepository.findCategoryById.mockResolvedValueOnce(found);
 

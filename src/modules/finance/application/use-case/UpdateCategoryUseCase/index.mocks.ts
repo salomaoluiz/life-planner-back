@@ -22,7 +22,12 @@ const fixture = new CategoryEntityFixture().withOwnerId(userId);
 function node(id: string, depthLevel: number, parentId?: string, type = TransactionType.EXPENSE) {
   fixture.withOwnerId(userId).withOwner(OwnerType.USER);
 
-  return fixture.withId(id).withDepthLevel(depthLevel).withParentId(parentId).withType(type).build();
+  return fixture
+    .withId(id)
+    .withDepthLevel(depthLevel)
+    .withParentId(parentId)
+    .withType(type)
+    .build();
 }
 const a = node('a', 0);
 const b = node('b', 1, 'a');

@@ -50,10 +50,13 @@ it.each([
     'a FAMILY the caller does not belong to (or only has a pending invite for)',
     { owner: OwnerType.FAMILY, ownerId: 'family-x' },
   ],
-])('SHOULD throw Forbidden (403) AND create nothing WHEN the owner is %s', async (_label, owner) => {
-  await expect(setup.execute({ ...mocks.input, ...owner })).rejects.toThrow(ForbiddenException);
-  expect(mocks.accountRepository.createAccount).not.toHaveBeenCalled();
-});
+])(
+  'SHOULD throw Forbidden (403) AND create nothing WHEN the owner is %s',
+  async (_label, owner) => {
+    await expect(setup.execute({ ...mocks.input, ...owner })).rejects.toThrow(ForbiddenException);
+    expect(mocks.accountRepository.createAccount).not.toHaveBeenCalled();
+  },
+);
 
 it.each([
   ['non-integer balance', { balance: 12.5 }],

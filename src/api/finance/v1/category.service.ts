@@ -69,11 +69,7 @@ export class CategoryService {
     return categories.map((category) => toCategoryOutput(category));
   }
 
-  async update(
-    userId: string,
-    id: string,
-    input: UpdateCategoryApiInput,
-  ): Promise<CategoryOutput> {
+  async update(userId: string, id: string, input: UpdateCategoryApiInput): Promise<CategoryOutput> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
     const category = await this.updateCategoryUseCase.execute({ ...input, accessibleOwners, id });

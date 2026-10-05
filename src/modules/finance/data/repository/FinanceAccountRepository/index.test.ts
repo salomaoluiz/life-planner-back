@@ -39,7 +39,10 @@ describe('existsByOwner', () => {
   it('SHOULD ask the datasource with snake_case columns', async () => {
     const result = await setup.existsByOwner({ owner: OwnerType.FAMILY, ownerId: 'fam' });
 
-    expect(mocks.accountDatasource.exists).toHaveBeenCalledWith({ owner: 'FAMILY', owner_id: 'fam' });
+    expect(mocks.accountDatasource.exists).toHaveBeenCalledWith({
+      owner: 'FAMILY',
+      owner_id: 'fam',
+    });
     expect(result).toBe(true);
   });
 });
