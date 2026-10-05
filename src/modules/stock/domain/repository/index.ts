@@ -1,1 +1,1 @@
-export * from './stockRepository';
+export * from './IStockRepository';

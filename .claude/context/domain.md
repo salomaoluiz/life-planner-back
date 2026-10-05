@@ -38,7 +38,7 @@ export type IUserRepository = {
 };
 ```
 
-Existing contracts that still need an implementation: `FinanceTransactionRepository`, `FamilyMemberRepository`, `StockRepository` (`IFamilyRepository` is implemented) (these use a non-`I` prefixed name; **new repositories use the `I` prefix** per `.github/copilot-instructions.md`).
+Existing contracts that still need an implementation: `FamilyMemberRepository` (`IFamilyRepository`, `IStockRepository` are implemented) (these use a non-`I` prefixed name; **new repositories use the `I` prefix** per `.github/copilot-instructions.md`).
 
 ## Errors
 
@@ -47,3 +47,5 @@ Not-found / conflict / auth errors are thrown from **use cases** as Nest HTTP ex
 ## Owner access input (finance)
 
 Finance use cases take `accessibleOwners: OwnerAccess[]` (`{ owner, ownerId }`) resolved by the API service from the family module, instead of calling other modules.
+
+Stock uses `IStockRepository` with owner-scoped methods (`findByOwners`, `existsByOwner`) and a module-local `OwnerAccess` (modules never import each other; the API service resolves the accessible owners).
