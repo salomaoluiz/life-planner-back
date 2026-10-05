@@ -38,8 +38,8 @@ beforeEach(async () => {
 });
 
 const mocks = {
-  account: accountMock,
   accessibleOwners,
+  account: accountMock,
   accountRepository: accountRepositoryMock,
   transactionRepository: transactionRepositoryMock,
 };

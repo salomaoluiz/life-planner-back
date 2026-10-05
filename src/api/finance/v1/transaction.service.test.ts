@@ -1,6 +1,5 @@
-import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
-
 import { TransactionType } from '@finance/domain/enum';
+import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { mocks, setup } from './transaction.service.mocks';
 

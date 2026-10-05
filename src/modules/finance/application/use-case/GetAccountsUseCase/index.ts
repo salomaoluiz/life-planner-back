@@ -9,12 +9,6 @@ import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
 // ACTIVE first, then name ascending, case-insensitive.
-function compareAccounts(a: AccountEntity, b: AccountEntity): number {
-  const statusRank = (account: AccountEntity) => (account.status === AccountStatus.ACTIVE ? 0 : 1);
-
-  return statusRank(a) - statusRank(b) || a.name.toLowerCase().localeCompare(b.name.toLowerCase());
-}
-
 export class GetAccountsUseCase implements UseCaseWithParams<GetAccountsInput, AccountEntity[]> {
   constructor(
     @Inject('IFinanceAccountRepository')
@@ -33,4 +27,11 @@ export class GetAccountsUseCase implements UseCaseWithParams<GetAccountsInput, A
 
     return [...accounts].sort(compareAccounts);
   }
+}
+
+function compareAccounts(a: AccountEntity, b: AccountEntity): number {
+  return statusRank(a) - statusRank(b) || a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+}
+function statusRank(account: AccountEntity): number {
+  return account.status === AccountStatus.ACTIVE ? 0 : 1;
 }

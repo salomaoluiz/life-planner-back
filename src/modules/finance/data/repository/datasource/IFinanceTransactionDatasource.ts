@@ -21,10 +21,10 @@ export interface ExistsTransactionDatasourceParams {
   owner: OwnerType;
   owner_id: string;
 }
-export type FinancialTransactionWithRelations = FinancialTransaction & {
+export type FinancialTransactionWithRelations = {
   account: Pick<FinancialAccount, 'icon' | 'id' | 'name'>;
-  category: Pick<FinancialCategory, 'icon' | 'icon_color' | 'id' | 'name'>;
-};
+  category: Pick<FinancialCategory, 'icon_color' | 'icon' | 'id' | 'name'>;
+} & FinancialTransaction;
 export interface IFinanceTransactionDatasource {
   countByAccountId(accountId: string): Promise<number>;
   countByCategoryIds(categoryIds: string[]): Promise<number>;

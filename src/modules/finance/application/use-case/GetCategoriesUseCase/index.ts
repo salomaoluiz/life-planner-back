@@ -8,10 +8,6 @@ import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
 // type, then name ascending (case-insensitive).
-function compareCategories(a: CategoryEntity, b: CategoryEntity): number {
-  return a.type.localeCompare(b.type) || a.name.toLowerCase().localeCompare(b.name.toLowerCase());
-}
-
 export class GetCategoriesUseCase implements UseCaseWithParams<
   GetCategoriesInput,
   CategoryEntity[]
@@ -33,4 +29,8 @@ export class GetCategoriesUseCase implements UseCaseWithParams<
 
     return [...categories].sort(compareCategories);
   }
+}
+
+function compareCategories(a: CategoryEntity, b: CategoryEntity): number {
+  return a.type.localeCompare(b.type) || a.name.toLowerCase().localeCompare(b.name.toLowerCase());
 }

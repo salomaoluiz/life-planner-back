@@ -3,11 +3,11 @@ import { z } from 'zod';
 
 import {
   BalanceApiSchema,
+  hasAtLeastOneField,
   IconApiSchema,
   NameApiSchema,
   OwnerIdApiSchema,
   OwnerTypeApiSchema,
-  hasAtLeastOneField,
 } from '@api/finance/v1/dto/finance-fields';
 import { AccountStatus } from '@finance/domain/enum';
 
@@ -45,9 +45,9 @@ export const AccountApiSchema = z.object({
   updatedAt: z.iso.datetime(),
 });
 
+export type CreateAccountApiInput = z.infer<typeof CreateAccountApiSchema>;
+export type UpdateAccountApiInput = z.infer<typeof UpdateAccountApiSchema>;
+
 export class AccountOutput extends createZodDto(AccountApiSchema) {}
 export class CreateAccountBody extends createZodDto(CreateAccountApiSchema) {}
 export class UpdateAccountBody extends createZodDto(UpdateAccountApiSchema) {}
-
-export type CreateAccountApiInput = z.infer<typeof CreateAccountApiSchema>;
-export type UpdateAccountApiInput = z.infer<typeof UpdateAccountApiSchema>;

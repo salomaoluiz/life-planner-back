@@ -57,13 +57,16 @@ export class FinanceCategoryDatasource implements IFinanceCategoryDatasource {
         },
         where: { id: params.id },
       }),
-      ...(params.subtree_depths ?? []).map((subtree) =>
+    ];
+
+    for (const subtree of params.subtree_depths ?? []) {
+      operations.push(
         this.db.client.financialCategory.update({
           data: { depth_level: subtree.depth_level },
           where: { id: subtree.id },
         }),
-      ),
-    ];
+      );
+    }
 
     const [updated] = await this.db.client.$transaction(operations);
 

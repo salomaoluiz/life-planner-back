@@ -4,12 +4,12 @@ import { z } from 'zod';
 import {
   CalendarDateApiSchema,
   DescriptionApiSchema,
+  hasAtLeastOneField,
   IconColorApiSchema,
   OwnerIdApiSchema,
   OwnerTypeApiSchema,
   TransactionTypeApiSchema,
   ValueApiSchema,
-  hasAtLeastOneField,
 } from '@api/finance/v1/dto/finance-fields';
 
 const TransactionFieldsSchema = z.object({
@@ -50,9 +50,9 @@ export const TransactionApiSchema = z.object({
   value: z.number().int(),
 });
 
+export type CreateTransactionApiInput = z.infer<typeof CreateTransactionApiSchema>;
+export type UpdateTransactionApiInput = z.infer<typeof UpdateTransactionApiSchema>;
+
 export class CreateTransactionBody extends createZodDto(CreateTransactionApiSchema) {}
 export class TransactionOutput extends createZodDto(TransactionApiSchema) {}
 export class UpdateTransactionBody extends createZodDto(UpdateTransactionApiSchema) {}
-
-export type CreateTransactionApiInput = z.infer<typeof CreateTransactionApiSchema>;
-export type UpdateTransactionApiInput = z.infer<typeof UpdateTransactionApiSchema>;

@@ -6,7 +6,9 @@ import { ValidationError } from '@shared/domain/error/ValidationError';
 
 import { mocks, setup } from './index.mocks';
 
-const base = () => ({ accessibleOwners: mocks.accessibleOwners, id: mocks.account.id });
+function base() {
+  return { accessibleOwners: mocks.accessibleOwners, id: mocks.account.id };
+}
 
 it('SHOULD update only the sent fields AND return the updated account', async () => {
   const result = await setup.execute({ ...base(), name: ' Renamed ' });

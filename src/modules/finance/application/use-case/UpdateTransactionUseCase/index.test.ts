@@ -7,12 +7,13 @@ import { ValidationError } from '@shared/domain/error/ValidationError';
 
 import { mocks, setup } from './index.mocks';
 
-const run = (patch: Record<string, unknown>) =>
-  setup.execute({
+async function run(patch: Record<string, unknown>) {
+  return setup.execute({
     accessibleOwners: mocks.accessibleOwners,
     id: mocks.transaction.id,
     ...patch,
   } as never);
+}
 
 it('SHOULD validate the RESULTING record (patch merged over the stored one) AND update only the sent fields', async () => {
   const result = await run({ description: ' Updated ', value: 100 });

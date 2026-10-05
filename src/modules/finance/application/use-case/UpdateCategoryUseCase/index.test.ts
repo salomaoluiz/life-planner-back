@@ -5,8 +5,9 @@ import { ValidationError } from '@shared/domain/error/ValidationError';
 
 import { mocks, setup } from './index.mocks';
 
-const run = (id: string, patch: Record<string, unknown>) =>
-  setup.execute({ accessibleOwners: mocks.accessibleOwners, id, ...patch } as never);
+async function run(id: string, patch: Record<string, unknown>) {
+  return setup.execute({ accessibleOwners: mocks.accessibleOwners, id, ...patch } as never);
+}
 
 describe('plain field updates', () => {
   it('SHOULD update only name / icon / color, touching neither parent nor depth', async () => {
