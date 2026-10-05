@@ -83,3 +83,29 @@ model FinancialAccount {
   @@index([owner, owner_id])
   @@map("financial_accounts")
 }
+
+enum TransactionType {
+  EXPENSE
+  INCOME
+}
+
+model FinancialCategory {
+  id          String          @id @default(uuid())
+  name        String
+  icon        String
+  icon_color  String          @default("#000000")
+  type        TransactionType
+  parent_id   String?
+  depth_level Int             @default(0)
+  owner       OwnerType
+  owner_id    String
+  created_at  DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime        @updatedAt @db.Timestamptz(6)
+
+  parent   FinancialCategory?  @relation("CategoryTree", fields: [parent_id], references: [id], onDelete: Cascade)
+  children FinancialCategory[] @relation("CategoryTree")
+
+  @@index([owner, owner_id])
+  @@index([parent_id])
+  @@map("financial_categories")
+}
