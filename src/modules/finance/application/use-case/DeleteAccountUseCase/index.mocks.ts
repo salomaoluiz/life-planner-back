@@ -17,23 +17,32 @@ const accountRepositoryMock = {
 
 // endregion Mocks
 
+const transactionRepositoryMock = { countByAccountId: jest.fn().mockResolvedValue(0) };
+
 let setup: DeleteAccountUseCase;
 
 beforeEach(async () => {
   jest.clearAllMocks();
   accountRepositoryMock.findAccountById.mockResolvedValue(accountMock);
+  transactionRepositoryMock.countByAccountId.mockResolvedValue(0);
 
   const module = await Test.createTestingModule({
     providers: [
       DeleteAccountUseCase,
       { provide: 'IFinanceAccountRepository', useValue: accountRepositoryMock },
+      { provide: 'IFinanceTransactionRepository', useValue: transactionRepositoryMock },
     ],
   }).compile();
 
   setup = module.get(DeleteAccountUseCase);
 });
 
-const mocks = { account: accountMock, accessibleOwners, accountRepository: accountRepositoryMock };
+const mocks = {
+  account: accountMock,
+  accessibleOwners,
+  accountRepository: accountRepositoryMock,
+  transactionRepository: transactionRepositoryMock,
+};
 const spies = {};
 
 export { mocks, setup, spies };

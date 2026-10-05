@@ -49,6 +49,8 @@ const categoryRepositoryMock = {
 
 // endregion Mocks
 
+const transactionRepositoryMock = { countByCategoryIds: jest.fn() };
+
 let setup: UpdateCategoryUseCase;
 
 beforeEach(async () => {
@@ -58,11 +60,13 @@ beforeEach(async () => {
   );
   categoryRepositoryMock.findCategories.mockResolvedValue(tree);
   categoryRepositoryMock.updateCategory.mockResolvedValue(updatedMock);
+  transactionRepositoryMock.countByCategoryIds.mockResolvedValue(0);
 
   const module = await Test.createTestingModule({
     providers: [
       UpdateCategoryUseCase,
       { provide: 'IFinanceCategoryRepository', useValue: categoryRepositoryMock },
+      { provide: 'IFinanceTransactionRepository', useValue: transactionRepositoryMock },
     ],
   }).compile();
 
@@ -73,6 +77,7 @@ const mocks = {
   accessibleOwners,
   categoryRepository: categoryRepositoryMock,
   nodes: { a, b, c, d, e, f, i, x },
+  transactionRepository: transactionRepositoryMock,
   updated: updatedMock,
   userId,
 };

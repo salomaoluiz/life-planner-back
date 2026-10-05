@@ -109,6 +109,20 @@ describe('changing the type', () => {
     );
   });
 
+  it('SHOULD throw Conflict (409) WHEN the childless root already has transactions', async () => {
+    mocks.transactionRepository.countByCategoryIds.mockResolvedValueOnce(2);
+
+    await expect(run('i', { type: TransactionType.EXPENSE })).rejects.toThrow(ConflictException);
+    expect(mocks.transactionRepository.countByCategoryIds).toHaveBeenCalledWith(['i']);
+    expect(mocks.categoryRepository.updateCategory).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD NOT count transactions WHEN the type does not change', async () => {
+    await run('i', { name: 'Renamed' });
+
+    expect(mocks.transactionRepository.countByCategoryIds).not.toHaveBeenCalled();
+  });
+
   it.each([
     ['has children', 'a'],
     ['has a parent (not moved in the same patch)', 'e'],
