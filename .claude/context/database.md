@@ -11,6 +11,8 @@
 
 Enums `OwnerType` (`USER` | `FAMILY`) and `AccountStatus` (`ACTIVE` | `ARCHIVED`). `FinancialAccount` (table `financial_accounts`: `id, name, icon, balance int cents, status, owner, owner_id (no FK), created_at, updated_at`, index `(owner, owner_id)`; migration `finance_accounts`). Enum `TransactionType` (`EXPENSE` | `INCOME`) and `FinancialCategory` (`financial_categories`: name, icon, `icon_color` default `#000000`, type, `parent_id` self-FK `ON DELETE CASCADE`, `depth_level` computed by the use case, owner, owner_id; migration `finance_categories`). `FinancialTransaction` (`financial_transactions`: description, `value` int cents, `date` `@db.Date`, type, `account_id`/`category_id` FKs both `RESTRICT`, owner, owner_id, index `(owner, owner_id, date)`; migration `finance_transactions`).
 
+Enum `StockUnit` (DB values lowercase `unit|gram|kilogram|liter|milliliter` via `@map`; the generated client uses the same lowercase values) and `StockItem` (`stock_items`: `id, owner, owner_id` (no FK), `description, quantity` int, `unit, brand?, barcode?, notes?, purchase_date?, opening_date?, expiration_date?` (timestamptz), `created_at, updated_at`, index `(owner, owner_id)`; migration `add_stock_items`).
+
 ## Conventions
 
 - Model names PascalCase, **column/field names snake_case** (matches existing `password_hash`, `photo_url`), `id String @id @default(uuid())`, `created_at DateTime? @default(now())`, `updated_at DateTime? @updatedAt`.
