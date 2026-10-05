@@ -1,1 +1,1 @@
-export * from './financeTransactionRepository';
+export * from './IFinanceAccountRepository';
