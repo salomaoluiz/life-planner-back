@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { AuthAPIModule } from '@api/auth/auth.module';
+import { FamilyMemberAPIModule } from '@api/family-member/family-member.module';
 import { FamilyAPIModule } from '@api/family/family.module';
 import { FinanceAPIModule } from '@api/finance/finance.module';
 import { StockAPIModule } from '@api/stock/stock.module';
@@ -13,6 +14,7 @@ import { HealthModule } from './health/health.module';
     HealthModule,
     AuthAPIModule,
     FamilyAPIModule,
+    FamilyMemberAPIModule,
     FinanceAPIModule,
     StockAPIModule,
     UserAPIModule,

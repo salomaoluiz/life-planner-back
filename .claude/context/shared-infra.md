@@ -2,16 +2,17 @@
 
 The only place allowed to import third-party libs directly (ESLint `no-restricted-imports` blocks them elsewhere; exceptions: `zod`, `nestjs-zod`, `@nestjs/*`, `jest`, `@faker-js/*`). Pattern: interface in `types.ts`, implementation in a sub-folder, bound to a string token in `shared.module.ts`, tests + mocks alongside.
 
-| Folder             | Provides                                                                      | Token / usage                                |
-| ------------------ | ----------------------------------------------------------------------------- | -------------------------------------------- |
-| `env/`             | `EnvService`, `EnvModule`, `envSchema` (zod) validated at boot                | inject `EnvService`; add vars to `envSchema` |
-| `db/`              | `Database` — Prisma client with `PrismaPg` adapter; use `db.client`           | inject `Database` (exported by SharedModule) |
-| `jwt/`             | `IJwtProvider` (`sign`, `verify`), `JwtPayload = { user: { id } }`, Nest impl | `'IJwtProvider'`                             |
-| `logger/`          | `ILogger.log(level, message, { module, ... })`, `LogLevel`, Pino impl         | `'ILogger'`                                  |
-| `password-hasher/` | `IPasswordHasher` + bcrypt impl                                               | `'IPasswordHasher'`                          |
-| `uuid/`            | uuid generation wrapper                                                       | import from `@shared/infra/uuid`             |
-| `validation/`      | `validate(schema, data)` → returns data or throws `ValidationError`           | `@shared/infra/validation`                   |
-| `http/`            | `JwtAuthGuard`, `@Public()`, `AllExceptionsFilter`                            | registered globally in `SharedModule`        |
+| Folder             | Provides                                                                                                                        | Token / usage                                |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `env/`             | `EnvService`, `EnvModule`, `envSchema` (zod) validated at boot                                                                  | inject `EnvService`; add vars to `envSchema` |
+| `db/`              | `Database` — Prisma client with `PrismaPg` adapter; use `db.client`                                                             | inject `Database` (exported by SharedModule) |
+| `jwt/`             | `IJwtProvider` (`sign`, `verify`), `JwtPayload = { user: { id } }`, Nest impl                                                   | `'IJwtProvider'`                             |
+| `logger/`          | `ILogger.log(level, message, { module, ... })`, `LogLevel`, Pino impl                                                           | `'ILogger'`                                  |
+| `password-hasher/` | `IPasswordHasher` + bcrypt impl                                                                                                 | `'IPasswordHasher'`                          |
+| `uuid/`            | uuid generation wrapper                                                                                                         | import from `@shared/infra/uuid`             |
+| `validation/`      | `validate(schema, data)` → returns data or throws `ValidationError`                                                             | `@shared/infra/validation`                   |
+| `http/`            | `JwtAuthGuard`, `@Public()`, `AllExceptionsFilter`, `redactSensitivePath` (hides `/family-invites/<token>` in the error `path`) | registered globally in `SharedModule`        |
+| `token/`           | `generateToken()` (32 CSPRNG bytes, base64url, 43 chars), `hashToken()` (SHA-256 hex), `TOKEN_REGEX`                            | import from `@shared/infra/token`            |
 
 ## Environment variables (`env/env.schema.ts`)
 

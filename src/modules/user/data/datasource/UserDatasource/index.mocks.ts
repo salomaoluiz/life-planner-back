@@ -26,6 +26,7 @@ const idMock = 'user-id-123';
 
 const createSpy = jest.fn();
 const findFirstSpy = jest.fn();
+const findManySpy = jest.fn();
 const findUniqueSpy = jest.fn();
 const updateSpy = jest.fn();
 
@@ -36,6 +37,7 @@ const databaseMock = {
     user: {
       create: createSpy,
       findFirst: findFirstSpy,
+      findMany: findManySpy,
       findUnique: findUniqueSpy,
       update: updateSpy,
     },
@@ -64,12 +66,14 @@ const mocks = {
   database: databaseMock,
   email: emailMock,
   id: idMock,
+  ids: [idMock],
   user: userMock,
 };
 
 const spies = {
   create: createSpy,
   findFirst: findFirstSpy,
+  findMany: findManySpy,
   findUnique: findUniqueSpy,
   update: updateSpy,
 };

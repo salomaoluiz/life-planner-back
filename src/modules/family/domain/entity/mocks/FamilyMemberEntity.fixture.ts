@@ -15,12 +15,19 @@ class FamilyMemberEntityFixture {
     return temp;
   }
 
+  withCreatedAt(createdAt: Date = faker.date.past()) {
+    this.value.createdAt = createdAt;
+    return this;
+  }
+
   withDefault() {
     this.value = {
+      createdAt: faker.date.past(),
       email: faker.internet.email(),
       familyId: faker.string.uuid(),
       id: faker.string.uuid(),
       // Optional properties
+      inviteExpiresAt: undefined,
       joinedAt: undefined,
       userId: undefined,
     };
@@ -42,6 +49,11 @@ class FamilyMemberEntityFixture {
   }
 
   // Optional properties
+
+  withInviteExpiresAt(inviteExpiresAt: Date = faker.date.soon({ days: 7 })) {
+    this.value.inviteExpiresAt = inviteExpiresAt;
+    return this;
+  }
 
   withJoinedAt(joinedAt: Date = faker.date.recent({ days: 1 })) {
     this.value.joinedAt = joinedAt;

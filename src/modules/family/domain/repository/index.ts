@@ -1,2 +1,2 @@
-export * from './familyMemberRepository';
+export * from './IFamilyMemberRepository';
 export * from './IFamilyRepository';

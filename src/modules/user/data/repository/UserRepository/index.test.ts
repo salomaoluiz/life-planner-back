@@ -102,3 +102,21 @@ describe('updateUser', () => {
     expect(result).toEqual(mocks.userEntity);
   });
 });
+
+describe('getUsersByIds', () => {
+  it('SHOULD return the mapped users', async () => {
+    spies.userMapper.toDomain.mockReturnValue(mocks.userEntity);
+
+    const result = await setup.getUsersByIds(['12345']);
+
+    expect(spies.userDatasource.findByIds).toHaveBeenCalledWith(['12345']);
+    expect(spies.userMapper.toDomain).toHaveBeenCalledWith(mocks.userPersistence);
+    expect(result).toEqual([mocks.userEntity]);
+  });
+
+  it('SHOULD return [] WHEN none is found', async () => {
+    spies.userDatasource.findByIds.mockResolvedValueOnce([]);
+
+    expect(await setup.getUsersByIds(['x'])).toEqual([]);
+  });
+});
