@@ -65,6 +65,7 @@ The flows live in the frontend repo (`../life-planner/e2e`) and run only on the 
 ```bash
 yarn e2e              # whole suite
 yarn e2e --tags auth  # one module
+yarn e2e --headless   # no browser window (default shows it)
 yarn e2e --failed     # only the flows that failed last time
 ```
 
