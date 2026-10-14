@@ -58,6 +58,18 @@ $ yarn run test:e2e
 $ yarn run test:cov
 ```
 
+## E2E tests (Maestro)
+
+The flows live in the frontend repo (`../life-planner/e2e`) and run only on the owner's Mac. Keep `yarn start:dev` running here and `yarn web` running in `../life-planner` (with `E2E_ENABLED=true` in its `.env`), then:
+
+```bash
+yarn e2e              # whole suite
+yarn e2e --tags auth  # one module
+yarn e2e --failed     # only the flows that failed last time
+```
+
+It prints the same short summary as the frontend (`../life-planner/e2e-report/summary.md`) and keeps its exit code (0 passed, 1 a flow failed, 2 could not run).
+
 ## Database migrations
 
 Migrations live in `prisma/migrations` and `yarn start` runs `prisma migrate deploy` first.

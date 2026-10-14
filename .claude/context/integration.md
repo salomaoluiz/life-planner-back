@@ -47,6 +47,10 @@ When a backend change touches the contract (route, method, payload field, status
 
 When a **frontend** change needs new data/behavior, check here first for an existing endpoint, then follow `new-feature-slice`.
 
+## Contract changes and the E2E suite
+
+A contract change is checked by `yarn e2e`, which exercises the real app (Maestro flows in `../life-planner/e2e`) against this API. A failing flow after an intended contract change means the frontend slice is needed: stop and tell the owner (rules 10 and 14).
+
 ## Local dev
 
 Backend: `yarn install`, `.env` with `DB_*`, `JWT_SECRET`, `PORT`; `yarn prisma generate`, `yarn start:dev` → `http://localhost:3000/api`, Swagger `http://localhost:3000/swagger` (docker-compose maps `1009:3000`). The mobile app must reach the host by LAN IP (not `localhost`) on a device/emulator. Any frontend base-URL setting belongs in its `.env` as an `EXPO_PUBLIC_*` placeholder in `.env.example` — never a real URL or secret in tracked files.

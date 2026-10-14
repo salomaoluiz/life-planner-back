@@ -22,6 +22,7 @@ Clean Architecture / DDD: `src/api` (controllers + services) → `src/modules/<m
 | Writing/updating tests, `*.mocks.ts`, `*.fixture.ts`                               | `.claude/context/testing.md`                                    |
 | Lint rules, import order, naming, commit flow, Docker/env                          | `.claude/context/conventions.md`                                |
 | Frontend ↔ backend contract, cross-repo changes, auth flow, frontend migration     | `.claude/context/integration.md`                                |
+| Running the E2E guardrail suite (Maestro flows live in the frontend)               | `../life-planner/.claude/context/e2e.md`                        |
 | Building a whole new feature / CRUD slice end-to-end                               | skill `new-feature-slice` (`.claude/skills/new-feature-slice/`) |
 
 Tip: for a single-layer change read just that layer file + `conventions.md`. To see what already exists in a module, list `src/modules/<module>` instead of guessing (there is no `docs/ai` inventory in this repo yet).
@@ -51,3 +52,9 @@ Reference implementation for any new work: **`user` module** (the only one compl
     - Config goes in `.env` (gitignored) read through `EnvService` / `envSchema`; never hard-code values in source, tests, Docker files or docs. New variables must be added to `envSchema`, `docker-compose.yml` and, as a placeholder-only entry, to an `.env.example` (create it if missing).
     - Tests and mocks use fake data (`faker`, `test@example.com`, random UUIDs).
     - Before every commit review `git diff --cached`; stage files explicitly (no `git add -A` / `git add .`). If anything looks secret or personal, unstage it, don't commit, and tell the user. If a secret was already committed, stop and tell the user (it must be rotated); don't rewrite history yourself.
+14. **E2E guardrail (Maestro, flows live in `../life-planner/e2e`).**
+    - Before reporting any change to `src/` or `prisma/` as done, run `yarn e2e` in this repo. It runs the app's full Maestro suite against the API the owner keeps running in watch mode on the Mac, so it tests this working tree. If the change includes a Prisma migration, apply it locally with the repo's migration command first. Read **only** the summary it prints (`../life-planner/e2e-report/summary.md`), the same way as frontend rule 12.
+    - A failing flow after a backend change is a regression of this change until proven otherwise. Fix the backend; do not edit flows, screens or anything else in `../life-planner` to make it pass unless the owner asked for the frontend change too (rule 10).
+    - If the failure is caused by an intended API contract change (rule 10), stop and tell the owner which flows broke and which frontend change they need. That is the expected way the guardrail flags cross-repo work.
+    - A backend-only feature with no screen yet needs no new flow. Its flow arrives with the frontend slice that uses it. The backend still runs the full suite to prove nothing that exists broke.
+    - E2E runs only on the owner's Mac (same as frontend rule 12). Exit code 2 (could not run: cloud session, API or app not running, sibling folder missing): say so in the final report; never claim the change was validated.

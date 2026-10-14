@@ -51,6 +51,10 @@ Placeholders: `<m>` module (e.g. `finance`), `X` PascalCase entity, `x` camelCas
 
 - [ ] Every new file above has `.test.ts` + `.mocks.ts` (success + error paths, 90% coverage). Fake data via faker.
 
+## 6b. E2E guardrail → CLAUDE.md rule 14
+
+- [ ] Run `yarn e2e` (full suite, read only the printed summary). A backend-only slice needs no new flow; report exit code 2 as "not validated".
+
 ## 7. Integration → `.claude/context/integration.md`
 
 - [ ] Compare with the frontend entity/model; keep enum values and ids consistent.
