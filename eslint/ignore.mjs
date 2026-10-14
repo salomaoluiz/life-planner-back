@@ -13,6 +13,7 @@ export default {
     'jest.config.js',
     'prisma.config.ts',
     'prisma/**/*',
+    'scripts/**/*',
     'tsconfig.json',
     'yarn.lock',
   ],

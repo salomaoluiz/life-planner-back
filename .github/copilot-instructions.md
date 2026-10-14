@@ -336,6 +336,8 @@ Minimum coverage thresholds:
 
 ## 🚀 Commands & Scripts
 
+- Changes to `src/` or `prisma/` must be validated with `yarn e2e` (see `.claude/CLAUDE.md` rule 14).
+
 ### Development
 
 ```bash
