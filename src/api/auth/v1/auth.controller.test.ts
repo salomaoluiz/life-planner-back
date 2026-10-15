@@ -1,4 +1,6 @@
-import { VERSION_METADATA } from '@nestjs/common/constants';
+import { HTTP_CODE_METADATA, VERSION_METADATA } from '@nestjs/common/constants';
+
+import { IS_PUBLIC_KEY } from '@shared/infra/http/decorators/Public';
 
 import { mocks, setup, spies } from './auth.controller.mocks';
 
@@ -13,7 +15,7 @@ describe('AuthController', () => {
 
       const result = await controller.loginWithEmail(mocks.inputs.login);
 
-      expect(result).toEqual({ token: mocks.authResult.token });
+      expect(result).toEqual(mocks.authResult);
     });
 
     it('SHOULD validate the input using the correct schema', async () => {
@@ -32,6 +34,40 @@ describe('AuthController', () => {
 
       expect(mocks.authService.loginWithEmail).toHaveBeenCalledTimes(1);
       expect(mocks.authService.loginWithEmail).toHaveBeenCalledWith(mocks.parsed.login);
+    });
+  });
+
+  describe('POST refresh', () => {
+    it('SHOULD validate with the refresh schema AND return the service result', async () => {
+      const result = await setup.refresh(mocks.inputs.refresh);
+
+      expect(spies.validate).toHaveBeenCalledWith(mocks.schemas.refresh, mocks.inputs.refresh);
+      expect(mocks.authService.refreshSession).toHaveBeenCalledWith(mocks.parsed.refresh);
+      expect(result).toEqual(mocks.authResult);
+    });
+
+    it('SHOULD answer 200 AND be public', () => {
+      expect(Reflect.getMetadata(HTTP_CODE_METADATA, Object.getPrototypeOf(setup).refresh)).toBe(
+        200,
+      );
+      expect(Reflect.getMetadata(IS_PUBLIC_KEY, Object.getPrototypeOf(setup).refresh)).toBe(true);
+    });
+  });
+
+  describe('POST logout', () => {
+    it('SHOULD validate, call the service AND return nothing', async () => {
+      const result = await setup.logout(mocks.inputs.refresh);
+
+      expect(spies.validate).toHaveBeenCalledWith(mocks.schemas.refresh, mocks.inputs.refresh);
+      expect(mocks.authService.logout).toHaveBeenCalledWith(mocks.parsed.refresh);
+      expect(result).toBeUndefined();
+    });
+
+    it('SHOULD answer 204 AND be public', () => {
+      expect(Reflect.getMetadata(HTTP_CODE_METADATA, Object.getPrototypeOf(setup).logout)).toBe(
+        204,
+      );
+      expect(Reflect.getMetadata(IS_PUBLIC_KEY, Object.getPrototypeOf(setup).logout)).toBe(true);
     });
   });
 
