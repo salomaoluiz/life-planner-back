@@ -11,7 +11,7 @@
 
 `UserSession` (`user_sessions`, spec 027: `id, user_id → User ON DELETE CASCADE, token_hash unique` (SHA-256 of the current refresh token), `previous_token_hash? unique` (one back, accepted once as the lost-response grace), `retired_token_hash? unique` (two back, presenting it = copied token → session deleted), `device_name? varchar(100), last_used_at` (indexed, sliding idle window + purge), `rotated_at?, created_at`; migration `user_sessions`). Raw refresh tokens are never stored.
 
-Enums `OwnerType` (`USER` | `FAMILY`) and `AccountStatus` (`ACTIVE` | `ARCHIVED`). `FinancialAccount` (table `financial_accounts`: `id, name, icon, balance int cents, status, owner, owner_id (no FK), created_at, updated_at`, index `(owner, owner_id)`; migration `finance_accounts`). Enum `TransactionType` (`EXPENSE` | `INCOME`) and `FinancialCategory` (`financial_categories`: name, icon, `icon_color` default `#000000`, type, `parent_id` self-FK `ON DELETE CASCADE`, `depth_level` computed by the use case, owner, owner_id; migration `finance_categories`). `FinancialTransaction` (`financial_transactions`: description, `value` int cents, `date` `@db.Date`, type, `account_id`/`category_id` FKs both `RESTRICT`, owner, owner_id, index `(owner, owner_id, date)`; migration `finance_transactions`).
+Enums `OwnerType` (`USER` | `FAMILY`) and `AccountStatus` (`ACTIVE` | `ARCHIVED`). `FinancialAccount` (table `financial_accounts`: `id, name, icon, initial_balance int cents (set on create), ledger_balance int cents (initial + every transaction, internal), status, owner, owner_id (no FK), created_at, updated_at`, index `(owner, owner_id)`; migration `finance_accounts`). Enum `TransactionType` (`EXPENSE` | `INCOME`) and `FinancialCategory` (`financial_categories`: name, icon, `icon_color` default `#000000`, type, `parent_id` self-FK `ON DELETE CASCADE`, `depth_level` computed by the use case, owner, owner_id; migration `finance_categories`). `FinancialTransaction` (`financial_transactions`: description, `value` int cents, `date` `@db.Date`, type, `account_id`/`category_id` FKs both `RESTRICT`, owner, owner_id, index `(owner, owner_id, date)`; migration `finance_transactions`).
 
 Enum `StockUnit` (members declared lowercase `unit|gram|kilogram|liter|milliliter` with NO `@map`: the Prisma client validates enum args against member names, so `@map` made `create({ unit: 'liter' })` fail at runtime) and `StockItem` (`stock_items`: `id, owner, owner_id` (no FK), `description, quantity` int, `unit, brand?, barcode?, notes?, purchase_date?, opening_date?, expiration_date?` (timestamptz), `created_at, updated_at`, index `(owner, owner_id)`; migration `add_stock_items`).
 
@@ -32,3 +32,17 @@ Prisma schema + migration → `yarn prisma generate` → datasource payloads →
 ## Frontend note
 
 The frontend's current data lives in Supabase (`../life-planner/docs/database/*.md`, with RLS, triggers and `validate_owner`). Those rules do **not** exist here: this API must enforce ownership/family-membership checks itself in use cases.
+
+### Account balance from transactions (spec 028)
+
+Migration `account_balance_from_transactions`: `financial_accounts.balance` becomes `initial_balance` and `ledger_balance` is recomputed from the transactions. `FinancialCategory.owner/owner_id/type` are nullable, plus `system_key` (enum `SystemCategoryKey`, unique) and `exclude_from_totals`; the CHECK `financial_categories_system_shape_check` keeps user categories fully populated and system categories owner-less and parent-less. The seed row `00000000-0000-4000-8000-000000000001` is `BALANCE_ADJUSTMENT` (mirrored by `SYSTEM_CATEGORY_IDS` in the domain). Transactions index `(account_id, date)` replaces the `account_id` index.
+
+```sql
+-- drift check: must return no rows
+SELECT a.id FROM financial_accounts a
+WHERE a.ledger_balance <> a.initial_balance + COALESCE((
+  SELECT SUM(CASE WHEN t.type = 'INCOME' THEN t.value ELSE -t.value END)
+  FROM financial_transactions t WHERE t.account_id = a.id), 0);
+```
+
+Rollback (manual, Prisma has no down step): `ALTER TABLE financial_accounts ADD COLUMN balance INTEGER NOT NULL DEFAULT 0; UPDATE financial_accounts SET balance = ledger_balance - COALESCE((SELECT SUM(CASE WHEN t.type='INCOME' THEN t.value ELSE -t.value END) FROM financial_transactions t WHERE t.account_id = financial_accounts.id AND t.date > CURRENT_DATE), 0);` then drop `initial_balance`, `ledger_balance`, the category columns/constraint/seed row and restore the `account_id` index (and `NOT NULL` on category `owner`, `owner_id`, `type` after deleting the seed row and any adjustment transactions).

@@ -30,3 +30,7 @@ Static `toDomain(raw)` and `toPersistence(entity)`. Prisma `snake_case` ⇄ enti
 4. Update the frontend contract if fields are user-visible (`integration.md`).
 
 Prisma client is generated to `generated/prisma` (gitignored); after schema changes run `yarn prisma generate` before type-check/tests.
+
+### Atomic ledger updates (spec 028)
+
+A write that changes money (`FinanceTransactionDatasource.create/update/delete`) runs in ONE Prisma interactive `$transaction`: update/delete first read the stored row with `SELECT … FOR UPDATE` (`data/datasource/ledger`), the domain function `ledgerDeltas(before, after)` returns the net increment per account (ascending account id, zero deltas dropped), and each account gets `ledger_balance = ledger_balance + delta` through Prisma's atomic `increment` (never read, add, write). Reads never sum the history: `FinanceAccountDatasource.findFutureSums` is one grouped `$queryRaw` over the rows dated after `today`, served by the `(account_id, date)` index; current = ledger − Σ signed(date > today), projected = ledger − Σ signed(date > end of month).
