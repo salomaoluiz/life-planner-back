@@ -5,6 +5,7 @@ import { CreateCategoryUseCase } from '@finance/application/use-case/CreateCateg
 import { CreateTransactionUseCase } from '@finance/application/use-case/CreateTransactionUseCase';
 import { DeleteAccountUseCase } from '@finance/application/use-case/DeleteAccountUseCase';
 import { DeleteCategoryUseCase } from '@finance/application/use-case/DeleteCategoryUseCase';
+import { DeleteFinanceDataByOwnerUseCase } from '@finance/application/use-case/DeleteFinanceDataByOwnerUseCase';
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import { GetAccountsUseCase } from '@finance/application/use-case/GetAccountsUseCase';
@@ -16,9 +17,11 @@ import { UpdateCategoryUseCase } from '@finance/application/use-case/UpdateCateg
 import { UpdateTransactionUseCase } from '@finance/application/use-case/UpdateTransactionUseCase';
 import { FinanceAccountDatasource } from '@finance/data/datasource/FinanceAccountDatasource';
 import { FinanceCategoryDatasource } from '@finance/data/datasource/FinanceCategoryDatasource';
+import { FinanceOwnerDataDatasource } from '@finance/data/datasource/FinanceOwnerDataDatasource';
 import { FinanceTransactionDatasource } from '@finance/data/datasource/FinanceTransactionDatasource';
 import { FinanceAccountRepository } from '@finance/data/repository/FinanceAccountRepository';
 import { FinanceCategoryRepository } from '@finance/data/repository/FinanceCategoryRepository';
+import { FinanceOwnerDataRepository } from '@finance/data/repository/FinanceOwnerDataRepository';
 import { FinanceTransactionRepository } from '@finance/data/repository/FinanceTransactionRepository';
 
 const useCases = [
@@ -27,6 +30,7 @@ const useCases = [
   CreateTransactionUseCase,
   DeleteAccountUseCase,
   DeleteCategoryUseCase,
+  DeleteFinanceDataByOwnerUseCase,
   DeleteTransactionUseCase,
   EnsureTransactionConsistencyUseCase,
   GetAccountsUseCase,
@@ -46,6 +50,8 @@ const useCases = [
     { provide: 'IFinanceAccountDatasource', useClass: FinanceAccountDatasource },
     { provide: 'IFinanceCategoryRepository', useClass: FinanceCategoryRepository },
     { provide: 'IFinanceCategoryDatasource', useClass: FinanceCategoryDatasource },
+    { provide: 'IFinanceOwnerDataRepository', useClass: FinanceOwnerDataRepository },
+    { provide: 'IFinanceOwnerDataDatasource', useClass: FinanceOwnerDataDatasource },
     { provide: 'IFinanceTransactionRepository', useClass: FinanceTransactionRepository },
     { provide: 'IFinanceTransactionDatasource', useClass: FinanceTransactionDatasource },
   ],
