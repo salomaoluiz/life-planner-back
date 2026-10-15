@@ -101,3 +101,13 @@ describe('update', () => {
     expect(result).toBe(mocks.stockEntity);
   });
 });
+
+describe('deleteByOwner', () => {
+  it('SHOULD map the owner to snake_case columns AND return the count', async () => {
+    expect(await setup.deleteByOwner({ owner: OwnerType.FAMILY, ownerId: 'fam' })).toBe(4);
+    expect(mocks.stockDatasource.deleteByOwner).toHaveBeenCalledWith({
+      owner: 'FAMILY',
+      owner_id: 'fam',
+    });
+  });
+});

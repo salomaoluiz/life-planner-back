@@ -14,6 +14,10 @@ export interface CreateStockDatasourceParams {
   quantity: number;
   unit: StockUnit;
 }
+export interface DeleteByOwnerStockDatasourceParams {
+  owner: OwnerType;
+  owner_id: string;
+}
 export interface ExistsStockDatasourceParams {
   owner: OwnerType;
   owner_id: string;
@@ -21,6 +25,8 @@ export interface ExistsStockDatasourceParams {
 export interface IStockDatasource {
   create(params: CreateStockDatasourceParams): Promise<StockItem>;
   delete(id: string): Promise<void>;
+  // Rows deleted; idempotent.
+  deleteByOwner(params: DeleteByOwnerStockDatasourceParams): Promise<number>;
   exists(params: ExistsStockDatasourceParams): Promise<boolean>;
   findById(id: string): Promise<null | StockItem>;
   findByOwners(owners: OwnerAccess[]): Promise<StockItem[]>;

@@ -5,6 +5,8 @@ import StockEntity, { StockUnits } from '@stock/domain/entity/StockEntity';
 export type IStockRepository = {
   create(params: CreateStockRepositoryParams): Promise<StockEntity>;
   delete(id: string): Promise<void>;
+  // Deletes every item of the owner. Idempotent; returns the rows deleted.
+  deleteByOwner(access: OwnerAccess): Promise<number>;
   existsByOwner(access: OwnerAccess): Promise<boolean>;
   findById(id: string): Promise<StockEntity | undefined>;
   findByOwners(owners: OwnerAccess[]): Promise<StockEntity[]>;

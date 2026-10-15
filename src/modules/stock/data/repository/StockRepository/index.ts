@@ -39,6 +39,10 @@ export class StockRepository implements IStockRepository {
     await this.stockDatasource.delete(id);
   }
 
+  async deleteByOwner(access: OwnerAccess): Promise<number> {
+    return this.stockDatasource.deleteByOwner({ owner: access.owner, owner_id: access.ownerId });
+  }
+
   async existsByOwner(access: OwnerAccess): Promise<boolean> {
     return this.stockDatasource.exists({ owner: access.owner, owner_id: access.ownerId });
   }
