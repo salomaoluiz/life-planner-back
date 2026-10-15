@@ -16,8 +16,10 @@ const familyPersistenceMock = { id: familyEntityMock.id } as Family;
 const familyDatasourceMock = {
   create: jest.fn().mockResolvedValue(familyPersistenceMock),
   delete: jest.fn().mockResolvedValue(undefined),
+  deleteUserData: jest.fn().mockResolvedValue({ families: 1, memberships: 2 }),
   findById: jest.fn().mockResolvedValue(familyPersistenceMock),
   findByUserId: jest.fn().mockResolvedValue([familyPersistenceMock]),
+  findIdsByOwnerId: jest.fn().mockResolvedValue(['family-1']),
   isMember: jest.fn().mockResolvedValue(true),
   update: jest.fn().mockResolvedValue(familyPersistenceMock),
 };

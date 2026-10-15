@@ -96,3 +96,20 @@ describe('Method update', () => {
     });
   });
 });
+
+describe('Method deleteByOwner', () => {
+  it('SHOULD delete every item of that owner AND return how many', async () => {
+    spies.deleteMany.mockResolvedValueOnce({ count: 3 });
+
+    expect(await setup.deleteByOwner({ owner: 'FAMILY', owner_id: 'family-id' })).toBe(3);
+    expect(spies.deleteMany).toHaveBeenCalledWith({
+      where: { owner: 'FAMILY', owner_id: 'family-id' },
+    });
+  });
+
+  it('SHOULD return 0 WHEN there is nothing left', async () => {
+    spies.deleteMany.mockResolvedValueOnce({ count: 0 });
+
+    expect(await setup.deleteByOwner({ owner: 'USER', owner_id: 'user-id' })).toBe(0);
+  });
+});

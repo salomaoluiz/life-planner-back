@@ -16,6 +16,7 @@ const stockPersistenceMock = { id: stockEntityMock.id } as StockItem;
 const stockDatasourceMock = {
   create: jest.fn().mockResolvedValue(stockPersistenceMock),
   delete: jest.fn().mockResolvedValue(undefined),
+  deleteByOwner: jest.fn().mockResolvedValue(4),
   exists: jest.fn().mockResolvedValue(true),
   findById: jest.fn().mockResolvedValue(stockPersistenceMock),
   findByOwners: jest.fn().mockResolvedValue([stockPersistenceMock]),

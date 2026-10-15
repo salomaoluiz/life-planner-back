@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { CreateStockItemUseCase } from '@stock/application/use-case/CreateStockItemUseCase';
+import { DeleteStockItemsByOwnerUseCase } from '@stock/application/use-case/DeleteStockItemsByOwnerUseCase';
 import { DeleteStockItemUseCase } from '@stock/application/use-case/DeleteStockItemUseCase';
 import { GetStockItemByIdUseCase } from '@stock/application/use-case/GetStockItemByIdUseCase';
 import { GetStockItemsUseCase } from '@stock/application/use-case/GetStockItemsUseCase';
@@ -12,6 +13,7 @@ import { StockRepository } from '@stock/data/repository/StockRepository';
 const useCases = [
   CreateStockItemUseCase,
   DeleteStockItemUseCase,
+  DeleteStockItemsByOwnerUseCase,
   GetStockItemByIdUseCase,
   GetStockItemsUseCase,
   HasStockItemsByOwnerUseCase,

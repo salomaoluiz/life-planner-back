@@ -48,6 +48,10 @@ Add the class to the module's `useCases` array (`providers` + `exports`) — see
 
 `LoginByEmailUseCase` (verifies hash, signs JWT `{ user: { id } }`), `SignUpByEmailUseCase`, `FindUserByIdUseCase`, `UpdateUserUseCase`.
 
+## Account deletion use cases (spec 024)
+
+`user`: `UserExistsUseCase` (guard check), `ConfirmUserEmailUseCase` (404, 422 `Email does not match`, returns the stored email), `DeleteUserUseCase` (idempotent). `family`: `GetOwnedFamilyIdsUseCase`, `RemoveUserFromFamiliesUseCase` (one transaction: owned families + other memberships + pending invites to the email). `finance`: `DeleteFinanceDataByOwnerUseCase` (transactions → categories → accounts in one Prisma `$transaction`). `stock`: `DeleteStockItemsByOwnerUseCase`. **Purge-by-owner pattern:** each owned module exposes a use case `execute({ owner, ownerId }) → number` (rows deleted, idempotent) and registers it in the `OWNED_RECORDS_PURGES` list in `UserAPIModule`, next to `FAMILY_OWNED_RECORDS_CHECKS` in `FamilyAPIModule`.
+
 ## Family module use cases
 
 `CreateFamilyUseCase` (validates name 1–50 trimmed), `GetUserFamiliesUseCase` (sorted), `GetFamilyByIdUseCase` (404 for non-members), `EnsureFamilyOwnerUseCase` (404 → 403), `UpdateFamilyUseCase`, `DeleteFamilyUseCase`, plus the exported cross-module contract composed only in `src/api`: `GetUserFamilyIdsUseCase.execute(userId) → string[]` and `CheckFamilyMembershipUseCase.execute({ userId, familyId }) → boolean`.

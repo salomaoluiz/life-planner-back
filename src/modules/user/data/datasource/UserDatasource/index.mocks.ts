@@ -25,6 +25,7 @@ const idMock = 'user-id-123';
 // region Spies
 
 const createSpy = jest.fn();
+const deleteManySpy = jest.fn();
 const findFirstSpy = jest.fn();
 const findManySpy = jest.fn();
 const findUniqueSpy = jest.fn();
@@ -36,6 +37,7 @@ const databaseMock = {
   client: {
     user: {
       create: createSpy,
+      deleteMany: deleteManySpy,
       findFirst: findFirstSpy,
       findMany: findManySpy,
       findUnique: findUniqueSpy,
@@ -72,6 +74,7 @@ const mocks = {
 
 const spies = {
   create: createSpy,
+  deleteMany: deleteManySpy,
   findFirst: findFirstSpy,
   findMany: findManySpy,
   findUnique: findUniqueSpy,

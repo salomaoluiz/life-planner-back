@@ -33,7 +33,8 @@ Keep enum **values** identical across repos (`USER`, `FAMILY`, `EXPENSE`, `INCOM
 ## Auth contract
 
 - Login/signup with email: `POST /api/v1/auth/login/email` → `{ token }`; `POST /api/v1/auth/signup/email`. The token is a JWT with payload `{ user: { id } }`, lifetime `JWT_EXPIRES_IN` seconds (default 3600), no refresh token yet (recommended server config meanwhile: `JWT_EXPIRES_IN=604800`, 7 days). The app signs up with email/password, then logs in; email is normalized (trim + lowercase) server-side. Web builds need `CORS_ORIGINS` to include the app origin.
-- All other endpoints: `Authorization: Bearer <token>`; 401 when missing/invalid/expired.
+- All other endpoints: `Authorization: Bearer <token>`; 401 when missing/invalid/expired **or when the token's user no longer exists** (account deleted, spec 024: the `JwtAuthGuard` does one primary-key lookup per request).
+- `DELETE /api/v1/user/me` with `{ email }` permanently deletes the account, its USER-owned finance/stock records, the families it owns (with their FAMILY-owned records, for every member), its memberships and pending invites to its email. `204`; 422 `Email does not match`; irreversible. The frontend clears its session after a 204.
 - Google Sign-In was dropped: the app uses email/password only (spec 002); there is no Google endpoint and none is planned.
 
 ## Cross-repo change checklist

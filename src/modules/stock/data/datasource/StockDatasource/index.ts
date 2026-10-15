@@ -5,6 +5,7 @@ import { Database } from '@shared/infra/db/Database';
 import { toOwnerWhere } from '@stock/data/datasource/mapper/OwnerWhere';
 import {
   CreateStockDatasourceParams,
+  DeleteByOwnerStockDatasourceParams,
   ExistsStockDatasourceParams,
   IStockDatasource,
   UpdateStockDatasourceParams,
@@ -21,6 +22,14 @@ export class StockDatasource implements IStockDatasource {
 
   async delete(id: string): Promise<void> {
     await this.db.client.stockItem.deleteMany({ where: { id } });
+  }
+
+  async deleteByOwner(params: DeleteByOwnerStockDatasourceParams): Promise<number> {
+    const { count } = await this.db.client.stockItem.deleteMany({
+      where: { owner: params.owner, owner_id: params.owner_id },
+    });
+
+    return count;
   }
 
   async exists(params: ExistsStockDatasourceParams): Promise<boolean> {

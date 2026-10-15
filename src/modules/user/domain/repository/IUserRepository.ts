@@ -2,6 +2,8 @@ import UserEntity from '@user/domain/entity/UserEntity';
 
 export type IUserRepository = {
   createUser(params: UserEntity): Promise<{ id: string }>;
+  deleteUser(id: string): Promise<void>;
+  existsById(id: string): Promise<boolean>;
   getUserByEmail(email: string): Promise<undefined | UserEntity>;
   getUserById(id: string): Promise<undefined | UserEntity>;
   getUsersByIds(ids: string[]): Promise<UserEntity[]>;

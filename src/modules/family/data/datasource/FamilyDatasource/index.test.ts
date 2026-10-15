@@ -102,3 +102,46 @@ describe('Method update', () => {
     });
   });
 });
+
+describe('Method findIdsByOwnerId', () => {
+  it('SHOULD select only ids of families whose owner_id is the user (not mere memberships)', async () => {
+    spies.findMany.mockResolvedValueOnce([{ id: 'family-1' }, { id: 'family-2' }]);
+
+    expect(await setup.findIdsByOwnerId('user-id')).toEqual(['family-1', 'family-2']);
+    expect(spies.findMany).toHaveBeenCalledWith({
+      select: { id: true },
+      where: { owner_id: 'user-id' },
+    });
+  });
+});
+
+describe('Method deleteUserData', () => {
+  it('SHOULD delete owned families, the user memberships AND pending invites to the email in ONE transaction', async () => {
+    spies.transaction.mockResolvedValueOnce([{ count: 2 }, { count: 3 }]);
+    spies.deleteMany.mockReturnValueOnce('families-op');
+    spies.memberDeleteMany.mockReturnValueOnce('members-op');
+
+    const result = await setup.deleteUserData({ email: 'test@example.com', userId: 'user-id' });
+
+    expect(spies.deleteMany).toHaveBeenCalledWith({ where: { owner_id: 'user-id' } });
+    expect(spies.memberDeleteMany).toHaveBeenCalledWith({
+      where: {
+        OR: [
+          { user_id: 'user-id' },
+          { email: { equals: 'test@example.com', mode: 'insensitive' }, user_id: null },
+        ],
+      },
+    });
+    expect(spies.transaction).toHaveBeenCalledWith(['families-op', 'members-op']);
+    expect(result).toEqual({ families: 2, memberships: 3 });
+  });
+
+  it('SHOULD be idempotent WHEN nothing is left (counts 0, no error)', async () => {
+    spies.transaction.mockResolvedValueOnce([{ count: 0 }, { count: 0 }]);
+
+    expect(await setup.deleteUserData({ email: 'test@example.com', userId: 'user-id' })).toEqual({
+      families: 0,
+      memberships: 0,
+    });
+  });
+});
