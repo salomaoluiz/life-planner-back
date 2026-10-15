@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { LoginWithEmailApiSchema } from '@api/auth/v1/dto/login.dto';
+import { RefreshApiSchema } from '@api/auth/v1/dto/refresh.dto';
 import { SignUpWithEmailApiSchema } from '@api/auth/v1/dto/signup.dto';
 import { LoginByEmailSchema } from '@user/application/dto/LoginByEmail';
 import { SignUpByEmailSchema } from '@user/application/dto/SignUpByEmail';
@@ -64,5 +65,37 @@ describe('GIVEN Swagger generation', () => {
   it('SHOULD be able to emit JSON Schema for the piped email field', () => {
     expect(() => z.toJSONSchema(SignUpWithEmailApiSchema, { io: 'input' })).not.toThrow();
     expect(() => z.toJSONSchema(LoginWithEmailApiSchema, { io: 'input' })).not.toThrow();
+  });
+});
+
+describe('GIVEN the API login deviceName', () => {
+  const base = { email: 'test@example.com', password: 'password123' };
+
+  it('SHOULD trim it, accept 100 chars AND reject 101', () => {
+    expect(LoginWithEmailApiSchema.parse({ ...base, deviceName: ' iPhone ' }).deviceName).toBe(
+      'iPhone',
+    );
+    expect(
+      LoginWithEmailApiSchema.safeParse({ ...base, deviceName: 'a'.repeat(100) }).success,
+    ).toBe(true);
+    expect(
+      LoginWithEmailApiSchema.safeParse({ ...base, deviceName: 'a'.repeat(101) }).success,
+    ).toBe(false);
+    expect(LoginWithEmailApiSchema.safeParse(base).success).toBe(true);
+  });
+});
+
+describe('GIVEN the refresh/logout body', () => {
+  it.each([
+    ['missing', {}],
+    ['a number', { refreshToken: 42 }],
+    ['empty', { refreshToken: '' }],
+    ['513 chars', { refreshToken: 'a'.repeat(513) }],
+  ])('SHOULD reject a refreshToken that is %s', (_name, body) => {
+    expect(RefreshApiSchema.safeParse(body).success).toBe(false);
+  });
+
+  it('SHOULD accept any non-empty string (unknown tokens are a 401, not a 400)', () => {
+    expect(RefreshApiSchema.safeParse({ refreshToken: 'garbage' }).success).toBe(true);
   });
 });

@@ -1,10 +1,11 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 
 import {
   LoginWithEmailApiInput,
   LoginWithEmailApiOutput,
   LoginWithEmailApiSchema,
 } from '@api/auth/v1/dto/login.dto';
+import { RefreshApiInput, RefreshApiSchema } from '@api/auth/v1/dto/refresh.dto';
 import {
   SignUpWithEmailApiInput,
   SignUpWithEmailApiOutput,
@@ -24,9 +25,25 @@ export class AuthController {
   async loginWithEmail(@Body() login: LoginWithEmailApiInput): Promise<LoginWithEmailApiOutput> {
     const input = validate(LoginWithEmailApiSchema, login);
 
-    const result = await this.authService.loginWithEmail(input);
+    return this.authService.loginWithEmail(input);
+  }
 
-    return { token: result.token };
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('logout')
+  @Public()
+  async logout(@Body() body: RefreshApiInput): Promise<void> {
+    const input = validate(RefreshApiSchema, body);
+
+    await this.authService.logout(input);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('refresh')
+  @Public()
+  async refresh(@Body() body: RefreshApiInput): Promise<LoginWithEmailApiOutput> {
+    const input = validate(RefreshApiSchema, body);
+
+    return this.authService.refreshSession(input);
   }
 
   @Post('signup/email')

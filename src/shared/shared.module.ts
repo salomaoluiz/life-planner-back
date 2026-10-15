@@ -13,7 +13,7 @@ import { BcryptHasher } from './infra/password-hasher/bcrypt/BcryptHasher';
 
 @Global()
 @Module({
-  exports: ['ILogger', 'IJwtProvider', 'IPasswordHasher', Database],
+  exports: ['ILogger', 'IJwtProvider', 'IPasswordHasher', Database, EnvModule],
   imports: [EnvModule, JwtModule.register({})],
   providers: [
     Database,

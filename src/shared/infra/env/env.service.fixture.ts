@@ -27,6 +27,7 @@ class EnvServiceFixture {
       jwtExpiresIn: faker.number.int({ max: 86400, min: 3600 }),
       jwtSecret: faker.string.alphanumeric(64),
       port: faker.internet.port(),
+      sessionIdleTtlSeconds: 172800,
     };
     return this;
   }
@@ -80,6 +81,11 @@ class EnvServiceFixture {
 
   withPort(port: number) {
     this.value.port = port;
+    return this;
+  }
+
+  withSessionIdleTtlSeconds(sessionIdleTtlSeconds: number) {
+    this.value.sessionIdleTtlSeconds = sessionIdleTtlSeconds;
     return this;
   }
 }

@@ -1,10 +1,38 @@
+import { LoginByEmailSchema } from '@user/application/dto/LoginByEmail';
+
 import { mocks, setup, spies, throwableSetup } from './index.mocks';
 
 describe('GIVEN valid credentials', () => {
-  it('SHOULD return a JWT token', async () => {
+  it('SHOULD return the JWT AND the refresh token', async () => {
     const result = await setup();
 
-    expect(result).toEqual({ token: mocks.data.token });
+    expect(result).toEqual({
+      refreshToken: mocks.data.refreshToken,
+      refreshTokenExpiresIn: 172800,
+      token: mocks.data.token,
+    });
+  });
+
+  it('SHOULD store a session with the HASH of the refresh token (never the raw token)', async () => {
+    await setup();
+
+    expect(mocks.sessionRepository.createSession).toHaveBeenCalledTimes(1);
+    const session = mocks.sessionRepository.createSession.mock.calls[0][0];
+    expect(session).toMatchObject({
+      tokenHash: mocks.data.refreshHash,
+      userId: mocks.data.user.id,
+    });
+    expect(JSON.stringify(session)).not.toContain(mocks.data.refreshToken);
+  });
+
+  it('SHOULD keep the trimmed deviceName AND drop a blank one', async () => {
+    await setup({ ...mocks.data.input, deviceName: 'iPhone' });
+    await setup({ ...mocks.data.input, deviceName: '' });
+
+    expect(mocks.sessionRepository.createSession.mock.calls[0][0]).toMatchObject({
+      deviceName: 'iPhone',
+    });
+    expect(mocks.sessionRepository.createSession.mock.calls[1][0].deviceName).toBeUndefined();
   });
 
   it('SHOULD validate the input data', async () => {
@@ -54,6 +82,7 @@ describe('GIVEN invalid credentials', () => {
     expect(mocks.userRepository.getUserByEmail).toHaveBeenCalledTimes(1);
     // Ensure flow stopped before checking password
     expect(mocks.passwordHasher.compare).not.toHaveBeenCalled();
+    expect(mocks.sessionRepository.createSession).not.toHaveBeenCalled();
   });
 
   it('SHOULD throw UnauthorizedException WHEN password does not match', async () => {
@@ -66,6 +95,27 @@ describe('GIVEN invalid credentials', () => {
     expect(mocks.passwordHasher.compare).toHaveBeenCalledTimes(1);
     // Ensure flow stopped before signing token
     expect(mocks.jwtProvider.sign).not.toHaveBeenCalled();
+    expect(mocks.sessionRepository.createSession).not.toHaveBeenCalled();
+  });
+});
+
+describe('GIVEN the deviceName schema', () => {
+  const base = { email: 'test@example.com', password: 'password123' };
+
+  it('SHOULD trim it, accept 100 chars AND reject 101', () => {
+    expect(LoginByEmailSchema.parse({ ...base, deviceName: '  iPhone ' }).deviceName).toBe(
+      'iPhone',
+    );
+    expect(LoginByEmailSchema.safeParse({ ...base, deviceName: 'a'.repeat(100) }).success).toBe(
+      true,
+    );
+    expect(LoginByEmailSchema.safeParse({ ...base, deviceName: 'a'.repeat(101) }).success).toBe(
+      false,
+    );
+  });
+
+  it('SHOULD turn a whitespace-only name into an empty one (stored as no name)', () => {
+    expect(LoginByEmailSchema.parse({ ...base, deviceName: '   ' }).deviceName).toBe('');
   });
 });
 

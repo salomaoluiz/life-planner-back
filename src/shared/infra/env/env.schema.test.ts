@@ -9,6 +9,7 @@ describe('validateEnvironment', () => {
       CORS_ORIGINS: '',
       JWT_EXPIRES_IN: 7200, // Coerced
       PORT: 4000, // Coerced
+      SESSION_IDLE_TTL_SECONDS: 172800,
     });
   });
 
@@ -20,6 +21,7 @@ describe('validateEnvironment', () => {
       JWT_EXPIRES_IN: 3600,
       NODE_ENV: 'development',
       PORT: 3000,
+      SESSION_IDLE_TTL_SECONDS: 172800,
     });
   });
 
@@ -27,6 +29,19 @@ describe('validateEnvironment', () => {
     const result = setup({ ...mocks.validConfig, CORS_ORIGINS: 'http://localhost:8081' });
 
     expect(result.CORS_ORIGINS).toBe('http://localhost:8081');
+  });
+
+  it('SHOULD default SESSION_IDLE_TTL_SECONDS to 2 days AND coerce a provided value', () => {
+    expect(setup(mocks.partialConfig).SESSION_IDLE_TTL_SECONDS).toBe(172800);
+    expect(
+      setup({ ...mocks.validConfig, SESSION_IDLE_TTL_SECONDS: '3600' }).SESSION_IDLE_TTL_SECONDS,
+    ).toBe(3600);
+  });
+
+  it('SHOULD reject a non-positive SESSION_IDLE_TTL_SECONDS', () => {
+    expect(throwableSetup({ ...mocks.validConfig, SESSION_IDLE_TTL_SECONDS: '0' })).toBeInstanceOf(
+      Error,
+    );
   });
 
   it('SHOULD throw Error WHEN config is invalid', () => {

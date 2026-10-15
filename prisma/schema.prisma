@@ -24,6 +24,7 @@ model User {
   updated_at DateTime? @updatedAt
   families        Family[]
   family_members  FamilyMember[]
+  sessions        UserSession[]
 }
 
 model Family {
@@ -196,4 +197,22 @@ model StockItem {
 
   @@index([owner, owner_id])
   @@map("stock_items")
+}
+
+model UserSession {
+  id                  String    @id @default(uuid())
+  user_id             String
+  token_hash          String    @unique
+  previous_token_hash String?   @unique
+  retired_token_hash  String?   @unique
+  device_name         String?   @db.VarChar(100)
+  last_used_at        DateTime  @default(now()) @db.Timestamptz(6)
+  rotated_at          DateTime? @db.Timestamptz(6)
+  created_at          DateTime  @default(now()) @db.Timestamptz(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([last_used_at])
+  @@map("user_sessions")
 }
