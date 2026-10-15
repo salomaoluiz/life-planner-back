@@ -3,9 +3,11 @@ import { Injectable } from '@nestjs/common';
 import { Family } from '@db/client';
 import {
   CreateFamilyDatasourceParams,
+  DeleteUserDataDatasourceParams,
   IFamilyDatasource,
   IsMemberDatasourceParams,
   UpdateFamilyDatasourceParams,
+  UserDataDeletion,
 } from '@family/data/repository/datasource/IFamilyDatasource';
 import { Database } from '@shared/infra/db/Database';
 
@@ -32,6 +34,24 @@ export class FamilyDatasource implements IFamilyDatasource {
     await this.db.client.family.deleteMany({ where: { id } });
   }
 
+  async deleteUserData(params: DeleteUserDataDatasourceParams): Promise<UserDataDeletion> {
+    // Owned families go with their member rows (cascade); the user's other memberships and the pending
+    // invites addressed to the email go in the same transaction.
+    const [families, memberships] = await this.db.client.$transaction([
+      this.db.client.family.deleteMany({ where: { owner_id: params.userId } }),
+      this.db.client.familyMember.deleteMany({
+        where: {
+          OR: [
+            { user_id: params.userId },
+            { email: { equals: params.email, mode: 'insensitive' }, user_id: null },
+          ],
+        },
+      }),
+    ]);
+
+    return { families: families.count, memberships: memberships.count };
+  }
+
   async findById(id: string): Promise<Family | null> {
     return this.db.client.family.findUnique({ where: { id } });
   }
@@ -40,6 +60,15 @@ export class FamilyDatasource implements IFamilyDatasource {
     return this.db.client.family.findMany({
       where: { members: { some: { joined_at: { not: null }, user_id: userId } } },
     });
+  }
+
+  async findIdsByOwnerId(ownerId: string): Promise<string[]> {
+    const rows = await this.db.client.family.findMany({
+      select: { id: true },
+      where: { owner_id: ownerId },
+    });
+
+    return rows.map((row) => row.id);
   }
 
   async isMember(params: IsMemberDatasourceParams): Promise<boolean> {

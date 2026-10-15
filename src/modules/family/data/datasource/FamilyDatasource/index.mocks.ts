@@ -26,11 +26,14 @@ const findManySpy = jest.fn();
 const findUniqueSpy = jest.fn();
 const updateSpy = jest.fn();
 const memberCountSpy = jest.fn();
+const memberDeleteManySpy = jest.fn();
+const transactionSpy = jest.fn();
 
 // endregion Spies
 
 const databaseMock = {
   client: {
+    $transaction: transactionSpy,
     family: {
       create: createSpy,
       deleteMany: deleteManySpy,
@@ -38,7 +41,7 @@ const databaseMock = {
       findUnique: findUniqueSpy,
       update: updateSpy,
     },
-    familyMember: { count: memberCountSpy },
+    familyMember: { count: memberCountSpy, deleteMany: memberDeleteManySpy },
   },
 } as unknown as Database;
 
@@ -65,6 +68,8 @@ const spies = {
   findMany: findManySpy,
   findUnique: findUniqueSpy,
   memberCount: memberCountSpy,
+  memberDeleteMany: memberDeleteManySpy,
+  transaction: transactionSpy,
   update: updateSpy,
 };
 

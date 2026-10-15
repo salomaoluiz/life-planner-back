@@ -74,3 +74,22 @@ describe('updateFamily', () => {
     expect(result).toEqual(mocks.familyEntity);
   });
 });
+
+describe('getOwnedFamilyIds', () => {
+  it('SHOULD return the ids from the datasource', async () => {
+    expect(await setup.getOwnedFamilyIds('user-id')).toEqual(['family-1']);
+    expect(spies.familyDatasource.findIdsByOwnerId).toHaveBeenCalledWith('user-id');
+  });
+});
+
+describe('removeUser', () => {
+  it('SHOULD delegate to the datasource AND return its counts', async () => {
+    const result = await setup.removeUser({ email: 'test@example.com', userId: 'user-id' });
+
+    expect(spies.familyDatasource.deleteUserData).toHaveBeenCalledWith({
+      email: 'test@example.com',
+      userId: 'user-id',
+    });
+    expect(result).toEqual({ families: 1, memberships: 2 });
+  });
+});

@@ -7,6 +7,8 @@ import {
   CreateFamilyRepositoryParams,
   IFamilyRepository,
   IsFamilyMemberRepositoryParams,
+  RemoveUserRepositoryParams,
+  RemoveUserRepositoryResult,
   UpdateFamilyRepositoryParams,
 } from '@family/domain/repository';
 
@@ -40,8 +42,16 @@ export class FamilyRepository implements IFamilyRepository {
     return result ? FamilyMapper.toDomain(result) : undefined;
   }
 
+  async getOwnedFamilyIds(ownerId: string): Promise<string[]> {
+    return this.familyDatasource.findIdsByOwnerId(ownerId);
+  }
+
   async isFamilyMember(params: IsFamilyMemberRepositoryParams): Promise<boolean> {
     return this.familyDatasource.isMember(params);
+  }
+
+  async removeUser(params: RemoveUserRepositoryParams): Promise<RemoveUserRepositoryResult> {
+    return this.familyDatasource.deleteUserData({ email: params.email, userId: params.userId });
   }
 
   async updateFamily(params: UpdateFamilyRepositoryParams): Promise<FamilyEntity> {
