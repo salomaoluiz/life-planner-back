@@ -1,14 +1,17 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
+import { EnvService } from '@shared/infra/env/env.service';
+import { generateToken, hashToken } from '@shared/infra/token';
 import { validate } from '@shared/infra/validation';
-import { LoginByEmailSchema } from '@user/application/dto/LoginByEmail';
+import { LoginByEmailInput, LoginByEmailSchema } from '@user/application/dto/LoginByEmail';
 
 import { LoginByEmailUseCase } from './index';
 
 // region Mocks
 
 jest.mock('@shared/infra/validation');
+jest.mock('@shared/infra/token');
 
 const userMock = {
   email: 'test@example.com',
@@ -22,6 +25,14 @@ const loginInputMock = {
 };
 
 const tokenMock = 'jwt_token_example';
+const refreshTokenMock = 'refresh-token-example';
+const refreshHashMock = 'refresh-hash-example';
+
+const sessionRepositoryMock = {
+  createSession: jest.fn().mockResolvedValue(undefined),
+};
+
+const envMock = { sessionIdleTtlSeconds: 172800 };
 
 const userRepositoryMock = {
   getUserByEmail: jest.fn().mockResolvedValue(userMock),
@@ -47,6 +58,8 @@ let useCase: LoginByEmailUseCase;
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  jest.mocked(generateToken).mockReturnValue(refreshTokenMock);
+  jest.mocked(hashToken).mockReturnValue(refreshHashMock);
 
   const module: TestingModule = await Test.createTestingModule({
     providers: [
@@ -63,16 +76,24 @@ beforeEach(async () => {
         provide: 'IJwtProvider',
         useValue: jwtProviderMock,
       },
+      {
+        provide: 'IUserSessionRepository',
+        useValue: sessionRepositoryMock,
+      },
+      {
+        provide: EnvService,
+        useValue: envMock,
+      },
     ],
   }).compile();
 
   useCase = module.get<LoginByEmailUseCase>(LoginByEmailUseCase);
 });
 
-async function setup(props = loginInputMock) {
+async function setup(props: LoginByEmailInput = loginInputMock) {
   return useCase.execute(props);
 }
-async function throwableSetup(props = loginInputMock) {
+async function throwableSetup(props: LoginByEmailInput = loginInputMock) {
   try {
     return await setup(props);
   } catch (error) {
@@ -83,6 +104,8 @@ async function throwableSetup(props = loginInputMock) {
 const mocks = {
   data: {
     input: loginInputMock,
+    refreshHash: refreshHashMock,
+    refreshToken: refreshTokenMock,
     token: tokenMock,
     user: userMock,
   },
@@ -94,6 +117,7 @@ const mocks = {
   schemas: {
     login: LoginByEmailSchema,
   },
+  sessionRepository: sessionRepositoryMock,
   userRepository: userRepositoryMock,
 };
 
