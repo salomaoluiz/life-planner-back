@@ -1,4 +1,4 @@
-import { TransactionType } from '@finance/domain/enum';
+import { SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export interface TransactionAccountSummary {
@@ -7,10 +7,14 @@ export interface TransactionAccountSummary {
   name: string;
 }
 export interface TransactionCategorySummary {
+  // Balance adjustments (and later system categories) are skipped by income/expense totals.
+  excludeFromTotals: boolean;
   icon: string;
   iconColor: string;
   id: string;
   name: string;
+  // Set only for system categories.
+  systemKey: null | SystemCategoryKey;
 }
 
 interface ITransactionEntity {

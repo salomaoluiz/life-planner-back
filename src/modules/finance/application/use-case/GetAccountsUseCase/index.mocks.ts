@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 
+import { AttachAccountBalancesUseCase } from '@finance/application/use-case/AttachAccountBalancesUseCase';
 import AccountEntityFixture from '@finance/domain/entity/mocks/AccountEntity.fixture';
 import { AccountStatus } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -25,6 +26,16 @@ const accountRepositoryMock = {
   findAccounts: jest.fn().mockResolvedValue([archivedA, activeZed, activeBeta, activeAlpha]),
 };
 
+const attachMock = {
+  execute: jest.fn(async ({ accounts }: { accounts: { ledgerBalance: number }[] }) =>
+    accounts.map((account) => ({
+      account,
+      balance: account.ledgerBalance,
+      projectedBalance: account.ledgerBalance,
+    })),
+  ),
+};
+
 // endregion Mocks
 
 let setup: GetAccountsUseCase;
@@ -41,6 +52,7 @@ beforeEach(async () => {
   const module = await Test.createTestingModule({
     providers: [
       GetAccountsUseCase,
+      { provide: AttachAccountBalancesUseCase, useValue: attachMock },
       { provide: 'IFinanceAccountRepository', useValue: accountRepositoryMock },
     ],
   }).compile();
@@ -52,6 +64,7 @@ const mocks = {
   accessibleOwners,
   accountRepository: accountRepositoryMock,
   accounts: { activeAlpha, activeBeta, activeZed, archivedA },
+  attach: attachMock,
   familyId,
   userId,
 };

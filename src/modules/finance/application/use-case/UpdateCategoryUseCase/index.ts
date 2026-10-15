@@ -1,8 +1,15 @@
-import { BadRequestException, ConflictException, Inject, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
 import { UpdateCategoryInput, UpdateCategorySchema } from '@finance/application/dto/UpdateCategory';
 import CategoryEntity from '@finance/domain/entity/CategoryEntity';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
+import { isSystemCategoryId } from '@finance/domain/entity/SystemCategory';
 import {
   IFinanceCategoryRepository,
   IFinanceTransactionRepository,
@@ -25,6 +32,10 @@ export class UpdateCategoryUseCase implements UseCaseWithParams<
 
   async execute(params: UpdateCategoryInput): Promise<CategoryEntity> {
     const input = validate(UpdateCategorySchema, params);
+
+    if (isSystemCategoryId(input.id) || (input.parentId && isSystemCategoryId(input.parentId))) {
+      throw new UnprocessableEntityException('System categories cannot be changed');
+    }
 
     const category = await this.categoryRepository.findCategoryById(input.id);
 

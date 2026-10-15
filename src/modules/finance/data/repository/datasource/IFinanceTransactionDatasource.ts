@@ -23,7 +23,10 @@ export interface ExistsTransactionDatasourceParams {
 }
 export type FinancialTransactionWithRelations = {
   account: Pick<FinancialAccount, 'icon' | 'id' | 'name'>;
-  category: Pick<FinancialCategory, 'icon_color' | 'icon' | 'id' | 'name'>;
+  category: Pick<
+    FinancialCategory,
+    'exclude_from_totals' | 'icon_color' | 'icon' | 'id' | 'name' | 'system_key'
+  >;
 } & FinancialTransaction;
 export interface IFinanceTransactionDatasource {
   countByAccountId(accountId: string): Promise<number>;

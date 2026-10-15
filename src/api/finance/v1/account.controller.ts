@@ -14,21 +14,27 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
-import { z } from 'zod';
 
 import { AccountService } from '@api/finance/v1/account.service';
 import {
   AccountOutput,
+  AdjustAccountBalanceApiSchema,
+  AdjustAccountBalanceBody,
   CreateAccountApiSchema,
   CreateAccountBody,
   UpdateAccountApiSchema,
   UpdateAccountBody,
 } from '@api/finance/v1/dto/account.dto';
-import { OwnerIdQuerySchema, toOwnerIds } from '@api/finance/v1/finance-query';
+import {
+  OwnerIdQuerySchema,
+  resolveToday,
+  TodayQuerySchema,
+  toOwnerIds,
+} from '@api/finance/v1/finance-query';
 import { JwtPayload } from '@shared/infra/jwt/types';
 import { validate } from '@shared/infra/validation';
 
-const ListAccountsQuerySchema = z.object({ ownerId: OwnerIdQuerySchema });
+const ListAccountsQuerySchema = TodayQuerySchema.extend({ ownerId: OwnerIdQuerySchema });
 
 @ApiBearerAuth('JWT')
 @Controller({
@@ -38,12 +44,27 @@ const ListAccountsQuerySchema = z.object({ ownerId: OwnerIdQuerySchema });
 export class AccountController {
   constructor(private readonly accountService: AccountService) {}
 
+  @HttpCode(HttpStatus.OK)
+  @Post(':id/balance-adjustment')
+  @ZodResponse({ status: 200, type: AccountOutput })
+  async adjustBalance(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: Record<string, unknown>,
+    @Body() body: AdjustAccountBalanceBody,
+  ) {
+    const { today } = validate(TodayQuerySchema, query);
+    const input = validate(AdjustAccountBalanceApiSchema, body);
+
+    return this.accountService.adjustBalance(req.user.id, id, input.balance, resolveToday(today));
+  }
+
   @Post()
   @ZodResponse({ status: 201, type: AccountOutput })
   async create(@Request() req: JwtPayload & Request, @Body() body: CreateAccountBody) {
     const input = validate(CreateAccountApiSchema, body);
 
-    return this.accountService.create(req.user.id, input);
+    return this.accountService.create(req.user.id, input, resolveToday());
   }
 
   @ApiNoContentResponse()
@@ -56,9 +77,9 @@ export class AccountController {
   @Get()
   @ZodResponse({ status: 200, type: [AccountOutput] })
   async findAll(@Request() req: JwtPayload & Request, @Query() query: Record<string, unknown>) {
-    const { ownerId } = validate(ListAccountsQuerySchema, query);
+    const { ownerId, today } = validate(ListAccountsQuerySchema, query);
 
-    return this.accountService.findAll(req.user.id, toOwnerIds(ownerId));
+    return this.accountService.findAll(req.user.id, toOwnerIds(ownerId), resolveToday(today));
   }
 
   @Patch(':id')
@@ -70,6 +91,6 @@ export class AccountController {
   ) {
     const input = validate(UpdateAccountApiSchema, body);
 
-    return this.accountService.update(req.user.id, id, input);
+    return this.accountService.update(req.user.id, id, input, resolveToday());
   }
 }

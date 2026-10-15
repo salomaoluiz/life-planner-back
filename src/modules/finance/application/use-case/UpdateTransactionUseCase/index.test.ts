@@ -1,6 +1,12 @@
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
 import { INT4_MAX } from '@finance/application/dto/FinanceCommon';
+import TransactionEntityFixture from '@finance/domain/entity/mocks/TransactionEntity.fixture';
 import { TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { ValidationError } from '@shared/domain/error/ValidationError';
@@ -21,6 +27,7 @@ it('SHOULD validate the RESULTING record (patch merged over the stored one) AND 
   expect(mocks.ensureConsistency.execute).toHaveBeenCalledWith({
     accessibleOwners: mocks.accessibleOwners,
     accountId: mocks.transaction.accountId,
+    blockArchivedAccount: false,
     categoryId: mocks.transaction.categoryId,
     owner: mocks.transaction.owner,
     ownerId: mocks.transaction.ownerId,
@@ -50,6 +57,7 @@ it('SHOULD check a new account / category / type against the stored owner', asyn
   expect(mocks.ensureConsistency.execute).toHaveBeenCalledWith(
     expect.objectContaining({
       accountId: 'new-account',
+      blockArchivedAccount: true,
       categoryId: 'new-category',
       ownerId: mocks.transaction.ownerId,
       type: TransactionType.INCOME,
@@ -123,4 +131,40 @@ it.each([
 ])('SHOULD throw ValidationError WHEN the patch is %s', async (_label, patch) => {
   await expect(run(patch)).rejects.toThrow(ValidationError);
   expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
+});
+
+describe('archived accounts and balance adjustments (spec 028)', () => {
+  it('SHOULD NOT block an archived account WHEN the transaction stays on its account', async () => {
+    await run({ accountId: mocks.transaction.accountId, value: 5 });
+
+    expect(mocks.ensureConsistency.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ blockArchivedAccount: false }),
+    );
+  });
+
+  it('SHOULD throw Unprocessable (422) AND update nothing WHEN it moves into an archived account', async () => {
+    mocks.ensureConsistency.execute.mockRejectedValueOnce(
+      new UnprocessableEntityException('Account is archived'),
+    );
+
+    await expect(run({ accountId: 'archived-account' })).rejects.toThrow(
+      UnprocessableEntityException,
+    );
+    expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD throw Unprocessable (422) "Balance adjustments cannot be edited" AND update nothing for a system-category transaction', async () => {
+    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce(
+      new TransactionEntityFixture()
+        .withOwnerId(mocks.transaction.ownerId)
+        .withBalanceAdjustment()
+        .build(),
+    );
+
+    await expect(run({ value: 1 })).rejects.toThrow(
+      new UnprocessableEntityException('Balance adjustments cannot be edited'),
+    );
+    expect(mocks.ensureConsistency.execute).not.toHaveBeenCalled();
+    expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
+  });
 });

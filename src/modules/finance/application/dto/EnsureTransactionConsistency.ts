@@ -10,6 +10,8 @@ import {
 export const EnsureTransactionConsistencySchema = z.object({
   accessibleOwners: AccessibleOwnersSchema,
   accountId: z.string().min(1),
+  // Create, and an update that MOVES the transaction to another account, may not target an archived one.
+  blockArchivedAccount: z.boolean().default(false),
   categoryId: z.string().min(1),
   owner: OwnerTypeSchema,
   ownerId: OwnerIdSchema,

@@ -6,10 +6,11 @@ import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 export class FinanceAccountMapper {
   static toDomain(raw: FinancialAccount): AccountEntity {
     return new AccountEntity({
-      balance: raw.balance,
       createdAt: raw.created_at,
       icon: raw.icon,
       id: raw.id,
+      initialBalance: raw.initial_balance,
+      ledgerBalance: raw.ledger_balance,
       name: raw.name,
       owner: OwnerType[raw.owner],
       ownerId: raw.owner_id,

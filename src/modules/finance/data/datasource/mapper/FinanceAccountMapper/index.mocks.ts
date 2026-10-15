@@ -5,10 +5,11 @@ import { FinancialAccount } from '@db/client';
 // region Mocks
 
 const rawAccountMock: FinancialAccount = {
-  balance: -2500,
   created_at: faker.date.past(),
   icon: 'bank',
   id: faker.string.uuid(),
+  initial_balance: 100000,
+  ledger_balance: -2500,
   name: `Account ${faker.word.noun()}`,
   owner: 'FAMILY',
   owner_id: faker.string.uuid(),

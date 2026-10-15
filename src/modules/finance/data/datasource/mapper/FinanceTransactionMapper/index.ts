@@ -1,7 +1,7 @@
 import { toCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
 import { FinancialTransactionWithRelations } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
-import { TransactionType } from '@finance/domain/enum';
+import { SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export class FinanceTransactionMapper {
@@ -10,10 +10,12 @@ export class FinanceTransactionMapper {
       account: { icon: raw.account.icon, id: raw.account.id, name: raw.account.name },
       accountId: raw.account_id,
       category: {
+        excludeFromTotals: raw.category.exclude_from_totals,
         icon: raw.category.icon,
         iconColor: raw.category.icon_color,
         id: raw.category.id,
         name: raw.category.name,
+        systemKey: raw.category.system_key ? SystemCategoryKey[raw.category.system_key] : null,
       },
       categoryId: raw.category_id,
       createdAt: raw.created_at,

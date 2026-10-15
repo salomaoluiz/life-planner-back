@@ -1,10 +1,11 @@
 import { z } from 'zod';
 
-import { AccessibleOwnersSchema } from '@finance/application/dto/FinanceCommon';
+import { AccessibleOwnersSchema, CalendarDateSchema } from '@finance/application/dto/FinanceCommon';
 
 export const GetAccountsSchema = z.object({
   accessibleOwners: AccessibleOwnersSchema,
   ownerIds: z.array(z.string()).optional(),
+  today: CalendarDateSchema,
 });
 
 export type GetAccountsInput = z.input<typeof GetAccountsSchema>;

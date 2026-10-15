@@ -1,4 +1,9 @@
-import { ForbiddenException, Inject, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Inject,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
 import {
   UpdateTransactionInput,
@@ -31,6 +36,11 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
       throw new NotFoundException();
     }
 
+    // Adjustments are written only by the balance-adjustment endpoint; they can be deleted, never edited.
+    if (transaction.category.systemKey !== null) {
+      throw new UnprocessableEntityException('Balance adjustments cannot be edited');
+    }
+
     // The rules are checked against the resulting record (patch merged over the stored one).
     const owner = input.owner ?? transaction.owner;
     const ownerId = input.ownerId ?? transaction.ownerId;
@@ -42,6 +52,8 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
     await this.ensureTransactionConsistencyUseCase.execute({
       accessibleOwners: input.accessibleOwners,
       accountId: input.accountId ?? transaction.accountId,
+      blockArchivedAccount:
+        input.accountId !== undefined && input.accountId !== transaction.accountId,
       categoryId: input.categoryId ?? transaction.categoryId,
       owner,
       ownerId,

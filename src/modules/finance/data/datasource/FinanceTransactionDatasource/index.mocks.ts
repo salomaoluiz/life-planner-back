@@ -12,7 +12,14 @@ import { FinanceTransactionDatasource } from './index';
 const transactionMock: FinancialTransactionWithRelations = {
   account: { icon: 'bank', id: faker.string.uuid(), name: 'Checking' },
   account_id: faker.string.uuid(),
-  category: { icon: 'cart', icon_color: '#2E7D32', id: faker.string.uuid(), name: 'Groceries' },
+  category: {
+    exclude_from_totals: false,
+    icon: 'cart',
+    icon_color: '#2E7D32',
+    id: faker.string.uuid(),
+    name: 'Groceries',
+    system_key: null,
+  },
   category_id: faker.string.uuid(),
   created_at: faker.date.past(),
   date: new Date('2026-10-03T00:00:00.000Z'),
@@ -27,41 +34,59 @@ const transactionMock: FinancialTransactionWithRelations = {
 const ownersMock = [{ owner: OwnerType.USER, ownerId: transactionMock.owner_id }];
 const includeMock = {
   account: { select: { icon: true, id: true, name: true } },
-  category: { select: { icon: true, icon_color: true, id: true, name: true } },
+  category: {
+    select: {
+      exclude_from_totals: true,
+      icon: true,
+      icon_color: true,
+      id: true,
+      name: true,
+      system_key: true,
+    },
+  },
 };
 
 // endregion Mocks
 
 // region Spies
 
+const accountUpdateSpy = jest.fn();
 const countSpy = jest.fn();
 const createSpy = jest.fn();
 const deleteManySpy = jest.fn();
 const findFirstSpy = jest.fn();
 const findManySpy = jest.fn();
 const findUniqueSpy = jest.fn();
+const queryRawSpy = jest.fn();
+const transactionSpy = jest.fn();
 const updateSpy = jest.fn();
 
 // endregion Spies
 
-const databaseMock = {
-  client: {
-    financialTransaction: {
-      count: countSpy,
-      create: createSpy,
-      deleteMany: deleteManySpy,
-      findFirst: findFirstSpy,
-      findMany: findManySpy,
-      findUnique: findUniqueSpy,
-      update: updateSpy,
-    },
+// The interactive $transaction hands the same client to the callback, so one object plays both roles.
+const clientMock = {
+  $queryRaw: queryRawSpy,
+  $transaction: transactionSpy,
+  financialAccount: { update: accountUpdateSpy },
+  financialTransaction: {
+    count: countSpy,
+    create: createSpy,
+    deleteMany: deleteManySpy,
+    findFirst: findFirstSpy,
+    findMany: findManySpy,
+    findUnique: findUniqueSpy,
+    update: updateSpy,
   },
-} as unknown as Database;
+};
+const databaseMock = { client: clientMock } as unknown as Database;
 
 let setup: FinanceTransactionDatasource;
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  transactionSpy.mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) =>
+    callback(clientMock),
+  );
 
   const module = await Test.createTestingModule({
     providers: [FinanceTransactionDatasource, { provide: Database, useValue: databaseMock }],
@@ -72,12 +97,15 @@ beforeEach(async () => {
 
 const mocks = { include: includeMock, owners: ownersMock, transaction: transactionMock };
 const spies = {
+  accountUpdate: accountUpdateSpy,
   count: countSpy,
   create: createSpy,
   deleteMany: deleteManySpy,
   findFirst: findFirstSpy,
   findMany: findManySpy,
   findUnique: findUniqueSpy,
+  queryRaw: queryRawSpy,
+  transaction: transactionSpy,
   update: updateSpy,
 };
 

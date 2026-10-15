@@ -6,9 +6,11 @@ import AccountEntity from '@finance/domain/entity/AccountEntity';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import {
   CreateAccountRepositoryParams,
+  FindFutureSumsRepositoryParams,
   IFinanceAccountRepository,
   UpdateAccountRepositoryParams,
 } from '@finance/domain/repository';
+import { endOfMonth, FutureSums } from '@finance/domain/service/AccountBalance';
 
 @Injectable()
 export class FinanceAccountRepository implements IFinanceAccountRepository {
@@ -19,8 +21,9 @@ export class FinanceAccountRepository implements IFinanceAccountRepository {
 
   async createAccount(params: CreateAccountRepositoryParams): Promise<AccountEntity> {
     const result = await this.accountDatasource.create({
-      balance: params.balance,
       icon: params.icon,
+      initial_balance: params.initialBalance,
+      ledger_balance: params.initialBalance,
       name: params.name,
       owner: params.owner,
       owner_id: params.ownerId,
@@ -50,9 +53,22 @@ export class FinanceAccountRepository implements IFinanceAccountRepository {
     return result.map((row) => FinanceAccountMapper.toDomain(row));
   }
 
+  async findFutureSums(params: FindFutureSumsRepositoryParams): Promise<FutureSums[]> {
+    const rows = await this.accountDatasource.findFutureSums({
+      account_ids: params.accountIds,
+      end_of_month: endOfMonth(params.today),
+      today: params.today,
+    });
+
+    return rows.map((row) => ({
+      accountId: row.account_id,
+      afterEndOfMonth: row.after_end_of_month,
+      afterToday: row.after_today,
+    }));
+  }
+
   async updateAccount(params: UpdateAccountRepositoryParams): Promise<AccountEntity> {
     const result = await this.accountDatasource.update({
-      balance: params.balance,
       icon: params.icon,
       id: params.id,
       name: params.name,

@@ -6,8 +6,8 @@ import { mocks, setup, spies } from './index.mocks';
 describe('createAccount', () => {
   it('SHOULD translate to snake_case columns AND map the result', async () => {
     const result = await setup.createAccount({
-      balance: 10,
       icon: 'bank',
+      initialBalance: 10,
       name: 'Checking',
       owner: OwnerType.USER,
       ownerId: 'owner-id',
@@ -15,8 +15,9 @@ describe('createAccount', () => {
     });
 
     expect(mocks.accountDatasource.create).toHaveBeenCalledWith({
-      balance: 10,
       icon: 'bank',
+      initial_balance: 10,
+      ledger_balance: 10,
       name: 'Checking',
       owner: 'USER',
       owner_id: 'owner-id',
@@ -71,12 +72,28 @@ describe('findAccounts', () => {
   });
 });
 
+describe('findFutureSums', () => {
+  it("SHOULD pass the end of today's month to the datasource AND map the rows to camelCase", async () => {
+    mocks.accountDatasource.findFutureSums.mockResolvedValue([
+      { account_id: 'acc-1', after_end_of_month: -400, after_today: 600 },
+    ]);
+
+    const result = await setup.findFutureSums({ accountIds: ['acc-1'], today: '2026-02-10' });
+
+    expect(mocks.accountDatasource.findFutureSums).toHaveBeenCalledWith({
+      account_ids: ['acc-1'],
+      end_of_month: '2026-02-28',
+      today: '2026-02-10',
+    });
+    expect(result).toEqual([{ accountId: 'acc-1', afterEndOfMonth: -400, afterToday: 600 }]);
+  });
+});
+
 describe('updateAccount', () => {
   it('SHOULD forward only the editable fields AND map the result', async () => {
     const result = await setup.updateAccount({ id: 'id-1', name: 'New' });
 
     expect(mocks.accountDatasource.update).toHaveBeenCalledWith({
-      balance: undefined,
       icon: undefined,
       id: 'id-1',
       name: 'New',

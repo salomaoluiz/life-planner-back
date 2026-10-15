@@ -17,7 +17,14 @@ const accessibleOwners = [{ owner: OwnerType.USER, ownerId: userId }];
 const transactionResultMock = {
   account: { icon: 'bank', id: faker.string.uuid(), name: 'Checking' },
   accountId: faker.string.uuid(),
-  category: { icon: 'cart', iconColor: '#2E7D32', id: faker.string.uuid(), name: 'Groceries' },
+  category: {
+    excludeFromTotals: false,
+    icon: 'cart',
+    iconColor: '#2E7D32',
+    id: faker.string.uuid(),
+    name: 'Groceries',
+    systemKey: null,
+  },
   categoryId: faker.string.uuid(),
   createdAt: new Date('2026-10-04T12:00:00.000Z'),
   date: '2026-10-03',

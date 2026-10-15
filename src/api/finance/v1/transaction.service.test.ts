@@ -1,4 +1,5 @@
-import { TransactionType } from '@finance/domain/enum';
+import TransactionEntityFixture from '@finance/domain/entity/mocks/TransactionEntity.fixture';
+import { SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { mocks, setup } from './transaction.service.mocks';
@@ -65,5 +66,18 @@ describe('delete', () => {
       accessibleOwners: mocks.accessibleOwners,
       id: 'tx-1',
     });
+  });
+});
+
+describe('system categories (spec 028)', () => {
+  it('SHOULD expose the system key AND excludeFromTotals of a balance adjustment', async () => {
+    mocks.getTransactionsUseCase.execute.mockResolvedValueOnce([
+      new TransactionEntityFixture().withBalanceAdjustment().build(),
+    ]);
+
+    const [result] = await setup.findAll(mocks.userId);
+
+    expect(result.category.systemKey).toBe(SystemCategoryKey.BALANCE_ADJUSTMENT);
+    expect(result.category.excludeFromTotals).toBe(true);
   });
 });

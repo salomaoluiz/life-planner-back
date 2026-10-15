@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
 import { INT4_MAX } from '@finance/application/dto/FinanceCommon';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -12,6 +17,7 @@ it('SHOULD check consistency, then create the transaction with integer cents AND
   expect(mocks.ensureConsistency.execute).toHaveBeenCalledWith({
     accessibleOwners: mocks.input.accessibleOwners,
     accountId: mocks.input.accountId,
+    blockArchivedAccount: true,
     categoryId: mocks.input.categoryId,
     owner: mocks.input.owner,
     ownerId: mocks.input.ownerId,
@@ -83,4 +89,13 @@ it('SHOULD accept a leap day', async () => {
   expect(mocks.transactionRepository.createTransaction).toHaveBeenCalledWith(
     expect.objectContaining({ date: '2024-02-29' }),
   );
+});
+
+it('SHOULD propagate Unprocessable (422) WHEN the account is archived AND create nothing', async () => {
+  mocks.ensureConsistency.execute.mockRejectedValueOnce(
+    new UnprocessableEntityException('Account is archived'),
+  );
+
+  await expect(setup.execute(mocks.input)).rejects.toThrow(UnprocessableEntityException);
+  expect(mocks.transactionRepository.createTransaction).not.toHaveBeenCalled();
 });

@@ -8,7 +8,14 @@ import TransactionEntity from './index';
 const paramsMock: TransactionEntity = {
   account: { icon: 'bank', id: 'account-uuid-1', name: 'Checking' },
   accountId: 'account-uuid-1',
-  category: { icon: 'cart', iconColor: '#2E7D32', id: 'category-uuid-1', name: 'Groceries' },
+  category: {
+    excludeFromTotals: false,
+    icon: 'cart',
+    iconColor: '#2E7D32',
+    id: 'category-uuid-1',
+    name: 'Groceries',
+    systemKey: null,
+  },
   categoryId: 'category-uuid-1',
   createdAt: new Date('2026-10-04T12:00:00.000Z'),
   date: '2026-10-03',

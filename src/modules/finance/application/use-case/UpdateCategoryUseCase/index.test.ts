@@ -1,6 +1,12 @@
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
-import { TransactionType } from '@finance/domain/enum';
+import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
+import { SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 import { ValidationError } from '@shared/domain/error/ValidationError';
 
 import { mocks, setup } from './index.mocks';
@@ -163,6 +169,23 @@ describe('access and validation', () => {
     ['an unknown type', { type: 'X' }],
   ])('SHOULD throw ValidationError WHEN the patch is %s', async (_label, patch) => {
     await expect(run('a', patch)).rejects.toThrow(ValidationError);
+    expect(mocks.categoryRepository.updateCategory).not.toHaveBeenCalled();
+  });
+});
+
+describe('system categories (spec 028)', () => {
+  const systemId = SYSTEM_CATEGORY_IDS[SystemCategoryKey.BALANCE_ADJUSTMENT];
+
+  it('SHOULD throw Unprocessable (422) "System categories cannot be changed" BEFORE any lookup', async () => {
+    await expect(run(systemId, { name: 'x' })).rejects.toThrow(
+      new UnprocessableEntityException('System categories cannot be changed'),
+    );
+    expect(mocks.categoryRepository.findCategoryById).not.toHaveBeenCalled();
+    expect(mocks.categoryRepository.updateCategory).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD throw Unprocessable (422) WHEN moving a category under a system category', async () => {
+    await expect(run('a', { parentId: systemId })).rejects.toThrow(UnprocessableEntityException);
     expect(mocks.categoryRepository.updateCategory).not.toHaveBeenCalled();
   });
 });
