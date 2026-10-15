@@ -10,13 +10,14 @@ import { Database } from '@shared/infra/db/Database';
 export class FinanceOwnerDataDatasource implements IFinanceOwnerDataDatasource {
   constructor(private readonly db: Database) {}
 
-  // Transactions first (their FKs to account and category are RESTRICT); a category's children cascade, and
+  // Transactions first (their FKs to account and category are RESTRICT; cards come right after because the next spec links them); a category's children cascade, and
   // deleting by owner removes them anyway.
   async deleteAllByOwner(params: DeleteAllByOwnerDatasourceParams): Promise<number> {
     const where = { owner: params.owner, owner_id: params.owner_id };
 
     const results = await this.db.client.$transaction([
       this.db.client.financialTransaction.deleteMany({ where }),
+      this.db.client.financialCreditCard.deleteMany({ where }),
       this.db.client.financialCategory.deleteMany({ where }),
       this.db.client.financialAccount.deleteMany({ where }),
     ]);

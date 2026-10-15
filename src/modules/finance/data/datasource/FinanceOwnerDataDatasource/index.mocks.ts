@@ -8,6 +8,7 @@ import { FinanceOwnerDataDatasource } from './index';
 
 const accountDeleteManySpy = jest.fn();
 const categoryDeleteManySpy = jest.fn();
+const creditCardDeleteManySpy = jest.fn();
 const transactionDeleteManySpy = jest.fn();
 const transactionSpy = jest.fn();
 
@@ -18,6 +19,7 @@ const databaseMock = {
     $transaction: transactionSpy,
     financialAccount: { deleteMany: accountDeleteManySpy },
     financialCategory: { deleteMany: categoryDeleteManySpy },
+    financialCreditCard: { deleteMany: creditCardDeleteManySpy },
     financialTransaction: { deleteMany: transactionDeleteManySpy },
   },
 } as unknown as Database;
@@ -38,6 +40,7 @@ const mocks = {};
 const spies = {
   accountDeleteMany: accountDeleteManySpy,
   categoryDeleteMany: categoryDeleteManySpy,
+  creditCardDeleteMany: creditCardDeleteManySpy,
   transaction: transactionSpy,
   transactionDeleteMany: transactionDeleteManySpy,
 };
