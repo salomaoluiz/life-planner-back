@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
@@ -25,6 +25,15 @@ describe('DeleteCreditCardUseCase', () => {
         accessibleOwners: [{ owner: OwnerType.USER, ownerId: 'spouse' }],
       }),
     ).rejects.toThrow(NotFoundException);
+    expect(mocks.creditCardRepository.deleteCreditCard).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD throw Conflict (409) AND delete nothing WHEN the card has transactions', async () => {
+    mocks.transactionRepository.countByCreditCardId.mockResolvedValueOnce(2);
+
+    await expect(setup.execute(mocks.base)).rejects.toThrow(
+      new ConflictException('Credit card has transactions'),
+    );
     expect(mocks.creditCardRepository.deleteCreditCard).not.toHaveBeenCalled();
   });
 });

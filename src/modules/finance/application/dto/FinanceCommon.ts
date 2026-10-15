@@ -30,3 +30,6 @@ export const CalendarDateSchema = z
 export const DescriptionSchema = z.string().trim().min(1).max(200);
 // Integer cents, strictly positive (the sign comes from the type), max int4.
 export const ValueSchema = z.number().int().min(1).max(INT4_MAX);
+
+// `YYYY-MM`
+export const InvoiceMonthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);

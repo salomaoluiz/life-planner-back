@@ -4,15 +4,12 @@ import {
   GetCreditCardsOverviewInput,
   GetCreditCardsOverviewSchema,
 } from '@finance/application/dto/GetCreditCardsOverview';
+import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { narrowOwners } from '@finance/domain/entity/OwnerAccess';
 import { AccountStatus } from '@finance/domain/enum';
 import { IFinanceCreditCardRepository } from '@finance/domain/repository';
-import {
-  calculateInvoices,
-  Invoice,
-  InvoicePurchase,
-} from '@finance/domain/service/InvoiceCalculator';
+import { Invoice } from '@finance/domain/service/InvoiceCalculator';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -21,6 +18,7 @@ export interface CreditCardOverviewItem {
   card: CreditCardEntity;
   closedInvoices: Invoice[];
   openInvoice: Invoice;
+  upcomingInvoices: Invoice[];
   used: number;
 }
 export interface CreditCardsOverview {
@@ -28,14 +26,13 @@ export interface CreditCardsOverview {
   cards: CreditCardOverviewItem[];
 }
 
-// Purchases do not exist yet (the next spec links transactions to cards): the calculator already takes them as input.
-const NO_PURCHASES: InvoicePurchase[] = [];
-
 export class GetCreditCardsOverviewUseCase implements UseCaseWithParams<
   GetCreditCardsOverviewInput,
   CreditCardsOverview
 > {
   constructor(
+    @Inject(ComputeCardInvoicesUseCase)
+    private readonly computeCardInvoicesUseCase: ComputeCardInvoicesUseCase,
     @Inject('IFinanceCreditCardRepository')
     private readonly creditCardRepository: IFinanceCreditCardRepository,
   ) {}
@@ -49,17 +46,21 @@ export class GetCreditCardsOverviewUseCase implements UseCaseWithParams<
     }
 
     const cards = await this.creditCardRepository.findCreditCards(owners, AccountStatus.ACTIVE);
-    const items = [...cards]
-      .sort((a, b) => a.title.toLowerCase().localeCompare(b.title.toLowerCase()))
-      .map((card) => {
-        const { available, closedInvoices, openInvoice, used } = calculateInvoices(
-          card,
-          NO_PURCHASES,
-          input.today,
-        );
-
-        return { available, card, closedInvoices, openInvoice, used };
-      });
+    const sorted = [...cards].sort((a, b) =>
+      a.title.toLowerCase().localeCompare(b.title.toLowerCase()),
+    );
+    const data = await this.computeCardInvoicesUseCase.execute({
+      cards: sorted,
+      today: input.today,
+    });
+    const items = data.map(({ card, invoices }) => ({
+      available: invoices.available,
+      card,
+      closedInvoices: invoices.closedInvoices,
+      openInvoice: invoices.openInvoice,
+      upcomingInvoices: invoices.upcomingInvoices,
+      used: invoices.used,
+    }));
 
     return toOverview(items);
   }

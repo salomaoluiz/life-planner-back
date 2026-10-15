@@ -7,7 +7,7 @@ import {
 
 import { INT4_MAX } from '@finance/application/dto/FinanceCommon';
 import TransactionEntityFixture from '@finance/domain/entity/mocks/TransactionEntity.fixture';
-import { TransactionType } from '@finance/domain/enum';
+import { SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { ValidationError } from '@shared/domain/error/ValidationError';
 
@@ -17,6 +17,7 @@ async function run(patch: Record<string, unknown>) {
   return setup.execute({
     accessibleOwners: mocks.accessibleOwners,
     id: mocks.transaction.id,
+    today: '2026-10-15',
     ...patch,
   } as never);
 }
@@ -29,6 +30,7 @@ it('SHOULD validate the RESULTING record (patch merged over the stored one) AND 
     accountId: mocks.transaction.accountId,
     blockArchivedAccount: false,
     categoryId: mocks.transaction.categoryId,
+    creditCardId: undefined,
     owner: mocks.transaction.owner,
     ownerId: mocks.transaction.ownerId,
     type: mocks.transaction.type,
@@ -36,15 +38,17 @@ it('SHOULD validate the RESULTING record (patch merged over the stored one) AND 
   expect(mocks.transactionRepository.updateTransaction).toHaveBeenCalledWith({
     accountId: undefined,
     categoryId: undefined,
+    creditCardId: undefined,
     date: undefined,
     description: 'Updated',
     id: mocks.transaction.id,
+    invoiceMonth: undefined,
     owner: undefined,
     ownerId: undefined,
     type: undefined,
     value: 100,
   });
-  expect(result).toBe(mocks.updated);
+  expect(result).toEqual({ overLimit: false, transaction: mocks.updated });
 });
 
 it('SHOULD check a new account / category / type against the stored owner', async () => {
@@ -166,5 +170,82 @@ describe('archived accounts and balance adjustments (spec 028)', () => {
     );
     expect(mocks.ensureConsistency.execute).not.toHaveBeenCalled();
     expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
+  });
+});
+
+describe('card purchases and the invoice payment (spec 029)', () => {
+  it('SHOULD refuse to edit the INVOICE_PAYMENT transaction (422) AND update nothing', async () => {
+    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce({
+      ...mocks.transaction,
+      category: { ...mocks.transaction.category, systemKey: SystemCategoryKey.INVOICE_PAYMENT },
+    });
+
+    await expect(run({ value: 1 })).rejects.toThrow(
+      new UnprocessableEntityException('Use the invoice to change this payment'),
+    );
+    expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD switch an account expense to a card: clears the account, sets the invoice month, blocks an archived card', async () => {
+    mocks.ensureConsistency.execute.mockResolvedValueOnce({ card: mocks.card });
+
+    const result = await run({ creditCardId: mocks.card.id, date: '2026-11-01' });
+
+    expect(mocks.ensureConsistency.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId: undefined,
+        blockArchivedAccount: true,
+        creditCardId: mocks.card.id,
+      }),
+    );
+    expect(mocks.transactionRepository.updateTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId: null,
+        creditCardId: mocks.card.id,
+        invoiceMonth: '2026-11',
+      }),
+    );
+    expect(result.overLimit).toBe(false);
+  });
+
+  it('SHOULD switch a card purchase back to an account: clears card and invoice month', async () => {
+    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce({
+      ...mocks.transaction,
+      accountId: null,
+      creditCardId: mocks.card.id,
+      invoiceMonth: '2026-10',
+    });
+
+    await run({ accountId: 'new-account' });
+
+    expect(mocks.transactionRepository.updateTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId: 'new-account',
+        creditCardId: null,
+        invoiceMonth: null,
+      }),
+    );
+  });
+
+  it('SHOULD recompute the invoice month WHEN only the date of a card purchase changes, AND flag overLimit', async () => {
+    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce({
+      ...mocks.transaction,
+      accountId: null,
+      creditCardId: mocks.card.id,
+      invoiceMonth: '2026-10',
+    });
+    mocks.ensureConsistency.execute.mockResolvedValueOnce({ card: mocks.card });
+    mocks.compute.execute.mockResolvedValueOnce([{ invoices: { used: 20_000 } }]);
+
+    const result = await run({ date: '2026-12-31' });
+
+    expect(mocks.transactionRepository.updateTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ invoiceMonth: '2026-12' }),
+    );
+    expect(result.overLimit).toBe(true);
+  });
+
+  it('SHOULD throw ValidationError WHEN the patch sends both sources', async () => {
+    await expect(run({ accountId: 'a', creditCardId: 'c' })).rejects.toThrow(ValidationError);
   });
 });

@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
 import { AccountStatus, FinancialCreditCard } from '@db/client';
+import { lockCards } from '@finance/data/datasource/ledger';
+import { toCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
 import { toOwnerWhere } from '@finance/data/datasource/mapper/OwnerWhere';
 import {
   CreateCreditCardDatasourceParams,
@@ -9,6 +11,7 @@ import {
   UpdateCreditCardDatasourceParams,
 } from '@finance/data/repository/datasource/IFinanceCreditCardDatasource';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
+import { invoiceMonthOf } from '@finance/domain/service/InvoiceCalculator';
 import { Database } from '@shared/infra/db/Database';
 
 @Injectable()
@@ -45,22 +48,60 @@ export class FinanceCreditCardDatasource implements IFinanceCreditCardDatasource
     });
   }
 
+  // A new closing day recomputes the invoice of every purchase in an unpaid invoice, in the SAME database
+  // transaction as the card update. Paid invoices never change (spec 029 FR 9).
   async update(params: UpdateCreditCardDatasourceParams): Promise<FinancialCreditCard> {
-    return this.db.client.financialCreditCard.update({
-      data: {
-        brand: params.brand,
-        closing_day: params.closing_day,
-        color: params.color,
-        due_day: params.due_day,
-        last_digits: params.last_digits,
-        limit: params.limit,
-        owner: params.owner,
-        owner_id: params.owner_id,
-        payment_day: params.payment_day,
-        status: params.status,
-        title: params.title,
-      },
-      where: { id: params.id },
+    const data = {
+      brand: params.brand,
+      closing_day: params.closing_day,
+      color: params.color,
+      due_day: params.due_day,
+      last_digits: params.last_digits,
+      limit: params.limit,
+      owner: params.owner,
+      owner_id: params.owner_id,
+      payment_day: params.payment_day,
+      status: params.status,
+      title: params.title,
+    };
+
+    if (params.closing_day === undefined) {
+      return this.db.client.financialCreditCard.update({ data, where: { id: params.id } });
+    }
+
+    const closingDay = params.closing_day;
+
+    return this.db.client.$transaction(async (tx) => {
+      await lockCards(tx, [params.id]);
+
+      const updated = await tx.financialCreditCard.update({ data, where: { id: params.id } });
+      const payments = await tx.financialInvoicePayment.findMany({
+        select: { invoice_month: true },
+        where: { credit_card_id: params.id },
+      });
+      const paidMonths = new Set(payments.map((payment) => payment.invoice_month));
+      const purchases = await tx.financialTransaction.findMany({
+        select: { date: true, id: true, invoice_month: true },
+        where: { credit_card_id: params.id, invoice_month: { notIn: [...paidMonths] } },
+      });
+      const idsByMonth = new Map<string, string[]>();
+
+      for (const purchase of purchases) {
+        const month = invoiceMonthOf(toCalendarDate(purchase.date), closingDay);
+
+        if (month !== purchase.invoice_month && !paidMonths.has(month)) {
+          idsByMonth.set(month, [...(idsByMonth.get(month) ?? []), purchase.id]);
+        }
+      }
+
+      for (const [month, ids] of idsByMonth) {
+        await tx.financialTransaction.updateMany({
+          data: { invoice_month: month },
+          where: { id: { in: ids } },
+        });
+      }
+
+      return updated;
     });
   }
 }

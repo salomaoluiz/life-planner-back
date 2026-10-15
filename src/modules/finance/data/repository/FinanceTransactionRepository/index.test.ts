@@ -67,7 +67,11 @@ describe('findTransactionById / findTransactions', () => {
     const owners = [{ owner: OwnerType.USER, ownerId: 'u' }];
 
     expect(await setup.findTransactions(owners)).toEqual([mocks.transactionEntity]);
-    expect(mocks.transactionDatasource.findByOwners).toHaveBeenCalledWith(owners);
+    expect(mocks.transactionDatasource.findByOwners).toHaveBeenCalledWith(
+      owners,
+      'ACCOUNT',
+      undefined,
+    );
   });
 });
 
@@ -94,5 +98,20 @@ describe('updateTransaction', () => {
     expect(mocks.transactionDatasource.update).toHaveBeenCalledWith(
       expect.objectContaining({ date: undefined, description: 'x' }),
     );
+  });
+});
+
+describe('card helpers', () => {
+  it('SHOULD sum invoices, find purchases and count by card', async () => {
+    expect(await setup.sumCardInvoices(['card-1'])).toEqual([
+      { amount: 450, creditCardId: 'card-1', invoiceMonth: '2026-10' },
+    ]);
+    expect(
+      await setup.findCardPurchases([{ creditCardId: 'card-1', invoiceMonth: '2026-10' }]),
+    ).toHaveLength(1);
+    expect(mocks.transactionDatasource.findCardPurchases).toHaveBeenCalledWith([
+      { credit_card_id: 'card-1', invoice_month: '2026-10' },
+    ]);
+    expect(await setup.countByCreditCardId('card-1')).toBe(0);
   });
 });

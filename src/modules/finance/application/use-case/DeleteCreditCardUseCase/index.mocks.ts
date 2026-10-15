@@ -23,6 +23,7 @@ const inputMock = {
 };
 const baseMock = { accessibleOwners: inputMock.accessibleOwners, id: cardMock.id };
 
+const transactionRepositoryMock = { countByCreditCardId: jest.fn() };
 const creditCardRepositoryMock = {
   createCreditCard: jest.fn().mockResolvedValue(cardMock),
   deleteCreditCard: jest.fn().mockResolvedValue(undefined),
@@ -37,11 +38,13 @@ let setup: DeleteCreditCardUseCase;
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  transactionRepositoryMock.countByCreditCardId.mockResolvedValue(0);
 
   const module = await Test.createTestingModule({
     providers: [
       DeleteCreditCardUseCase,
       { provide: 'IFinanceCreditCardRepository', useValue: creditCardRepositoryMock },
+      { provide: 'IFinanceTransactionRepository', useValue: transactionRepositoryMock },
     ],
   }).compile();
 
@@ -53,6 +56,7 @@ const mocks = {
   card: cardMock,
   creditCardRepository: creditCardRepositoryMock,
   input: inputMock,
+  transactionRepository: transactionRepositoryMock,
   updated: updatedMock,
 };
 const spies = {};

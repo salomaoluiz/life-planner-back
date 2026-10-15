@@ -112,3 +112,40 @@ describe('Method update', () => {
     });
   });
 });
+
+describe('Method update with a new closing day (spec 029 FR 9)', () => {
+  it('SHOULD lock the card, update it AND recompute ONLY the purchases of unpaid invoices that move', async () => {
+    spies.update.mockResolvedValue(mocks.card);
+    spies.paymentFindMany.mockResolvedValue([{ invoice_month: '2026-09' }]);
+    spies.txFindMany.mockResolvedValue([
+      { date: new Date('2026-10-20T00:00:00.000Z'), id: 'moves', invoice_month: '2026-10' },
+      { date: new Date('2026-10-05T00:00:00.000Z'), id: 'stays', invoice_month: '2026-10' },
+    ]);
+
+    await setup.update({ closing_day: 15, id: mocks.card.id });
+
+    expect(spies.transaction).toHaveBeenCalledTimes(1);
+    expect(spies.queryRaw).toHaveBeenCalledTimes(1);
+    expect(spies.txFindMany).toHaveBeenCalledWith({
+      select: { date: true, id: true, invoice_month: true },
+      where: { credit_card_id: mocks.card.id, invoice_month: { notIn: ['2026-09'] } },
+    });
+    expect(spies.txUpdateMany).toHaveBeenCalledTimes(1);
+    expect(spies.txUpdateMany).toHaveBeenCalledWith({
+      data: { invoice_month: '2026-11' },
+      where: { id: { in: ['moves'] } },
+    });
+  });
+
+  it('SHOULD NOT move a purchase into an invoice that is already paid', async () => {
+    spies.update.mockResolvedValue(mocks.card);
+    spies.paymentFindMany.mockResolvedValue([{ invoice_month: '2026-11' }]);
+    spies.txFindMany.mockResolvedValue([
+      { date: new Date('2026-10-20T00:00:00.000Z'), id: 'blocked', invoice_month: '2026-10' },
+    ]);
+
+    await setup.update({ closing_day: 15, id: mocks.card.id });
+
+    expect(spies.txUpdateMany).not.toHaveBeenCalled();
+  });
+});

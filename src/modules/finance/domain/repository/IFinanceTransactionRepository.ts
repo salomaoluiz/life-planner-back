@@ -1,40 +1,65 @@
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
-import { TransactionType } from '@finance/domain/enum';
+import { TransactionSource, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export type IFinanceTransactionRepository = {
   countByAccountId(accountId: string): Promise<number>;
   countByCategoryIds(categoryIds: string[]): Promise<number>;
+  countByCreditCardId(creditCardId: string): Promise<number>;
   createTransaction(params: CreateTransactionRepositoryParams): Promise<TransactionEntity>;
   deleteTransaction(id: string): Promise<void>;
   existsByOwner(access: OwnerAccess): Promise<boolean>;
   findTransactionById(id: string): Promise<TransactionEntity | undefined>;
   // Sorted by `date` descending, then `createdAt` descending.
-  findTransactions(owners: OwnerAccess[]): Promise<TransactionEntity[]>;
+  findCardPurchases(keys: CardInvoiceRef[]): Promise<TransactionEntity[]>;
+  // Default source ACCOUNT: account rows only, without the invoice payment transactions.
+  findTransactions(
+    owners: OwnerAccess[],
+    source?: TransactionSource,
+    filter?: { creditCardId?: string; invoiceMonth?: string },
+  ): Promise<TransactionEntity[]>;
+  // One grouped query: the sum of every (card, invoice month).
+  sumCardInvoices(creditCardIds: string[]): Promise<CardInvoiceTotal[]>;
   updateTransaction(params: UpdateTransactionRepositoryParams): Promise<TransactionEntity>;
 };
 
+interface CardInvoiceRef {
+  creditCardId: string;
+  invoiceMonth: string;
+}
+interface CardInvoiceTotal extends CardInvoiceRef {
+  amount: number;
+}
 interface CreateTransactionRepositoryParams {
-  accountId: string;
+  accountId?: string;
   categoryId: string;
+  creditCardId?: string;
   date: string;
   description: string;
+  invoiceMonth?: string;
   owner: OwnerType;
   ownerId: string;
   type: TransactionType;
   value: number;
 }
 interface UpdateTransactionRepositoryParams {
-  accountId?: string;
+  accountId?: null | string;
   categoryId?: string;
+  creditCardId?: null | string;
   date?: string;
   description?: string;
   id: string;
+  invoiceMonth?: null | string;
   owner?: OwnerType;
   ownerId?: string;
   type?: TransactionType;
   value?: number;
 }
 
-export { CreateTransactionRepositoryParams, UpdateTransactionRepositoryParams };
+export {
+  CardInvoiceRef,
+  CardInvoiceTotal,
+  CreateTransactionRepositoryParams,
+  UpdateTransactionRepositoryParams,
+};

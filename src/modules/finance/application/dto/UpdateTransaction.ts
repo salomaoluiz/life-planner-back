@@ -15,18 +15,24 @@ export const UpdateTransactionSchema = z
     accessibleOwners: AccessibleOwnersSchema,
     accountId: z.string().min(1).optional(),
     categoryId: z.string().min(1).optional(),
+    creditCardId: z.string().min(1).optional(),
     date: CalendarDateSchema.optional(),
     description: DescriptionSchema.optional(),
     id: z.string().min(1),
     owner: OwnerTypeSchema.optional(),
     ownerId: OwnerIdSchema.optional(),
+    today: CalendarDateSchema,
     type: TransactionTypeSchema.optional(),
     value: ValueSchema.optional(),
+  })
+  .refine((input) => input.accountId === undefined || input.creditCardId === undefined, {
+    message: 'Send either accountId or creditCardId',
   })
   .refine(
     (input) =>
       input.accountId !== undefined ||
       input.categoryId !== undefined ||
+      input.creditCardId !== undefined ||
       input.date !== undefined ||
       input.description !== undefined ||
       input.owner !== undefined ||

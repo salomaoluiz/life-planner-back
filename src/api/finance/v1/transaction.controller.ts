@@ -23,12 +23,20 @@ import {
   UpdateTransactionApiSchema,
   UpdateTransactionBody,
 } from '@api/finance/v1/dto/transaction.dto';
-import { OwnerIdQuerySchema, toOwnerIds } from '@api/finance/v1/finance-query';
+import { OwnerIdQuerySchema, TodayQuerySchema, toOwnerIds } from '@api/finance/v1/finance-query';
 import { TransactionService } from '@api/finance/v1/transaction.service';
+import { InvoiceMonthSchema } from '@finance/application/dto/FinanceCommon';
+import { TransactionSource } from '@finance/domain/enum';
 import { JwtPayload } from '@shared/infra/jwt/types';
 import { validate } from '@shared/infra/validation';
 
-const ListTransactionsQuerySchema = z.object({ ownerId: OwnerIdQuerySchema });
+// Default source ACCOUNT keeps old app versions working: they never see a row without an account.
+const ListTransactionsQuerySchema = z.object({
+  creditCardId: z.uuid().optional(),
+  invoiceMonth: InvoiceMonthSchema.optional(),
+  ownerId: OwnerIdQuerySchema,
+  source: z.enum(TransactionSource).optional(),
+});
 
 @ApiBearerAuth('JWT')
 @Controller({
@@ -40,10 +48,15 @@ export class TransactionController {
 
   @Post()
   @ZodResponse({ status: 201, type: TransactionOutput })
-  async create(@Request() req: JwtPayload & Request, @Body() body: CreateTransactionBody) {
+  async create(
+    @Request() req: JwtPayload & Request,
+    @Body() body: CreateTransactionBody,
+    @Query() query: Record<string, unknown>,
+  ) {
     const input = validate(CreateTransactionApiSchema, body);
+    const { today } = validate(TodayQuerySchema, query);
 
-    return this.transactionService.create(req.user.id, input);
+    return this.transactionService.create(req.user.id, input, today);
   }
 
   @ApiNoContentResponse()
@@ -56,9 +69,9 @@ export class TransactionController {
   @Get()
   @ZodResponse({ status: 200, type: [TransactionOutput] })
   async findAll(@Request() req: JwtPayload & Request, @Query() query: Record<string, unknown>) {
-    const { ownerId } = validate(ListTransactionsQuerySchema, query);
+    const { ownerId, ...filter } = validate(ListTransactionsQuerySchema, query);
 
-    return this.transactionService.findAll(req.user.id, toOwnerIds(ownerId));
+    return this.transactionService.findAll(req.user.id, toOwnerIds(ownerId), filter);
   }
 
   @Patch(':id')
@@ -67,9 +80,11 @@ export class TransactionController {
     @Request() req: JwtPayload & Request,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: UpdateTransactionBody,
+    @Query() query: Record<string, unknown>,
   ) {
     const input = validate(UpdateTransactionApiSchema, body);
+    const { today } = validate(TodayQuerySchema, query);
 
-    return this.transactionService.update(req.user.id, id, input);
+    return this.transactionService.update(req.user.id, id, input, today);
   }
 }

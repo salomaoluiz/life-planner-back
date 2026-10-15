@@ -1,19 +1,23 @@
-import { Inject, NotFoundException } from '@nestjs/common';
+import { ConflictException, Inject, NotFoundException } from '@nestjs/common';
 
 import {
   DeleteCreditCardInput,
   DeleteCreditCardSchema,
 } from '@finance/application/dto/DeleteCreditCard';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
-import { IFinanceCreditCardRepository } from '@finance/domain/repository';
+import {
+  IFinanceCreditCardRepository,
+  IFinanceTransactionRepository,
+} from '@finance/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
-// The 409 "Credit card has transactions" guard arrives with the spec that links transactions to cards.
 export class DeleteCreditCardUseCase implements UseCaseWithParams<DeleteCreditCardInput, void> {
   constructor(
     @Inject('IFinanceCreditCardRepository')
     private readonly creditCardRepository: IFinanceCreditCardRepository,
+    @Inject('IFinanceTransactionRepository')
+    private readonly transactionRepository: IFinanceTransactionRepository,
   ) {}
 
   async execute(params: DeleteCreditCardInput): Promise<void> {
@@ -23,6 +27,11 @@ export class DeleteCreditCardUseCase implements UseCaseWithParams<DeleteCreditCa
 
     if (!card || !hasOwnerAccess(input.accessibleOwners, card)) {
       throw new NotFoundException();
+    }
+
+    // Purchases (and so every payment) keep the card: archive it instead.
+    if ((await this.transactionRepository.countByCreditCardId(card.id)) > 0) {
+      throw new ConflictException('Credit card has transactions');
     }
 
     await this.creditCardRepository.deleteCreditCard(input.id);

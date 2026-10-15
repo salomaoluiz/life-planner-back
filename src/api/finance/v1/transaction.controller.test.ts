@@ -30,11 +30,14 @@ describe('findAll', () => {
       1,
       mocks.request.user.id,
       undefined,
+      {},
     );
-    expect(mocks.transactionService.findAll).toHaveBeenNthCalledWith(2, mocks.request.user.id, [
-      validBody.ownerId,
-      validBody.accountId,
-    ]);
+    expect(mocks.transactionService.findAll).toHaveBeenNthCalledWith(
+      2,
+      mocks.request.user.id,
+      [validBody.ownerId, validBody.accountId],
+      {},
+    );
   });
 
   it('SHOULD throw ValidationError WHEN an ownerId is not a uuid', async () => {
@@ -46,9 +49,15 @@ describe('findAll', () => {
 
 describe('create', () => {
   it('SHOULD validate the body AND call the service with the JWT user', async () => {
-    const result = await setup.create(mocks.request, validBody as never);
+    const result = await setup.create(mocks.request, validBody as never, {
+      today: '2026-10-15',
+    });
 
-    expect(mocks.transactionService.create).toHaveBeenCalledWith(mocks.request.user.id, validBody);
+    expect(mocks.transactionService.create).toHaveBeenCalledWith(
+      mocks.request.user.id,
+      validBody,
+      '2026-10-15',
+    );
     expect(result).toEqual(mocks.transaction);
   });
 
@@ -59,28 +68,29 @@ describe('create', () => {
     ['an impossible date', { date: '2026-02-30' }],
     ['an ISO timestamp date', { date: '2026-10-03T10:00:00Z' }],
   ])('SHOULD throw ValidationError (400) WHEN the body has %s', async (_label, patch) => {
-    await expect(setup.create(mocks.request, { ...validBody, ...patch } as never)).rejects.toThrow(
-      ValidationError,
-    );
+    await expect(
+      setup.create(mocks.request, { ...validBody, ...patch } as never, {}),
+    ).rejects.toThrow(ValidationError);
     expect(mocks.transactionService.create).not.toHaveBeenCalled();
   });
 });
 
 describe('update', () => {
   it('SHOULD forward a valid patch', async () => {
-    await setup.update(mocks.request, mocks.transaction.id, { value: 100 } as never);
+    await setup.update(mocks.request, mocks.transaction.id, { value: 100 } as never, {});
 
     expect(mocks.transactionService.update).toHaveBeenCalledWith(
       mocks.request.user.id,
       mocks.transaction.id,
       { value: 100 },
+      undefined,
     );
   });
 
   it('SHOULD throw ValidationError (400) WHEN the body is empty', async () => {
-    await expect(setup.update(mocks.request, mocks.transaction.id, {} as never)).rejects.toThrow(
-      ValidationError,
-    );
+    await expect(
+      setup.update(mocks.request, mocks.transaction.id, {} as never, {}),
+    ).rejects.toThrow(ValidationError);
     expect(mocks.transactionService.update).not.toHaveBeenCalled();
   });
 });
@@ -96,5 +106,59 @@ describe('delete', () => {
     expect(Reflect.getMetadata(HTTP_CODE_METADATA, TransactionController.prototype.delete)).toBe(
       204,
     );
+  });
+});
+
+describe('card purchases (spec 029)', () => {
+  const rest = { ...validBody, accountId: undefined };
+  const cardId = '7c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f';
+
+  it('SHOULD accept a body with creditCardId and no accountId', async () => {
+    await setup.create(mocks.request, { ...rest, creditCardId: cardId } as never, {});
+
+    expect(mocks.transactionService.create).toHaveBeenCalledWith(
+      mocks.request.user.id,
+      { ...rest, creditCardId: cardId },
+      undefined,
+    );
+  });
+
+  it.each([
+    ['both sources', { ...rest, accountId: validBody.accountId, creditCardId: cardId }],
+    ['neither source', rest],
+  ])('SHOULD throw ValidationError (400) WHEN the create body has %s', async (_label, body) => {
+    await expect(setup.create(mocks.request, body as never, {})).rejects.toThrow(ValidationError);
+  });
+
+  it('SHOULD forward the CARD source filters AND reject a bad invoiceMonth', async () => {
+    await setup.findAll(mocks.request, {
+      creditCardId: cardId,
+      invoiceMonth: '2026-10',
+      source: 'CARD',
+    });
+
+    expect(mocks.transactionService.findAll).toHaveBeenCalledWith(
+      mocks.request.user.id,
+      undefined,
+      {
+        creditCardId: cardId,
+        invoiceMonth: '2026-10',
+        source: 'CARD',
+      },
+    );
+    await expect(setup.findAll(mocks.request, { invoiceMonth: '2026-13' })).rejects.toThrow(
+      ValidationError,
+    );
+  });
+
+  it('SHOULD reject a patch with both sources', async () => {
+    await expect(
+      setup.update(
+        mocks.request,
+        mocks.transaction.id,
+        { accountId: validBody.accountId, creditCardId: cardId } as never,
+        {},
+      ),
+    ).rejects.toThrow(ValidationError);
   });
 });

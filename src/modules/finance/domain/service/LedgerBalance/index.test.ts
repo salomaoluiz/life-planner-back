@@ -129,3 +129,20 @@ describe('ledgerDeltas', () => {
     });
   });
 });
+
+describe('ledgerDeltas with card purchases (null account)', () => {
+  it('SHOULD have no effect for a card purchase', () => {
+    expect(
+      ledgerDeltas(undefined, { accountId: null, type: TransactionType.EXPENSE, value: 10 }),
+    ).toEqual([]);
+  });
+
+  it('SHOULD restore the old account WHEN an account expense becomes a card purchase', () => {
+    expect(
+      ledgerDeltas(
+        { accountId: 'a', type: TransactionType.EXPENSE, value: 10 },
+        { accountId: null, type: TransactionType.EXPENSE, value: 10 },
+      ),
+    ).toEqual([{ accountId: 'a', delta: 10 }]);
+  });
+});

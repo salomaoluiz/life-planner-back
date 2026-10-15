@@ -4,8 +4,9 @@ export interface LedgerDelta {
   accountId: string;
   delta: number;
 }
+// A null account (card purchase) has no ledger effect.
 export interface LedgerEntry {
-  accountId: string;
+  accountId: null | string;
   type: TransactionType;
   value: number;
 }
@@ -22,10 +23,10 @@ export function signedValue(entry: Pick<LedgerEntry, 'type' | 'value'>): number 
 export function ledgerDeltas(before?: LedgerEntry, after?: LedgerEntry): LedgerDelta[] {
   const totals = new Map<string, number>();
 
-  if (before) {
+  if (before?.accountId) {
     totals.set(before.accountId, (totals.get(before.accountId) ?? 0) - signedValue(before));
   }
-  if (after) {
+  if (after?.accountId) {
     totals.set(after.accountId, (totals.get(after.accountId) ?? 0) + signedValue(after));
   }
 

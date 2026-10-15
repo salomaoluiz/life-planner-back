@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { AdjustAccountBalanceUseCase } from '@finance/application/use-case/AdjustAccountBalanceUseCase';
 import { AttachAccountBalancesUseCase } from '@finance/application/use-case/AttachAccountBalancesUseCase';
+import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { CreateAccountUseCase } from '@finance/application/use-case/CreateAccountUseCase';
 import { CreateCategoryUseCase } from '@finance/application/use-case/CreateCategoryUseCase';
 import { CreateCreditCardUseCase } from '@finance/application/use-case/CreateCreditCardUseCase';
@@ -17,8 +18,12 @@ import { GetCategoriesUseCase } from '@finance/application/use-case/GetCategorie
 import { GetCreditCardByIdUseCase } from '@finance/application/use-case/GetCreditCardByIdUseCase';
 import { GetCreditCardsOverviewUseCase } from '@finance/application/use-case/GetCreditCardsOverviewUseCase';
 import { GetCreditCardsUseCase } from '@finance/application/use-case/GetCreditCardsUseCase';
+import { GetInvoicesForListUseCase } from '@finance/application/use-case/GetInvoicesForListUseCase';
+import { GetInvoiceUseCase } from '@finance/application/use-case/GetInvoiceUseCase';
 import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransactionsUseCase';
 import { HasFinanceDataByOwnerUseCase } from '@finance/application/use-case/HasFinanceDataByOwnerUseCase';
+import { PayInvoiceUseCase } from '@finance/application/use-case/PayInvoiceUseCase';
+import { UndoInvoicePaymentUseCase } from '@finance/application/use-case/UndoInvoicePaymentUseCase';
 import { UpdateAccountUseCase } from '@finance/application/use-case/UpdateAccountUseCase';
 import { UpdateCategoryUseCase } from '@finance/application/use-case/UpdateCategoryUseCase';
 import { UpdateCreditCardUseCase } from '@finance/application/use-case/UpdateCreditCardUseCase';
@@ -26,17 +31,20 @@ import { UpdateTransactionUseCase } from '@finance/application/use-case/UpdateTr
 import { FinanceAccountDatasource } from '@finance/data/datasource/FinanceAccountDatasource';
 import { FinanceCategoryDatasource } from '@finance/data/datasource/FinanceCategoryDatasource';
 import { FinanceCreditCardDatasource } from '@finance/data/datasource/FinanceCreditCardDatasource';
+import { FinanceInvoicePaymentDatasource } from '@finance/data/datasource/FinanceInvoicePaymentDatasource';
 import { FinanceOwnerDataDatasource } from '@finance/data/datasource/FinanceOwnerDataDatasource';
 import { FinanceTransactionDatasource } from '@finance/data/datasource/FinanceTransactionDatasource';
 import { FinanceAccountRepository } from '@finance/data/repository/FinanceAccountRepository';
 import { FinanceCategoryRepository } from '@finance/data/repository/FinanceCategoryRepository';
 import { FinanceCreditCardRepository } from '@finance/data/repository/FinanceCreditCardRepository';
+import { FinanceInvoicePaymentRepository } from '@finance/data/repository/FinanceInvoicePaymentRepository';
 import { FinanceOwnerDataRepository } from '@finance/data/repository/FinanceOwnerDataRepository';
 import { FinanceTransactionRepository } from '@finance/data/repository/FinanceTransactionRepository';
 
 const useCases = [
   AdjustAccountBalanceUseCase,
   AttachAccountBalancesUseCase,
+  ComputeCardInvoicesUseCase,
   CreateAccountUseCase,
   CreateCategoryUseCase,
   CreateCreditCardUseCase,
@@ -52,8 +60,12 @@ const useCases = [
   GetCreditCardByIdUseCase,
   GetCreditCardsOverviewUseCase,
   GetCreditCardsUseCase,
+  GetInvoicesForListUseCase,
+  GetInvoiceUseCase,
   GetTransactionsUseCase,
   HasFinanceDataByOwnerUseCase,
+  PayInvoiceUseCase,
+  UndoInvoicePaymentUseCase,
   UpdateAccountUseCase,
   UpdateCategoryUseCase,
   UpdateCreditCardUseCase,
@@ -70,6 +82,8 @@ const useCases = [
     { provide: 'IFinanceCategoryDatasource', useClass: FinanceCategoryDatasource },
     { provide: 'IFinanceCreditCardRepository', useClass: FinanceCreditCardRepository },
     { provide: 'IFinanceCreditCardDatasource', useClass: FinanceCreditCardDatasource },
+    { provide: 'IFinanceInvoicePaymentRepository', useClass: FinanceInvoicePaymentRepository },
+    { provide: 'IFinanceInvoicePaymentDatasource', useClass: FinanceInvoicePaymentDatasource },
     { provide: 'IFinanceOwnerDataRepository', useClass: FinanceOwnerDataRepository },
     { provide: 'IFinanceOwnerDataDatasource', useClass: FinanceOwnerDataDatasource },
     { provide: 'IFinanceTransactionRepository', useClass: FinanceTransactionRepository },

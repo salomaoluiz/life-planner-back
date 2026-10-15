@@ -55,7 +55,17 @@ describe('findAllOverview', () => {
   it('SHOULD call the service with the normalized owner ids', async () => {
     await setup.findAllOverview(mocks.request as never, {});
 
-    expect(mocks.creditCardService.findOverview).toHaveBeenCalledWith(userId, undefined);
+    expect(mocks.creditCardService.findOverview).toHaveBeenCalledWith(userId, undefined, undefined);
+  });
+
+  it('SHOULD forward the client today', async () => {
+    await setup.findAllOverview(mocks.request as never, { today: '2026-10-15' });
+
+    expect(mocks.creditCardService.findOverview).toHaveBeenCalledWith(
+      userId,
+      undefined,
+      '2026-10-15',
+    );
   });
 });
 

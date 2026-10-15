@@ -64,3 +64,7 @@ The frontend must stop creating the owner's member itself (the API does it atomi
 ## Account balance from transactions (spec 028)
 
 Contract changes: account create takes `initialBalance` (the old `balance` → `400`); account output has `initialBalance`, `balance` (current) and `projectedBalance` (end of month) and never `ledgerBalance`; `GET /accounts?today=YYYY-MM-DD`; `POST /accounts/:id/balance-adjustment?today=`; `PATCH /accounts/:id` is strict (`balance`/`initialBalance` → `400`); transaction `category` gains `systemKey` and `excludeFromTotals`; new 422 codes (`Account is archived`, `System category is reserved`, `Balance adjustments cannot be edited`, `System categories cannot be changed`). The frontend must send its local date as `today`.
+
+### Spec 029 contract (frontend)
+
+Transactions may have `accountId = null` and `account = null` (card purchases; the default list never returns them). New invoice endpoints and overview fields are listed in `api.md`. Errors: 422 `Invoice is paid`, 422 `Credit card is archived`, 422 `Use the invoice to change this payment`, 409 `Invoice already paid`, 409 `Credit card has transactions`. The frontend implements it in the same-numbered spec.

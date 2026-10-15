@@ -16,6 +16,7 @@ import { SystemCategoryKey } from '@finance/domain/enum';
 const TransactionFieldsSchema = z.object({
   accountId: z.uuid(),
   categoryId: z.uuid(),
+  creditCardId: z.uuid(),
   date: CalendarDateApiSchema,
   description: DescriptionApiSchema,
   owner: OwnerTypeApiSchema,
@@ -24,15 +25,24 @@ const TransactionFieldsSchema = z.object({
   value: ValueApiSchema,
 });
 
-export const CreateTransactionApiSchema = TransactionFieldsSchema;
+// Exactly one of accountId / creditCardId: a card purchase has no account (spec 029).
+export const CreateTransactionApiSchema = TransactionFieldsSchema.partial({
+  accountId: true,
+  creditCardId: true,
+}).refine((value) => (value.accountId === undefined) !== (value.creditCardId === undefined), {
+  message: 'Send either accountId or creditCardId',
+});
 
 export const UpdateTransactionApiSchema = TransactionFieldsSchema.partial()
   .strict()
+  .refine((value) => value.accountId === undefined || value.creditCardId === undefined, {
+    message: 'Send either accountId or creditCardId',
+  })
   .refine(hasAtLeastOneField, { message: 'At least one field is required' });
 
 export const TransactionApiSchema = z.object({
-  account: z.object({ icon: z.string(), id: z.uuid(), name: z.string() }),
-  accountId: z.uuid(),
+  account: z.object({ icon: z.string(), id: z.uuid(), name: z.string() }).nullable(),
+  accountId: z.uuid().nullable(),
   category: z.object({
     excludeFromTotals: z.boolean(),
     icon: z.string(),
@@ -43,9 +53,21 @@ export const TransactionApiSchema = z.object({
   }),
   categoryId: z.uuid(),
   createdAt: z.iso.datetime(),
+  creditCard: z
+    .object({
+      color: z.string(),
+      id: z.uuid(),
+      lastDigits: z.string().optional(),
+      title: z.string(),
+    })
+    .nullable(),
+  creditCardId: z.uuid().nullable(),
   date: z.string(),
   description: z.string(),
   id: z.uuid(),
+  invoiceMonth: z.string().nullable(),
+  // Only on create / update responses of card purchases: the purchase left the card over its limit.
+  overLimit: z.boolean().optional(),
   owner: OwnerTypeApiSchema,
   ownerId: z.uuid(),
   type: TransactionTypeApiSchema,

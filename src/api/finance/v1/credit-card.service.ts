@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { z } from 'zod';
 
 import { todayInSaoPaulo } from '@api/finance/v1/credit-card-today';
 import {
   CreateCreditCardApiInput,
   CreditCardOutput,
   CreditCardsOverviewOutput,
+  InvoiceApiSchema,
   UpdateCreditCardApiInput,
 } from '@api/finance/v1/dto/credit-card.dto';
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
@@ -16,6 +18,12 @@ import { GetCreditCardsUseCase } from '@finance/application/use-case/GetCreditCa
 import { UpdateCreditCardUseCase } from '@finance/application/use-case/UpdateCreditCardUseCase';
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { AccountStatus } from '@finance/domain/enum';
+import { Invoice } from '@finance/domain/service/InvoiceCalculator';
+
+// Account ids are uuid strings; the calculator keeps them as plain strings, so the shape is already the wire shape.
+export function toInvoiceOutput(invoice: Invoice): z.infer<typeof InvoiceApiSchema> {
+  return invoice;
+}
 
 function toCreditCardOutput(card: CreditCardEntity): CreditCardOutput {
   return {
@@ -82,18 +90,28 @@ export class CreditCardService {
     );
   }
 
-  async findOverview(userId: string, ownerIds?: string[]): Promise<CreditCardsOverviewOutput> {
+  async findOverview(
+    userId: string,
+    ownerIds?: string[],
+    today?: string,
+  ): Promise<CreditCardsOverviewOutput> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
     const overview = await this.getCreditCardsOverviewUseCase.execute({
       accessibleOwners,
       ownerIds,
-      today: todayInSaoPaulo(),
+      today: today ?? todayInSaoPaulo(),
     });
 
     return {
       aggregate: overview.aggregate,
-      cards: overview.cards.map((item) => ({ ...item, card: toCreditCardOutput(item.card) })),
+      cards: overview.cards.map((item) => ({
+        ...item,
+        card: toCreditCardOutput(item.card),
+        closedInvoices: item.closedInvoices.map((invoice) => toInvoiceOutput(invoice)),
+        openInvoice: toInvoiceOutput(item.openInvoice),
+        upcomingInvoices: item.upcomingInvoices.map((invoice) => toInvoiceOutput(invoice)),
+      })),
     };
   }
 

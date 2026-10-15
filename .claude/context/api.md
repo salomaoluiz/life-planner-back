@@ -109,3 +109,7 @@ Errors come out of `AllExceptionsFilter` as `{ message, path, statusCode, timest
 **CORS:** enabled in `main.ts` only when `CORS_ORIGINS` (comma-separated origins) is non-empty; methods `GET, POST, PATCH, PUT, DELETE, OPTIONS`, headers `Authorization, Content-Type`, no credentials (the token travels in `Authorization`). Empty = disabled.
 
 Keep this table updated when endpoints change, and mirror changes in `integration.md`.
+
+### Card purchases and invoices (spec 029)
+
+`POST/PATCH /finance/transactions` take `accountId` XOR `creditCardId` (optional `?today=`); responses add `creditCard`, `creditCardId`, `invoiceMonth` and, for card purchases, `overLimit`. `GET /finance/transactions` default = account rows only; `?source=CARD&creditCardId&invoiceMonth` lists purchases. `InvoiceController` (registered before `CreditCardController`): `GET /finance/credit-cards/invoices?month=YYYY-MM&ownerId&today` (invoices whose list day is in the month, with purchases), `GET /:id/invoices/:month`, `POST /:id/invoices/:month/payment` (`{method: ACCOUNT|EXTERNAL, accountId?, paidOn?}`), `DELETE /:id/invoices/:month/payment`. The overview adds `upcomingInvoices`, `listDate` and `payment` per invoice and accepts `?today`.

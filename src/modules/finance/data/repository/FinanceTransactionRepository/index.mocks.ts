@@ -18,11 +18,16 @@ const transactionPersistenceMock = {
 const transactionDatasourceMock = {
   countByAccountId: jest.fn().mockResolvedValue(2),
   countByCategoryIds: jest.fn().mockResolvedValue(0),
+  countByCreditCardId: jest.fn().mockResolvedValue(0),
   create: jest.fn().mockResolvedValue(transactionPersistenceMock),
   delete: jest.fn().mockResolvedValue(undefined),
   exists: jest.fn().mockResolvedValue(true),
   findById: jest.fn().mockResolvedValue(transactionPersistenceMock),
   findByOwners: jest.fn().mockResolvedValue([transactionPersistenceMock]),
+  findCardPurchases: jest.fn().mockResolvedValue([transactionPersistenceMock]),
+  sumCardInvoices: jest
+    .fn()
+    .mockResolvedValue([{ amount: 450, credit_card_id: 'card-1', invoice_month: '2026-10' }]),
   update: jest.fn().mockResolvedValue(transactionPersistenceMock),
 };
 

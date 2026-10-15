@@ -27,6 +27,9 @@ export class GetTransactionsUseCase implements UseCaseWithParams<
       return [];
     }
 
-    return this.transactionRepository.findTransactions(owners);
+    return this.transactionRepository.findTransactions(owners, input.source, {
+      creditCardId: input.creditCardId,
+      invoiceMonth: input.invoiceMonth,
+    });
   }
 }
