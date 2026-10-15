@@ -1,0 +1,109 @@
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
+
+import {
+  hasAtLeastOneField,
+  IconColorApiSchema,
+  NameApiSchema,
+  OwnerIdApiSchema,
+  OwnerTypeApiSchema,
+} from '@api/finance/v1/dto/finance-fields';
+import {
+  BillingDaySchema,
+  CreditCardBrandSchema,
+  CreditCardLimitSchema,
+  LastDigitsSchema,
+} from '@finance/application/dto/CreditCardCommon';
+import { AccountStatus, InvoiceStatus } from '@finance/domain/enum';
+
+const StatusApiSchema = z.enum(AccountStatus);
+
+export const CreateCreditCardApiSchema = z.object({
+  brand: CreditCardBrandSchema,
+  closingDay: BillingDaySchema,
+  color: IconColorApiSchema,
+  dueDay: BillingDaySchema,
+  lastDigits: LastDigitsSchema.optional(),
+  limit: CreditCardLimitSchema,
+  owner: OwnerTypeApiSchema,
+  ownerId: OwnerIdApiSchema,
+  paymentDay: BillingDaySchema.optional(),
+  status: StatusApiSchema.default(AccountStatus.ACTIVE),
+  title: NameApiSchema,
+});
+
+// `.strict()` rejects unknown keys; owner and ownerId travel together (the use case also checks access).
+export const UpdateCreditCardApiSchema = z
+  .object({
+    brand: CreditCardBrandSchema,
+    closingDay: BillingDaySchema,
+    color: IconColorApiSchema,
+    dueDay: BillingDaySchema,
+    lastDigits: LastDigitsSchema.nullable(),
+    limit: CreditCardLimitSchema,
+    owner: OwnerTypeApiSchema,
+    ownerId: OwnerIdApiSchema,
+    paymentDay: BillingDaySchema.nullable(),
+    status: StatusApiSchema,
+    title: NameApiSchema,
+  })
+  .partial()
+  .strict()
+  .refine(hasAtLeastOneField, { message: 'At least one field is required' })
+  .refine((value) => (value.owner === undefined) === (value.ownerId === undefined), {
+    message: 'owner and ownerId must be sent together',
+  });
+
+export const CreditCardApiSchema = z.object({
+  brand: CreditCardBrandSchema,
+  closingDay: z.number().int(),
+  color: z.string(),
+  createdAt: z.iso.datetime(),
+  dueDay: z.number().int(),
+  id: z.uuid(),
+  lastDigits: z.string().optional(),
+  limit: z.number().int(),
+  owner: OwnerTypeApiSchema,
+  ownerId: z.uuid(),
+  paymentDay: z.number().int().optional(),
+  status: StatusApiSchema,
+  title: z.string(),
+  updatedAt: z.iso.datetime(),
+});
+
+const InvoiceApiSchema = z.object({
+  amount: z.number().int(),
+  closingDate: z.string(),
+  dueDate: z.string(),
+  paymentAfterDue: z.boolean(),
+  paymentDate: z.string(),
+  periodEnd: z.string(),
+  periodStart: z.string(),
+  referenceMonth: z.string(),
+  status: z.enum(InvoiceStatus),
+});
+
+export const CreditCardsOverviewApiSchema = z.object({
+  aggregate: z.object({
+    available: z.number().int(),
+    totalLimit: z.number().int(),
+    used: z.number().int(),
+  }),
+  cards: z.array(
+    z.object({
+      available: z.number().int(),
+      card: CreditCardApiSchema,
+      closedInvoices: z.array(InvoiceApiSchema),
+      openInvoice: InvoiceApiSchema,
+      used: z.number().int(),
+    }),
+  ),
+});
+
+export type CreateCreditCardApiInput = z.infer<typeof CreateCreditCardApiSchema>;
+export type UpdateCreditCardApiInput = z.infer<typeof UpdateCreditCardApiSchema>;
+
+export class CreateCreditCardBody extends createZodDto(CreateCreditCardApiSchema) {}
+export class CreditCardOutput extends createZodDto(CreditCardApiSchema) {}
+export class CreditCardsOverviewOutput extends createZodDto(CreditCardsOverviewApiSchema) {}
+export class UpdateCreditCardBody extends createZodDto(UpdateCreditCardApiSchema) {}
