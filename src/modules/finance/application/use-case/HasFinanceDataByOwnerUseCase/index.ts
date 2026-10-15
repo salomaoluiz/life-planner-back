@@ -7,6 +7,7 @@ import {
 import {
   IFinanceAccountRepository,
   IFinanceCategoryRepository,
+  IFinanceCreditCardRepository,
   IFinanceTransactionRepository,
 } from '@finance/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -23,6 +24,8 @@ export class HasFinanceDataByOwnerUseCase implements UseCaseWithParams<
     private readonly accountRepository: IFinanceAccountRepository,
     @Inject('IFinanceCategoryRepository')
     private readonly categoryRepository: IFinanceCategoryRepository,
+    @Inject('IFinanceCreditCardRepository')
+    private readonly creditCardRepository: IFinanceCreditCardRepository,
     @Inject('IFinanceTransactionRepository')
     private readonly transactionRepository: IFinanceTransactionRepository,
   ) {}
@@ -33,6 +36,7 @@ export class HasFinanceDataByOwnerUseCase implements UseCaseWithParams<
     const results = await Promise.all([
       this.accountRepository.existsByOwner(input),
       this.categoryRepository.existsByOwner(input),
+      this.creditCardRepository.existsByOwner(input),
       this.transactionRepository.existsByOwner(input),
     ]);
 

@@ -2,13 +2,14 @@ import { ValidationError } from '@shared/domain/error/ValidationError';
 
 import { mocks, setup } from './index.mocks';
 
-it('SHOULD return false WHEN the owner has no account, category or transaction', async () => {
+it('SHOULD return false WHEN the owner has no account, category, credit card or transaction', async () => {
   expect(await setup.execute(mocks.input)).toBe(false);
 });
 
 it.each([
   ['an account', 'accountRepository'],
   ['a category', 'categoryRepository'],
+  ['a credit card', 'creditCardRepository'],
   ['a transaction', 'transactionRepository'],
 ] as const)('SHOULD return true WHEN the owner has only %s', async (_label, repository) => {
   mocks[repository].existsByOwner.mockResolvedValueOnce(true);
@@ -22,6 +23,7 @@ it('SHOULD ask each repository about exactly that owner (other owners data does 
   for (const repository of [
     mocks.accountRepository,
     mocks.categoryRepository,
+    mocks.creditCardRepository,
     mocks.transactionRepository,
   ]) {
     expect(repository.existsByOwner).toHaveBeenCalledTimes(1);
