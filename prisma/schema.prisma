@@ -88,6 +88,35 @@ model FinancialAccount {
   @@map("financial_accounts")
 }
 
+enum CreditCardBrand {
+  VISA
+  MASTERCARD
+  ELO
+  AMEX
+  OTHER
+}
+
+// `owner_id` points to a user or a family, so it has no FK. Not linked to accounts (spec 026).
+model FinancialCreditCard {
+  id          String          @id @default(uuid())
+  title       String
+  limit       Int
+  brand       CreditCardBrand
+  closing_day Int             @db.SmallInt
+  due_day     Int             @db.SmallInt
+  payment_day Int?            @db.SmallInt
+  color       String
+  last_digits String?         @db.Char(4)
+  status      AccountStatus   @default(ACTIVE)
+  owner       OwnerType
+  owner_id    String
+  created_at  DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime        @updatedAt @db.Timestamptz(6)
+
+  @@index([owner, owner_id])
+  @@map("financial_credit_cards")
+}
+
 enum TransactionType {
   EXPENSE
   INCOME
