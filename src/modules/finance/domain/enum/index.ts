@@ -14,6 +14,9 @@ export enum InvoiceStatus {
   OPEN = 'OPEN',
   PAID = 'PAID',
 }
+export enum SystemCategoryKey {
+  BALANCE_ADJUSTMENT = 'BALANCE_ADJUSTMENT',
+}
 export enum TransactionType {
   EXPENSE = 'EXPENSE',
   INCOME = 'INCOME',
