@@ -9,20 +9,23 @@ import { FinanceCategoryDatasource } from './index';
 
 // region Mocks
 
+const ownerIdMock = faker.string.uuid();
 const categoryMock: FinancialCategory = {
   created_at: faker.date.past(),
   depth_level: 0,
+  exclude_from_totals: false,
   icon: 'cart',
   icon_color: '#2E7D32',
   id: faker.string.uuid(),
   name: 'Groceries',
   owner: 'USER',
-  owner_id: faker.string.uuid(),
+  owner_id: ownerIdMock,
   parent_id: null,
+  system_key: null,
   type: 'EXPENSE',
   updated_at: faker.date.recent(),
 };
-const ownersMock = [{ owner: OwnerType.USER, ownerId: categoryMock.owner_id }];
+const ownersMock = [{ owner: OwnerType.USER, ownerId: ownerIdMock }];
 
 // endregion Mocks
 
@@ -64,7 +67,7 @@ beforeEach(async () => {
   setup = module.get<FinanceCategoryDatasource>(FinanceCategoryDatasource);
 });
 
-const mocks = { category: categoryMock, owners: ownersMock };
+const mocks = { category: categoryMock, ownerId: ownerIdMock, owners: ownersMock };
 const spies = {
   create: createSpy,
   deleteMany: deleteManySpy,

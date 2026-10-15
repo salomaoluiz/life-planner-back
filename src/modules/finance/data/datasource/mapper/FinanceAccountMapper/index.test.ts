@@ -7,10 +7,11 @@ describe('FinanceAccountMapper', () => {
       const result = FinanceAccountMapper.toDomain(mocks.raw);
 
       expect(result).toEqual({
-        balance: -2500,
         createdAt: mocks.raw.created_at,
         icon: mocks.raw.icon,
         id: mocks.raw.id,
+        initialBalance: 100000,
+        ledgerBalance: -2500,
         name: mocks.raw.name,
         owner: 'FAMILY',
         ownerId: mocks.raw.owner_id,

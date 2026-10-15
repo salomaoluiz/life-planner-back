@@ -1,3 +1,5 @@
+import { NotFoundException } from '@nestjs/common';
+
 import { mocks, setup, spies } from './index.mocks';
 
 describe('Method countByAccountId / countByCategoryIds', () => {
@@ -17,30 +19,72 @@ describe('Method countByAccountId / countByCategoryIds', () => {
 });
 
 describe('Method create', () => {
-  it('SHOULD insert AND return the row with the account / category summaries (one query)', async () => {
+  const params = {
+    account_id: mocks.transaction.account_id,
+    category_id: mocks.transaction.category_id,
+    date: new Date('2026-10-03T00:00:00.000Z'),
+    description: 'Weekly groceries',
+    owner: 'USER' as const,
+    owner_id: mocks.transaction.owner_id,
+    type: 'EXPENSE' as const,
+    value: 23490,
+  };
+
+  it('SHOULD insert the row AND move the ledger of its account in the SAME database transaction', async () => {
     spies.create.mockResolvedValue(mocks.transaction);
-    const params = {
-      account_id: mocks.transaction.account_id,
-      category_id: mocks.transaction.category_id,
-      date: new Date('2026-10-03T00:00:00.000Z'),
-      description: 'Weekly groceries',
-      owner: 'USER' as const,
-      owner_id: mocks.transaction.owner_id,
-      type: 'EXPENSE' as const,
-      value: 23490,
-    };
 
     expect(await setup.create(params)).toEqual(mocks.transaction);
+    expect(spies.transaction).toHaveBeenCalledTimes(1);
     expect(spies.create).toHaveBeenCalledWith({ data: params, include: mocks.include });
+    expect(spies.accountUpdate).toHaveBeenCalledWith({
+      data: { ledger_balance: { increment: -23490 } },
+      where: { id: mocks.transaction.account_id },
+    });
+  });
+
+  it('SHOULD add an INCOME to the ledger', async () => {
+    spies.create.mockResolvedValue({ ...mocks.transaction, type: 'INCOME', value: 500 });
+
+    await setup.create({ ...params, type: 'INCOME', value: 500 });
+
+    expect(spies.accountUpdate).toHaveBeenCalledWith({
+      data: { ledger_balance: { increment: 500 } },
+      where: { id: mocks.transaction.account_id },
+    });
+  });
+
+  it('SHOULD propagate a failure of the ledger update so the whole transaction rolls back', async () => {
+    spies.create.mockResolvedValue(mocks.transaction);
+    spies.accountUpdate.mockRejectedValueOnce(new Error('ledger down'));
+
+    await expect(setup.create(params)).rejects.toThrow('ledger down');
   });
 });
 
 describe('Method delete', () => {
-  it('SHOULD deleteMany by id without failing WHEN the row is already gone', async () => {
-    spies.deleteMany.mockResolvedValue({ count: 0 });
+  it('SHOULD lock the row, delete it AND reverse its signed value on the ledger', async () => {
+    spies.queryRaw.mockResolvedValue([{ account_id: 'acc-1', type: 'EXPENSE', value: 1000 }]);
+    spies.deleteMany.mockResolvedValue({ count: 1 });
 
     await expect(setup.delete(mocks.transaction.id)).resolves.toBeUndefined();
+
+    expect(spies.queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      spies.deleteMany.mock.invocationCallOrder[0],
+    );
     expect(spies.deleteMany).toHaveBeenCalledWith({ where: { id: mocks.transaction.id } });
+    expect(spies.accountUpdate).toHaveBeenCalledWith({
+      data: { ledger_balance: { increment: 1000 } },
+      where: { id: 'acc-1' },
+    });
+  });
+
+  it('SHOULD do nothing (idempotent) WHEN the row is already gone', async () => {
+    spies.queryRaw.mockResolvedValue([]);
+
+    await expect(setup.delete(mocks.transaction.id)).resolves.toBeUndefined();
+
+    expect(spies.deleteMany).not.toHaveBeenCalled();
+    expect(spies.accountUpdate).not.toHaveBeenCalled();
   });
 });
 
@@ -88,16 +132,15 @@ describe('Method findByOwners', () => {
 });
 
 describe('Method update', () => {
+  const lockedRow = [{ account_id: 'acc-1', type: 'EXPENSE', value: 1000 }];
+
   it('SHOULD update only the sent columns AND return the row with relations', async () => {
-    spies.update.mockResolvedValue(mocks.transaction);
+    spies.queryRaw.mockResolvedValue(lockedRow);
+    spies.update.mockResolvedValue({ ...mocks.transaction, account_id: 'acc-1', value: 100 });
 
-    const result = await setup.update({
-      description: 'New',
-      id: mocks.transaction.id,
-      value: 100,
-    });
+    const result = await setup.update({ description: 'New', id: mocks.transaction.id, value: 100 });
 
-    expect(result).toEqual(mocks.transaction);
+    expect(result).toEqual({ ...mocks.transaction, account_id: 'acc-1', value: 100 });
     expect(spies.update).toHaveBeenCalledWith({
       data: {
         account_id: undefined,
@@ -112,5 +155,72 @@ describe('Method update', () => {
       include: mocks.include,
       where: { id: mocks.transaction.id },
     });
+  });
+
+  it('SHOULD lock the stored row BEFORE updating AND compute the delta from the LOCKED row (not from an earlier read)', async () => {
+    spies.queryRaw.mockResolvedValue(lockedRow); // another request already changed it to 1000
+    spies.update.mockResolvedValue({
+      ...mocks.transaction,
+      account_id: 'acc-1',
+      type: 'EXPENSE',
+      value: 1500,
+    });
+
+    await setup.update({ id: mocks.transaction.id, value: 1500 });
+
+    expect(spies.queryRaw.mock.calls[0][0].sql).toContain('FOR UPDATE');
+    expect(spies.queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      spies.update.mock.invocationCallOrder[0],
+    );
+    expect(spies.accountUpdate).toHaveBeenCalledTimes(1);
+    expect(spies.accountUpdate).toHaveBeenCalledWith({
+      data: { ledger_balance: { increment: -500 } },
+      where: { id: 'acc-1' },
+    });
+  });
+
+  it('SHOULD reverse the old account AND apply the new one WHEN the account changes (ascending id order)', async () => {
+    spies.queryRaw.mockResolvedValue([{ account_id: 'acc-b', type: 'EXPENSE', value: 200 }]);
+    spies.update.mockResolvedValue({
+      ...mocks.transaction,
+      account_id: 'acc-a',
+      type: 'EXPENSE',
+      value: 200,
+    });
+
+    await setup.update({ account_id: 'acc-a', id: mocks.transaction.id });
+
+    expect(spies.accountUpdate).toHaveBeenNthCalledWith(1, {
+      data: { ledger_balance: { increment: -200 } },
+      where: { id: 'acc-a' },
+    });
+    expect(spies.accountUpdate).toHaveBeenNthCalledWith(2, {
+      data: { ledger_balance: { increment: 200 } },
+      where: { id: 'acc-b' },
+    });
+  });
+
+  it('SHOULD not touch any account WHEN the effect on the ledger is unchanged (description only)', async () => {
+    spies.queryRaw.mockResolvedValue(lockedRow);
+    spies.update.mockResolvedValue({
+      ...mocks.transaction,
+      account_id: 'acc-1',
+      type: 'EXPENSE',
+      value: 1000,
+    });
+
+    await setup.update({ description: 'Renamed', id: mocks.transaction.id });
+
+    expect(spies.accountUpdate).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD throw NotFound AND write nothing WHEN the row vanished before the lock', async () => {
+    spies.queryRaw.mockResolvedValue([]);
+
+    await expect(setup.update({ id: mocks.transaction.id, value: 1 })).rejects.toThrow(
+      NotFoundException,
+    );
+    expect(spies.update).not.toHaveBeenCalled();
+    expect(spies.accountUpdate).not.toHaveBeenCalled();
   });
 });

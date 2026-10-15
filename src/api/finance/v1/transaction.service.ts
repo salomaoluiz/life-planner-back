@@ -21,10 +21,12 @@ function toTransactionOutput(transaction: TransactionEntity): TransactionOutput 
     },
     accountId: transaction.accountId,
     category: {
+      excludeFromTotals: transaction.category.excludeFromTotals,
       icon: transaction.category.icon,
       iconColor: transaction.category.iconColor,
       id: transaction.category.id,
       name: transaction.category.name,
+      systemKey: transaction.category.systemKey,
     },
     categoryId: transaction.categoryId,
     createdAt: transaction.createdAt.toISOString(),

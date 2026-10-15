@@ -6,10 +6,11 @@ import AccountEntity from './index';
 // region Mocks
 
 const paramsMock: AccountEntity = {
-  balance: 152075,
   createdAt: new Date('2026-10-04T12:00:00.000Z'),
   icon: 'bank',
   id: 'account-uuid-123',
+  initialBalance: 100000,
+  ledgerBalance: 152075,
   name: 'Checking',
   owner: OwnerType.USER,
   ownerId: 'owner-uuid-456',

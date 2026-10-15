@@ -11,6 +11,7 @@ import {
   TransactionTypeApiSchema,
   ValueApiSchema,
 } from '@api/finance/v1/dto/finance-fields';
+import { SystemCategoryKey } from '@finance/domain/enum';
 
 const TransactionFieldsSchema = z.object({
   accountId: z.uuid(),
@@ -33,10 +34,12 @@ export const TransactionApiSchema = z.object({
   account: z.object({ icon: z.string(), id: z.uuid(), name: z.string() }),
   accountId: z.uuid(),
   category: z.object({
+    excludeFromTotals: z.boolean(),
     icon: z.string(),
     iconColor: IconColorApiSchema,
     id: z.uuid(),
     name: z.string(),
+    systemKey: z.enum(SystemCategoryKey).nullable(),
   }),
   categoryId: z.uuid(),
   createdAt: z.iso.datetime(),

@@ -17,17 +17,13 @@ class AccountEntityFixture {
     return temp;
   }
 
-  withBalance(balance: number) {
-    this.value.balance = balance;
-    return this;
-  }
-
   withDefault() {
     this.value = {
-      balance: faker.number.int({ max: 1_000_000, min: -100_000 }),
       createdAt: faker.date.past(),
       icon: 'bank',
       id: faker.string.uuid(),
+      initialBalance: 0,
+      ledgerBalance: faker.number.int({ max: 1_000_000, min: -100_000 }),
       name: faker.finance.accountName(),
       owner: OwnerType.USER,
       ownerId: faker.string.uuid(),
@@ -39,6 +35,16 @@ class AccountEntityFixture {
 
   withId(id: string) {
     this.value.id = id;
+    return this;
+  }
+
+  withInitialBalance(initialBalance: number) {
+    this.value.initialBalance = initialBalance;
+    return this;
+  }
+
+  withLedgerBalance(ledgerBalance: number) {
+    this.value.ledgerBalance = ledgerBalance;
     return this;
   }
 

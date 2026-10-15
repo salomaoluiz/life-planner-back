@@ -1,7 +1,13 @@
-import { ConflictException, Inject, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Inject,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
 import { DeleteCategoryInput, DeleteCategorySchema } from '@finance/application/dto/DeleteCategory';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
+import { isSystemCategoryId } from '@finance/domain/entity/SystemCategory';
 import {
   IFinanceCategoryRepository,
   IFinanceTransactionRepository,
@@ -20,6 +26,10 @@ export class DeleteCategoryUseCase implements UseCaseWithParams<DeleteCategoryIn
 
   async execute(params: DeleteCategoryInput): Promise<void> {
     const input = validate(DeleteCategorySchema, params);
+
+    if (isSystemCategoryId(input.id)) {
+      throw new UnprocessableEntityException('System categories cannot be changed');
+    }
 
     const category = await this.categoryRepository.findCategoryById(input.id);
 

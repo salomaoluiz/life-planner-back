@@ -9,19 +9,22 @@ import { JwtPayload } from '@shared/infra/jwt/types';
 
 const userId = faker.string.uuid();
 const accountApiMock = {
-  balance: 152075,
+  balance: 150000,
   createdAt: '2026-10-04T12:00:00.000Z',
   icon: 'bank',
   id: faker.string.uuid(),
+  initialBalance: 100000,
   name: 'Checking',
   owner: 'USER',
   ownerId: userId,
+  projectedBalance: 152075,
   status: 'ACTIVE',
   updatedAt: '2026-10-04T12:00:00.000Z',
 };
 const requestMock = { user: { id: userId } } as JwtPayload & Request;
 
 const accountServiceMock = {
+  adjustBalance: jest.fn().mockResolvedValue(accountApiMock),
   create: jest.fn().mockResolvedValue(accountApiMock),
   delete: jest.fn().mockResolvedValue(undefined),
   findAll: jest.fn().mockResolvedValue([accountApiMock]),

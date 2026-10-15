@@ -60,3 +60,7 @@ Backend: `yarn install`, `.env` with `DB_*`, `JWT_SECRET`, `PORT`; `yarn prisma 
 ## Families (spec 003)
 
 The frontend must stop creating the owner's member itself (the API does it atomically on `POST /api/v1/families`) and map `409` on delete to `FamilyHasRecords`. See `../life-planner/docs/superpowers/plans/2026-10-04-family-api-datasource.md`.
+
+## Account balance from transactions (spec 028)
+
+Contract changes: account create takes `initialBalance` (the old `balance` → `400`); account output has `initialBalance`, `balance` (current) and `projectedBalance` (end of month) and never `ledgerBalance`; `GET /accounts?today=YYYY-MM-DD`; `POST /accounts/:id/balance-adjustment?today=`; `PATCH /accounts/:id` is strict (`balance`/`initialBalance` → `400`); transaction `category` gains `systemKey` and `excludeFromTotals`; new 422 codes (`Account is archived`, `System category is reserved`, `Balance adjustments cannot be edited`, `System categories cannot be changed`). The frontend must send its local date as `today`.

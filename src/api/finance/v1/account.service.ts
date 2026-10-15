@@ -6,21 +6,29 @@ import {
   UpdateAccountApiInput,
 } from '@api/finance/v1/dto/account.dto';
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
+import { AdjustAccountBalanceUseCase } from '@finance/application/use-case/AdjustAccountBalanceUseCase';
 import { CreateAccountUseCase } from '@finance/application/use-case/CreateAccountUseCase';
 import { DeleteAccountUseCase } from '@finance/application/use-case/DeleteAccountUseCase';
 import { GetAccountsUseCase } from '@finance/application/use-case/GetAccountsUseCase';
 import { UpdateAccountUseCase } from '@finance/application/use-case/UpdateAccountUseCase';
-import AccountEntity from '@finance/domain/entity/AccountEntity';
+import { AccountWithBalances } from '@finance/domain/service/AccountBalance';
 
-function toAccountOutput(account: AccountEntity): AccountOutput {
+// `ledgerBalance` is internal and never copied to the output.
+function toAccountOutput({
+  account,
+  balance,
+  projectedBalance,
+}: AccountWithBalances): AccountOutput {
   return {
-    balance: account.balance,
+    balance,
     createdAt: account.createdAt.toISOString(),
     icon: account.icon,
     id: account.id,
+    initialBalance: account.initialBalance,
     name: account.name,
     owner: account.owner,
     ownerId: account.ownerId,
+    projectedBalance,
     status: account.status,
     updatedAt: account.updatedAt.toISOString(),
   };
@@ -29,6 +37,7 @@ function toAccountOutput(account: AccountEntity): AccountOutput {
 @Injectable()
 export class AccountService {
   constructor(
+    private readonly adjustAccountBalanceUseCase: AdjustAccountBalanceUseCase,
     private readonly createAccountUseCase: CreateAccountUseCase,
     private readonly deleteAccountUseCase: DeleteAccountUseCase,
     private readonly financeAccessService: FinanceAccessService,
@@ -36,10 +45,32 @@ export class AccountService {
     private readonly updateAccountUseCase: UpdateAccountUseCase,
   ) {}
 
-  async create(userId: string, input: CreateAccountApiInput): Promise<AccountOutput> {
+  async adjustBalance(
+    userId: string,
+    id: string,
+    balance: number,
+    today: string,
+  ): Promise<AccountOutput> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
-    const account = await this.createAccountUseCase.execute({ ...input, accessibleOwners });
+    const result = await this.adjustAccountBalanceUseCase.execute({
+      accessibleOwners,
+      balance,
+      id,
+      today,
+    });
+
+    return toAccountOutput(result);
+  }
+
+  async create(
+    userId: string,
+    input: CreateAccountApiInput,
+    today: string,
+  ): Promise<AccountOutput> {
+    const accessibleOwners = await this.financeAccessService.resolve(userId);
+
+    const account = await this.createAccountUseCase.execute({ ...input, accessibleOwners, today });
 
     return toAccountOutput(account);
   }
@@ -50,18 +81,32 @@ export class AccountService {
     await this.deleteAccountUseCase.execute({ accessibleOwners, id });
   }
 
-  async findAll(userId: string, ownerIds?: string[]): Promise<AccountOutput[]> {
+  async findAll(
+    userId: string,
+    ownerIds: string[] | undefined,
+    today: string,
+  ): Promise<AccountOutput[]> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
-    const accounts = await this.getAccountsUseCase.execute({ accessibleOwners, ownerIds });
+    const accounts = await this.getAccountsUseCase.execute({ accessibleOwners, ownerIds, today });
 
     return accounts.map((account) => toAccountOutput(account));
   }
 
-  async update(userId: string, id: string, input: UpdateAccountApiInput): Promise<AccountOutput> {
+  async update(
+    userId: string,
+    id: string,
+    input: UpdateAccountApiInput,
+    today: string,
+  ): Promise<AccountOutput> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
-    const account = await this.updateAccountUseCase.execute({ ...input, accessibleOwners, id });
+    const account = await this.updateAccountUseCase.execute({
+      ...input,
+      accessibleOwners,
+      id,
+      today,
+    });
 
     return toAccountOutput(account);
   }

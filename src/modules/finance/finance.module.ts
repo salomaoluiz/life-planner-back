@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 
+import { AdjustAccountBalanceUseCase } from '@finance/application/use-case/AdjustAccountBalanceUseCase';
+import { AttachAccountBalancesUseCase } from '@finance/application/use-case/AttachAccountBalancesUseCase';
 import { CreateAccountUseCase } from '@finance/application/use-case/CreateAccountUseCase';
 import { CreateCategoryUseCase } from '@finance/application/use-case/CreateCategoryUseCase';
 import { CreateCreditCardUseCase } from '@finance/application/use-case/CreateCreditCardUseCase';
@@ -33,6 +35,8 @@ import { FinanceOwnerDataRepository } from '@finance/data/repository/FinanceOwne
 import { FinanceTransactionRepository } from '@finance/data/repository/FinanceTransactionRepository';
 
 const useCases = [
+  AdjustAccountBalanceUseCase,
+  AttachAccountBalancesUseCase,
   CreateAccountUseCase,
   CreateCategoryUseCase,
   CreateCreditCardUseCase,

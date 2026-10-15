@@ -2,10 +2,11 @@ import { AccountStatus } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 interface IAccountEntity {
-  balance: number;
   createdAt: Date;
   icon: string;
   id: string;
+  initialBalance: number;
+  ledgerBalance: number;
   name: string;
   owner: OwnerType;
   ownerId: string;
@@ -14,10 +15,13 @@ interface IAccountEntity {
 }
 
 class AccountEntity {
-  balance: number;
   createdAt: Date;
   icon: string;
   id: string;
+  // Cents, set at creation and never edited.
+  initialBalance: number;
+  // Cents: initial + every transaction whatever its date. Internal, never sent to the client.
+  ledgerBalance: number;
   name: string;
   owner: OwnerType;
   ownerId: string;
@@ -25,10 +29,11 @@ class AccountEntity {
   updatedAt: Date;
 
   constructor(params: IAccountEntity) {
-    this.balance = params.balance;
     this.createdAt = params.createdAt;
     this.icon = params.icon;
     this.id = params.id;
+    this.initialBalance = params.initialBalance;
+    this.ledgerBalance = params.ledgerBalance;
     this.name = params.name;
     this.owner = params.owner;
     this.ownerId = params.ownerId;

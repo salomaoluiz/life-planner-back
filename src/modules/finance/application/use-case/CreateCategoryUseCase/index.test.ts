@@ -1,6 +1,12 @@
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
-import { TransactionType } from '@finance/domain/enum';
+import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
+import { SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { ValidationError } from '@shared/domain/error/ValidationError';
 
@@ -102,5 +108,16 @@ it.each([
   await expect(setup.execute({ ...mocks.input, ...patch } as never)).rejects.toThrow(
     ValidationError,
   );
+  expect(mocks.categoryRepository.createCategory).not.toHaveBeenCalled();
+});
+
+it('SHOULD throw Unprocessable (422) WHEN the parent is a system category (nothing can hang under it)', async () => {
+  await expect(
+    setup.execute({
+      ...mocks.input,
+      parentId: SYSTEM_CATEGORY_IDS[SystemCategoryKey.BALANCE_ADJUSTMENT],
+    }),
+  ).rejects.toThrow(UnprocessableEntityException);
+  expect(mocks.categoryRepository.findCategoryById).not.toHaveBeenCalled();
   expect(mocks.categoryRepository.createCategory).not.toHaveBeenCalled();
 });

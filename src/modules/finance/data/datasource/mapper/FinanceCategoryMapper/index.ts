@@ -5,6 +5,11 @@ import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export class FinanceCategoryMapper {
   static toDomain(raw: FinancialCategory): CategoryEntity {
+    // System categories are owner-less; they have their own ids in the domain and never go through here.
+    if (raw.owner === null || raw.owner_id === null || raw.type === null) {
+      throw new Error('System categories are not user categories');
+    }
+
     return new CategoryEntity({
       createdAt: raw.created_at,
       depthLevel: raw.depth_level,

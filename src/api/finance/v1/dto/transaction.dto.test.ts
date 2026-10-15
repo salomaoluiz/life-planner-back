@@ -1,6 +1,10 @@
 import { INT4_MAX } from '@finance/application/dto/FinanceCommon';
 
-import { CreateTransactionApiSchema, UpdateTransactionApiSchema } from './transaction.dto';
+import {
+  CreateTransactionApiSchema,
+  TransactionApiSchema,
+  UpdateTransactionApiSchema,
+} from './transaction.dto';
 
 const uuid = '6f1c2b9e-1d2a-4c55-9a7e-0b8e3c1f2a10';
 const valid = {
@@ -64,4 +68,51 @@ describe('UpdateTransactionApiSchema', () => {
   ])('SHOULD reject %s', (_label, body) => {
     expect(UpdateTransactionApiSchema.safeParse(body).success).toBe(false);
   });
+});
+
+it('SHOULD require systemKey (nullable) AND excludeFromTotals on the category summary', () => {
+  const id = '0b6a1e7c-3f4d-4b2a-8c9d-1e2f3a4b5c6d';
+  const category = {
+    excludeFromTotals: true,
+    icon: 'scale-balance',
+    iconColor: '#607D8B',
+    id,
+    name: 'Balance adjustment',
+    systemKey: 'BALANCE_ADJUSTMENT',
+  };
+  const output = {
+    account: { icon: 'bank', id, name: 'Checking' },
+    accountId: id,
+    category,
+    categoryId: id,
+    createdAt: '2026-10-15T12:00:00.000Z',
+    date: '2026-10-15',
+    description: 'Balance adjustment',
+    id,
+    owner: 'USER',
+    ownerId: id,
+    type: 'INCOME',
+    updatedAt: '2026-10-15T12:00:00.000Z',
+    value: 5000,
+  };
+
+  expect(TransactionApiSchema.safeParse(output).success).toBe(true);
+  expect(
+    TransactionApiSchema.safeParse({ ...output, category: { ...category, systemKey: null } })
+      .success,
+  ).toBe(true);
+  expect(
+    TransactionApiSchema.safeParse({ ...output, category: { ...category, systemKey: 'OTHER' } })
+      .success,
+  ).toBe(false);
+  expect(
+    TransactionApiSchema.safeParse({ ...output, category: { ...category, systemKey: undefined } })
+      .success,
+  ).toBe(false);
+  expect(
+    TransactionApiSchema.safeParse({
+      ...output,
+      category: { ...category, excludeFromTotals: undefined },
+    }).success,
+  ).toBe(false);
 });

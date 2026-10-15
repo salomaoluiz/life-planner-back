@@ -71,12 +71,18 @@ enum AccountStatus {
   ARCHIVED
 }
 
+enum SystemCategoryKey {
+  BALANCE_ADJUSTMENT
+}
+
 // `owner_id` points to a user or a family, so it has no FK.
+// ledger_balance = initial_balance + every transaction (any date); it is internal and updated atomically with each transaction write (spec 028).
 model FinancialAccount {
   id         String        @id @default(uuid())
   name       String
   icon       String
-  balance    Int           @default(0)
+  initial_balance Int          @default(0)
+  ledger_balance  Int          @default(0)
   status     AccountStatus @default(ACTIVE)
   owner      OwnerType
   owner_id   String
@@ -123,16 +129,19 @@ enum TransactionType {
   INCOME
 }
 
+// System categories (system_key set) have no owner, no type and no parent; a CHECK in the migration enforces both shapes.
 model FinancialCategory {
   id          String          @id @default(uuid())
   name        String
   icon        String
   icon_color  String          @default("#000000")
-  type        TransactionType
+  type        TransactionType?
   parent_id   String?
   depth_level Int             @default(0)
-  owner       OwnerType
-  owner_id    String
+  owner       OwnerType?
+  owner_id    String?
+  system_key  SystemCategoryKey? @unique
+  exclude_from_totals Boolean @default(false)
   created_at  DateTime        @default(now()) @db.Timestamptz(6)
   updated_at  DateTime        @updatedAt @db.Timestamptz(6)
 
@@ -163,7 +172,7 @@ model FinancialTransaction {
   account  FinancialAccount  @relation(fields: [account_id], references: [id], onDelete: Restrict)
   category FinancialCategory @relation(fields: [category_id], references: [id], onDelete: Restrict)
 
-  @@index([account_id])
+  @@index([account_id, date])
   @@index([category_id])
   @@index([owner, owner_id, date])
   @@map("financial_transactions")

@@ -10,10 +10,11 @@ import { FinanceAccountDatasource } from './index';
 // region Mocks
 
 const accountMock: FinancialAccount = {
-  balance: 152075,
   created_at: faker.date.past(),
   icon: 'bank',
   id: faker.string.uuid(),
+  initial_balance: 100000,
+  ledger_balance: 152075,
   name: 'Checking',
   owner: 'USER',
   owner_id: faker.string.uuid(),
@@ -35,12 +36,14 @@ const deleteManySpy = jest.fn();
 const findFirstSpy = jest.fn();
 const findManySpy = jest.fn();
 const findUniqueSpy = jest.fn();
+const queryRawSpy = jest.fn();
 const updateSpy = jest.fn();
 
 // endregion Spies
 
 const databaseMock = {
   client: {
+    $queryRaw: queryRawSpy,
     financialAccount: {
       create: createSpy,
       deleteMany: deleteManySpy,
@@ -71,6 +74,7 @@ const spies = {
   findFirst: findFirstSpy,
   findMany: findManySpy,
   findUnique: findUniqueSpy,
+  queryRaw: queryRawSpy,
   update: updateSpy,
 };
 

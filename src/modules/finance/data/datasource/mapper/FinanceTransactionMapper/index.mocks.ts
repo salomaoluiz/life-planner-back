@@ -7,7 +7,14 @@ import { FinancialTransactionWithRelations } from '@finance/data/repository/data
 const rawTransactionMock: FinancialTransactionWithRelations = {
   account: { icon: 'bank', id: faker.string.uuid(), name: 'Checking' },
   account_id: faker.string.uuid(),
-  category: { icon: 'cart', icon_color: '#2E7D32', id: faker.string.uuid(), name: 'Groceries' },
+  category: {
+    exclude_from_totals: false,
+    icon: 'cart',
+    icon_color: '#2E7D32',
+    id: faker.string.uuid(),
+    name: 'Groceries',
+    system_key: null,
+  },
   category_id: faker.string.uuid(),
   created_at: faker.date.past(),
   date: new Date('2026-10-03T00:00:00.000Z'),

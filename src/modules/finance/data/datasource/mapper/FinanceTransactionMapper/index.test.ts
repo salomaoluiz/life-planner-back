@@ -1,3 +1,5 @@
+import { SystemCategoryKey } from '@finance/domain/enum';
+
 import { FinanceTransactionMapper } from './index';
 import { mocks } from './index.mocks';
 
@@ -7,10 +9,12 @@ describe('FinanceTransactionMapper.toDomain', () => {
       account: { icon: 'bank', id: mocks.raw.account.id, name: 'Checking' },
       accountId: mocks.raw.account_id,
       category: {
+        excludeFromTotals: false,
         icon: 'cart',
         iconColor: '#2E7D32',
         id: mocks.raw.category.id,
         name: 'Groceries',
+        systemKey: null,
       },
       categoryId: mocks.raw.category_id,
       createdAt: mocks.raw.created_at,
@@ -30,4 +34,19 @@ describe('FinanceTransactionMapper.toDomain', () => {
 
     expect(FinanceTransactionMapper.toDomain(raw).date).toBe('2026-10-03');
   });
+});
+
+it('SHOULD map a system category: its key as the enum AND excludeFromTotals', () => {
+  const result = FinanceTransactionMapper.toDomain({
+    ...mocks.raw,
+    category: {
+      ...mocks.raw.category,
+      exclude_from_totals: true,
+      name: 'Balance adjustment',
+      system_key: 'BALANCE_ADJUSTMENT',
+    },
+  });
+
+  expect(result.category.systemKey).toBe(SystemCategoryKey.BALANCE_ADJUSTMENT);
+  expect(result.category.excludeFromTotals).toBe(true);
 });

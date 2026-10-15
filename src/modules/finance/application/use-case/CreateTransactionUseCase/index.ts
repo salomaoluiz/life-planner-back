@@ -32,6 +32,7 @@ export class CreateTransactionUseCase implements UseCaseWithParams<
     await this.ensureTransactionConsistencyUseCase.execute({
       accessibleOwners: input.accessibleOwners,
       accountId: input.accountId,
+      blockArchivedAccount: true,
       categoryId: input.categoryId,
       owner: input.owner,
       ownerId: input.ownerId,

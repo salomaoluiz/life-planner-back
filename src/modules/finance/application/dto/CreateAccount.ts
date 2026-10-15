@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   AccessibleOwnersSchema,
   BalanceSchema,
+  CalendarDateSchema,
   IconSchema,
   NameSchema,
   OwnerIdSchema,
@@ -12,12 +13,13 @@ import { AccountStatus } from '@finance/domain/enum';
 
 export const CreateAccountSchema = z.object({
   accessibleOwners: AccessibleOwnersSchema,
-  balance: BalanceSchema.default(0),
   icon: IconSchema,
+  initialBalance: BalanceSchema.default(0),
   name: NameSchema,
   owner: OwnerTypeSchema,
   ownerId: OwnerIdSchema,
   status: z.enum(AccountStatus).default(AccountStatus.ACTIVE),
+  today: CalendarDateSchema,
 });
 
 export type CreateAccountInput = z.input<typeof CreateAccountSchema>;

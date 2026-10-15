@@ -4,8 +4,9 @@ describe('Method create', () => {
   it('SHOULD insert the account AND return the row', async () => {
     spies.create.mockResolvedValue(mocks.account);
     const params = {
-      balance: 152075,
       icon: 'bank',
+      initial_balance: 100000,
+      ledger_balance: 100000,
       name: 'Checking',
       owner: 'USER' as const,
       owner_id: mocks.account.owner_id,
@@ -77,15 +78,49 @@ describe('Method findByOwners', () => {
   });
 });
 
+describe('Method findFutureSums', () => {
+  it('SHOULD run ONE grouped query over the future rows only, whatever the history size', async () => {
+    spies.queryRaw.mockResolvedValue([
+      { account_id: 'acc-1', after_end_of_month: BigInt(-400), after_today: BigInt(600) },
+    ]);
+
+    const result = await setup.findFutureSums({
+      account_ids: ['acc-1', 'acc-2'],
+      end_of_month: '2026-10-31',
+      today: '2026-10-15',
+    });
+
+    expect(result).toEqual([{ account_id: 'acc-1', after_end_of_month: -400, after_today: 600 }]);
+    expect(spies.queryRaw).toHaveBeenCalledTimes(1);
+    const query = spies.queryRaw.mock.calls[0][0];
+    expect(query.sql).toContain('GROUP BY');
+    expect(query.sql).toContain('"date" >');
+    expect(query.values).toEqual(
+      expect.arrayContaining(['acc-1', 'acc-2', '2026-10-15', '2026-10-31']),
+    );
+  });
+
+  it('SHOULD not query WHEN there are no accounts', async () => {
+    expect(
+      await setup.findFutureSums({
+        account_ids: [],
+        end_of_month: '2026-10-31',
+        today: '2026-10-15',
+      }),
+    ).toEqual([]);
+    expect(spies.queryRaw).not.toHaveBeenCalled();
+  });
+});
+
 describe('Method update', () => {
-  it('SHOULD update ONLY the editable columns (never owner / owner_id)', async () => {
+  it('SHOULD update ONLY the editable columns (never owner, owner_id or any balance)', async () => {
     spies.update.mockResolvedValue(mocks.account);
 
-    const result = await setup.update({ balance: 100, id: mocks.account.id, name: 'Renamed' });
+    const result = await setup.update({ id: mocks.account.id, name: 'Renamed' });
 
     expect(result).toEqual(mocks.account);
     expect(spies.update).toHaveBeenCalledWith({
-      data: { balance: 100, icon: undefined, name: 'Renamed', status: undefined },
+      data: { icon: undefined, name: 'Renamed', status: undefined },
       where: { id: mocks.account.id },
     });
   });

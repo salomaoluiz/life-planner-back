@@ -22,3 +22,16 @@ describe('FinanceCategoryMapper.toDomain', () => {
     expect(FinanceCategoryMapper.toDomain(mocks.rawRoot).parentId).toBeUndefined();
   });
 });
+
+it.each([
+  ['owner', { owner: null }],
+  ['owner_id', { owner_id: null }],
+  ['type', { type: null }],
+])(
+  'SHOULD throw WHEN a row has no %s (a system category must never be mapped as a user category)',
+  (_label, patch) => {
+    expect(() => FinanceCategoryMapper.toDomain({ ...mocks.rawRoot, ...patch })).toThrow(
+      'System categories are not user categories',
+    );
+  },
+);

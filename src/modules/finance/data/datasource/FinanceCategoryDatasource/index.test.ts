@@ -9,7 +9,7 @@ describe('Method create', () => {
       icon_color: '#2E7D32',
       name: 'Groceries',
       owner: 'USER' as const,
-      owner_id: mocks.category.owner_id,
+      owner_id: mocks.ownerId,
       parent_id: 'parent-id',
       type: 'EXPENSE' as const,
     };

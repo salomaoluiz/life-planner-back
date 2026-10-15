@@ -1,6 +1,8 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 
 import CategoryEntityFixture from '@finance/domain/entity/mocks/CategoryEntity.fixture';
+import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
+import { SystemCategoryKey } from '@finance/domain/enum';
 
 import { mocks, setup } from './index.mocks';
 
@@ -59,5 +61,16 @@ it('SHOULD throw Conflict (409 "Category has transactions") AND delete NOTHING W
 
   await expect(promise).rejects.toThrow(ConflictException);
   await expect(promise).rejects.toThrow('Category has transactions');
+  expect(mocks.categoryRepository.deleteCategory).not.toHaveBeenCalled();
+});
+
+it('SHOULD throw Unprocessable (422) AND delete nothing WHEN the category is a system category', async () => {
+  await expect(
+    setup.execute({
+      accessibleOwners: mocks.accessibleOwners,
+      id: SYSTEM_CATEGORY_IDS[SystemCategoryKey.BALANCE_ADJUSTMENT],
+    }),
+  ).rejects.toThrow(new UnprocessableEntityException('System categories cannot be changed'));
+  expect(mocks.categoryRepository.findCategoryById).not.toHaveBeenCalled();
   expect(mocks.categoryRepository.deleteCategory).not.toHaveBeenCalled();
 });

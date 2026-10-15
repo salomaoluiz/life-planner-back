@@ -1,7 +1,8 @@
 import { faker } from '@faker-js/faker';
 
+import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
-import { TransactionType } from '@finance/domain/enum';
+import { SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 class TransactionEntityFixture {
@@ -20,6 +21,21 @@ class TransactionEntityFixture {
   withAccountId(accountId: string) {
     this.value.accountId = accountId;
     this.value.account = { ...this.value.account, id: accountId };
+    return this;
+  }
+
+  withBalanceAdjustment() {
+    const categoryId = SYSTEM_CATEGORY_IDS[SystemCategoryKey.BALANCE_ADJUSTMENT];
+
+    this.value.categoryId = categoryId;
+    this.value.category = {
+      excludeFromTotals: true,
+      icon: 'scale-balance',
+      iconColor: '#607D8B',
+      id: categoryId,
+      name: 'Balance adjustment',
+      systemKey: SystemCategoryKey.BALANCE_ADJUSTMENT,
+    };
     return this;
   }
 
@@ -42,10 +58,12 @@ class TransactionEntityFixture {
       account: { icon: 'bank', id: accountId, name: faker.finance.accountName() },
       accountId,
       category: {
+        excludeFromTotals: false,
         icon: 'cart',
         iconColor: '#2E7D32',
         id: categoryId,
         name: faker.commerce.department(),
+        systemKey: null,
       },
       categoryId,
       createdAt: faker.date.past(),

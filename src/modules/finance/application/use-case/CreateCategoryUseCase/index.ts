@@ -1,8 +1,15 @@
-import { BadRequestException, ForbiddenException, Inject, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Inject,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
 import { CreateCategoryInput, CreateCategorySchema } from '@finance/application/dto/CreateCategory';
 import CategoryEntity from '@finance/domain/entity/CategoryEntity';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
+import { isSystemCategoryId } from '@finance/domain/entity/SystemCategory';
 import { IFinanceCategoryRepository } from '@finance/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
@@ -26,6 +33,10 @@ export class CreateCategoryUseCase implements UseCaseWithParams<
     let depthLevel = 0;
 
     if (input.parentId !== undefined) {
+      if (isSystemCategoryId(input.parentId)) {
+        throw new UnprocessableEntityException('System categories cannot be changed');
+      }
+
       const parent = await this.categoryRepository.findCategoryById(input.parentId);
 
       if (!parent || !hasOwnerAccess(input.accessibleOwners, parent)) {

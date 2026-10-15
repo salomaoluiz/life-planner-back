@@ -1,16 +1,25 @@
-import { BadRequestException, Inject, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
 import {
   EnsureTransactionConsistencyInput,
   EnsureTransactionConsistencySchema,
 } from '@finance/application/dto/EnsureTransactionConsistency';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
+import { isSystemCategoryId } from '@finance/domain/entity/SystemCategory';
+import { AccountStatus } from '@finance/domain/enum';
 import { IFinanceAccountRepository, IFinanceCategoryRepository } from '@finance/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
 // Cross-record rules shared by create and update: the account and the category must exist, be
 // accessible, belong to the SAME owner as the transaction, and the category type must match.
+// The category must not be a system category, and a transaction may not be put on an archived
+// account when the caller asks (create / move).
 export class EnsureTransactionConsistencyUseCase implements UseCaseWithParams<
   EnsureTransactionConsistencyInput,
   void
@@ -25,10 +34,19 @@ export class EnsureTransactionConsistencyUseCase implements UseCaseWithParams<
   async execute(params: EnsureTransactionConsistencyInput): Promise<void> {
     const input = validate(EnsureTransactionConsistencySchema, params);
 
+    // Reserved ids are recognised without a lookup: only the feature that owns them may write them.
+    if (isSystemCategoryId(input.categoryId)) {
+      throw new UnprocessableEntityException('System category is reserved');
+    }
+
     const account = await this.accountRepository.findAccountById(input.accountId);
 
     if (!account || !hasOwnerAccess(input.accessibleOwners, account)) {
       throw new NotFoundException('Account not found');
+    }
+
+    if (input.blockArchivedAccount && account.status === AccountStatus.ARCHIVED) {
+      throw new UnprocessableEntityException('Account is archived');
     }
 
     const category = await this.categoryRepository.findCategoryById(input.categoryId);
