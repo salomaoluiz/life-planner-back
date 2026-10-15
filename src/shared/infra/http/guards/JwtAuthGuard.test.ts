@@ -55,4 +55,40 @@ describe('JwtAuthGuard', () => {
     expect(result).toBeInstanceOf(UnauthorizedException);
     expect(spies.jwtVerify).toHaveBeenCalledTimes(1);
   });
+
+  it('SHOULD check the token user exists AFTER the token is verified', async () => {
+    await setup().canActivate(mocks.context);
+
+    expect(spies.userExists).toHaveBeenCalledWith(mocks.user.id);
+  });
+
+  it('SHOULD NOT check the user WHEN the route is public', async () => {
+    spies.reflectorGetAllAndOverride.mockReturnValue(true);
+
+    await setup().canActivate(mocks.context);
+
+    expect(spies.userExists).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD throw UnauthorizedException WHEN the token user no longer exists', async () => {
+    spies.userExists.mockResolvedValueOnce(false);
+
+    expect(await throwableSetup()).toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('SHOULD throw UnauthorizedException WHEN the token payload has no user id', async () => {
+    spies.jwtVerify.mockResolvedValueOnce({ user: {} } as never);
+
+    expect(await throwableSetup()).toBeInstanceOf(UnauthorizedException);
+    expect(spies.userExists).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD let a lookup failure surface as a server error, NOT as 401', async () => {
+    spies.userExists.mockRejectedValueOnce(new Error('db down'));
+
+    const result = await throwableSetup();
+
+    expect(result).toBeInstanceOf(Error);
+    expect(result).not.toBeInstanceOf(UnauthorizedException);
+  });
 });

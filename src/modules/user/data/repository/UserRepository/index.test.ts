@@ -120,3 +120,12 @@ describe('getUsersByIds', () => {
     expect(await setup.getUsersByIds(['x'])).toEqual([]);
   });
 });
+
+describe('Method existsById', () => {
+  it('SHOULD delegate to the datasource', async () => {
+    spies.userDatasource.existsById.mockResolvedValueOnce(false);
+
+    expect(await setup.existsById('x')).toBe(false);
+    expect(spies.userDatasource.existsById).toHaveBeenCalledWith('x');
+  });
+});

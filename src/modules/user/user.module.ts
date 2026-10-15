@@ -5,6 +5,7 @@ import { FindUsersByIdsUseCase } from '@user/application/use-case/FindUsersByIds
 import { LoginByEmailUseCase } from '@user/application/use-case/LoginByEmailUseCase';
 import { SignUpByEmailUseCase } from '@user/application/use-case/SignUpByEmailUseCase';
 import { UpdateUserUseCase } from '@user/application/use-case/UpdateUserUseCase';
+import { UserExistsUseCase } from '@user/application/use-case/UserExistsUseCase';
 import { UserDatasource } from '@user/data/datasource/UserDatasource';
 import { PasswordHasherRepository } from '@user/data/repository/PasswordHasherRepository';
 import { UserRepository } from '@user/data/repository/UserRepository';
@@ -15,6 +16,7 @@ const useCases = [
   FindUserByIdUseCase,
   FindUsersByIdsUseCase,
   UpdateUserUseCase,
+  UserExistsUseCase,
 ];
 
 @Module({

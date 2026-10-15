@@ -16,6 +16,10 @@ export class UserRepository implements IUserRepository {
     return { id: result.id };
   }
 
+  async existsById(id: string): Promise<boolean> {
+    return this.userDatasource.existsById(id);
+  }
+
   async getUserByEmail(email: string): Promise<undefined | UserEntity> {
     const result = await this.userDatasource.findByEmail(email);
 

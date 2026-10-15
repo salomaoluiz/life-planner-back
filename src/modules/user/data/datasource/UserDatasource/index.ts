@@ -21,6 +21,12 @@ export class UserDatasource implements IUserDatasource {
     });
   }
 
+  async existsById(id: string): Promise<boolean> {
+    const found = await this.db.client.user.findUnique({ select: { id: true }, where: { id } });
+
+    return found !== null;
+  }
+
   async findByEmail(email: string): Promise<null | User> {
     return this.db.client.user.findFirst({
       where: {

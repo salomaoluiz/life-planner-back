@@ -2,6 +2,7 @@ import { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
 import { IS_PUBLIC_KEY } from '@shared/infra/http/decorators/Public';
+import { IUserExistsCheck } from '@shared/infra/http/guards/types';
 import { IJwtProvider } from '@shared/infra/jwt/types';
 
 import { JwtAuthGuard } from './JwtAuthGuard';
@@ -17,6 +18,8 @@ const jwtProviderMock = {
   sign: jest.fn(),
   verify: jest.fn(),
 } as IJwtProvider;
+
+const userExistsCheckMock: IUserExistsCheck = { execute: jest.fn() };
 
 const reflectorMock = {
   getAllAndOverride: jest.fn(),
@@ -46,6 +49,7 @@ const executionContextMock = {
 // region Spies
 
 const jwtVerifySpy = jest.mocked(jwtProviderMock.verify);
+const userExistsSpy = jest.mocked(userExistsCheckMock.execute);
 const reflectorGetAllAndOverrideSpy = jest.mocked(reflectorMock.getAllAndOverride);
 
 // endregion Spies
@@ -55,10 +59,11 @@ beforeEach(() => {
   // Default behaviors
   reflectorGetAllAndOverrideSpy.mockReturnValue(false); // Not public by default
   jwtVerifySpy.mockResolvedValue({ user: userMock }); // Valid token verification by default
+  userExistsSpy.mockResolvedValue(true); // The token user exists by default
 });
 
 function setup() {
-  return new JwtAuthGuard(jwtProviderMock, reflectorMock);
+  return new JwtAuthGuard(jwtProviderMock, reflectorMock, userExistsCheckMock);
 }
 async function throwableSetup() {
   try {
@@ -72,6 +77,7 @@ async function throwableSetup() {
 const spies = {
   jwtVerify: jwtVerifySpy,
   reflectorGetAllAndOverride: reflectorGetAllAndOverrideSpy,
+  userExists: userExistsSpy,
 };
 
 const mocks = {

@@ -134,3 +134,21 @@ describe('Method findByIds', () => {
     expect(spies.findMany).toHaveBeenCalledWith({ where: { id: { in: mocks.ids } } });
   });
 });
+
+describe('Method existsById', () => {
+  it('SHOULD select only the id by primary key AND return true WHEN the row exists', async () => {
+    spies.findUnique.mockResolvedValueOnce({ id: mocks.id });
+
+    expect(await setup.existsById(mocks.id)).toBe(true);
+    expect(spies.findUnique).toHaveBeenCalledWith({
+      select: { id: true },
+      where: { id: mocks.id },
+    });
+  });
+
+  it('SHOULD return false WHEN there is no row', async () => {
+    spies.findUnique.mockResolvedValueOnce(null);
+
+    expect(await setup.existsById('missing')).toBe(false);
+  });
+});
