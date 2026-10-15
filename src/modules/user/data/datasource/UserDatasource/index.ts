@@ -21,6 +21,10 @@ export class UserDatasource implements IUserDatasource {
     });
   }
 
+  async delete(id: string): Promise<void> {
+    await this.db.client.user.deleteMany({ where: { id } });
+  }
+
   async existsById(id: string): Promise<boolean> {
     const found = await this.db.client.user.findUnique({ select: { id: true }, where: { id } });
 

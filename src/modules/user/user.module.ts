@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 
+import { ConfirmUserEmailUseCase } from '@user/application/use-case/ConfirmUserEmailUseCase';
+import { DeleteUserUseCase } from '@user/application/use-case/DeleteUserUseCase';
 import { FindUserByIdUseCase } from '@user/application/use-case/FindUserByIdUseCase';
 import { FindUsersByIdsUseCase } from '@user/application/use-case/FindUsersByIdsUseCase';
 import { LoginByEmailUseCase } from '@user/application/use-case/LoginByEmailUseCase';
@@ -11,6 +13,8 @@ import { PasswordHasherRepository } from '@user/data/repository/PasswordHasherRe
 import { UserRepository } from '@user/data/repository/UserRepository';
 
 const useCases = [
+  ConfirmUserEmailUseCase,
+  DeleteUserUseCase,
   LoginByEmailUseCase,
   SignUpByEmailUseCase,
   FindUserByIdUseCase,

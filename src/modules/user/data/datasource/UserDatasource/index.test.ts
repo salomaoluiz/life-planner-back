@@ -152,3 +152,12 @@ describe('Method existsById', () => {
     expect(await setup.existsById('missing')).toBe(false);
   });
 });
+
+describe('Method delete', () => {
+  it('SHOULD delete by id without failing WHEN the row is already gone', async () => {
+    spies.deleteMany.mockResolvedValue({ count: 0 });
+
+    await expect(setup.delete(mocks.id)).resolves.toBeUndefined();
+    expect(spies.deleteMany).toHaveBeenCalledWith({ where: { id: mocks.id } });
+  });
+});

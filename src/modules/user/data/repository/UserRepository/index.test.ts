@@ -129,3 +129,10 @@ describe('Method existsById', () => {
     expect(spies.userDatasource.existsById).toHaveBeenCalledWith('x');
   });
 });
+
+describe('Method deleteUser', () => {
+  it('SHOULD delegate to the datasource', async () => {
+    await expect(setup.deleteUser('x')).resolves.toBeUndefined();
+    expect(spies.userDatasource.delete).toHaveBeenCalledWith('x');
+  });
+});
