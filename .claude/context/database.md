@@ -13,6 +13,8 @@ Enums `OwnerType` (`USER` | `FAMILY`) and `AccountStatus` (`ACTIVE` | `ARCHIVED`
 
 Enum `StockUnit` (members declared lowercase `unit|gram|kilogram|liter|milliliter` with NO `@map`: the Prisma client validates enum args against member names, so `@map` made `create({ unit: 'liter' })` fail at runtime) and `StockItem` (`stock_items`: `id, owner, owner_id` (no FK), `description, quantity` int, `unit, brand?, barcode?, notes?, purchase_date?, opening_date?, expiration_date?` (timestamptz), `created_at, updated_at`, index `(owner, owner_id)`; migration `add_stock_items`).
 
+Enum `CreditCardBrand` (`VISA|MASTERCARD|ELO|AMEX|OTHER`) and `FinancialCreditCard` (`financial_credit_cards`: `id, title, limit` int cents, `brand, closing_day/due_day` smallint, `payment_day?` smallint, `color` `#RRGGBB`, `last_digits?` char(4), `status` (reuses `AccountStatus`), `owner, owner_id` (no FK; no link to accounts), `created_at, updated_at`, index `(owner, owner_id)`; migration `finance_credit_cards`). Invoices are computed, not stored.
+
 ## Conventions
 
 - Model names PascalCase, **column/field names snake_case** (matches existing `password_hash`, `photo_url`), `id String @id @default(uuid())`, `created_at DateTime? @default(now())`, `updated_at DateTime? @updatedAt`.
