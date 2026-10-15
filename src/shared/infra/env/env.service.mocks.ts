@@ -16,6 +16,7 @@ const envVarsMock = {
   JWT_SECRET: 'secret',
   NODE_ENV: 'test',
   PORT: 3000,
+  SESSION_IDLE_TTL_SECONDS: 172800,
 };
 
 const nestConfigServiceMock = {

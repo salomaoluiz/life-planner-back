@@ -51,4 +51,10 @@ export class EnvService {
   get jwtSecret(): Env['JWT_SECRET'] {
     return this.nestConfigService.get('JWT_SECRET');
   }
+
+  // Sessions
+
+  get sessionIdleTtlSeconds(): Env['SESSION_IDLE_TTL_SECONDS'] {
+    return this.nestConfigService.get('SESSION_IDLE_TTL_SECONDS');
+  }
 }
