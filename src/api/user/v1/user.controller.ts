@@ -1,8 +1,22 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Request } from '@nestjs/common';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Request,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 
+import { AccountDeletionService } from '@api/user/v1/account-deletion.service';
+import { DeleteAccountApiSchema, DeleteAccountInput } from '@api/user/v1/dto/delete-account.dto';
 import { JwtPayload } from '@shared/infra/jwt/types';
+import { validate } from '@shared/infra/validation';
 
 import { FindUserByIdOutput } from './dto/find-user-by-id.dto';
 import { UpdateUserInput, UpdateUserOutput } from './dto/update-user.dto';
@@ -14,7 +28,20 @@ import { UserService } from './user.service';
   version: '1',
 })
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly accountDeletionService: AccountDeletionService,
+    private readonly userService: UserService,
+  ) {}
+
+  @ApiNoContentResponse()
+  @Delete('me')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteMe(@Request() req: JwtPayload & Request, @Body() body: DeleteAccountInput) {
+    // The target is always the token user. The body only carries the email confirmation.
+    const input = validate(DeleteAccountApiSchema, body);
+
+    await this.accountDeletionService.deleteAccount(req.user.id, input);
+  }
 
   @Get('/me')
   @ZodResponse({ status: 200, type: FindUserByIdOutput })

@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 
 import { JwtPayload } from '@shared/infra/jwt/types';
 
+import { AccountDeletionService } from './account-deletion.service';
 import { UpdateUserInput } from './dto/update-user.dto';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
@@ -31,6 +32,8 @@ const requestMock = {
   },
 } as JwtPayload & Request;
 
+const accountDeletionServiceMock = { deleteAccount: jest.fn() };
+
 const userServiceMock = {
   findById: jest.fn().mockResolvedValue(userMock),
   update: jest.fn().mockResolvedValue(updatedUserMock),
@@ -51,6 +54,10 @@ beforeEach(async () => {
     controllers: [UserController],
     providers: [
       {
+        provide: AccountDeletionService,
+        useValue: accountDeletionServiceMock,
+      },
+      {
         provide: UserService,
         useValue: userServiceMock,
       },
@@ -61,6 +68,7 @@ beforeEach(async () => {
 });
 
 const mocks = {
+  accountDeletionService: accountDeletionServiceMock,
   request: requestMock,
   updatedUser: updatedUserMock,
   updateUserInput: updateUserInputMock,
