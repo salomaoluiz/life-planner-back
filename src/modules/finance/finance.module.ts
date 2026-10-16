@@ -4,11 +4,15 @@ import { AdjustAccountBalanceUseCase } from '@finance/application/use-case/Adjus
 import { AttachAccountBalancesUseCase } from '@finance/application/use-case/AttachAccountBalancesUseCase';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { CreateAccountUseCase } from '@finance/application/use-case/CreateAccountUseCase';
+import { CreateCardEarlyPaymentUseCase } from '@finance/application/use-case/CreateCardEarlyPaymentUseCase';
+import { CreateCardRefundUseCase } from '@finance/application/use-case/CreateCardRefundUseCase';
 import { CreateCategoryUseCase } from '@finance/application/use-case/CreateCategoryUseCase';
 import { CreateCreditCardUseCase } from '@finance/application/use-case/CreateCreditCardUseCase';
 import { CreateInstallmentPlanUseCase } from '@finance/application/use-case/CreateInstallmentPlanUseCase';
 import { CreateTransactionUseCase } from '@finance/application/use-case/CreateTransactionUseCase';
 import { DeleteAccountUseCase } from '@finance/application/use-case/DeleteAccountUseCase';
+import { DeleteCardEarlyPaymentUseCase } from '@finance/application/use-case/DeleteCardEarlyPaymentUseCase';
+import { DeleteCardRefundUseCase } from '@finance/application/use-case/DeleteCardRefundUseCase';
 import { DeleteCategoryUseCase } from '@finance/application/use-case/DeleteCategoryUseCase';
 import { DeleteCreditCardUseCase } from '@finance/application/use-case/DeleteCreditCardUseCase';
 import { DeleteFinanceDataByOwnerUseCase } from '@finance/application/use-case/DeleteFinanceDataByOwnerUseCase';
@@ -28,14 +32,18 @@ import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransac
 import { HasFinanceDataByOwnerUseCase } from '@finance/application/use-case/HasFinanceDataByOwnerUseCase';
 import { PayInvoiceUseCase } from '@finance/application/use-case/PayInvoiceUseCase';
 import { PrepayInstallmentPlanUseCase } from '@finance/application/use-case/PrepayInstallmentPlanUseCase';
+import { ResolveRefundLinkUseCase } from '@finance/application/use-case/ResolveRefundLinkUseCase';
 import { UndoInstallmentPrepaymentUseCase } from '@finance/application/use-case/UndoInstallmentPrepaymentUseCase';
 import { UndoInvoicePaymentUseCase } from '@finance/application/use-case/UndoInvoicePaymentUseCase';
 import { UpdateAccountUseCase } from '@finance/application/use-case/UpdateAccountUseCase';
+import { UpdateCardEarlyPaymentUseCase } from '@finance/application/use-case/UpdateCardEarlyPaymentUseCase';
+import { UpdateCardRefundUseCase } from '@finance/application/use-case/UpdateCardRefundUseCase';
 import { UpdateCategoryUseCase } from '@finance/application/use-case/UpdateCategoryUseCase';
 import { UpdateCreditCardUseCase } from '@finance/application/use-case/UpdateCreditCardUseCase';
 import { UpdateInstallmentPlanUseCase } from '@finance/application/use-case/UpdateInstallmentPlanUseCase';
 import { UpdateTransactionUseCase } from '@finance/application/use-case/UpdateTransactionUseCase';
 import { FinanceAccountDatasource } from '@finance/data/datasource/FinanceAccountDatasource';
+import { FinanceCardCreditDatasource } from '@finance/data/datasource/FinanceCardCreditDatasource';
 import { FinanceCategoryDatasource } from '@finance/data/datasource/FinanceCategoryDatasource';
 import { FinanceCreditCardDatasource } from '@finance/data/datasource/FinanceCreditCardDatasource';
 import { FinanceInstallmentPlanDatasource } from '@finance/data/datasource/FinanceInstallmentPlanDatasource';
@@ -44,6 +52,7 @@ import { FinanceOwnerDataDatasource } from '@finance/data/datasource/FinanceOwne
 import { FinancePrepaymentDatasource } from '@finance/data/datasource/FinancePrepaymentDatasource';
 import { FinanceTransactionDatasource } from '@finance/data/datasource/FinanceTransactionDatasource';
 import { FinanceAccountRepository } from '@finance/data/repository/FinanceAccountRepository';
+import { FinanceCardCreditRepository } from '@finance/data/repository/FinanceCardCreditRepository';
 import { FinanceCategoryRepository } from '@finance/data/repository/FinanceCategoryRepository';
 import { FinanceCreditCardRepository } from '@finance/data/repository/FinanceCreditCardRepository';
 import { FinanceInstallmentPlanRepository } from '@finance/data/repository/FinanceInstallmentPlanRepository';
@@ -53,6 +62,13 @@ import { FinancePrepaymentRepository } from '@finance/data/repository/FinancePre
 import { FinanceTransactionRepository } from '@finance/data/repository/FinanceTransactionRepository';
 
 const useCases = [
+  CreateCardEarlyPaymentUseCase,
+  CreateCardRefundUseCase,
+  DeleteCardEarlyPaymentUseCase,
+  DeleteCardRefundUseCase,
+  ResolveRefundLinkUseCase,
+  UpdateCardEarlyPaymentUseCase,
+  UpdateCardRefundUseCase,
   CreateInstallmentPlanUseCase,
   DeleteInstallmentPlanUseCase,
   GetInstallmentPlanUseCase,
@@ -96,6 +112,8 @@ const useCases = [
     ...useCases,
     { provide: 'IFinanceAccountRepository', useClass: FinanceAccountRepository },
     { provide: 'IFinanceAccountDatasource', useClass: FinanceAccountDatasource },
+    { provide: 'IFinanceCardCreditRepository', useClass: FinanceCardCreditRepository },
+    { provide: 'IFinanceCardCreditDatasource', useClass: FinanceCardCreditDatasource },
     { provide: 'IFinanceCategoryRepository', useClass: FinanceCategoryRepository },
     { provide: 'IFinanceCategoryDatasource', useClass: FinanceCategoryDatasource },
     { provide: 'IFinanceCreditCardRepository', useClass: FinanceCreditCardRepository },

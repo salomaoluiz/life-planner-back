@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 
 import { AccountController } from '@api/finance/v1/account.controller';
 import { AccountService } from '@api/finance/v1/account.service';
+import { CardCreditController } from '@api/finance/v1/card-credit.controller';
+import { CardCreditService } from '@api/finance/v1/card-credit.service';
 import { CategoryController } from '@api/finance/v1/category.controller';
 import { CategoryService } from '@api/finance/v1/category.service';
 import { CreditCardController } from '@api/finance/v1/credit-card.controller';
@@ -20,6 +22,7 @@ import { FinanceModule } from '@finance/finance.module';
   // InvoiceController first: its static `credit-cards/invoices` route must win over CreditCardController's `:id`.
   controllers: [
     AccountController,
+    CardCreditController,
     CategoryController,
     InvoiceController,
     CreditCardController,
@@ -29,6 +32,7 @@ import { FinanceModule } from '@finance/finance.module';
   imports: [FamilyModule, FinanceModule],
   providers: [
     AccountService,
+    CardCreditService,
     CategoryService,
     CreditCardService,
     FinanceAccessService,
