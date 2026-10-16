@@ -1,14 +1,14 @@
 # Production runbook (TrueNAS + Portainer, via Tailscale)
 
-Spec 031. Everything below the server line is done **by the owner**; the repos only provide the files and these snippets. Placeholders: `<HOST_IP>` (home server), `<generated-password>`, `<generated-secret>`. Never write real values in this file. Database backups are **not** part of this stack: the owner's own automation covers `life_planner_prod` (add the new database to it).
+Spec 031. Everything below the server line is done **by the owner**; the repos only provide the files and these snippets. Placeholders: `<HOST_IP>` (home server), `<generated-password>`, `<generated-secret>`. Never write real values in this file: the hostnames below use `example.com`, replace them with your own domain (keep the real one out of Git; this is an open source project). Database backups are **not** part of this stack: the owner's own automation covers `life_planner_prod` (add the new database to it).
 
-| Piece                  | Value                                                                                    |
-| ---------------------- | ---------------------------------------------------------------------------------------- |
-| API container / port   | `life-planner-back-prod` / host `1015` → 3000                                            |
-| Web container / port   | `life-planner-web-prod` / host `1016` → 80 (frontend repo)                               |
+| Piece                  | Value                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------ |
+| API container / port   | `life-planner-back-prod` / host `1015` → 3000                                  |
+| Web container / port   | `life-planner-web-prod` / host `1016` → 80 (frontend repo)                     |
 | Hostnames              | `life-planner-api.example.com` → `:1015`, `life-planner.example.com` → `:1016` |
-| Database / role        | `life_planner_prod` / `life_planner_prod` on `postgres_db` (17.5, port 8001)             |
-| Staging (do not touch) | `life-planner-back`, port `1009`                                                         |
+| Database / role        | `life_planner_prod` / `life_planner_prod` on `postgres_db` (17.5, port 8001)   |
+| Staging (do not touch) | `life-planner-back`, port `1009`                                               |
 
 ## 1. Prerequisites
 
@@ -53,16 +53,16 @@ psql -h <HOST_IP> -p 8001 -U <staging_role>   -d life_planner_prod -c 'select 1'
 
 Stacks → Add stack → **Repository**: `https://github.com/salomaoluiz/life-planner-back`, reference `refs/heads/main`, compose path `docker-compose.prod.yml`. Environment variables (stack environment only, never in Git):
 
-| Variable                   | Value                                   |
-| -------------------------- | --------------------------------------- |
-| `DB_HOST`                  | `<HOST_IP>`                             |
-| `DB_PORT`                  | `8001`                                  |
-| `DB_NAME`                  | `life_planner_prod`                     |
-| `DB_USER`                  | `life_planner_prod`                     |
-| `DB_PASSWORD`              | `<generated-password>`                  |
-| `JWT_SECRET`               | `<generated-secret>`                    |
-| `JWT_EXPIRES_IN`           | `3600`                                  |
-| `SESSION_IDLE_TTL_SECONDS` | `172800`                                |
+| Variable                   | Value                              |
+| -------------------------- | ---------------------------------- |
+| `DB_HOST`                  | `<HOST_IP>`                        |
+| `DB_PORT`                  | `8001`                             |
+| `DB_NAME`                  | `life_planner_prod`                |
+| `DB_USER`                  | `life_planner_prod`                |
+| `DB_PASSWORD`              | `<generated-password>`             |
+| `JWT_SECRET`               | `<generated-secret>`               |
+| `JWT_EXPIRES_IN`           | `3600`                             |
+| `SESSION_IDLE_TTL_SECONDS` | `172800`                           |
 | `CORS_ORIGINS`             | `https://life-planner.example.com` |
 
 Deploy. Expected: `life-planner-back-prod` running and `healthy`; the API log shows `prisma migrate deploy` applying every migration (the first start also creates the seeded system categories). A failed migration makes the container exit and restart in a loop: read the log, fix, redeploy. The API never serves on a half-migrated schema.
