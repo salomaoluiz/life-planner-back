@@ -72,3 +72,7 @@ Transactions may have `accountId = null` and `account = null` (card purchases; t
 ### Spec 030 contract (frontend)
 
 New `/finance/installment-plans` endpoints and the `scope` field of `PATCH /transactions/:id` are in `api.md`. Transactions and invoice purchases carry `installmentPlanId`, `installmentNumber`, `installmentCount` (null outside a plan). Errors by message on 422: `Invoice is paid`, `Credit card is archived`, `An installment is in a paid invoice`, `Edit the installment plan instead`, `Delete the installment plan`. The frontend implements it in the same-numbered spec.
+
+## Card credits (spec 032)
+
+Invoice payloads gain `net, carryIn, total, amountDue, earlyPaid` and the detail gains `credits`; `amount` still means what is due, so spec 029/030 clients keep working. The month summary must add `earlyPaid` to `amount` (frontend `getMonthSummaryUseCase`). New endpoints: prepayment (`/installment-plans/:id/prepayment[-preview]`), refunds and early payments (`/credit-cards/:id/refunds|early-payments`), see `api.md`. New enum values `SystemCategoryKey.INSTALLMENT_PREPAYMENT_DISCOUNT | CARD_REFUND | CARD_EARLY_PAYMENT`; a card can now hold `INCOME` rows of those categories only.
