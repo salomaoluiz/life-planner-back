@@ -61,6 +61,7 @@ const includeMock = {
 const accountUpdateSpy = jest.fn();
 const paymentFindFirstSpy = jest.fn();
 const countSpy = jest.fn();
+const planCountSpy = jest.fn();
 const createSpy = jest.fn();
 const deleteManySpy = jest.fn();
 const findFirstSpy = jest.fn();
@@ -78,6 +79,7 @@ const clientMock = {
   $queryRaw: queryRawSpy,
   $transaction: transactionSpy,
   financialAccount: { update: accountUpdateSpy },
+  financialInstallmentPlan: { count: planCountSpy },
   financialInvoicePayment: { findFirst: paymentFindFirstSpy },
   financialTransaction: {
     count: countSpy,
@@ -118,6 +120,7 @@ const spies = {
   findUnique: findUniqueSpy,
   groupBy: groupBySpy,
   paymentFindFirst: paymentFindFirstSpy,
+  planCount: planCountSpy,
   queryRaw: queryRawSpy,
   transaction: transactionSpy,
   update: updateSpy,

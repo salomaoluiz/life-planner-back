@@ -12,11 +12,13 @@ describe('Method countByAccountId / countByCategoryIds', () => {
     expect(spies.count).toHaveBeenCalledWith({ where: { account_id: 'acc-1' } });
   });
 
-  it('SHOULD count the transactions of ANY of the given categories in one query', async () => {
+  it('SHOULD count the transactions AND the installment plans of ANY of the given categories', async () => {
     spies.count.mockResolvedValue(1);
+    spies.planCount.mockResolvedValue(2);
 
-    expect(await setup.countByCategoryIds(['c1', 'c2'])).toBe(1);
+    expect(await setup.countByCategoryIds(['c1', 'c2'])).toBe(3);
     expect(spies.count).toHaveBeenCalledWith({ where: { category_id: { in: ['c1', 'c2'] } } });
+    expect(spies.planCount).toHaveBeenCalledWith({ where: { category_id: { in: ['c1', 'c2'] } } });
   });
 });
 
@@ -310,5 +312,38 @@ describe('Card purchases', () => {
     expect(await setup.findCardPurchases([])).toEqual([]);
     spies.count.mockResolvedValue(2);
     expect(await setup.countByCreditCardId('card-1')).toBe(2);
+  });
+});
+
+describe('Method update on a paid invoice (spec 030 FR 16)', () => {
+  const lockedRow = [
+    {
+      account_id: null,
+      credit_card_id: 'card-1',
+      invoice_month: '2026-10',
+      type: 'EXPENSE',
+      value: 1000,
+    },
+  ];
+
+  it('SHOULD allow description and category WITHOUT looking at the payments', async () => {
+    spies.queryRaw.mockResolvedValue(lockedRow);
+    spies.paymentFindFirst.mockResolvedValue({ id: 'payment-1' });
+    spies.update.mockResolvedValue(mocks.transaction);
+
+    await setup.update({ category_id: 'cat-2', description: 'New', id: mocks.transaction.id });
+
+    expect(spies.paymentFindFirst).not.toHaveBeenCalled();
+    expect(spies.update).toHaveBeenCalledTimes(1);
+  });
+
+  it('SHOULD refuse a value change (422)', async () => {
+    spies.queryRaw.mockResolvedValue(lockedRow);
+    spies.paymentFindFirst.mockResolvedValue({ id: 'payment-1' });
+
+    await expect(setup.update({ id: mocks.transaction.id, value: 5 })).rejects.toThrow(
+      'Invoice is paid',
+    );
+    expect(spies.update).not.toHaveBeenCalled();
   });
 });

@@ -51,6 +51,24 @@ export async function assertInvoiceNotPaid(
   }
 }
 
+// Creating or moving installments into an invoice that already has a payment is rejected (spec 030 FR 6).
+export async function assertInvoicesNotPaid(
+  tx: Prisma.TransactionClient,
+  creditCardId: string,
+  invoiceMonths: string[],
+): Promise<void> {
+  await failWhenPaid(tx, creditCardId, invoiceMonths, 'Invoice is paid');
+}
+
+// Value changes, recalculation and delete of a plan stop at the first paid installment (spec 030 FR 14, 15, 20).
+export async function assertNoPaidInstallment(
+  tx: Prisma.TransactionClient,
+  creditCardId: string,
+  invoiceMonths: string[],
+): Promise<void> {
+  await failWhenPaid(tx, creditCardId, invoiceMonths, 'An installment is in a paid invoice');
+}
+
 // Locks the card rows (ascending id) until commit: a payment and a purchase on the same invoice serialize here.
 export async function lockCards(tx: Prisma.TransactionClient, ids: string[]): Promise<void> {
   const unique = [...new Set(ids)].sort();
@@ -88,6 +106,21 @@ export function toLedgerEntry(row: {
   };
 }
 
+async function failWhenPaid(
+  tx: Prisma.TransactionClient,
+  creditCardId: string,
+  invoiceMonths: string[],
+  message: string,
+): Promise<void> {
+  const payment = await tx.financialInvoicePayment.findFirst({
+    select: { id: true },
+    where: { credit_card_id: creditCardId, invoice_month: { in: invoiceMonths } },
+  });
+
+  if (payment) {
+    throw new UnprocessableEntityException(message);
+  }
+}
 function toLockedRow(row: LockedRow): LockedTransactionRow {
   return {
     ...toLedgerEntry(row),

@@ -31,12 +31,14 @@ import { UpdateTransactionUseCase } from '@finance/application/use-case/UpdateTr
 import { FinanceAccountDatasource } from '@finance/data/datasource/FinanceAccountDatasource';
 import { FinanceCategoryDatasource } from '@finance/data/datasource/FinanceCategoryDatasource';
 import { FinanceCreditCardDatasource } from '@finance/data/datasource/FinanceCreditCardDatasource';
+import { FinanceInstallmentPlanDatasource } from '@finance/data/datasource/FinanceInstallmentPlanDatasource';
 import { FinanceInvoicePaymentDatasource } from '@finance/data/datasource/FinanceInvoicePaymentDatasource';
 import { FinanceOwnerDataDatasource } from '@finance/data/datasource/FinanceOwnerDataDatasource';
 import { FinanceTransactionDatasource } from '@finance/data/datasource/FinanceTransactionDatasource';
 import { FinanceAccountRepository } from '@finance/data/repository/FinanceAccountRepository';
 import { FinanceCategoryRepository } from '@finance/data/repository/FinanceCategoryRepository';
 import { FinanceCreditCardRepository } from '@finance/data/repository/FinanceCreditCardRepository';
+import { FinanceInstallmentPlanRepository } from '@finance/data/repository/FinanceInstallmentPlanRepository';
 import { FinanceInvoicePaymentRepository } from '@finance/data/repository/FinanceInvoicePaymentRepository';
 import { FinanceOwnerDataRepository } from '@finance/data/repository/FinanceOwnerDataRepository';
 import { FinanceTransactionRepository } from '@finance/data/repository/FinanceTransactionRepository';
@@ -82,6 +84,8 @@ const useCases = [
     { provide: 'IFinanceCategoryDatasource', useClass: FinanceCategoryDatasource },
     { provide: 'IFinanceCreditCardRepository', useClass: FinanceCreditCardRepository },
     { provide: 'IFinanceCreditCardDatasource', useClass: FinanceCreditCardDatasource },
+    { provide: 'IFinanceInstallmentPlanRepository', useClass: FinanceInstallmentPlanRepository },
+    { provide: 'IFinanceInstallmentPlanDatasource', useClass: FinanceInstallmentPlanDatasource },
     { provide: 'IFinanceInvoicePaymentRepository', useClass: FinanceInvoicePaymentRepository },
     { provide: 'IFinanceInvoicePaymentDatasource', useClass: FinanceInvoicePaymentDatasource },
     { provide: 'IFinanceOwnerDataRepository', useClass: FinanceOwnerDataRepository },

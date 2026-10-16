@@ -1,6 +1,12 @@
 import { TransactionType } from '@finance/domain/enum';
 
-import { applyLedgerDeltas, lockTransactionRow, toLedgerEntry } from './index';
+import {
+  applyLedgerDeltas,
+  assertInvoicesNotPaid,
+  assertNoPaidInstallment,
+  lockTransactionRow,
+  toLedgerEntry,
+} from './index';
 import { mocks, spies } from './index.mocks';
 
 describe('toLedgerEntry', () => {
@@ -57,5 +63,35 @@ describe('applyLedgerDeltas', () => {
     await applyLedgerDeltas(mocks.tx, []);
 
     expect(spies.accountUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe('assertInvoicesNotPaid / assertNoPaidInstallment', () => {
+  it('SHOULD pass WHEN no listed invoice has a payment', async () => {
+    spies.paymentFindFirst.mockResolvedValue(null);
+
+    await expect(
+      assertInvoicesNotPaid(mocks.tx, 'card-1', ['2026-10', '2026-11']),
+    ).resolves.toBeUndefined();
+    expect(spies.paymentFindFirst).toHaveBeenCalledWith({
+      select: { id: true },
+      where: { credit_card_id: 'card-1', invoice_month: { in: ['2026-10', '2026-11'] } },
+    });
+  });
+
+  it('SHOULD say "Invoice is paid" for a target invoice', async () => {
+    spies.paymentFindFirst.mockResolvedValue({ id: 'p1' });
+
+    await expect(assertInvoicesNotPaid(mocks.tx, 'card-1', ['2026-10'])).rejects.toThrow(
+      'Invoice is paid',
+    );
+  });
+
+  it('SHOULD say "An installment is in a paid invoice" for an existing plan', async () => {
+    spies.paymentFindFirst.mockResolvedValue({ id: 'p1' });
+
+    await expect(assertNoPaidInstallment(mocks.tx, 'card-1', ['2026-10'])).rejects.toThrow(
+      'An installment is in a paid invoice',
+    );
   });
 });

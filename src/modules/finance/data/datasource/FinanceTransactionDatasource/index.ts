@@ -49,9 +49,15 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
   }
 
   async countByCategoryIds(categoryIds: string[]): Promise<number> {
-    return this.db.client.financialTransaction.count({
-      where: { category_id: { in: categoryIds } },
-    });
+    // A plan keeps its own category even when every installment was recategorized: it blocks the delete too.
+    const [transactions, plans] = await Promise.all([
+      this.db.client.financialTransaction.count({ where: { category_id: { in: categoryIds } } }),
+      this.db.client.financialInstallmentPlan.count({
+        where: { category_id: { in: categoryIds } },
+      }),
+    ]);
+
+    return transactions + plans;
   }
 
   async countByCreditCardId(creditCardId: string): Promise<number> {
@@ -196,12 +202,15 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
         throw new NotFoundException();
       }
 
-      await assertInvoiceNotPaid(tx, stored.creditCardId, stored.invoiceMonth);
-      await assertInvoiceNotPaid(
-        tx,
-        params.credit_card_id === undefined ? stored.creditCardId : params.credit_card_id,
-        params.invoice_month === undefined ? stored.invoiceMonth : params.invoice_month,
-      );
+      // In a paid invoice only the description and the category can change (spec 030 FR 16).
+      if (!isTextOnly(params)) {
+        await assertInvoiceNotPaid(tx, stored.creditCardId, stored.invoiceMonth);
+        await assertInvoiceNotPaid(
+          tx,
+          params.credit_card_id === undefined ? stored.creditCardId : params.credit_card_id,
+          params.invoice_month === undefined ? stored.invoiceMonth : params.invoice_month,
+        );
+      }
 
       const updated = await tx.financialTransaction.update({
         data: {
@@ -225,4 +234,17 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
       return updated;
     });
   }
+}
+
+function isTextOnly(params: UpdateTransactionDatasourceParams): boolean {
+  return (
+    params.account_id === undefined &&
+    params.credit_card_id === undefined &&
+    params.date === undefined &&
+    params.invoice_month === undefined &&
+    params.owner === undefined &&
+    params.owner_id === undefined &&
+    params.type === undefined &&
+    params.value === undefined
+  );
 }
