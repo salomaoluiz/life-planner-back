@@ -87,7 +87,7 @@ Then start the app normally; `migrate deploy` applies the remaining migrations.
 
 ## Deployment
 
-Production runs on the home server as a Portainer Git stack (`docker-compose.prod.yml`, `refs/heads/main`) behind Nginx over Tailscale. The image is multi-stage: it applies `prisma migrate deploy` and then runs `node dist/src/main` as a non-root user. `SWAGGER_ENABLED=false` hides `/swagger` in production. The full server guide (database, NFS backup volume, Portainer stack, Nginx, DNS, backup restore, release and rollback) is in [`docs/production.md`](docs/production.md).
+Production runs on the home server as a Portainer Git stack (`docker-compose.prod.yml`, `refs/heads/main`) behind Nginx over Tailscale. The image is multi-stage: it applies `prisma migrate deploy` and then runs `node dist/src/main` as a non-root user. `SWAGGER_ENABLED=false` hides `/swagger` in production. The full server guide (database, Portainer stack, Nginx, DNS, release and rollback) is in [`docs/production.md`](docs/production.md).
 
 ## Resources
 

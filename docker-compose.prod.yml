@@ -33,29 +33,3 @@ services:
         limits:
           cpus: '1'
           memory: 1G
-
-  backup:
-    container_name: life-planner-backup-prod
-    image: prodrigestivill/postgres-backup-local:17
-    restart: unless-stopped
-    environment:
-      POSTGRES_HOST: ${DB_HOST:?DB_HOST is required}
-      POSTGRES_PORT: ${DB_PORT:?DB_PORT is required}
-      POSTGRES_DB: ${DB_NAME:?DB_NAME is required}
-      POSTGRES_USER: ${DB_USER:?DB_USER is required}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
-      SCHEDULE: '@daily'
-      BACKUP_KEEP_DAYS: 7
-      BACKUP_KEEP_WEEKS: 4
-      BACKUP_KEEP_MONTHS: 6
-      HEALTHCHECK_PORT: 8080
-    volumes:
-      - backups:/backups
-
-volumes:
-  backups:
-    driver: local
-    driver_opts:
-      type: nfs
-      o: addr=${BACKUP_NFS_ADDR:?BACKUP_NFS_ADDR is required},rw,nfsvers=4
-      device: ':${BACKUP_NFS_PATH:?BACKUP_NFS_PATH is required}'
