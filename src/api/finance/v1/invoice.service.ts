@@ -29,6 +29,8 @@ function toDetailOutput({ card, invoice, purchases }: InvoiceDetail) {
       date: purchase.date,
       description: purchase.description,
       id: purchase.id,
+      installmentCount: purchase.installmentCount,
+      installmentNumber: purchase.installmentNumber,
       ownerId: purchase.ownerId,
       value: purchase.value,
     })),

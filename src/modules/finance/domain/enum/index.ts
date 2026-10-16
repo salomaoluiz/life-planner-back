@@ -9,6 +9,10 @@ export enum CreditCardBrand {
   OTHER = 'OTHER',
   VISA = 'VISA',
 }
+export enum InstallmentEditScope {
+  ONLY_THIS = 'ONLY_THIS',
+  THIS_AND_NEXT = 'THIS_AND_NEXT',
+}
 export enum InvoicePaymentMethod {
   ACCOUNT = 'ACCOUNT',
   EXTERNAL = 'EXTERNAL',

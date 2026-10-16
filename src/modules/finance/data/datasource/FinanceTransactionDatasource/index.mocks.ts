@@ -27,6 +27,9 @@ const transactionMock: FinancialTransactionWithRelations = {
   date: new Date('2026-10-03T00:00:00.000Z'),
   description: 'Weekly groceries',
   id: faker.string.uuid(),
+  installment_number: null,
+  installment_plan: null,
+  installment_plan_id: null,
   invoice_month: null,
   owner: 'USER',
   owner_id: faker.string.uuid(),
@@ -48,6 +51,7 @@ const includeMock = {
     },
   },
   credit_card: { select: { color: true, id: true, last_digits: true, title: true } },
+  installment_plan: { select: { installment_count: true } },
 };
 
 // endregion Mocks

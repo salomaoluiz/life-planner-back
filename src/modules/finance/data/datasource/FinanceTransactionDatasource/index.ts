@@ -24,7 +24,7 @@ import { ledgerDeltas } from '@finance/domain/service/LedgerBalance';
 import { Database } from '@shared/infra/db/Database';
 
 // Account and category summaries come back in the same query (no N+1).
-const RELATIONS = {
+export const TRANSACTION_RELATIONS = {
   account: { select: { icon: true, id: true, name: true } },
   category: {
     select: {
@@ -37,6 +37,7 @@ const RELATIONS = {
     },
   },
   credit_card: { select: { color: true, id: true, last_digits: true, title: true } },
+  installment_plan: { select: { installment_count: true } },
 };
 
 @Injectable()
@@ -65,7 +66,10 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
       await lockCards(tx, params.credit_card_id ? [params.credit_card_id] : []);
       await assertInvoiceNotPaid(tx, params.credit_card_id, params.invoice_month);
 
-      const created = await tx.financialTransaction.create({ data: params, include: RELATIONS });
+      const created = await tx.financialTransaction.create({
+        data: params,
+        include: TRANSACTION_RELATIONS,
+      });
 
       await applyLedgerDeltas(tx, ledgerDeltas(undefined, toLedgerEntry(created)));
 
@@ -101,7 +105,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
 
   async findById(id: string): Promise<FinancialTransactionWithRelations | null> {
     return this.db.client.financialTransaction.findUnique({
-      include: RELATIONS,
+      include: TRANSACTION_RELATIONS,
       where: { id },
     });
   }
@@ -129,7 +133,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
           };
 
     return this.db.client.financialTransaction.findMany({
-      include: RELATIONS,
+      include: TRANSACTION_RELATIONS,
       orderBy: [{ date: 'desc' }, { created_at: 'desc' }],
       where: { AND: [toOwnerWhere(owners), sourceWhere] },
     });
@@ -141,7 +145,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
     }
 
     return this.db.client.financialTransaction.findMany({
-      include: RELATIONS,
+      include: TRANSACTION_RELATIONS,
       orderBy: [{ date: 'asc' }, { created_at: 'asc' }],
       where: { OR: keys.map((key) => ({ ...key })) },
     });
@@ -212,7 +216,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
           type: params.type,
           value: params.value,
         },
-        include: RELATIONS,
+        include: TRANSACTION_RELATIONS,
         where: { id: params.id },
       });
 

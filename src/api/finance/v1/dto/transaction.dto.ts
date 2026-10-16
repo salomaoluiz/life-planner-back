@@ -65,6 +65,9 @@ export const TransactionApiSchema = z.object({
   date: z.string(),
   description: z.string(),
   id: z.uuid(),
+  installmentCount: z.number().int().nullable(),
+  installmentNumber: z.number().int().nullable(),
+  installmentPlanId: z.uuid().nullable(),
   invoiceMonth: z.string().nullable(),
   // Only on create / update responses of card purchases: the purchase left the card over its limit.
   overLimit: z.boolean().optional(),

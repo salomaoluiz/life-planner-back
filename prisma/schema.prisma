@@ -127,8 +127,9 @@ model FinancialCreditCard {
   created_at  DateTime        @default(now()) @db.Timestamptz(6)
   updated_at  DateTime        @updatedAt @db.Timestamptz(6)
 
-  transactions     FinancialTransaction[]
-  invoice_payments FinancialInvoicePayment[]
+  transactions      FinancialTransaction[]
+  invoice_payments  FinancialInvoicePayment[]
+  installment_plans FinancialInstallmentPlan[]
 
   @@index([owner, owner_id])
   @@map("financial_credit_cards")
@@ -155,9 +156,10 @@ model FinancialCategory {
   created_at          DateTime           @default(now()) @db.Timestamptz(6)
   updated_at          DateTime           @updatedAt @db.Timestamptz(6)
 
-  parent       FinancialCategory?     @relation("CategoryTree", fields: [parent_id], references: [id], onDelete: Cascade)
-  children     FinancialCategory[]    @relation("CategoryTree")
-  transactions FinancialTransaction[]
+  parent            FinancialCategory?         @relation("CategoryTree", fields: [parent_id], references: [id], onDelete: Cascade)
+  children          FinancialCategory[]        @relation("CategoryTree")
+  transactions      FinancialTransaction[]
+  installment_plans FinancialInstallmentPlan[]
 
   @@index([owner, owner_id])
   @@index([parent_id])
@@ -167,25 +169,30 @@ model FinancialCategory {
 // Money is integer cents (BRL implied). `date` is a calendar date (no time, no timezone).
 // Both FKs are RESTRICT: an account or category with transactions can never be deleted by accident.
 model FinancialTransaction {
-  id             String          @id @default(uuid())
-  description    String
-  value          Int
-  date           DateTime        @db.Date
-  type           TransactionType
-  account_id     String?
-  credit_card_id String?
-  invoice_month  String?         @db.Char(7)
-  category_id    String
-  owner          OwnerType
-  owner_id       String
-  created_at     DateTime        @default(now()) @db.Timestamptz(6)
-  updated_at     DateTime        @updatedAt @db.Timestamptz(6)
+  id                  String          @id @default(uuid())
+  description         String
+  value               Int
+  date                DateTime        @db.Date
+  type                TransactionType
+  account_id          String?
+  credit_card_id      String?
+  invoice_month       String?         @db.Char(7)
+  category_id         String
+  installment_plan_id String?
+  installment_number  Int?            @db.SmallInt
+  owner               OwnerType
+  owner_id            String
+  created_at          DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime        @updatedAt @db.Timestamptz(6)
 
-  account         FinancialAccount?        @relation(fields: [account_id], references: [id], onDelete: Restrict)
-  credit_card     FinancialCreditCard?     @relation(fields: [credit_card_id], references: [id], onDelete: Restrict)
-  category        FinancialCategory        @relation(fields: [category_id], references: [id], onDelete: Restrict)
-  invoice_payment FinancialInvoicePayment?
+  account          FinancialAccount?         @relation(fields: [account_id], references: [id], onDelete: Restrict)
+  credit_card      FinancialCreditCard?      @relation(fields: [credit_card_id], references: [id], onDelete: Restrict)
+  category         FinancialCategory         @relation(fields: [category_id], references: [id], onDelete: Restrict)
+  invoice_payment  FinancialInvoicePayment?
+  installment_plan FinancialInstallmentPlan? @relation(fields: [installment_plan_id], references: [id], onDelete: Restrict)
 
+  @@unique([installment_plan_id, installment_number])
+  @@index([installment_plan_id])
   @@index([credit_card_id, invoice_month])
   @@index([account_id, date])
   @@index([category_id])
@@ -263,4 +270,27 @@ model UserSession {
   @@index([user_id])
   @@index([last_used_at])
   @@map("user_sessions")
+}
+
+model FinancialInstallmentPlan {
+  id                String    @id @default(uuid())
+  credit_card_id    String
+  description       String
+  category_id       String
+  total_value       Int
+  installment_count Int       @db.SmallInt
+  date              DateTime  @db.Date
+  owner             OwnerType
+  owner_id          String
+  created_at        DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime  @updatedAt @db.Timestamptz(6)
+
+  credit_card  FinancialCreditCard    @relation(fields: [credit_card_id], references: [id], onDelete: Restrict)
+  category     FinancialCategory      @relation(fields: [category_id], references: [id], onDelete: Restrict)
+  transactions FinancialTransaction[]
+
+  @@index([credit_card_id])
+  @@index([category_id])
+  @@index([owner, owner_id])
+  @@map("financial_installment_plans")
 }

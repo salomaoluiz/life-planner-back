@@ -34,6 +34,10 @@ interface ITransactionEntity {
   date: string;
   description: string;
   id: string;
+  // Total installments of the plan (join), the number of this row and the plan id; all null outside a plan.
+  installmentCount: null | number;
+  installmentNumber: null | number;
+  installmentPlanId: null | string;
   // `YYYY-MM` of the invoice a card purchase belongs to; null for account rows.
   invoiceMonth: null | string;
   owner: OwnerType;
@@ -55,6 +59,9 @@ class TransactionEntity {
   date: string;
   description: string;
   id: string;
+  installmentCount: null | number;
+  installmentNumber: null | number;
+  installmentPlanId: null | string;
   // `YYYY-MM` of the invoice a card purchase belongs to; null for account rows.
   invoiceMonth: null | string;
   owner: OwnerType;
@@ -75,6 +82,9 @@ class TransactionEntity {
     this.date = params.date;
     this.description = params.description;
     this.id = params.id;
+    this.installmentCount = params.installmentCount;
+    this.installmentNumber = params.installmentNumber;
+    this.installmentPlanId = params.installmentPlanId;
     this.invoiceMonth = params.invoiceMonth;
     this.owner = params.owner;
     this.ownerId = params.ownerId;
