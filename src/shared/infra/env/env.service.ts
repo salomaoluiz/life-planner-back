@@ -57,4 +57,10 @@ export class EnvService {
   get sessionIdleTtlSeconds(): Env['SESSION_IDLE_TTL_SECONDS'] {
     return this.nestConfigService.get('SESSION_IDLE_TTL_SECONDS');
   }
+
+  // Docs
+
+  get swaggerEnabled(): Env['SWAGGER_ENABLED'] {
+    return this.nestConfigService.get('SWAGGER_ENABLED');
+  }
 }

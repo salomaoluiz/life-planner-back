@@ -1,0 +1,35 @@
+# Production stack (Portainer Git stack `life-planner-prod-api`, ref refs/heads/main).
+# Every ${VAR} comes from the stack environment; see docs/production.md.
+services:
+  api:
+    container_name: life-planner-back-prod
+    build: .
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    ports:
+      - '1015:3000'
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      SWAGGER_ENABLED: 'false'
+      CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS is required}
+      DB_USER: ${DB_USER:?DB_USER is required}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      DB_HOST: ${DB_HOST:?DB_HOST is required}
+      DB_PORT: ${DB_PORT:?DB_PORT is required}
+      DB_NAME: ${DB_NAME:?DB_NAME is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-3600}
+      SESSION_IDLE_TTL_SECONDS: ${SESSION_IDLE_TTL_SECONDS:-172800}
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3000/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G

@@ -9,3 +9,9 @@ README.md
 tests
 .env
 generated/prisma
+.env*
+coverage
+docs
+.claude
+.superpowers
+.husky

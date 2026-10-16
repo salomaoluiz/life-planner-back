@@ -17,6 +17,7 @@ const envVarsMock = {
   NODE_ENV: 'test',
   PORT: 3000,
   SESSION_IDLE_TTL_SECONDS: 172800,
+  SWAGGER_ENABLED: true,
 };
 
 const nestConfigServiceMock = {

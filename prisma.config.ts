@@ -7,6 +7,6 @@ export default defineConfig({
     path: 'prisma/migrations',
   },
   datasource: {
-    url: `postgresql://${env('DB_USER')}:${env('DB_PASSWORD')}@${env('DB_HOST')}:${env('DB_PORT')}/${env('DB_NAME')}`,
+    url: `postgresql://${encodeURIComponent(env('DB_USER'))}:${encodeURIComponent(env('DB_PASSWORD'))}@${env('DB_HOST')}:${env('DB_PORT')}/${env('DB_NAME')}`,
   },
 });

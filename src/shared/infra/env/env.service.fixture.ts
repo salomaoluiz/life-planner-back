@@ -28,6 +28,7 @@ class EnvServiceFixture {
       jwtSecret: faker.string.alphanumeric(64),
       port: faker.internet.port(),
       sessionIdleTtlSeconds: 172800,
+      swaggerEnabled: true,
     };
     return this;
   }

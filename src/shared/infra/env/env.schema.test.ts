@@ -10,6 +10,7 @@ describe('validateEnvironment', () => {
       JWT_EXPIRES_IN: 7200, // Coerced
       PORT: 4000, // Coerced
       SESSION_IDLE_TTL_SECONDS: 172800,
+      SWAGGER_ENABLED: true,
     });
   });
 
@@ -42,6 +43,20 @@ describe('validateEnvironment', () => {
     expect(throwableSetup({ ...mocks.validConfig, SESSION_IDLE_TTL_SECONDS: '0' })).toBeInstanceOf(
       Error,
     );
+  });
+
+  it.each([
+    { expected: false, raw: 'false' },
+    { expected: true, raw: 'true' },
+    { expected: true, raw: undefined },
+  ])('SHOULD parse SWAGGER_ENABLED=$raw as $expected', ({ expected, raw }) => {
+    const result = setup({ ...mocks.partialConfig, SWAGGER_ENABLED: raw });
+
+    expect(result.SWAGGER_ENABLED).toBe(expected);
+  });
+
+  it.each(['banana', '0', '1', 'FALSE', ''])('SHOULD reject SWAGGER_ENABLED=%j', (raw) => {
+    expect(throwableSetup({ ...mocks.partialConfig, SWAGGER_ENABLED: raw })).toBeInstanceOf(Error);
   });
 
   it('SHOULD throw Error WHEN config is invalid', () => {

@@ -1,3 +1,4 @@
+import type { Database } from './Database';
 import { mocks, setup, spies } from './Database.mocks';
 
 describe('Database', () => {
@@ -10,6 +11,17 @@ describe('Database', () => {
     expect(spies.prismaClient).toHaveBeenCalledTimes(1);
     expect(spies.prismaClient).toHaveBeenCalledWith({
       adapter: mocks.prismaPgInstance,
+    });
+  });
+
+  it('SHOULD URL-encode the user and password in the connection string', () => {
+    const env = { ...mocks.envService, dbPassword: 'p@ss/w:rd#1', dbUser: 'us/er' };
+
+    const DatabaseClass = setup.constructor as new (env: typeof mocks.envService) => Database;
+    new DatabaseClass(env as typeof mocks.envService);
+
+    expect(spies.prismaPg).toHaveBeenLastCalledWith({
+      connectionString: 'postgresql://us%2Fer:p%40ss%2Fw%3Ard%231@localhost:5432/test_db',
     });
   });
 

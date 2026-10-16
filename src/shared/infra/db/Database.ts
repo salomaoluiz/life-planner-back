@@ -10,7 +10,7 @@ export class Database {
 
   constructor(private readonly env: EnvService) {
     const adapter = new PrismaPg({
-      connectionString: `postgresql://${this.env.dbUser}:${this.env.dbPassword}@${this.env.dbHost}:${this.env.dbPort}/${this.env.dbName}`,
+      connectionString: `postgresql://${encodeURIComponent(this.env.dbUser)}:${encodeURIComponent(this.env.dbPassword)}@${this.env.dbHost}:${this.env.dbPort}/${this.env.dbName}`,
     });
 
     this.prisma = new PrismaClient({

@@ -17,6 +17,30 @@ ENV DB_NAME=mydatabase
 RUN yarn prisma generate
 RUN yarn build
 
+FROM node:24-alpine AS runtime
+
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+RUN corepack enable
+
+COPY package.json yarn.lock ./
+RUN yarn install --production --frozen-lockfile --ignore-scripts && yarn cache clean
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/generated ./generated
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+
+# Prisma downloads its schema engine on first use (--ignore-scripts skipped the postinstall).
+# Fetch it now, so redeploying never depends on reaching the Prisma CDN at container start.
+RUN DB_USER=user DB_PASSWORD=password DB_HOST=localhost DB_PORT=5432 DB_NAME=mydatabase \
+    node_modules/.bin/prisma -v
+
+RUN chown -R node:node /app
+USER node
+
 EXPOSE 3000
 
-CMD ["yarn", "start"]
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && exec node dist/src/main"]
