@@ -52,6 +52,9 @@ interface YearMonth {
 const CLOSED_PAID_WINDOW = 3;
 const MS_PER_DAY = 86_400_000;
 
+export function addInvoiceMonths(month: string, delta: number): string {
+  return formatMonth(addMonths(parseMonth(month), delta));
+}
 // Pure calendar math on `YYYY-MM-DD` strings (no time zones): ISO dates compare correctly as strings.
 export function buildInvoiceFor(
   card: BillingCard,
