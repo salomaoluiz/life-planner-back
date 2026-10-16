@@ -15,7 +15,9 @@ export interface CardInvoiceKey {
   invoice_month: string;
 }
 export interface CardInvoiceSum extends CardInvoiceKey {
+  // NET: purchases minus credits.
   amount: number;
+  early_paid: number;
 }
 export interface CreateTransactionDatasourceParams {
   account_id?: null | string;
@@ -41,6 +43,12 @@ export type FinancialTransactionWithRelations = {
   >;
   credit_card: null | Pick<FinancialCreditCard, 'color' | 'id' | 'last_digits' | 'title'>;
   installment_plan: null | Pick<FinancialInstallmentPlan, 'installment_count'>;
+  paid_from_transaction: {
+    account: null | Pick<FinancialAccount, 'name'>;
+    account_id: null | string;
+  } | null;
+  refunded_plan: null | Pick<FinancialInstallmentPlan, 'description'>;
+  refunded_transaction: null | Pick<FinancialTransaction, 'description'>;
 } & FinancialTransaction;
 export interface FindTransactionsFilter {
   creditCardId?: string;

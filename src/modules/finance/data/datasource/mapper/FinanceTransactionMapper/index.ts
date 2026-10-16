@@ -1,7 +1,7 @@
 import { toCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
 import { FinancialTransactionWithRelations } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
-import { SystemCategoryKey, TransactionType } from '@finance/domain/enum';
+import { InvoicePaymentMethod, SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export class FinanceTransactionMapper {
@@ -39,6 +39,14 @@ export class FinanceTransactionMapper {
       invoiceMonth: raw.invoice_month,
       owner: OwnerType[raw.owner],
       ownerId: raw.owner_id,
+      paidFromAccountId: raw.paid_from_transaction?.account_id ?? null,
+      paidFromAccountName: raw.paid_from_transaction?.account?.name ?? null,
+      paidFromTransactionId: raw.paid_from_transaction_id,
+      paymentMethod: raw.payment_method ? InvoicePaymentMethod[raw.payment_method] : null,
+      prepaymentId: raw.prepayment_id,
+      refundedName: raw.refunded_transaction?.description ?? raw.refunded_plan?.description ?? null,
+      refundedPlanId: raw.refunded_plan_id,
+      refundedTransactionId: raw.refunded_transaction_id,
       type: TransactionType[raw.type],
       updatedAt: raw.updated_at,
       value: raw.value,

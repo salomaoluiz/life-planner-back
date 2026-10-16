@@ -6,6 +6,7 @@ import {
   effectiveDay,
   invoiceMonthOf,
   InvoicePaymentInfo,
+  isInvoiceAssignable,
 } from './index';
 import { mocks } from './index.mocks';
 
@@ -264,5 +265,115 @@ describe('amounts, used and available (spec 029)', () => {
     };
 
     expect(calculateInvoices(card, [], [payment], '2026-10-15').closedInvoices).toEqual([]);
+  });
+});
+
+describe('credits and carry chain (spec 032)', () => {
+  const card = buildCard({ closingDay: 10 });
+  const today = '2026-11-20';
+  function paid(referenceMonth: string): InvoicePaymentInfo {
+    return {
+      accountId: null,
+      accountName: null,
+      amount: 100,
+      method: InvoicePaymentMethod.EXTERNAL,
+      paidOn: '2026-10-25',
+      referenceMonth,
+    };
+  }
+
+  it('SHOULD carry a negative invoice into the next one AND treat the negative closed one as paid', () => {
+    const totals = [
+      { amount: -200, invoiceMonth: '2026-10' },
+      { amount: 450, invoiceMonth: '2026-11' },
+    ];
+    const october = buildInvoiceFor(card, '2026-10', totals, [], today);
+    const november = buildInvoiceFor(card, '2026-11', totals, [], today);
+
+    expect(october).toMatchObject({
+      amount: 0,
+      amountDue: 0,
+      status: InvoiceStatus.PAID,
+      total: -200,
+    });
+    expect(november).toMatchObject({ amountDue: 250, carryIn: -200, net: 450, total: 250 });
+  });
+
+  it('SHOULD carry twice when a credit is bigger than the next invoice', () => {
+    const totals = [
+      { amount: -500, invoiceMonth: '2026-09' },
+      { amount: 100, invoiceMonth: '2026-10' },
+      { amount: 700, invoiceMonth: '2026-11' },
+    ];
+
+    expect(buildInvoiceFor(card, '2026-10', totals, [], today)).toMatchObject({
+      amountDue: 0,
+      total: -400,
+    });
+    expect(buildInvoiceFor(card, '2026-11', totals, [], today)).toMatchObject({
+      amountDue: 300,
+      carryIn: -400,
+    });
+  });
+
+  it('SHOULD carry through a month without rows', () => {
+    const totals = [
+      { amount: -300, invoiceMonth: '2026-08' },
+      { amount: 500, invoiceMonth: '2026-11' },
+    ];
+
+    expect(buildInvoiceFor(card, '2026-11', totals, [], today).carryIn).toBe(-300);
+  });
+
+  it('SHOULD break the chain at a month with a payment record', () => {
+    const totals = [
+      { amount: -200, invoiceMonth: '2026-10' },
+      { amount: 450, invoiceMonth: '2026-11' },
+    ];
+
+    expect(buildInvoiceFor(card, '2026-11', totals, [paid('2026-10')], today).carryIn).toBe(0);
+  });
+
+  it('SHOULD keep an OPEN invoice OPEN when its total is negative', () => {
+    const invoice = buildInvoiceFor(
+      card,
+      '2026-12',
+      [{ amount: -50, invoiceMonth: '2026-12' }],
+      [],
+      today,
+    );
+
+    expect(invoice).toMatchObject({ amountDue: 0, status: InvoiceStatus.OPEN, total: -50 });
+  });
+
+  it('SHOULD sum only the amount due of unpaid invoices into used AND list a settled closed one', () => {
+    const totals = [
+      { amount: -200, invoiceMonth: '2026-10' },
+      { amount: 450, invoiceMonth: '2026-11' },
+    ];
+    const result = calculateInvoices(card, totals, [], today);
+
+    expect(result.used).toBe(250);
+    expect(result.available).toBe(card.limit - 250);
+    expect(result.closedInvoices.map((invoice) => invoice.referenceMonth)).toContain('2026-10');
+  });
+
+  it('SHOULD return the early paid sum of the invoice', () => {
+    const invoice = buildInvoiceFor(
+      card,
+      '2026-11',
+      [{ amount: 400, earlyPaid: 600, invoiceMonth: '2026-11' }],
+      [],
+      today,
+    );
+
+    expect(invoice).toMatchObject({ amountDue: 400, earlyPaid: 600 });
+  });
+
+  it('SHOULD accept only the open and closed unpaid invoices as credit targets', () => {
+    expect(isInvoiceAssignable(card, '2026-12', [], today)).toBe(true);
+    expect(isInvoiceAssignable(card, '2026-10', [], today)).toBe(true);
+    expect(isInvoiceAssignable(card, '2027-01', [], today)).toBe(false);
+    expect(isInvoiceAssignable(card, '2026-10', [paid('2026-10')], today)).toBe(false);
   });
 });

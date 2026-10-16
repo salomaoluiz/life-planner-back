@@ -57,6 +57,23 @@ class TransactionEntityFixture {
     return this;
   }
 
+  withCredit(key: SystemCategoryKey, creditCardId: string, invoiceMonth: string) {
+    const categoryId = SYSTEM_CATEGORY_IDS[key];
+
+    this.withCard(creditCardId, invoiceMonth);
+    this.value.type = TransactionType.INCOME;
+    this.value.categoryId = categoryId;
+    this.value.category = {
+      excludeFromTotals: false,
+      icon: 'cash',
+      iconColor: '#4CAF50',
+      id: categoryId,
+      name: key,
+      systemKey: key,
+    };
+    return this;
+  }
+
   withDate(date: string) {
     this.value.date = date;
     return this;
@@ -90,6 +107,14 @@ class TransactionEntityFixture {
       invoiceMonth: null,
       owner: OwnerType.USER,
       ownerId: faker.string.uuid(),
+      paidFromAccountId: null,
+      paidFromAccountName: null,
+      paidFromTransactionId: null,
+      paymentMethod: null,
+      prepaymentId: null,
+      refundedName: null,
+      refundedPlanId: null,
+      refundedTransactionId: null,
       type: TransactionType.EXPENSE,
       updatedAt: faker.date.recent(),
       value: faker.number.int({ max: 100_000, min: 1 }),

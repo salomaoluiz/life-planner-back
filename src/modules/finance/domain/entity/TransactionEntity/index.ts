@@ -1,4 +1,4 @@
-import { SystemCategoryKey, TransactionType } from '@finance/domain/enum';
+import { InvoicePaymentMethod, SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export interface TransactionAccountSummary {
@@ -42,6 +42,15 @@ interface ITransactionEntity {
   invoiceMonth: null | string;
   owner: OwnerType;
   ownerId: string;
+  // Card credits (spec 032); all null/omitted on ordinary rows.
+  paidFromAccountId?: null | string;
+  paidFromAccountName?: null | string;
+  paidFromTransactionId?: null | string;
+  paymentMethod?: InvoicePaymentMethod | null;
+  prepaymentId?: null | string;
+  refundedName?: null | string;
+  refundedPlanId?: null | string;
+  refundedTransactionId?: null | string;
   type: TransactionType;
   updatedAt: Date;
   value: number;
@@ -66,6 +75,18 @@ class TransactionEntity {
   invoiceMonth: null | string;
   owner: OwnerType;
   ownerId: string;
+  // Account of the debit row an early payment created, and its name.
+  paidFromAccountId: null | string;
+  paidFromAccountName: null | string;
+  // The INVOICE_PAYMENT account row of an early payment paid from an account.
+  paidFromTransactionId: null | string;
+  paymentMethod: InvoicePaymentMethod | null;
+  // Set on installments moved by a prepayment and on its discount row.
+  prepaymentId: null | string;
+  // Description of the refunded purchase or plan.
+  refundedName: null | string;
+  refundedPlanId: null | string;
+  refundedTransactionId: null | string;
   type: TransactionType;
   updatedAt: Date;
   // Integer cents, always > 0; the sign comes from `type`.
@@ -88,6 +109,14 @@ class TransactionEntity {
     this.invoiceMonth = params.invoiceMonth;
     this.owner = params.owner;
     this.ownerId = params.ownerId;
+    this.paidFromAccountId = params.paidFromAccountId ?? null;
+    this.paidFromAccountName = params.paidFromAccountName ?? null;
+    this.paidFromTransactionId = params.paidFromTransactionId ?? null;
+    this.paymentMethod = params.paymentMethod ?? null;
+    this.prepaymentId = params.prepaymentId ?? null;
+    this.refundedName = params.refundedName ?? null;
+    this.refundedPlanId = params.refundedPlanId ?? null;
+    this.refundedTransactionId = params.refundedTransactionId ?? null;
     this.type = params.type;
     this.updatedAt = params.updatedAt;
     this.value = params.value;

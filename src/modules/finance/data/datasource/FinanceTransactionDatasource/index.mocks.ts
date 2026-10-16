@@ -33,6 +33,14 @@ const transactionMock: FinancialTransactionWithRelations = {
   invoice_month: null,
   owner: 'USER',
   owner_id: faker.string.uuid(),
+  paid_from_transaction: null,
+  paid_from_transaction_id: null,
+  payment_method: null,
+  prepayment_id: null,
+  refunded_plan: null,
+  refunded_plan_id: null,
+  refunded_transaction: null,
+  refunded_transaction_id: null,
   type: 'EXPENSE',
   updated_at: faker.date.recent(),
   value: 23490,
@@ -52,6 +60,11 @@ const includeMock = {
   },
   credit_card: { select: { color: true, id: true, last_digits: true, title: true } },
   installment_plan: { select: { installment_count: true } },
+  paid_from_transaction: {
+    select: { account: { select: { name: true } }, account_id: true },
+  },
+  refunded_plan: { select: { description: true } },
+  refunded_transaction: { select: { description: true } },
 };
 
 // endregion Mocks

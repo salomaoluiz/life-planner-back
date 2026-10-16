@@ -19,7 +19,8 @@ import {
   UpdateTransactionDatasourceParams,
 } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
-import { SystemCategoryKey, TransactionSource } from '@finance/domain/enum';
+import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
+import { SystemCategoryKey, TransactionSource, TransactionType } from '@finance/domain/enum';
 import { ledgerDeltas } from '@finance/domain/service/LedgerBalance';
 import { Database } from '@shared/infra/db/Database';
 
@@ -38,6 +39,11 @@ export const TRANSACTION_RELATIONS = {
   },
   credit_card: { select: { color: true, id: true, last_digits: true, title: true } },
   installment_plan: { select: { installment_count: true } },
+  paid_from_transaction: {
+    select: { account: { select: { name: true } }, account_id: true },
+  },
+  refunded_plan: { select: { description: true } },
+  refunded_transaction: { select: { description: true } },
 };
 
 @Injectable()
@@ -129,13 +135,13 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
             invoice_month: filter.invoiceMonth,
           }
         : {
-            category: {
-              OR: [
-                { system_key: null },
-                { system_key: { not: SystemCategoryKey.INVOICE_PAYMENT } },
-              ],
-            },
+            // The account row of an early payment (it has a card row pointing at it) stays in the list.
             credit_card_id: null,
+            OR: [
+              { category: { system_key: null } },
+              { category: { system_key: { not: SystemCategoryKey.INVOICE_PAYMENT } } },
+              { early_payment: { isNot: null } },
+            ],
           };
 
     return this.db.client.financialTransaction.findMany({
@@ -165,15 +171,30 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
 
     const rows = await this.db.client.financialTransaction.groupBy({
       _sum: { value: true },
-      by: ['credit_card_id', 'invoice_month'],
+      by: ['credit_card_id', 'invoice_month', 'type', 'category_id'],
       where: { credit_card_id: { in: creditCardIds } },
     });
+    const sums = new Map<string, CardInvoiceSum>();
 
-    return rows.map((row) => ({
-      amount: row._sum.value ?? 0,
-      credit_card_id: row.credit_card_id as string,
-      invoice_month: row.invoice_month as string,
-    }));
+    // Net = purchases (EXPENSE) minus every credit (INCOME); early payments are also counted apart.
+    for (const row of rows) {
+      const key = `${row.credit_card_id}|${row.invoice_month}`;
+      const sum = sums.get(key) ?? {
+        amount: 0,
+        credit_card_id: row.credit_card_id as string,
+        early_paid: 0,
+        invoice_month: row.invoice_month as string,
+      };
+      const value = row._sum.value ?? 0;
+
+      sum.amount += row.type === TransactionType.INCOME ? -value : value;
+      if (row.category_id === SYSTEM_CATEGORY_IDS[SystemCategoryKey.CARD_EARLY_PAYMENT]) {
+        sum.early_paid += value;
+      }
+      sums.set(key, sum);
+    }
+
+    return [...sums.values()];
   }
 
   // The old values come from the row locked INSIDE this transaction, never from an earlier read.

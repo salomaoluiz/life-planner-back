@@ -88,6 +88,7 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
     return rows.map((row) => ({
       amount: row.amount,
       creditCardId: row.credit_card_id,
+      earlyPaid: row.early_paid,
       invoiceMonth: row.invoice_month,
     }));
   }

@@ -29,7 +29,9 @@ interface CardInvoiceRef {
   invoiceMonth: string;
 }
 interface CardInvoiceTotal extends CardInvoiceRef {
+  // NET: purchases minus credits.
   amount: number;
+  earlyPaid: number;
 }
 interface CreateTransactionRepositoryParams {
   accountId?: string;

@@ -17,11 +17,17 @@ export interface CardInvoices {
   used: number;
 }
 export interface Invoice {
+  // What is due: `amountDue`, or the amount frozen on the payment record once paid.
   amount: number;
+  amountDue: number;
+  carryIn: number;
   closingDate: string;
   dueDate: string;
+  earlyPaid: number;
   // Day the invoice appears in the transactions list: the real `paidOn` once paid, else the planned `paymentDate`.
   listDate: string;
+  // Purchases minus credits of this invoice month.
+  net: number;
   payment: InvoicePaymentInfo | null;
   paymentAfterDue: boolean;
   paymentDate: string;
@@ -29,6 +35,8 @@ export interface Invoice {
   periodStart: string;
   referenceMonth: string;
   status: InvoiceStatus;
+  // net + carryIn
+  total: number;
 }
 export interface InvoicePaymentInfo {
   accountId: null | string;
@@ -40,16 +48,24 @@ export interface InvoicePaymentInfo {
 }
 // Sum of the purchases stored on one invoice (`invoiceMonth` is `YYYY-MM`).
 export interface InvoiceTotal {
+  // NET: purchases minus credits.
   amount: number;
+  earlyPaid?: number;
   invoiceMonth: string;
 }
 
+interface ChainEntry {
+  carryIn: number;
+  net: number;
+  total: number;
+}
 interface YearMonth {
   month: number; // 1-12
   year: number;
 }
 
 const CLOSED_PAID_WINDOW = 3;
+const EMPTY_ENTRY: ChainEntry = { carryIn: 0, net: 0, total: 0 };
 const MS_PER_DAY = 86_400_000;
 
 export function addInvoiceMonths(month: string, delta: number): string {
@@ -63,10 +79,12 @@ export function buildInvoiceFor(
   payments: InvoicePaymentInfo[],
   today: string,
 ): Invoice {
-  const amount = totals.find((total) => total.invoiceMonth === referenceMonth)?.amount ?? 0;
   const payment = payments.find((item) => item.referenceMonth === referenceMonth) ?? null;
+  const paidMonths = new Set(payments.map((item) => item.referenceMonth));
+  const entry = chainOf(totals, paidMonths, referenceMonth).get(referenceMonth) ?? EMPTY_ENTRY;
+  const earlyPaid = totals.find((total) => total.invoiceMonth === referenceMonth)?.earlyPaid ?? 0;
 
-  return buildInvoice(card, parseMonth(referenceMonth), amount, payment, today);
+  return buildInvoice(card, parseMonth(referenceMonth), entry, earlyPaid, payment, today);
 }
 export function calculateInvoices(
   card: BillingCard,
@@ -79,26 +97,31 @@ export function calculateInvoices(
     today <= closingDateOf(card.closingDay, current) ? current : addMonths(current, 1);
   const openKey = formatMonth(openReference);
   const paidMonths = new Set(payments.map((payment) => payment.referenceMonth));
-  const amountOf = new Map(totals.map((total) => [total.invoiceMonth, total.amount]));
+  const chain = chainOf(totals, paidMonths, openKey);
+  // Months with credits worth showing: a negative total or an early payment.
+  const earlyPaidOf = new Map(totals.map((total) => [total.invoiceMonth, total.earlyPaid ?? 0]));
 
-  const unpaidMonths = [...amountOf.entries()]
-    .filter(([month, amount]) => amount > 0 && !paidMonths.has(month))
+  const unpaidMonths = [...chain.entries()]
+    .filter(([month, entry]) => entry.total > 0 && !paidMonths.has(month))
     .map(([month]) => month)
     .sort();
-  const used = [...amountOf.entries()]
+  const used = [...chain.entries()]
     .filter(([month]) => !paidMonths.has(month))
-    .reduce((sum, [, amount]) => sum + amount, 0);
+    .reduce((sum, [, entry]) => sum + Math.max(0, entry.total), 0);
   function build(month: string): Invoice {
     return buildInvoiceFor(card, month, totals, payments, today);
   }
 
   const closedUnpaid = unpaidMonths.filter((month) => month < openKey).map(build);
-  const recentPaid = payments
-    .map((payment) => payment.referenceMonth)
+  const windowStart = formatMonth(addMonths(openReference, -CLOSED_PAID_WINDOW));
+  const settledByCredit = [...chain.entries()]
     .filter(
-      (month) =>
-        month < openKey && month >= formatMonth(addMonths(openReference, -CLOSED_PAID_WINDOW)),
+      ([month, entry]) =>
+        !paidMonths.has(month) && (entry.total < 0 || (earlyPaidOf.get(month) ?? 0) > 0),
     )
+    .map(([month]) => month);
+  const recentPaid = [...new Set([...paidMonths, ...settledByCredit])]
+    .filter((month) => month < openKey && month >= windowStart)
     .sort()
     .map(build);
 
@@ -118,6 +141,19 @@ export function invoiceMonthOf(date: string, closingDay: number): string {
   const current: YearMonth = { month: Number(date.slice(5, 7)), year: Number(date.slice(0, 4)) };
 
   return formatMonth(date <= closingDateOf(closingDay, current) ? current : addMonths(current, 1));
+}
+
+// A credit can go to an invoice that has no payment record and is not an upcoming one (spec 032).
+export function isInvoiceAssignable(
+  card: BillingCard,
+  referenceMonth: string,
+  payments: InvoicePaymentInfo[],
+  today: string,
+): boolean {
+  return (
+    !payments.some((payment) => payment.referenceMonth === referenceMonth) &&
+    referenceMonth <= invoiceMonthOf(today, card.closingDay)
+  );
 }
 
 function addDays(date: string, delta: number): string {
@@ -140,7 +176,8 @@ function billingDate(closingDay: number, day: number, reference: YearMonth): str
 function buildInvoice(
   card: BillingCard,
   reference: YearMonth,
-  rawAmount: number,
+  entry: ChainEntry,
+  earlyPaid: number,
   payment: InvoicePaymentInfo | null,
   today: string,
 ): Invoice {
@@ -149,14 +186,19 @@ function buildInvoice(
   const dueDate = billingDate(card.closingDay, card.dueDay, reference);
   const paymentDate = billingDate(card.closingDay, card.paymentDay ?? card.dueDay, reference);
   const closed = today > closingDate;
+  const amountDue = Math.max(0, entry.total);
   // A paid invoice keeps the amount frozen on its payment; a closed one with nothing to pay counts as paid.
-  const paid = payment !== null || (closed && rawAmount === 0);
+  const paid = payment !== null || (closed && entry.total <= 0);
 
   return {
-    amount: payment ? payment.amount : rawAmount,
+    amount: payment ? payment.amount : amountDue,
+    amountDue,
+    carryIn: entry.carryIn,
     closingDate,
     dueDate,
+    earlyPaid,
     listDate: payment ? payment.paidOn : paymentDate,
+    net: entry.net,
     payment,
     paymentAfterDue: paymentDate > dueDate,
     paymentDate,
@@ -164,7 +206,36 @@ function buildInvoice(
     periodStart,
     referenceMonth: formatMonth(reference),
     status: statusOf(paid, closed),
+    total: entry.total,
   };
+}
+// Walks the months from the first invoice to `upTo`: a negative total moves to the next month, a payment record ends the chain.
+function chainOf(
+  totals: InvoiceTotal[],
+  paidMonths: Set<string>,
+  upTo: string,
+): Map<string, ChainEntry> {
+  const chain = new Map<string, ChainEntry>();
+
+  if (totals.length === 0) {
+    return chain;
+  }
+
+  const netOf = new Map(totals.map((total) => [total.invoiceMonth, total.amount]));
+  const months = [...netOf.keys()].sort();
+  const last = months[months.length - 1];
+  const end = upTo > last ? upTo : last;
+  let carry = 0;
+
+  for (let month = months[0]; month <= end; month = addInvoiceMonths(month, 1)) {
+    const net = netOf.get(month) ?? 0;
+    const total = net + carry;
+
+    chain.set(month, { carryIn: carry, net, total });
+    carry = paidMonths.has(month) ? 0 : Math.min(0, total);
+  }
+
+  return chain;
 }
 function closingDateOf(closingDay: number, reference: YearMonth): string {
   return toDate(reference, effectiveDay(closingDay, reference.year, reference.month));

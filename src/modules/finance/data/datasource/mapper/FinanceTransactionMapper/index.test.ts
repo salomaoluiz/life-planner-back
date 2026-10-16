@@ -29,6 +29,14 @@ describe('FinanceTransactionMapper.toDomain', () => {
       invoiceMonth: null,
       owner: 'FAMILY',
       ownerId: mocks.raw.owner_id,
+      paidFromAccountId: null,
+      paidFromAccountName: null,
+      paidFromTransactionId: null,
+      paymentMethod: null,
+      prepaymentId: null,
+      refundedName: null,
+      refundedPlanId: null,
+      refundedTransactionId: null,
       type: 'EXPENSE',
       updatedAt: mocks.raw.updated_at,
       value: 23490,
@@ -91,4 +99,26 @@ it('SHOULD map the installment columns AND the plan count', () => {
   expect(result.installmentCount).toBe(10);
   expect(result.installmentNumber).toBe(3);
   expect(result.installmentPlanId).toBe('plan-1');
+});
+
+it('SHOULD map the credit columns: refunded name, payment method and the debit account', () => {
+  const result = FinanceTransactionMapper.toDomain({
+    ...mocks.raw,
+    paid_from_transaction: { account: { name: 'Checking' }, account_id: 'account-1' },
+    paid_from_transaction_id: 'debit-1',
+    payment_method: 'ACCOUNT',
+    prepayment_id: 'prepayment-1',
+    refunded_plan: { description: 'Notebook' },
+    refunded_plan_id: 'plan-1',
+  });
+
+  expect(result).toMatchObject({
+    paidFromAccountId: 'account-1',
+    paidFromAccountName: 'Checking',
+    paidFromTransactionId: 'debit-1',
+    paymentMethod: 'ACCOUNT',
+    prepaymentId: 'prepayment-1',
+    refundedName: 'Notebook',
+    refundedPlanId: 'plan-1',
+  });
 });
