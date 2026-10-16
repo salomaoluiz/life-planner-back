@@ -113,3 +113,15 @@ Keep this table updated when endpoints change, and mirror changes in `integratio
 ### Card purchases and invoices (spec 029)
 
 `POST/PATCH /finance/transactions` take `accountId` XOR `creditCardId` (optional `?today=`); responses add `creditCard`, `creditCardId`, `invoiceMonth` and, for card purchases, `overLimit`. `GET /finance/transactions` default = account rows only; `?source=CARD&creditCardId&invoiceMonth` lists purchases. `InvoiceController` (registered before `CreditCardController`): `GET /finance/credit-cards/invoices?month=YYYY-MM&ownerId&today` (invoices whose list day is in the month, with purchases), `GET /:id/invoices/:month`, `POST /:id/invoices/:month/payment` (`{method: ACCOUNT|EXTERNAL, accountId?, paidOn?}`), `DELETE /:id/invoices/:month/payment`. The overview adds `upcomingInvoices`, `listDate` and `payment` per invoice and accepts `?today`.
+
+### Installment plans (spec 030)
+
+`/finance/installment-plans` (controller `installment-plan.controller.ts`, service `installment-plan.service.ts`, dto `installment-plan.dto.ts`):
+
+- `POST` `{ creditCardId, value (TOTAL cents), installments 2–48 (total >= count), date, description, categoryId, owner, ownerId, today? }` → 201 `{ plan, installments: [{ id, installmentNumber, value, invoiceMonth, invoiceStatus }], overLimit }`. Row 1 takes `value - base*(n-1)` (remainder on the first); installment k lands on `invoiceMonthOf(date, closingDay) + (k-1)`. 422 `Credit card is archived` / `Invoice is paid`; 400 for n outside 2–48 or total < n.
+- `GET /:id` (optional `?today=`) → same shape without `overLimit`; `plan.totalValue` = SUM of the current installment values.
+- `PATCH /:id` ("All"): any of `description, categoryId, value (new total), installments, creditCardId, date`. Only a REAL change of total/count/card/date recreates the rows (422 `An installment is in a paid invoice` when any is paid); otherwise it is text-only and also renames paid installments.
+- `DELETE /:id` → 204; 422 `An installment is in a paid invoice`.
+- `PATCH /finance/transactions/:id` on an installment REQUIRES `scope` (`ONLY_THIS` | `THIS_AND_NEXT`) and accepts only `value`, `description`, `categoryId` (`date/type/owner/ownerId` → 400; `accountId/creditCardId` → 422 `Edit the installment plan instead`; `scope` on a plain transaction → 400). `DELETE /finance/transactions/:id` on an installment → 422 `Delete the installment plan`.
+- Transaction and invoice-purchase payloads gain `installmentPlanId`, `installmentNumber`, `installmentCount` (nullable).
+- 029 FR 7 relaxed: in a paid invoice a card purchase may change only description and category (value/date/card/invoice stay locked, 422 `Invoice is paid`).

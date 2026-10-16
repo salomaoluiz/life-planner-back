@@ -68,3 +68,7 @@ Contract changes: account create takes `initialBalance` (the old `balance` → `
 ### Spec 029 contract (frontend)
 
 Transactions may have `accountId = null` and `account = null` (card purchases; the default list never returns them). New invoice endpoints and overview fields are listed in `api.md`. Errors: 422 `Invoice is paid`, 422 `Credit card is archived`, 422 `Use the invoice to change this payment`, 409 `Invoice already paid`, 409 `Credit card has transactions`. The frontend implements it in the same-numbered spec.
+
+### Spec 030 contract (frontend)
+
+New `/finance/installment-plans` endpoints and the `scope` field of `PATCH /transactions/:id` are in `api.md`. Transactions and invoice purchases carry `installmentPlanId`, `installmentNumber`, `installmentCount` (null outside a plan). Errors by message on 422: `Invoice is paid`, `Credit card is archived`, `An installment is in a paid invoice`, `Edit the installment plan instead`, `Delete the installment plan`. The frontend implements it in the same-numbered spec.
