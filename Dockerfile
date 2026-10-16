@@ -33,6 +33,11 @@ COPY --from=builder /app/generated ./generated
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
+# Prisma downloads its schema engine on first use (--ignore-scripts skipped the postinstall).
+# Fetch it now, so redeploying never depends on reaching the Prisma CDN at container start.
+RUN DB_USER=user DB_PASSWORD=password DB_HOST=localhost DB_PORT=5432 DB_NAME=mydatabase \
+    node_modules/.bin/prisma -v
+
 RUN chown -R node:node /app
 USER node
 

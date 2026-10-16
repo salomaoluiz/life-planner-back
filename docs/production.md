@@ -18,7 +18,7 @@ Spec 031. Everything below the server line is done **by the owner**; the repos o
 
 ```bash
 openssl rand -base64 48   # JWT_SECRET (must differ from staging's)
-openssl rand -base64 24   # database password for life_planner_prod
+openssl rand -hex 24      # database password for life_planner_prod (hex: no characters that need URL-encoding)
 ```
 
 ## 2. Postgres (database, role, isolation)
@@ -35,13 +35,13 @@ Isolation the other way (staging's role must not reach production, and the new r
 
 ```sql
 SELECT datname, datacl FROM pg_database WHERE NOT datistemplate;
--- for the staging database and any other app database whose datacl has a "=Tc/..." (PUBLIC) entry:
+-- for the staging database, the default `postgres` database and every other database whose datacl has a "=Tc/..." (PUBLIC) entry:
 REVOKE CONNECT ON DATABASE <staging_db> FROM PUBLIC;
 ```
 
-The owner of a database keeps access after this. If an app connects with a role that is **not** the database owner, grant it explicitly first: `GRANT CONNECT ON DATABASE <db> TO <role>;`. This is the only step that changes permissions on a database that is not Life Planner's, so do it in a quiet moment and restart that app's container to confirm it still connects.
+The owner of a database keeps access after this. If an app connects with a role that is **not** the database owner, grant it explicitly first: `GRANT CONNECT ON DATABASE <db> TO <role>;`. A superuser (or any role with the `SUPERUSER` attribute, including a shared admin role) ignores these rules, so staging must connect with its own non-superuser role for the isolation to hold. This is the only step that changes permissions on a database that is not Life Planner's, so do it in a quiet moment and restart that app's container to confirm it still connects.
 
-Proof (all four must be refused / accepted as shown):
+Proof (the first must work, the other two must be refused):
 
 ```bash
 psql -h <HOST_IP> -p 8001 -U life_planner_prod -d life_planner_prod -c 'select 1'   # works
@@ -120,5 +120,5 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer <staging-jwt>
 ## 7. Release and rollback
 
 - **Release:** merge to `main` → Portainer "Pull and redeploy" of the affected stack (API and web together when the API contract changes) → new APK only when the app changed. `main` must stay deployable: PRs merge green and migrations are additive.
-- **Rollback of code:** set the stack's reference to the previous commit hash and redeploy. Because migrations are additive, the older code keeps working on the newer schema.
+- **Rollback of code:** `git revert` the bad commit on `main` (or point the stack at a tag you created on the last good commit, Portainer takes `refs/heads/...` or `refs/tags/...`) and "Pull and redeploy". Because migrations are additive, the older code keeps working on the newer schema.
 - **Rollback of data:** restore from your backup automation.
