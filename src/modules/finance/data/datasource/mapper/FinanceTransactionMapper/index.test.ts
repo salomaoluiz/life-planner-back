@@ -6,7 +6,7 @@ import { mocks } from './index.mocks';
 describe('FinanceTransactionMapper.toDomain', () => {
   it('SHOULD map columns, embed the account / category summaries AND turn the date into YYYY-MM-DD', () => {
     expect(FinanceTransactionMapper.toDomain(mocks.raw)).toEqual({
-      account: { icon: 'bank', id: mocks.raw.account.id, name: 'Checking' },
+      account: { icon: 'bank', id: mocks.raw.account?.id, name: 'Checking' },
       accountId: mocks.raw.account_id,
       category: {
         excludeFromTotals: false,
@@ -18,9 +18,12 @@ describe('FinanceTransactionMapper.toDomain', () => {
       },
       categoryId: mocks.raw.category_id,
       createdAt: mocks.raw.created_at,
+      creditCard: null,
+      creditCardId: null,
       date: '2026-10-03',
       description: 'Weekly groceries',
       id: mocks.raw.id,
+      invoiceMonth: null,
       owner: 'FAMILY',
       ownerId: mocks.raw.owner_id,
       type: 'EXPENSE',
@@ -49,4 +52,27 @@ it('SHOULD map a system category: its key as the enum AND excludeFromTotals', ()
 
   expect(result.category.systemKey).toBe(SystemCategoryKey.BALANCE_ADJUSTMENT);
   expect(result.category.excludeFromTotals).toBe(true);
+});
+
+describe('FinanceTransactionMapper.toDomain (card purchase)', () => {
+  it('SHOULD map a card purchase with a null account', () => {
+    const result = FinanceTransactionMapper.toDomain({
+      ...mocks.raw,
+      account: null,
+      account_id: null,
+      credit_card: { color: '#2B3A8C', id: 'card-1', last_digits: '1234', title: 'Main card' },
+      credit_card_id: 'card-1',
+      invoice_month: '2026-10',
+    });
+
+    expect(result.account).toBeNull();
+    expect(result.accountId).toBeNull();
+    expect(result.creditCard).toEqual({
+      color: '#2B3A8C',
+      id: 'card-1',
+      lastDigits: '1234',
+      title: 'Main card',
+    });
+    expect(result.invoiceMonth).toBe('2026-10');
+  });
 });

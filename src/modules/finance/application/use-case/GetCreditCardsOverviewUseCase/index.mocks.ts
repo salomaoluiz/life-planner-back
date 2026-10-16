@@ -1,6 +1,8 @@
 import { Test } from '@nestjs/testing';
 
+import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
+import { calculateInvoices } from '@finance/domain/service/InvoiceCalculator';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { GetCreditCardsOverviewUseCase } from './index';
@@ -33,16 +35,32 @@ const creditCardRepositoryMock = {
   findCreditCards: jest.fn().mockResolvedValue([zetaMock, alphaMock]),
 };
 
+// Stands in for the real sums: the calculator runs for real over the totals below.
+const totalsMock = [{ amount: 4000, invoiceMonth: '2026-11' }];
+const computeMock = {
+  execute: jest.fn(),
+};
+
 // endregion Mocks
 
 let setup: GetCreditCardsOverviewUseCase;
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  computeMock.execute.mockImplementation(
+    async ({ cards, today }: { cards: (typeof zetaMock)[]; today: string }) =>
+      cards.map((card) => ({
+        card,
+        invoices: calculateInvoices(card, totalsMock, [], today),
+        payments: [],
+        totals: totalsMock,
+      })),
+  );
 
   const module = await Test.createTestingModule({
     providers: [
       GetCreditCardsOverviewUseCase,
+      { provide: ComputeCardInvoicesUseCase, useValue: computeMock },
       { provide: 'IFinanceCreditCardRepository', useValue: creditCardRepositoryMock },
     ],
   }).compile();
@@ -51,6 +69,7 @@ beforeEach(async () => {
 });
 
 const mocks = {
+  compute: computeMock,
   creditCardRepository: creditCardRepositoryMock,
   familyCard: familyMock,
   input: inputMock,

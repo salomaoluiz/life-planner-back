@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 
 import { mocks, setup } from './index.mocks';
 
@@ -22,3 +22,15 @@ it.each([
     expect(mocks.transactionRepository.deleteTransaction).not.toHaveBeenCalled();
   },
 );
+
+it('SHOULD refuse to delete the INVOICE_PAYMENT transaction (422): only undoing the payment removes it', async () => {
+  mocks.transactionRepository.findTransactionById.mockResolvedValueOnce({
+    ...mocks.transaction,
+    category: { ...mocks.transaction.category, systemKey: 'INVOICE_PAYMENT' },
+  });
+
+  await expect(
+    setup.execute({ accessibleOwners: mocks.accessibleOwners, id: mocks.transaction.id }),
+  ).rejects.toThrow(UnprocessableEntityException);
+  expect(mocks.transactionRepository.deleteTransaction).not.toHaveBeenCalled();
+});

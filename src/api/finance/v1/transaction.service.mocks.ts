@@ -27,9 +27,12 @@ const transactionResultMock = {
   },
   categoryId: faker.string.uuid(),
   createdAt: new Date('2026-10-04T12:00:00.000Z'),
+  creditCard: null,
+  creditCardId: null,
   date: '2026-10-03',
   description: 'Weekly groceries',
   id: faker.string.uuid(),
+  invoiceMonth: null,
   owner: OwnerType.USER,
   ownerId: userId,
   type: TransactionType.EXPENSE,
@@ -39,13 +42,14 @@ const transactionResultMock = {
 const transactionApiMock = {
   ...transactionResultMock,
   createdAt: '2026-10-04T12:00:00.000Z',
+  overLimit: undefined,
   owner: 'USER',
   type: 'EXPENSE',
   updatedAt: '2026-10-04T13:00:00.000Z',
 };
 
 const createTransactionUseCaseMock = {
-  execute: jest.fn().mockResolvedValue(transactionResultMock),
+  execute: jest.fn().mockResolvedValue({ overLimit: false, transaction: transactionResultMock }),
 };
 const deleteTransactionUseCaseMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const financeAccessServiceMock = { resolve: jest.fn().mockResolvedValue(accessibleOwners) };
@@ -53,7 +57,7 @@ const getTransactionsUseCaseMock = {
   execute: jest.fn().mockResolvedValue([transactionResultMock]),
 };
 const updateTransactionUseCaseMock = {
-  execute: jest.fn().mockResolvedValue(transactionResultMock),
+  execute: jest.fn().mockResolvedValue({ overLimit: false, transaction: transactionResultMock }),
 };
 
 // endregion Mocks
@@ -83,6 +87,7 @@ const mocks = {
   deleteTransactionUseCase: deleteTransactionUseCaseMock,
   getTransactionsUseCase: getTransactionsUseCaseMock,
   transactionApi: transactionApiMock,
+  transactionResult: transactionResultMock,
   updateTransactionUseCase: updateTransactionUseCaseMock,
   userId,
 };

@@ -17,16 +17,17 @@ describe('create', () => {
       value: 23490,
     };
 
-    const result = await setup.create(mocks.userId, body);
+    const result = await setup.create(mocks.userId, body, '2026-10-15');
 
     expect(mocks.createTransactionUseCase.execute).toHaveBeenCalledWith({
       ...body,
       accessibleOwners: mocks.accessibleOwners,
+      today: '2026-10-15',
     });
     expect(result).toEqual(mocks.transactionApi);
     expect(result.account).toEqual({
       icon: 'bank',
-      id: mocks.transactionApi.account.id,
+      id: mocks.transactionApi.account?.id,
       name: 'Checking',
     });
     expect(result.category.iconColor).toBe('#2E7D32');
@@ -48,11 +49,12 @@ describe('findAll', () => {
 
 describe('update', () => {
   it('SHOULD forward the id and the patch', async () => {
-    await setup.update(mocks.userId, 'tx-1', { value: 100 });
+    await setup.update(mocks.userId, 'tx-1', { value: 100 }, '2026-10-15');
 
     expect(mocks.updateTransactionUseCase.execute).toHaveBeenCalledWith({
       accessibleOwners: mocks.accessibleOwners,
       id: 'tx-1',
+      today: '2026-10-15',
       value: 100,
     });
   });
@@ -79,5 +81,58 @@ describe('system categories (spec 028)', () => {
 
     expect(result.category.systemKey).toBe(SystemCategoryKey.BALANCE_ADJUSTMENT);
     expect(result.category.excludeFromTotals).toBe(true);
+  });
+});
+
+describe('card purchases (spec 029)', () => {
+  const cardPurchase = {
+    ...mocks.transactionResult,
+    account: null,
+    accountId: null,
+    creditCard: { color: '#2B3A8C', id: 'card-1', lastDigits: '1234', title: 'Main card' },
+    creditCardId: 'card-1',
+    invoiceMonth: '2026-10',
+  };
+
+  it('SHOULD map a card purchase (no account) AND carry overLimit from the use case', async () => {
+    mocks.createTransactionUseCase.execute.mockResolvedValueOnce({
+      overLimit: true,
+      transaction: cardPurchase,
+    });
+
+    const result = await setup.create(mocks.userId, {
+      categoryId: cardPurchase.categoryId,
+      creditCardId: 'card-1',
+      date: '2026-10-03',
+      description: 'Market',
+      owner: OwnerType.USER,
+      ownerId: mocks.userId,
+      type: TransactionType.EXPENSE,
+      value: 100,
+    });
+
+    expect(result).toMatchObject({
+      account: null,
+      accountId: null,
+      creditCard: { id: 'card-1', title: 'Main card' },
+      invoiceMonth: '2026-10',
+      overLimit: true,
+    });
+  });
+
+  it('SHOULD omit overLimit for account rows AND forward source filters', async () => {
+    expect((await setup.update(mocks.userId, 'tx-1', { value: 1 })).overLimit).toBeUndefined();
+
+    await setup.findAll(mocks.userId, undefined, {
+      invoiceMonth: '2026-10',
+      source: 'CARD' as never,
+    });
+
+    expect(mocks.getTransactionsUseCase.execute).toHaveBeenCalledWith({
+      accessibleOwners: mocks.accessibleOwners,
+      invoiceMonth: '2026-10',
+      ownerIds: undefined,
+      source: 'CARD',
+    });
   });
 });

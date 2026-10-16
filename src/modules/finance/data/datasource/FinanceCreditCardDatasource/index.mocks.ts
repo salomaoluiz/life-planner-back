@@ -41,26 +41,37 @@ const findFirstSpy = jest.fn();
 const findManySpy = jest.fn();
 const findUniqueSpy = jest.fn();
 const updateSpy = jest.fn();
+const queryRawSpy = jest.fn();
+const transactionSpy = jest.fn();
+const paymentFindManySpy = jest.fn();
+const txFindManySpy = jest.fn();
+const txUpdateManySpy = jest.fn();
 
 // endregion Spies
 
-const databaseMock = {
-  client: {
-    financialCreditCard: {
-      create: createSpy,
-      deleteMany: deleteManySpy,
-      findFirst: findFirstSpy,
-      findMany: findManySpy,
-      findUnique: findUniqueSpy,
-      update: updateSpy,
-    },
+const clientMock = {
+  $queryRaw: queryRawSpy,
+  $transaction: transactionSpy,
+  financialCreditCard: {
+    create: createSpy,
+    deleteMany: deleteManySpy,
+    findFirst: findFirstSpy,
+    findMany: findManySpy,
+    findUnique: findUniqueSpy,
+    update: updateSpy,
   },
-} as unknown as Database;
+  financialInvoicePayment: { findMany: paymentFindManySpy },
+  financialTransaction: { findMany: txFindManySpy, updateMany: txUpdateManySpy },
+};
+const databaseMock = { client: clientMock } as unknown as Database;
 
 let setup: FinanceCreditCardDatasource;
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  transactionSpy.mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) =>
+    callback(clientMock),
+  );
 
   const module = await Test.createTestingModule({
     providers: [FinanceCreditCardDatasource, { provide: Database, useValue: databaseMock }],
@@ -76,6 +87,11 @@ const spies = {
   findFirst: findFirstSpy,
   findMany: findManySpy,
   findUnique: findUniqueSpy,
+  paymentFindMany: paymentFindManySpy,
+  queryRaw: queryRawSpy,
+  transaction: transactionSpy,
+  txFindMany: txFindManySpy,
+  txUpdateMany: txUpdateManySpy,
   update: updateSpy,
 };
 

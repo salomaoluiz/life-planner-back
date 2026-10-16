@@ -5,9 +5,9 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
-  moduleFormat  = "cjs"
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
@@ -15,16 +15,16 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  password_hash String
-  photo_url String?
-  created_at DateTime? @default(now())
-  updated_at DateTime? @updatedAt
-  families        Family[]
-  family_members  FamilyMember[]
-  sessions        UserSession[]
+  id             String         @id @default(uuid())
+  email          String         @unique
+  name           String
+  password_hash  String
+  photo_url      String?
+  created_at     DateTime?      @default(now())
+  updated_at     DateTime?      @updatedAt
+  families       Family[]
+  family_members FamilyMember[]
+  sessions       UserSession[]
 }
 
 model Family {
@@ -42,15 +42,15 @@ model Family {
 }
 
 model FamilyMember {
-  id           String    @id @default(uuid())
-  family_id    String
-  email        String
-  user_id      String?
-  joined_at    DateTime? @db.Timestamptz(6)
-  invite_token String?   @unique
+  id                String    @id @default(uuid())
+  family_id         String
+  email             String
+  user_id           String?
+  joined_at         DateTime? @db.Timestamptz(6)
+  invite_token      String?   @unique
   invite_expires_at DateTime? @db.Timestamptz(6)
-  created_at   DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at   DateTime  @updatedAt @db.Timestamptz(6)
+  created_at        DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime  @updatedAt @db.Timestamptz(6)
 
   family Family @relation(fields: [family_id], references: [id], onDelete: Cascade)
   user   User?  @relation(fields: [user_id], references: [id], onDelete: Cascade)
@@ -73,23 +73,30 @@ enum AccountStatus {
 
 enum SystemCategoryKey {
   BALANCE_ADJUSTMENT
+  INVOICE_PAYMENT
+}
+
+enum InvoicePaymentMethod {
+  ACCOUNT
+  EXTERNAL
 }
 
 // `owner_id` points to a user or a family, so it has no FK.
 // ledger_balance = initial_balance + every transaction (any date); it is internal and updated atomically with each transaction write (spec 028).
 model FinancialAccount {
-  id         String        @id @default(uuid())
-  name       String
-  icon       String
-  initial_balance Int          @default(0)
-  ledger_balance  Int          @default(0)
-  status     AccountStatus @default(ACTIVE)
-  owner      OwnerType
-  owner_id   String
-  created_at DateTime      @default(now()) @db.Timestamptz(6)
-  updated_at DateTime      @updatedAt @db.Timestamptz(6)
+  id              String        @id @default(uuid())
+  name            String
+  icon            String
+  initial_balance Int           @default(0)
+  ledger_balance  Int           @default(0)
+  status          AccountStatus @default(ACTIVE)
+  owner           OwnerType
+  owner_id        String
+  created_at      DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime      @updatedAt @db.Timestamptz(6)
 
-  transactions FinancialTransaction[]
+  transactions     FinancialTransaction[]
+  invoice_payments FinancialInvoicePayment[]
 
   @@index([owner, owner_id])
   @@map("financial_accounts")
@@ -120,6 +127,9 @@ model FinancialCreditCard {
   created_at  DateTime        @default(now()) @db.Timestamptz(6)
   updated_at  DateTime        @updatedAt @db.Timestamptz(6)
 
+  transactions     FinancialTransaction[]
+  invoice_payments FinancialInvoicePayment[]
+
   @@index([owner, owner_id])
   @@map("financial_credit_cards")
 }
@@ -131,22 +141,22 @@ enum TransactionType {
 
 // System categories (system_key set) have no owner, no type and no parent; a CHECK in the migration enforces both shapes.
 model FinancialCategory {
-  id          String          @id @default(uuid())
-  name        String
-  icon        String
-  icon_color  String          @default("#000000")
-  type        TransactionType?
-  parent_id   String?
-  depth_level Int             @default(0)
-  owner       OwnerType?
-  owner_id    String?
-  system_key  SystemCategoryKey? @unique
-  exclude_from_totals Boolean @default(false)
-  created_at  DateTime        @default(now()) @db.Timestamptz(6)
-  updated_at  DateTime        @updatedAt @db.Timestamptz(6)
+  id                  String             @id @default(uuid())
+  name                String
+  icon                String
+  icon_color          String             @default("#000000")
+  type                TransactionType?
+  parent_id           String?
+  depth_level         Int                @default(0)
+  owner               OwnerType?
+  owner_id            String?
+  system_key          SystemCategoryKey? @unique
+  exclude_from_totals Boolean            @default(false)
+  created_at          DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime           @updatedAt @db.Timestamptz(6)
 
-  parent   FinancialCategory?  @relation("CategoryTree", fields: [parent_id], references: [id], onDelete: Cascade)
-  children FinancialCategory[] @relation("CategoryTree")
+  parent       FinancialCategory?     @relation("CategoryTree", fields: [parent_id], references: [id], onDelete: Cascade)
+  children     FinancialCategory[]    @relation("CategoryTree")
   transactions FinancialTransaction[]
 
   @@index([owner, owner_id])
@@ -157,25 +167,54 @@ model FinancialCategory {
 // Money is integer cents (BRL implied). `date` is a calendar date (no time, no timezone).
 // Both FKs are RESTRICT: an account or category with transactions can never be deleted by accident.
 model FinancialTransaction {
-  id          String          @id @default(uuid())
-  description String
-  value       Int
-  date        DateTime        @db.Date
-  type        TransactionType
-  account_id  String
-  category_id String
-  owner       OwnerType
-  owner_id    String
-  created_at  DateTime        @default(now()) @db.Timestamptz(6)
-  updated_at  DateTime        @updatedAt @db.Timestamptz(6)
+  id             String          @id @default(uuid())
+  description    String
+  value          Int
+  date           DateTime        @db.Date
+  type           TransactionType
+  account_id     String?
+  credit_card_id String?
+  invoice_month  String?         @db.Char(7)
+  category_id    String
+  owner          OwnerType
+  owner_id       String
+  created_at     DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime        @updatedAt @db.Timestamptz(6)
 
-  account  FinancialAccount  @relation(fields: [account_id], references: [id], onDelete: Restrict)
-  category FinancialCategory @relation(fields: [category_id], references: [id], onDelete: Restrict)
+  account         FinancialAccount?        @relation(fields: [account_id], references: [id], onDelete: Restrict)
+  credit_card     FinancialCreditCard?     @relation(fields: [credit_card_id], references: [id], onDelete: Restrict)
+  category        FinancialCategory        @relation(fields: [category_id], references: [id], onDelete: Restrict)
+  invoice_payment FinancialInvoicePayment?
 
+  @@index([credit_card_id, invoice_month])
   @@index([account_id, date])
   @@index([category_id])
   @@index([owner, owner_id, date])
   @@map("financial_transactions")
+}
+
+// A transaction belongs to an account XOR a credit card (CHECK in the migration); card purchases carry the stored `invoice_month` (spec 029).
+model FinancialInvoicePayment {
+  id             String               @id @default(uuid())
+  credit_card_id String
+  invoice_month  String               @db.Char(7)
+  amount         Int
+  paid_on        DateTime             @db.Date
+  method         InvoicePaymentMethod
+  account_id     String?
+  transaction_id String?              @unique
+  owner          OwnerType
+  owner_id       String
+  created_at     DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime             @updatedAt @db.Timestamptz(6)
+
+  credit_card FinancialCreditCard   @relation(fields: [credit_card_id], references: [id], onDelete: Restrict)
+  account     FinancialAccount?     @relation(fields: [account_id], references: [id], onDelete: Restrict)
+  transaction FinancialTransaction? @relation(fields: [transaction_id], references: [id], onDelete: Restrict)
+
+  @@unique([credit_card_id, invoice_month])
+  @@index([owner, owner_id])
+  @@map("financial_credit_card_invoice_payments")
 }
 
 // Lowercase members on purpose: the client validates against member names, so they must equal the DB/wire values.

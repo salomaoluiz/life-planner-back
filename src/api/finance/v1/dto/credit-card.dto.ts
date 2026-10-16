@@ -14,7 +14,7 @@ import {
   CreditCardLimitSchema,
   LastDigitsSchema,
 } from '@finance/application/dto/CreditCardCommon';
-import { AccountStatus, InvoiceStatus } from '@finance/domain/enum';
+import { AccountStatus, InvoicePaymentMethod, InvoiceStatus } from '@finance/domain/enum';
 
 const StatusApiSchema = z.enum(AccountStatus);
 
@@ -71,10 +71,20 @@ export const CreditCardApiSchema = z.object({
   updatedAt: z.iso.datetime(),
 });
 
-const InvoiceApiSchema = z.object({
+export const InvoicePaymentApiSchema = z.object({
+  accountId: z.uuid().nullable(),
+  accountName: z.string().nullable(),
+  amount: z.number().int(),
+  method: z.enum(InvoicePaymentMethod),
+  paidOn: z.string(),
+});
+
+export const InvoiceApiSchema = z.object({
   amount: z.number().int(),
   closingDate: z.string(),
   dueDate: z.string(),
+  listDate: z.string(),
+  payment: InvoicePaymentApiSchema.nullable(),
   paymentAfterDue: z.boolean(),
   paymentDate: z.string(),
   periodEnd: z.string(),
@@ -95,6 +105,7 @@ export const CreditCardsOverviewApiSchema = z.object({
       card: CreditCardApiSchema,
       closedInvoices: z.array(InvoiceApiSchema),
       openInvoice: InvoiceApiSchema,
+      upcomingInvoices: z.array(InvoiceApiSchema),
       used: z.number().int(),
     }),
   ),

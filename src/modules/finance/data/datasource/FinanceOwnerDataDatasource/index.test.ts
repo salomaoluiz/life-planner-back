@@ -1,25 +1,45 @@
 import { setup, spies } from './index.mocks';
 
-it('SHOULD delete transactions, then credit cards, categories, accounts of ONE owner in ONE transaction AND return the total', async () => {
+it('SHOULD delete payments, transactions, then credit cards, categories, accounts of ONE owner in ONE transaction AND return the total', async () => {
+  spies.paymentDeleteMany.mockReturnValueOnce('pay-op');
   spies.transactionDeleteMany.mockReturnValueOnce('tx-op');
   spies.creditCardDeleteMany.mockReturnValueOnce('card-op');
   spies.categoryDeleteMany.mockReturnValueOnce('cat-op');
   spies.accountDeleteMany.mockReturnValueOnce('acc-op');
-  spies.transaction.mockResolvedValueOnce([{ count: 4 }, { count: 1 }, { count: 3 }, { count: 2 }]);
+  spies.transaction.mockResolvedValueOnce([
+    { count: 1 },
+    { count: 4 },
+    { count: 1 },
+    { count: 3 },
+    { count: 2 },
+  ]);
 
   const result = await setup.deleteAllByOwner({ owner: 'USER', owner_id: 'user-id' });
 
   const where = { where: { owner: 'USER', owner_id: 'user-id' } };
+  expect(spies.paymentDeleteMany).toHaveBeenCalledWith(where);
   expect(spies.transactionDeleteMany).toHaveBeenCalledWith(where);
   expect(spies.creditCardDeleteMany).toHaveBeenCalledWith(where);
   expect(spies.categoryDeleteMany).toHaveBeenCalledWith(where);
   expect(spies.accountDeleteMany).toHaveBeenCalledWith(where);
-  expect(spies.transaction).toHaveBeenCalledWith(['tx-op', 'card-op', 'cat-op', 'acc-op']);
-  expect(result).toBe(10);
+  expect(spies.transaction).toHaveBeenCalledWith([
+    'pay-op',
+    'tx-op',
+    'card-op',
+    'cat-op',
+    'acc-op',
+  ]);
+  expect(result).toBe(11);
 });
 
 it('SHOULD return 0 WHEN the owner has nothing (second call of a retry)', async () => {
-  spies.transaction.mockResolvedValueOnce([{ count: 0 }, { count: 0 }, { count: 0 }, { count: 0 }]);
+  spies.transaction.mockResolvedValueOnce([
+    { count: 0 },
+    { count: 0 },
+    { count: 0 },
+    { count: 0 },
+    { count: 0 },
+  ]);
 
   expect(await setup.deleteAllByOwner({ owner: 'FAMILY', owner_id: 'family-id' })).toBe(0);
 });

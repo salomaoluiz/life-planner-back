@@ -20,7 +20,10 @@ class TransactionEntityFixture {
 
   withAccountId(accountId: string) {
     this.value.accountId = accountId;
-    this.value.account = { ...this.value.account, id: accountId };
+    this.value.account = { icon: 'bank', name: 'Account', ...this.value.account, id: accountId };
+    this.value.creditCard = null;
+    this.value.creditCardId = null;
+    this.value.invoiceMonth = null;
     return this;
   }
 
@@ -36,6 +39,15 @@ class TransactionEntityFixture {
       name: 'Balance adjustment',
       systemKey: SystemCategoryKey.BALANCE_ADJUSTMENT,
     };
+    return this;
+  }
+
+  withCard(creditCardId: string, invoiceMonth: string) {
+    this.value.account = null;
+    this.value.accountId = null;
+    this.value.creditCard = { color: '#2B3A8C', id: creditCardId, title: 'Card' };
+    this.value.creditCardId = creditCardId;
+    this.value.invoiceMonth = invoiceMonth;
     return this;
   }
 
@@ -67,9 +79,12 @@ class TransactionEntityFixture {
       },
       categoryId,
       createdAt: faker.date.past(),
+      creditCard: null,
+      creditCardId: null,
       date: '2026-10-03',
       description: faker.commerce.productDescription().slice(0, 100),
       id: faker.string.uuid(),
+      invoiceMonth: null,
       owner: OwnerType.USER,
       ownerId: faker.string.uuid(),
       type: TransactionType.EXPENSE,

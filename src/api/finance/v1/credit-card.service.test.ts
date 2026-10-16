@@ -51,12 +51,16 @@ describe('findOverview', () => {
 
   it('SHOULD pass today in São Paulo AND map cards, invoices and aggregate', async () => {
     const result = await setup.findOverview(mocks.userId, ['a']);
+    await setup.findOverview(mocks.userId, ['a'], '2026-11-02');
 
     expect(mocks.overviewUseCase.execute).toHaveBeenCalledWith({
       accessibleOwners: mocks.accessibleOwners,
       ownerIds: ['a'],
       today: '2026-10-15',
     });
+    expect(mocks.overviewUseCase.execute).toHaveBeenLastCalledWith(
+      expect.objectContaining({ today: '2026-11-02' }),
+    );
     expect(result).toEqual(mocks.overviewApi);
   });
 });

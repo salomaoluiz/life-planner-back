@@ -25,7 +25,7 @@ import {
   UpdateCreditCardApiSchema,
   UpdateCreditCardBody,
 } from '@api/finance/v1/dto/credit-card.dto';
-import { OwnerIdQuerySchema, toOwnerIds } from '@api/finance/v1/finance-query';
+import { OwnerIdQuerySchema, TodayQuerySchema, toOwnerIds } from '@api/finance/v1/finance-query';
 import { AccountStatus } from '@finance/domain/enum';
 import { JwtPayload } from '@shared/infra/jwt/types';
 import { validate } from '@shared/infra/validation';
@@ -34,7 +34,9 @@ const ListCreditCardsQuerySchema = z.object({
   ownerId: OwnerIdQuerySchema,
   status: z.enum(AccountStatus).optional(),
 });
-const OverviewQuerySchema = z.object({ ownerId: OwnerIdQuerySchema });
+const OverviewQuerySchema = z
+  .object({ ownerId: OwnerIdQuerySchema })
+  .extend(TodayQuerySchema.shape);
 
 @ApiBearerAuth('JWT')
 @Controller({
@@ -74,9 +76,9 @@ export class CreditCardController {
     @Request() req: JwtPayload & Request,
     @Query() query: Record<string, unknown>,
   ) {
-    const { ownerId } = validate(OverviewQuerySchema, query);
+    const { ownerId, today } = validate(OverviewQuerySchema, query);
 
-    return this.creditCardService.findOverview(req.user.id, toOwnerIds(ownerId));
+    return this.creditCardService.findOverview(req.user.id, toOwnerIds(ownerId), today);
   }
 
   @Get(':id')

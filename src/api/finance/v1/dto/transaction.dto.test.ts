@@ -40,7 +40,8 @@ describe('CreateTransactionApiSchema', () => {
     ['2026-13-01', { date: '2026-13-01' }],
     ['2026-10-3', { date: '2026-10-3' }],
     ['an ISO timestamp', { date: '2026-10-03T10:00:00.000Z' }],
-    ['a missing accountId', { accountId: undefined }],
+    ['neither accountId nor creditCardId', { accountId: undefined }],
+    ['both accountId and creditCardId', { creditCardId: uuid }],
     ['a non-uuid categoryId', { categoryId: 'abc' }],
     ['an empty description', { description: '' }],
     ['a 201-character description', { description: 'a'.repeat(201) }],
@@ -86,9 +87,12 @@ it('SHOULD require systemKey (nullable) AND excludeFromTotals on the category su
     category,
     categoryId: id,
     createdAt: '2026-10-15T12:00:00.000Z',
+    creditCard: null,
+    creditCardId: null,
     date: '2026-10-15',
     description: 'Balance adjustment',
     id,
+    invoiceMonth: null,
     owner: 'USER',
     ownerId: id,
     type: 'INCOME',
@@ -115,4 +119,22 @@ it('SHOULD require systemKey (nullable) AND excludeFromTotals on the category su
       category: { ...category, excludeFromTotals: undefined },
     }).success,
   ).toBe(false);
+});
+
+describe('card purchases (spec 029)', () => {
+  const base = { ...valid, accountId: undefined };
+
+  it('SHOULD accept a create body with creditCardId only', () => {
+    expect(CreateTransactionApiSchema.safeParse({ ...base, creditCardId: uuid }).success).toBe(
+      true,
+    );
+  });
+
+  it('SHOULD reject a patch with both sources AND accept either', () => {
+    expect(
+      UpdateTransactionApiSchema.safeParse({ accountId: uuid, creditCardId: uuid }).success,
+    ).toBe(false);
+    expect(UpdateTransactionApiSchema.safeParse({ creditCardId: uuid }).success).toBe(true);
+    expect(UpdateTransactionApiSchema.safeParse({ accountId: uuid }).success).toBe(true);
+  });
 });

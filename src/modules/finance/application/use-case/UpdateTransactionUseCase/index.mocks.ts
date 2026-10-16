@@ -1,6 +1,8 @@
 import { Test } from '@nestjs/testing';
 
+import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
+import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
 import TransactionEntityFixture from '@finance/domain/entity/mocks/TransactionEntity.fixture';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
@@ -16,7 +18,9 @@ const accessibleOwners = [
 ];
 const updatedMock = { ...transactionMock, description: 'Updated' };
 
-const ensureConsistencyMock = { execute: jest.fn().mockResolvedValue(undefined) };
+const cardMock = new CreditCardEntityFixture().withLimit(10_000).build();
+const computeMock = { execute: jest.fn() };
+const ensureConsistencyMock = { execute: jest.fn().mockResolvedValue({}) };
 const transactionRepositoryMock = {
   findTransactionById: jest.fn().mockResolvedValue(transactionMock),
   updateTransaction: jest.fn().mockResolvedValue(updatedMock),
@@ -28,12 +32,14 @@ let setup: UpdateTransactionUseCase;
 
 beforeEach(async () => {
   jest.clearAllMocks();
-  ensureConsistencyMock.execute.mockResolvedValue(undefined);
+  ensureConsistencyMock.execute.mockResolvedValue({});
+  computeMock.execute.mockResolvedValue([{ invoices: { used: 5000 } }]);
   transactionRepositoryMock.findTransactionById.mockResolvedValue(transactionMock);
 
   const module = await Test.createTestingModule({
     providers: [
       UpdateTransactionUseCase,
+      { provide: ComputeCardInvoicesUseCase, useValue: computeMock },
       { provide: EnsureTransactionConsistencyUseCase, useValue: ensureConsistencyMock },
       { provide: 'IFinanceTransactionRepository', useValue: transactionRepositoryMock },
     ],
@@ -44,6 +50,8 @@ beforeEach(async () => {
 
 const mocks = {
   accessibleOwners,
+  card: cardMock,
+  compute: computeMock,
   ensureConsistency: ensureConsistencyMock,
   familyId,
   transaction: transactionMock,

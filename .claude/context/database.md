@@ -46,3 +46,7 @@ WHERE a.ledger_balance <> a.initial_balance + COALESCE((
 ```
 
 Rollback (manual, Prisma has no down step): `ALTER TABLE financial_accounts ADD COLUMN balance INTEGER NOT NULL DEFAULT 0; UPDATE financial_accounts SET balance = ledger_balance - COALESCE((SELECT SUM(CASE WHEN t.type='INCOME' THEN t.value ELSE -t.value END) FROM financial_transactions t WHERE t.account_id = financial_accounts.id AND t.date > CURRENT_DATE), 0);` then drop `initial_balance`, `ledger_balance`, the category columns/constraint/seed row and restore the `account_id` index (and `NOT NULL` on category `owner`, `owner_id`, `type` after deleting the seed row and any adjustment transactions).
+
+### Card purchases and invoice payments (spec 029)
+
+Migrations `invoice_payment_system_key` (enum value only: a new enum value can't be used in the transaction that adds it) and `credit_card_purchases_and_payments`. `financial_transactions.account_id` is nullable; new `credit_card_id` (FK RESTRICT) and `invoice_month` char(7) with CHECKs `num_nonnulls(account_id, credit_card_id) = 1` and `(credit_card_id IS NULL) = (invoice_month IS NULL)`, index `(credit_card_id, invoice_month)`. New table `financial_credit_card_invoice_payments` (`FinancialInvoicePayment`: unique `(credit_card_id, invoice_month)`, `amount` frozen, `paid_on`, enum `InvoicePaymentMethod` ACCOUNT|EXTERNAL, `account_id?`, unique `transaction_id?`, owner = the card's owner). Seed system category `INVOICE_PAYMENT` (`00000000-0000-4000-8000-000000000002`, type EXPENSE, `exclude_from_totals`).

@@ -2,18 +2,24 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 
 import {
   applyLedgerDeltas,
+  assertInvoiceNotPaid,
+  lockCards,
   lockTransactionRow,
   toLedgerEntry,
 } from '@finance/data/datasource/ledger';
 import { toOwnerWhere } from '@finance/data/datasource/mapper/OwnerWhere';
 import {
+  CardInvoiceKey,
+  CardInvoiceSum,
   CreateTransactionDatasourceParams,
   ExistsTransactionDatasourceParams,
   FinancialTransactionWithRelations,
+  FindTransactionsFilter,
   IFinanceTransactionDatasource,
   UpdateTransactionDatasourceParams,
 } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
+import { SystemCategoryKey, TransactionSource } from '@finance/domain/enum';
 import { ledgerDeltas } from '@finance/domain/service/LedgerBalance';
 import { Database } from '@shared/infra/db/Database';
 
@@ -30,6 +36,7 @@ const RELATIONS = {
       system_key: true,
     },
   },
+  credit_card: { select: { color: true, id: true, last_digits: true, title: true } },
 };
 
 @Injectable()
@@ -46,11 +53,18 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
     });
   }
 
+  async countByCreditCardId(creditCardId: string): Promise<number> {
+    return this.db.client.financialTransaction.count({ where: { credit_card_id: creditCardId } });
+  }
+
   // The row and the ledger of its account change in ONE database transaction (spec 028).
   async create(
     params: CreateTransactionDatasourceParams,
   ): Promise<FinancialTransactionWithRelations> {
     return this.db.client.$transaction(async (tx) => {
+      await lockCards(tx, params.credit_card_id ? [params.credit_card_id] : []);
+      await assertInvoiceNotPaid(tx, params.credit_card_id, params.invoice_month);
+
       const created = await tx.financialTransaction.create({ data: params, include: RELATIONS });
 
       await applyLedgerDeltas(tx, ledgerDeltas(undefined, toLedgerEntry(created)));
@@ -61,11 +75,15 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
 
   async delete(id: string): Promise<void> {
     await this.db.client.$transaction(async (tx) => {
+      await lockCards(tx, await this.cardsOf(tx, id));
+
       const stored = await lockTransactionRow(tx, id);
 
       if (!stored) {
         return;
       }
+
+      await assertInvoiceNotPaid(tx, stored.creditCardId, stored.invoiceMonth);
 
       await tx.financialTransaction.deleteMany({ where: { id } });
       await applyLedgerDeltas(tx, ledgerDeltas(stored, undefined));
@@ -88,31 +106,107 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
     });
   }
 
-  async findByOwners(owners: OwnerAccess[]): Promise<FinancialTransactionWithRelations[]> {
+  // Default source ACCOUNT: account rows without the invoice payment transactions (the paid invoice line stands for them).
+  async findByOwners(
+    owners: OwnerAccess[],
+    source: TransactionSource = TransactionSource.ACCOUNT,
+    filter: FindTransactionsFilter = {},
+  ): Promise<FinancialTransactionWithRelations[]> {
+    const sourceWhere =
+      source === TransactionSource.CARD
+        ? {
+            credit_card_id: filter.creditCardId ?? { not: null },
+            invoice_month: filter.invoiceMonth,
+          }
+        : {
+            category: {
+              OR: [
+                { system_key: null },
+                { system_key: { not: SystemCategoryKey.INVOICE_PAYMENT } },
+              ],
+            },
+            credit_card_id: null,
+          };
+
     return this.db.client.financialTransaction.findMany({
       include: RELATIONS,
       orderBy: [{ date: 'desc' }, { created_at: 'desc' }],
-      where: toOwnerWhere(owners),
+      where: { AND: [toOwnerWhere(owners), sourceWhere] },
     });
   }
 
+  async findCardPurchases(keys: CardInvoiceKey[]): Promise<FinancialTransactionWithRelations[]> {
+    if (keys.length === 0) {
+      return [];
+    }
+
+    return this.db.client.financialTransaction.findMany({
+      include: RELATIONS,
+      orderBy: [{ date: 'asc' }, { created_at: 'asc' }],
+      where: { OR: keys.map((key) => ({ ...key })) },
+    });
+  }
+
+  // One grouped query for every card: the sum of each (card, invoice month).
+  async sumCardInvoices(creditCardIds: string[]): Promise<CardInvoiceSum[]> {
+    if (creditCardIds.length === 0) {
+      return [];
+    }
+
+    const rows = await this.db.client.financialTransaction.groupBy({
+      _sum: { value: true },
+      by: ['credit_card_id', 'invoice_month'],
+      where: { credit_card_id: { in: creditCardIds } },
+    });
+
+    return rows.map((row) => ({
+      amount: row._sum.value ?? 0,
+      credit_card_id: row.credit_card_id as string,
+      invoice_month: row.invoice_month as string,
+    }));
+  }
+
   // The old values come from the row locked INSIDE this transaction, never from an earlier read.
+  private async cardsOf(tx: Parameters<typeof lockCards>[0], id: string): Promise<string[]> {
+    const row = await tx.financialTransaction.findUnique({
+      select: { credit_card_id: true },
+      where: { id },
+    });
+
+    return row?.credit_card_id ? [row.credit_card_id] : [];
+  }
+
   async update(
     params: UpdateTransactionDatasourceParams,
   ): Promise<FinancialTransactionWithRelations> {
     return this.db.client.$transaction(async (tx) => {
+      // Cards first, rows second: the same order as the invoice payment, so the two never deadlock.
+      await lockCards(tx, [
+        ...(await this.cardsOf(tx, params.id)),
+        ...(params.credit_card_id ? [params.credit_card_id] : []),
+      ]);
+
       const stored = await lockTransactionRow(tx, params.id);
 
       if (!stored) {
         throw new NotFoundException();
       }
 
+      await assertInvoiceNotPaid(tx, stored.creditCardId, stored.invoiceMonth);
+      await assertInvoiceNotPaid(
+        tx,
+        params.credit_card_id === undefined ? stored.creditCardId : params.credit_card_id,
+        params.invoice_month === undefined ? stored.invoiceMonth : params.invoice_month,
+      );
+
       const updated = await tx.financialTransaction.update({
         data: {
           account_id: params.account_id,
           category_id: params.category_id,
+          credit_card_id: params.credit_card_id,
           date: params.date,
           description: params.description,
+          invoice_month: params.invoice_month,
           owner: params.owner,
           owner_id: params.owner_id,
           type: params.type,

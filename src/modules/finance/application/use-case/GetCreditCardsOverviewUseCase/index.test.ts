@@ -12,19 +12,23 @@ describe('GetCreditCardsOverviewUseCase', () => {
     );
   });
 
-  it('SHOULD return every card with its open invoice (amount 0), sorted by title', async () => {
+  it('SHOULD return every card with its open and upcoming invoices, sorted by title', async () => {
     const result = await setup.execute(mocks.input);
 
     expect(result.cards.map((item) => item.card.title)).toEqual(['alpha', 'Zeta']);
     expect(result.cards[0].openInvoice).toMatchObject({ amount: 0, status: 'OPEN' });
-    expect(result.cards[0].used).toBe(0);
-    expect(result.cards[0].available).toBe(500000);
+    expect(result.cards[0].upcomingInvoices.map((invoice) => invoice.referenceMonth)).toEqual([
+      '2026-11',
+    ]);
+    expect(result.cards[0].used).toBe(4000);
+    expect(result.cards[0].available).toBe(496000);
+    expect(mocks.compute.execute).toHaveBeenCalledTimes(1);
   });
 
   it('SHOULD aggregate limit, used and available over the returned cards', async () => {
     const result = await setup.execute(mocks.input);
 
-    expect(result.aggregate).toEqual({ available: 800000, totalLimit: 800000, used: 0 });
+    expect(result.aggregate).toEqual({ available: 792000, totalLimit: 800000, used: 8000 });
   });
 
   it('SHOULD narrow by ownerIds AND drop owners the caller cannot access', async () => {

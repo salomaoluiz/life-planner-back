@@ -4,50 +4,74 @@ import {
   CreateTransactionInput,
   CreateTransactionSchema,
 } from '@finance/application/dto/CreateTransaction';
+import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { IFinanceTransactionRepository } from '@finance/domain/repository';
+import { invoiceMonthOf } from '@finance/domain/service/InvoiceCalculator';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
+// `overLimit` is true only for a card purchase that leaves the card above its limit (spec 029 FR 11): the write still succeeds.
+export interface TransactionWithLimit {
+  overLimit: boolean;
+  transaction: TransactionEntity;
+}
+
 export class CreateTransactionUseCase implements UseCaseWithParams<
   CreateTransactionInput,
-  TransactionEntity
+  TransactionWithLimit
 > {
   constructor(
+    @Inject(ComputeCardInvoicesUseCase)
+    private readonly computeCardInvoicesUseCase: ComputeCardInvoicesUseCase,
     @Inject(EnsureTransactionConsistencyUseCase)
     private readonly ensureTransactionConsistencyUseCase: EnsureTransactionConsistencyUseCase,
     @Inject('IFinanceTransactionRepository')
     private readonly transactionRepository: IFinanceTransactionRepository,
   ) {}
 
-  async execute(params: CreateTransactionInput): Promise<TransactionEntity> {
+  async execute(params: CreateTransactionInput): Promise<TransactionWithLimit> {
     const input = validate(CreateTransactionSchema, params);
 
     if (!hasOwnerAccess(input.accessibleOwners, { owner: input.owner, ownerId: input.ownerId })) {
       throw new ForbiddenException('Owner not accessible');
     }
 
-    await this.ensureTransactionConsistencyUseCase.execute({
+    const { card } = await this.ensureTransactionConsistencyUseCase.execute({
       accessibleOwners: input.accessibleOwners,
       accountId: input.accountId,
       blockArchivedAccount: true,
       categoryId: input.categoryId,
+      creditCardId: input.creditCardId,
       owner: input.owner,
       ownerId: input.ownerId,
       type: input.type,
     });
 
-    return this.transactionRepository.createTransaction({
+    const transaction = await this.transactionRepository.createTransaction({
       accountId: input.accountId,
       categoryId: input.categoryId,
+      creditCardId: input.creditCardId,
       date: input.date,
       description: input.description,
+      invoiceMonth: card ? invoiceMonthOf(input.date, card.closingDay) : undefined,
       owner: input.owner,
       ownerId: input.ownerId,
       type: input.type,
       value: input.value,
     });
+
+    if (!card) {
+      return { overLimit: false, transaction };
+    }
+
+    const [data] = await this.computeCardInvoicesUseCase.execute({
+      cards: [card],
+      today: input.today,
+    });
+
+    return { overLimit: data.invoices.used > card.limit, transaction };
   }
 }

@@ -9,6 +9,10 @@ export enum CreditCardBrand {
   OTHER = 'OTHER',
   VISA = 'VISA',
 }
+export enum InvoicePaymentMethod {
+  ACCOUNT = 'ACCOUNT',
+  EXTERNAL = 'EXTERNAL',
+}
 export enum InvoiceStatus {
   CLOSED = 'CLOSED',
   OPEN = 'OPEN',
@@ -16,6 +20,11 @@ export enum InvoiceStatus {
 }
 export enum SystemCategoryKey {
   BALANCE_ADJUSTMENT = 'BALANCE_ADJUSTMENT',
+  INVOICE_PAYMENT = 'INVOICE_PAYMENT',
+}
+export enum TransactionSource {
+  ACCOUNT = 'ACCOUNT',
+  CARD = 'CARD',
 }
 export enum TransactionType {
   EXPENSE = 'EXPENSE',

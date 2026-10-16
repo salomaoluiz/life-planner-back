@@ -6,6 +6,12 @@ export interface TransactionAccountSummary {
   id: string;
   name: string;
 }
+export interface TransactionCardSummary {
+  color: string;
+  id: string;
+  lastDigits?: string;
+  title: string;
+}
 export interface TransactionCategorySummary {
   // Balance adjustments (and later system categories) are skipped by income/expense totals.
   excludeFromTotals: boolean;
@@ -18,14 +24,18 @@ export interface TransactionCategorySummary {
 }
 
 interface ITransactionEntity {
-  account: TransactionAccountSummary;
-  accountId: string;
+  account: null | TransactionAccountSummary;
+  accountId: null | string;
   category: TransactionCategorySummary;
   categoryId: string;
   createdAt: Date;
+  creditCard: null | TransactionCardSummary;
+  creditCardId: null | string;
   date: string;
   description: string;
   id: string;
+  // `YYYY-MM` of the invoice a card purchase belongs to; null for account rows.
+  invoiceMonth: null | string;
   owner: OwnerType;
   ownerId: string;
   type: TransactionType;
@@ -34,15 +44,19 @@ interface ITransactionEntity {
 }
 
 class TransactionEntity {
-  account: TransactionAccountSummary;
-  accountId: string;
+  account: null | TransactionAccountSummary;
+  accountId: null | string;
   category: TransactionCategorySummary;
   categoryId: string;
   createdAt: Date;
+  creditCard: null | TransactionCardSummary;
+  creditCardId: null | string;
   // Calendar date `YYYY-MM-DD` (no time, no timezone).
   date: string;
   description: string;
   id: string;
+  // `YYYY-MM` of the invoice a card purchase belongs to; null for account rows.
+  invoiceMonth: null | string;
   owner: OwnerType;
   ownerId: string;
   type: TransactionType;
@@ -56,9 +70,12 @@ class TransactionEntity {
     this.category = params.category;
     this.categoryId = params.categoryId;
     this.createdAt = params.createdAt;
+    this.creditCard = params.creditCard;
+    this.creditCardId = params.creditCardId;
     this.date = params.date;
     this.description = params.description;
     this.id = params.id;
+    this.invoiceMonth = params.invoiceMonth;
     this.owner = params.owner;
     this.ownerId = params.ownerId;
     this.type = params.type;

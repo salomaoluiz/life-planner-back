@@ -7,19 +7,29 @@ import { CategoryService } from '@api/finance/v1/category.service';
 import { CreditCardController } from '@api/finance/v1/credit-card.controller';
 import { CreditCardService } from '@api/finance/v1/credit-card.service';
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
+import { InvoiceController } from '@api/finance/v1/invoice.controller';
+import { InvoiceService } from '@api/finance/v1/invoice.service';
 import { TransactionController } from '@api/finance/v1/transaction.controller';
 import { TransactionService } from '@api/finance/v1/transaction.service';
 import { FamilyModule } from '@family/family.module';
 import { FinanceModule } from '@finance/finance.module';
 
 @Module({
-  controllers: [AccountController, CategoryController, CreditCardController, TransactionController],
+  // InvoiceController first: its static `credit-cards/invoices` route must win over CreditCardController's `:id`.
+  controllers: [
+    AccountController,
+    CategoryController,
+    InvoiceController,
+    CreditCardController,
+    TransactionController,
+  ],
   imports: [FamilyModule, FinanceModule],
   providers: [
     AccountService,
     CategoryService,
     CreditCardService,
     FinanceAccessService,
+    InvoiceService,
     TransactionService,
   ],
 })

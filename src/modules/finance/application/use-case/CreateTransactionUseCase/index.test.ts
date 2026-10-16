@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { INT4_MAX } from '@finance/application/dto/FinanceCommon';
+import { TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { ValidationError } from '@shared/domain/error/ValidationError';
 
@@ -19,6 +20,7 @@ it('SHOULD check consistency, then create the transaction with integer cents AND
     accountId: mocks.input.accountId,
     blockArchivedAccount: true,
     categoryId: mocks.input.categoryId,
+    creditCardId: undefined,
     owner: mocks.input.owner,
     ownerId: mocks.input.ownerId,
     type: mocks.input.type,
@@ -26,14 +28,17 @@ it('SHOULD check consistency, then create the transaction with integer cents AND
   expect(mocks.transactionRepository.createTransaction).toHaveBeenCalledWith({
     accountId: mocks.input.accountId,
     categoryId: mocks.input.categoryId,
+    creditCardId: undefined,
     date: '2026-10-03',
     description: 'Weekly groceries',
+    invoiceMonth: undefined,
     owner: OwnerType.USER,
     ownerId: mocks.input.ownerId,
     type: mocks.input.type,
     value: 23490,
   });
-  expect(result).toBe(mocks.transaction);
+  expect(result).toEqual({ overLimit: false, transaction: mocks.transaction });
+  expect(mocks.compute.execute).not.toHaveBeenCalled();
 });
 
 it('SHOULD trim the description AND accept the maximum value', async () => {
@@ -98,4 +103,68 @@ it('SHOULD propagate Unprocessable (422) WHEN the account is archived AND create
 
   await expect(setup.execute(mocks.input)).rejects.toThrow(UnprocessableEntityException);
   expect(mocks.transactionRepository.createTransaction).not.toHaveBeenCalled();
+});
+
+describe('card purchases (spec 029)', () => {
+  function cardInput() {
+    return {
+      ...mocks.input,
+      accountId: undefined,
+      creditCardId: mocks.card.id,
+      date: '2026-10-31',
+    };
+  }
+
+  beforeEach(() => {
+    mocks.ensureConsistency.execute.mockResolvedValue({ card: mocks.card });
+  });
+
+  it('SHOULD store the invoice month computed from the date AND the closing day', async () => {
+    await setup.execute(cardInput());
+    await setup.execute({ ...cardInput(), date: '2026-11-01' });
+    await setup.execute({ ...cardInput(), date: '2026-12-03' });
+
+    const months = mocks.transactionRepository.createTransaction.mock.calls.map(
+      ([params]) => params.invoiceMonth,
+    );
+
+    expect(months).toEqual(['2026-10', '2026-11', '2026-12']);
+    expect(mocks.transactionRepository.createTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ accountId: undefined, creditCardId: mocks.card.id }),
+    );
+  });
+
+  it('SHOULD answer overLimit false WHEN the card used stays within the limit', async () => {
+    expect((await setup.execute(cardInput())).overLimit).toBe(false);
+  });
+
+  it('SHOULD answer overLimit true (and still save) WHEN used passes the limit', async () => {
+    mocks.compute.execute.mockResolvedValue([{ invoices: { used: 10_001 } }]);
+
+    const result = await setup.execute(cardInput());
+
+    expect(result.overLimit).toBe(true);
+    expect(mocks.transactionRepository.createTransaction).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['both accountId and creditCardId', { accountId: 'acc-1', creditCardId: 'card-1' }],
+    ['neither', { accountId: undefined, creditCardId: undefined }],
+  ])('SHOULD throw ValidationError WHEN the input has %s', async (_label, patch) => {
+    await expect(setup.execute({ ...mocks.input, ...patch })).rejects.toThrow(ValidationError);
+    expect(mocks.transactionRepository.createTransaction).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD propagate the rejection of an INCOME on a card (400) and an archived card (422)', async () => {
+    mocks.ensureConsistency.execute.mockRejectedValueOnce(new BadRequestException());
+    await expect(setup.execute({ ...cardInput(), type: TransactionType.INCOME })).rejects.toThrow(
+      BadRequestException,
+    );
+
+    mocks.ensureConsistency.execute.mockRejectedValueOnce(
+      new UnprocessableEntityException('Credit card is archived'),
+    );
+    await expect(setup.execute(cardInput())).rejects.toThrow(UnprocessableEntityException);
+    expect(mocks.transactionRepository.createTransaction).not.toHaveBeenCalled();
+  });
 });

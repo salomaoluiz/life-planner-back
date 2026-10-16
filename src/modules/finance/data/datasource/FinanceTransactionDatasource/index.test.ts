@@ -1,5 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 
+import { TransactionSource } from '@finance/domain/enum';
+
 import { mocks, setup, spies } from './index.mocks';
 
 describe('Method countByAccountId / countByCategoryIds', () => {
@@ -126,7 +128,26 @@ describe('Method findByOwners', () => {
     expect(spies.findMany).toHaveBeenCalledWith({
       include: mocks.include,
       orderBy: [{ date: 'desc' }, { created_at: 'desc' }],
-      where: { OR: [{ owner: 'USER', owner_id: mocks.owners[0].ownerId }] },
+      where: {
+        AND: [
+          { OR: [{ owner: 'USER', owner_id: mocks.owners[0].ownerId }] },
+          {
+            category: { OR: [{ system_key: null }, { system_key: { not: 'INVOICE_PAYMENT' } }] },
+            credit_card_id: null,
+          },
+        ],
+      },
+    });
+  });
+
+  it('SHOULD query card purchases WHEN the source is CARD', async () => {
+    spies.findMany.mockResolvedValue([]);
+
+    await setup.findByOwners(mocks.owners, TransactionSource.CARD, { invoiceMonth: '2026-10' });
+
+    expect(spies.findMany.mock.calls[0][0].where.AND[1]).toEqual({
+      credit_card_id: { not: null },
+      invoice_month: '2026-10',
     });
   });
 });
@@ -222,5 +243,72 @@ describe('Method update', () => {
     );
     expect(spies.update).not.toHaveBeenCalled();
     expect(spies.accountUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe('Card purchases', () => {
+  const cardParams = {
+    account_id: null,
+    category_id: mocks.transaction.category_id,
+    credit_card_id: 'card-1',
+    date: new Date('2026-10-03T00:00:00.000Z'),
+    description: 'Market',
+    invoice_month: '2026-10',
+    owner: 'USER' as const,
+    owner_id: mocks.transaction.owner_id,
+    type: 'EXPENSE' as const,
+    value: 1000,
+  };
+
+  it('SHOULD lock the card, create the row and NOT touch any account ledger', async () => {
+    spies.paymentFindFirst.mockResolvedValue(null);
+    spies.create.mockResolvedValue({ ...mocks.transaction, account_id: null });
+
+    await setup.create(cardParams);
+
+    expect(spies.queryRaw).toHaveBeenCalledTimes(1);
+    expect(spies.accountUpdate).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD reject with 422 WHEN the invoice already has a payment', async () => {
+    spies.paymentFindFirst.mockResolvedValue({ id: 'payment-1' });
+
+    await expect(setup.create(cardParams)).rejects.toThrow('Invoice is paid');
+    expect(spies.create).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD refuse to delete a purchase of a paid invoice', async () => {
+    spies.findUnique.mockResolvedValue({ credit_card_id: 'card-1' });
+    spies.queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([
+      {
+        account_id: null,
+        credit_card_id: 'card-1',
+        invoice_month: '2026-10',
+        type: 'EXPENSE',
+        value: 1000,
+      },
+    ]);
+    spies.paymentFindFirst.mockResolvedValue({ id: 'payment-1' });
+
+    await expect(setup.delete('tx-1')).rejects.toThrow('Invoice is paid');
+    expect(spies.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD sum the invoices of the cards in ONE grouped query', async () => {
+    spies.groupBy.mockResolvedValue([
+      { _sum: { value: 450 }, credit_card_id: 'card-1', invoice_month: '2026-10' },
+    ]);
+
+    expect(await setup.sumCardInvoices(['card-1'])).toEqual([
+      { amount: 450, credit_card_id: 'card-1', invoice_month: '2026-10' },
+    ]);
+    expect(await setup.sumCardInvoices([])).toEqual([]);
+    expect(spies.groupBy).toHaveBeenCalledTimes(1);
+  });
+
+  it('SHOULD return no purchases without keys AND count by card', async () => {
+    expect(await setup.findCardPurchases([])).toEqual([]);
+    spies.count.mockResolvedValue(2);
+    expect(await setup.countByCreditCardId('card-1')).toBe(2);
   });
 });

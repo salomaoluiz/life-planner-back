@@ -6,19 +6,26 @@ import {
   UpdateTransactionApiInput,
 } from '@api/finance/v1/dto/transaction.dto';
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
+import { resolveToday } from '@api/finance/v1/finance-query';
 import { CreateTransactionUseCase } from '@finance/application/use-case/CreateTransactionUseCase';
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
 import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransactionsUseCase';
 import { UpdateTransactionUseCase } from '@finance/application/use-case/UpdateTransactionUseCase';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
+import { TransactionSource } from '@finance/domain/enum';
 
-function toTransactionOutput(transaction: TransactionEntity): TransactionOutput {
+function toTransactionOutput(
+  transaction: TransactionEntity,
+  overLimit?: boolean,
+): TransactionOutput {
   return {
-    account: {
-      icon: transaction.account.icon,
-      id: transaction.account.id,
-      name: transaction.account.name,
-    },
+    account: transaction.account
+      ? {
+          icon: transaction.account.icon,
+          id: transaction.account.id,
+          name: transaction.account.name,
+        }
+      : null,
     accountId: transaction.accountId,
     category: {
       excludeFromTotals: transaction.category.excludeFromTotals,
@@ -30,9 +37,20 @@ function toTransactionOutput(transaction: TransactionEntity): TransactionOutput 
     },
     categoryId: transaction.categoryId,
     createdAt: transaction.createdAt.toISOString(),
+    creditCard: transaction.creditCard
+      ? {
+          color: transaction.creditCard.color,
+          id: transaction.creditCard.id,
+          lastDigits: transaction.creditCard.lastDigits,
+          title: transaction.creditCard.title,
+        }
+      : null,
+    creditCardId: transaction.creditCardId,
     date: transaction.date,
     description: transaction.description,
     id: transaction.id,
+    invoiceMonth: transaction.invoiceMonth,
+    overLimit,
     owner: transaction.owner,
     ownerId: transaction.ownerId,
     type: transaction.type,
@@ -40,6 +58,8 @@ function toTransactionOutput(transaction: TransactionEntity): TransactionOutput 
     value: transaction.value,
   };
 }
+
+export { toTransactionOutput };
 
 @Injectable()
 export class TransactionService {
@@ -51,12 +71,20 @@ export class TransactionService {
     private readonly updateTransactionUseCase: UpdateTransactionUseCase,
   ) {}
 
-  async create(userId: string, input: CreateTransactionApiInput): Promise<TransactionOutput> {
+  async create(
+    userId: string,
+    input: CreateTransactionApiInput,
+    today?: string,
+  ): Promise<TransactionOutput> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
-    const transaction = await this.createTransactionUseCase.execute({ ...input, accessibleOwners });
+    const { overLimit, transaction } = await this.createTransactionUseCase.execute({
+      ...input,
+      accessibleOwners,
+      today: resolveToday(today),
+    });
 
-    return toTransactionOutput(transaction);
+    return toTransactionOutput(transaction, transaction.creditCardId ? overLimit : undefined);
   }
 
   async delete(userId: string, id: string): Promise<void> {
@@ -65,10 +93,18 @@ export class TransactionService {
     await this.deleteTransactionUseCase.execute({ accessibleOwners, id });
   }
 
-  async findAll(userId: string, ownerIds?: string[]): Promise<TransactionOutput[]> {
+  async findAll(
+    userId: string,
+    ownerIds?: string[],
+    filter: { creditCardId?: string; invoiceMonth?: string; source?: TransactionSource } = {},
+  ): Promise<TransactionOutput[]> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
-    const transactions = await this.getTransactionsUseCase.execute({ accessibleOwners, ownerIds });
+    const transactions = await this.getTransactionsUseCase.execute({
+      accessibleOwners,
+      ownerIds,
+      ...filter,
+    });
 
     return transactions.map((transaction) => toTransactionOutput(transaction));
   }
@@ -77,15 +113,17 @@ export class TransactionService {
     userId: string,
     id: string,
     input: UpdateTransactionApiInput,
+    today?: string,
   ): Promise<TransactionOutput> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
-    const transaction = await this.updateTransactionUseCase.execute({
+    const { overLimit, transaction } = await this.updateTransactionUseCase.execute({
       ...input,
       accessibleOwners,
       id,
+      today: resolveToday(today),
     });
 
-    return toTransactionOutput(transaction);
+    return toTransactionOutput(transaction, transaction.creditCardId ? overLimit : undefined);
   }
 }

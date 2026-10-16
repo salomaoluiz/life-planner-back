@@ -42,3 +42,9 @@ it('SHOULD throw ValidationError WHEN the owner is invalid', async () => {
     ValidationError,
   );
 });
+
+it('SHOULD answer true WHEN the owner only has invoice payments', async () => {
+  mocks.invoicePaymentRepository.existsByOwner.mockResolvedValueOnce(true);
+
+  expect(await setup.execute(mocks.input)).toBe(true);
+});
