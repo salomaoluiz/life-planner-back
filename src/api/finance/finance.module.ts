@@ -7,6 +7,8 @@ import { CategoryService } from '@api/finance/v1/category.service';
 import { CreditCardController } from '@api/finance/v1/credit-card.controller';
 import { CreditCardService } from '@api/finance/v1/credit-card.service';
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
+import { InstallmentPlanController } from '@api/finance/v1/installment-plan.controller';
+import { InstallmentPlanService } from '@api/finance/v1/installment-plan.service';
 import { InvoiceController } from '@api/finance/v1/invoice.controller';
 import { InvoiceService } from '@api/finance/v1/invoice.service';
 import { TransactionController } from '@api/finance/v1/transaction.controller';
@@ -21,6 +23,7 @@ import { FinanceModule } from '@finance/finance.module';
     CategoryController,
     InvoiceController,
     CreditCardController,
+    InstallmentPlanController,
     TransactionController,
   ],
   imports: [FamilyModule, FinanceModule],
@@ -29,6 +32,7 @@ import { FinanceModule } from '@finance/finance.module';
     CategoryService,
     CreditCardService,
     FinanceAccessService,
+    InstallmentPlanService,
     InvoiceService,
     TransactionService,
   ],

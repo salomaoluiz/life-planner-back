@@ -2,6 +2,7 @@ import {
   FinancialAccount,
   FinancialCategory,
   FinancialCreditCard,
+  FinancialInstallmentPlan,
   FinancialTransaction,
   OwnerType,
   TransactionType,
@@ -39,6 +40,7 @@ export type FinancialTransactionWithRelations = {
     'exclude_from_totals' | 'icon_color' | 'icon' | 'id' | 'name' | 'system_key'
   >;
   credit_card: null | Pick<FinancialCreditCard, 'color' | 'id' | 'last_digits' | 'title'>;
+  installment_plan: null | Pick<FinancialInstallmentPlan, 'installment_count'>;
 } & FinancialTransaction;
 export interface FindTransactionsFilter {
   creditCardId?: string;

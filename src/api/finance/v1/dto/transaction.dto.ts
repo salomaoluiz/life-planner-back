@@ -11,7 +11,7 @@ import {
   TransactionTypeApiSchema,
   ValueApiSchema,
 } from '@api/finance/v1/dto/finance-fields';
-import { SystemCategoryKey } from '@finance/domain/enum';
+import { InstallmentEditScope, SystemCategoryKey } from '@finance/domain/enum';
 
 const TransactionFieldsSchema = z.object({
   accountId: z.uuid(),
@@ -34,6 +34,7 @@ export const CreateTransactionApiSchema = TransactionFieldsSchema.partial({
 });
 
 export const UpdateTransactionApiSchema = TransactionFieldsSchema.partial()
+  .extend({ scope: z.enum(InstallmentEditScope).optional() })
   .strict()
   .refine((value) => value.accountId === undefined || value.creditCardId === undefined, {
     message: 'Send either accountId or creditCardId',
@@ -65,6 +66,9 @@ export const TransactionApiSchema = z.object({
   date: z.string(),
   description: z.string(),
   id: z.uuid(),
+  installmentCount: z.number().int().nullable(),
+  installmentNumber: z.number().int().nullable(),
+  installmentPlanId: z.uuid().nullable(),
   invoiceMonth: z.string().nullable(),
   // Only on create / update responses of card purchases: the purchase left the card over its limit.
   overLimit: z.boolean().optional(),

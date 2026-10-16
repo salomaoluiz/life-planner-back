@@ -128,7 +128,11 @@ describe('Method update with a new closing day (spec 029 FR 9)', () => {
     expect(spies.queryRaw).toHaveBeenCalledTimes(1);
     expect(spies.txFindMany).toHaveBeenCalledWith({
       select: { date: true, id: true, invoice_month: true },
-      where: { credit_card_id: mocks.card.id, invoice_month: { notIn: ['2026-09'] } },
+      where: {
+        credit_card_id: mocks.card.id,
+        installment_plan_id: null,
+        invoice_month: { notIn: ['2026-09'] },
+      },
     });
     expect(spies.txUpdateMany).toHaveBeenCalledTimes(1);
     expect(spies.txUpdateMany).toHaveBeenCalledWith({
@@ -147,5 +151,79 @@ describe('Method update with a new closing day (spec 029 FR 9)', () => {
     await setup.update({ closing_day: 15, id: mocks.card.id });
 
     expect(spies.txUpdateMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('Method update with a new closing day: installments (spec 030 FR 18)', () => {
+  function plan(rows: [string, string][]) {
+    return {
+      date: new Date('2026-10-20T00:00:00.000Z'),
+      id: 'plan-1',
+      transactions: rows.map(([id, invoice_month]) => ({ id, invoice_month })),
+    };
+  }
+
+  beforeEach(() => {
+    spies.update.mockResolvedValue(mocks.card);
+    spies.txFindMany.mockResolvedValue([]);
+  });
+
+  it('SHOULD shift every unpaid installment consecutively from the new first invoice', async () => {
+    spies.paymentFindMany.mockResolvedValue([]);
+    spies.planFindMany.mockResolvedValue([
+      plan([
+        ['r1', '2026-10'],
+        ['r2', '2026-11'],
+        ['r3', '2026-12'],
+      ]),
+    ]);
+
+    // Purchase on 2026-10-20 with closing day 15 → first invoice 2026-11.
+    await setup.update({ closing_day: 15, id: mocks.card.id });
+
+    expect(spies.txUpdate).toHaveBeenCalledTimes(3);
+    expect(spies.txUpdate).toHaveBeenNthCalledWith(1, {
+      data: { invoice_month: '2026-11' },
+      where: { id: 'r1' },
+    });
+    expect(spies.txUpdate).toHaveBeenNthCalledWith(3, {
+      data: { invoice_month: '2027-01' },
+      where: { id: 'r3' },
+    });
+  });
+
+  it('SHOULD keep a paid installment AND push the later ones after it (never onto a paid month)', async () => {
+    spies.paymentFindMany.mockResolvedValue([{ invoice_month: '2026-10' }]);
+    spies.planFindMany.mockResolvedValue([
+      plan([
+        ['r1', '2026-10'],
+        ['r2', '2026-11'],
+        ['r3', '2026-12'],
+      ]),
+    ]);
+
+    // Closing day 31 keeps the first invoice in 2026-10, but that month is paid by row 1 itself.
+    await setup.update({ closing_day: 31, id: mocks.card.id });
+
+    expect(spies.txUpdate).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD move later unpaid rows past a paid one WHEN the new rule would collide with it', async () => {
+    spies.paymentFindMany.mockResolvedValue([{ invoice_month: '2026-11' }]);
+    spies.planFindMany.mockResolvedValue([
+      plan([
+        ['r1', '2026-10'],
+        ['r2', '2026-11'],
+        ['r3', '2026-12'],
+      ]),
+    ]);
+
+    // New first invoice is 2026-11, which row 2 (paid) already holds: row 1 can't fit before it.
+    await setup.update({ closing_day: 15, id: mocks.card.id });
+
+    expect(spies.txUpdate).toHaveBeenCalledWith({
+      data: { invoice_month: '2026-12' },
+      where: { id: 'r1' },
+    });
   });
 });

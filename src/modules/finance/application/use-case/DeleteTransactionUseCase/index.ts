@@ -25,6 +25,11 @@ export class DeleteTransactionUseCase implements UseCaseWithParams<DeleteTransac
       throw new NotFoundException();
     }
 
+    // An installment only goes away with its whole plan (spec 030 FR 19).
+    if (transaction.installmentPlanId) {
+      throw new UnprocessableEntityException('Delete the installment plan');
+    }
+
     // The payment transaction goes away only with the payment itself.
     if (transaction.category.systemKey === SystemCategoryKey.INVOICE_PAYMENT) {
       throw new UnprocessableEntityException('Use the invoice to change this payment');

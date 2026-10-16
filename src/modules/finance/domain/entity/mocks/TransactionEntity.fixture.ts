@@ -84,6 +84,9 @@ class TransactionEntityFixture {
       date: '2026-10-03',
       description: faker.commerce.productDescription().slice(0, 100),
       id: faker.string.uuid(),
+      installmentCount: null,
+      installmentNumber: null,
+      installmentPlanId: null,
       invoiceMonth: null,
       owner: OwnerType.USER,
       ownerId: faker.string.uuid(),
@@ -96,6 +99,13 @@ class TransactionEntityFixture {
 
   withId(id: string) {
     this.value.id = id;
+    return this;
+  }
+
+  withInstallment(planId: string, installmentNumber: number, installmentCount: number) {
+    this.value.installmentCount = installmentCount;
+    this.value.installmentNumber = installmentNumber;
+    this.value.installmentPlanId = planId;
     return this;
   }
 

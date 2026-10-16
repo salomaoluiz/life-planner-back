@@ -21,6 +21,8 @@ const PurchaseApiSchema = z.object({
   date: z.string(),
   description: z.string(),
   id: z.uuid(),
+  installmentCount: z.number().int().nullable(),
+  installmentNumber: z.number().int().nullable(),
   ownerId: z.uuid(),
   value: z.number().int(),
 });

@@ -23,6 +23,9 @@ describe('FinanceTransactionMapper.toDomain', () => {
       date: '2026-10-03',
       description: 'Weekly groceries',
       id: mocks.raw.id,
+      installmentCount: null,
+      installmentNumber: null,
+      installmentPlanId: null,
       invoiceMonth: null,
       owner: 'FAMILY',
       ownerId: mocks.raw.owner_id,
@@ -75,4 +78,17 @@ describe('FinanceTransactionMapper.toDomain (card purchase)', () => {
     });
     expect(result.invoiceMonth).toBe('2026-10');
   });
+});
+
+it('SHOULD map the installment columns AND the plan count', () => {
+  const result = FinanceTransactionMapper.toDomain({
+    ...mocks.raw,
+    installment_number: 3,
+    installment_plan: { installment_count: 10 },
+    installment_plan_id: 'plan-1',
+  });
+
+  expect(result.installmentCount).toBe(10);
+  expect(result.installmentNumber).toBe(3);
+  expect(result.installmentPlanId).toBe('plan-1');
 });

@@ -27,6 +27,9 @@ const transactionMock: FinancialTransactionWithRelations = {
   date: new Date('2026-10-03T00:00:00.000Z'),
   description: 'Weekly groceries',
   id: faker.string.uuid(),
+  installment_number: null,
+  installment_plan: null,
+  installment_plan_id: null,
   invoice_month: null,
   owner: 'USER',
   owner_id: faker.string.uuid(),
@@ -48,6 +51,7 @@ const includeMock = {
     },
   },
   credit_card: { select: { color: true, id: true, last_digits: true, title: true } },
+  installment_plan: { select: { installment_count: true } },
 };
 
 // endregion Mocks
@@ -57,6 +61,7 @@ const includeMock = {
 const accountUpdateSpy = jest.fn();
 const paymentFindFirstSpy = jest.fn();
 const countSpy = jest.fn();
+const planCountSpy = jest.fn();
 const createSpy = jest.fn();
 const deleteManySpy = jest.fn();
 const findFirstSpy = jest.fn();
@@ -74,6 +79,7 @@ const clientMock = {
   $queryRaw: queryRawSpy,
   $transaction: transactionSpy,
   financialAccount: { update: accountUpdateSpy },
+  financialInstallmentPlan: { count: planCountSpy },
   financialInvoicePayment: { findFirst: paymentFindFirstSpy },
   financialTransaction: {
     count: countSpy,
@@ -114,6 +120,7 @@ const spies = {
   findUnique: findUniqueSpy,
   groupBy: groupBySpy,
   paymentFindFirst: paymentFindFirstSpy,
+  planCount: planCountSpy,
   queryRaw: queryRawSpy,
   transaction: transactionSpy,
   update: updateSpy,

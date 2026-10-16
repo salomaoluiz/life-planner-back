@@ -6,11 +6,13 @@ import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/Comput
 import { CreateAccountUseCase } from '@finance/application/use-case/CreateAccountUseCase';
 import { CreateCategoryUseCase } from '@finance/application/use-case/CreateCategoryUseCase';
 import { CreateCreditCardUseCase } from '@finance/application/use-case/CreateCreditCardUseCase';
+import { CreateInstallmentPlanUseCase } from '@finance/application/use-case/CreateInstallmentPlanUseCase';
 import { CreateTransactionUseCase } from '@finance/application/use-case/CreateTransactionUseCase';
 import { DeleteAccountUseCase } from '@finance/application/use-case/DeleteAccountUseCase';
 import { DeleteCategoryUseCase } from '@finance/application/use-case/DeleteCategoryUseCase';
 import { DeleteCreditCardUseCase } from '@finance/application/use-case/DeleteCreditCardUseCase';
 import { DeleteFinanceDataByOwnerUseCase } from '@finance/application/use-case/DeleteFinanceDataByOwnerUseCase';
+import { DeleteInstallmentPlanUseCase } from '@finance/application/use-case/DeleteInstallmentPlanUseCase';
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import { GetAccountsUseCase } from '@finance/application/use-case/GetAccountsUseCase';
@@ -18,6 +20,7 @@ import { GetCategoriesUseCase } from '@finance/application/use-case/GetCategorie
 import { GetCreditCardByIdUseCase } from '@finance/application/use-case/GetCreditCardByIdUseCase';
 import { GetCreditCardsOverviewUseCase } from '@finance/application/use-case/GetCreditCardsOverviewUseCase';
 import { GetCreditCardsUseCase } from '@finance/application/use-case/GetCreditCardsUseCase';
+import { GetInstallmentPlanUseCase } from '@finance/application/use-case/GetInstallmentPlanUseCase';
 import { GetInvoicesForListUseCase } from '@finance/application/use-case/GetInvoicesForListUseCase';
 import { GetInvoiceUseCase } from '@finance/application/use-case/GetInvoiceUseCase';
 import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransactionsUseCase';
@@ -27,21 +30,28 @@ import { UndoInvoicePaymentUseCase } from '@finance/application/use-case/UndoInv
 import { UpdateAccountUseCase } from '@finance/application/use-case/UpdateAccountUseCase';
 import { UpdateCategoryUseCase } from '@finance/application/use-case/UpdateCategoryUseCase';
 import { UpdateCreditCardUseCase } from '@finance/application/use-case/UpdateCreditCardUseCase';
+import { UpdateInstallmentPlanUseCase } from '@finance/application/use-case/UpdateInstallmentPlanUseCase';
 import { UpdateTransactionUseCase } from '@finance/application/use-case/UpdateTransactionUseCase';
 import { FinanceAccountDatasource } from '@finance/data/datasource/FinanceAccountDatasource';
 import { FinanceCategoryDatasource } from '@finance/data/datasource/FinanceCategoryDatasource';
 import { FinanceCreditCardDatasource } from '@finance/data/datasource/FinanceCreditCardDatasource';
+import { FinanceInstallmentPlanDatasource } from '@finance/data/datasource/FinanceInstallmentPlanDatasource';
 import { FinanceInvoicePaymentDatasource } from '@finance/data/datasource/FinanceInvoicePaymentDatasource';
 import { FinanceOwnerDataDatasource } from '@finance/data/datasource/FinanceOwnerDataDatasource';
 import { FinanceTransactionDatasource } from '@finance/data/datasource/FinanceTransactionDatasource';
 import { FinanceAccountRepository } from '@finance/data/repository/FinanceAccountRepository';
 import { FinanceCategoryRepository } from '@finance/data/repository/FinanceCategoryRepository';
 import { FinanceCreditCardRepository } from '@finance/data/repository/FinanceCreditCardRepository';
+import { FinanceInstallmentPlanRepository } from '@finance/data/repository/FinanceInstallmentPlanRepository';
 import { FinanceInvoicePaymentRepository } from '@finance/data/repository/FinanceInvoicePaymentRepository';
 import { FinanceOwnerDataRepository } from '@finance/data/repository/FinanceOwnerDataRepository';
 import { FinanceTransactionRepository } from '@finance/data/repository/FinanceTransactionRepository';
 
 const useCases = [
+  CreateInstallmentPlanUseCase,
+  DeleteInstallmentPlanUseCase,
+  GetInstallmentPlanUseCase,
+  UpdateInstallmentPlanUseCase,
   AdjustAccountBalanceUseCase,
   AttachAccountBalancesUseCase,
   ComputeCardInvoicesUseCase,
@@ -82,6 +92,8 @@ const useCases = [
     { provide: 'IFinanceCategoryDatasource', useClass: FinanceCategoryDatasource },
     { provide: 'IFinanceCreditCardRepository', useClass: FinanceCreditCardRepository },
     { provide: 'IFinanceCreditCardDatasource', useClass: FinanceCreditCardDatasource },
+    { provide: 'IFinanceInstallmentPlanRepository', useClass: FinanceInstallmentPlanRepository },
+    { provide: 'IFinanceInstallmentPlanDatasource', useClass: FinanceInstallmentPlanDatasource },
     { provide: 'IFinanceInvoicePaymentRepository', useClass: FinanceInvoicePaymentRepository },
     { provide: 'IFinanceInvoicePaymentDatasource', useClass: FinanceInvoicePaymentDatasource },
     { provide: 'IFinanceOwnerDataRepository', useClass: FinanceOwnerDataRepository },

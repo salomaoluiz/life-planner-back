@@ -92,6 +92,9 @@ it('SHOULD require systemKey (nullable) AND excludeFromTotals on the category su
     date: '2026-10-15',
     description: 'Balance adjustment',
     id,
+    installmentCount: null,
+    installmentNumber: null,
+    installmentPlanId: null,
     invoiceMonth: null,
     owner: 'USER',
     ownerId: id,
@@ -136,5 +139,17 @@ describe('card purchases (spec 029)', () => {
     ).toBe(false);
     expect(UpdateTransactionApiSchema.safeParse({ creditCardId: uuid }).success).toBe(true);
     expect(UpdateTransactionApiSchema.safeParse({ accountId: uuid }).success).toBe(true);
+  });
+});
+
+describe('UpdateTransactionApiSchema scope (spec 030)', () => {
+  it('SHOULD accept ONLY_THIS and THIS_AND_NEXT AND reject anything else', () => {
+    expect(UpdateTransactionApiSchema.safeParse({ scope: 'ONLY_THIS', value: 5 }).success).toBe(
+      true,
+    );
+    expect(UpdateTransactionApiSchema.safeParse({ scope: 'THIS_AND_NEXT', value: 5 }).success).toBe(
+      true,
+    );
+    expect(UpdateTransactionApiSchema.safeParse({ scope: 'ALL', value: 5 }).success).toBe(false);
   });
 });

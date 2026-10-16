@@ -9,6 +9,7 @@ import {
   TransactionTypeSchema,
   ValueSchema,
 } from '@finance/application/dto/FinanceCommon';
+import { InstallmentEditScope } from '@finance/domain/enum';
 
 export const UpdateTransactionSchema = z
   .object({
@@ -21,6 +22,8 @@ export const UpdateTransactionSchema = z
     id: z.string().min(1),
     owner: OwnerTypeSchema.optional(),
     ownerId: OwnerIdSchema.optional(),
+    // Required for installments: which rows the edit reaches (spec 030 FR 11).
+    scope: z.enum(InstallmentEditScope).optional(),
     today: CalendarDateSchema,
     type: TransactionTypeSchema.optional(),
     value: ValueSchema.optional(),

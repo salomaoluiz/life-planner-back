@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Inject,
   NotFoundException,
@@ -12,12 +13,19 @@ import {
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { TransactionWithLimit } from '@finance/application/use-case/CreateTransactionUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
+import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
-import { SystemCategoryKey } from '@finance/domain/enum';
-import { IFinanceTransactionRepository } from '@finance/domain/repository';
+import TransactionEntity from '@finance/domain/entity/TransactionEntity';
+import { InstallmentEditScope, SystemCategoryKey, TransactionType } from '@finance/domain/enum';
+import {
+  IFinanceInstallmentPlanRepository,
+  IFinanceTransactionRepository,
+} from '@finance/domain/repository';
 import { invoiceMonthOf } from '@finance/domain/service/InvoiceCalculator';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
+
+type ParsedUpdateInput = ReturnType<typeof UpdateTransactionSchema.parse>;
 
 export class UpdateTransactionUseCase implements UseCaseWithParams<
   UpdateTransactionInput,
@@ -28,6 +36,8 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
     private readonly computeCardInvoicesUseCase: ComputeCardInvoicesUseCase,
     @Inject(EnsureTransactionConsistencyUseCase)
     private readonly ensureTransactionConsistencyUseCase: EnsureTransactionConsistencyUseCase,
+    @Inject('IFinanceInstallmentPlanRepository')
+    private readonly installmentPlanRepository: IFinanceInstallmentPlanRepository,
     @Inject('IFinanceTransactionRepository')
     private readonly transactionRepository: IFinanceTransactionRepository,
   ) {}
@@ -47,6 +57,13 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
     }
     if (transaction.category.systemKey !== null) {
       throw new UnprocessableEntityException('Balance adjustments cannot be edited');
+    }
+
+    if (transaction.installmentPlanId) {
+      return this.updateInstallment(input, transaction);
+    }
+    if (input.scope !== undefined) {
+      throw new BadRequestException('Scope only applies to installments');
     }
 
     // The rules are checked against the resulting record (patch merged over the stored one).
@@ -106,6 +123,67 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
 
     if (!card) {
       return { overLimit: false, transaction: updated };
+    }
+
+    const [data] = await this.computeCardInvoicesUseCase.execute({
+      cards: [card],
+      today: input.today,
+    });
+
+    return { overLimit: data.invoices.used > card.limit, transaction: updated };
+  }
+
+  // Spec 030 FR 11-17: an installment changes only value, description and category, for the rows `scope` names.
+  private async updateInstallment(
+    input: ParsedUpdateInput,
+    transaction: TransactionEntity,
+  ): Promise<TransactionWithLimit> {
+    if (input.accountId !== undefined || input.creditCardId !== undefined) {
+      throw new UnprocessableEntityException('Edit the installment plan instead');
+    }
+    if (input.scope === undefined) {
+      throw new BadRequestException('scope is required for installments');
+    }
+    if (
+      input.date !== undefined ||
+      input.owner !== undefined ||
+      input.ownerId !== undefined ||
+      input.type !== undefined
+    ) {
+      throw new BadRequestException('Only value, description and category can change here');
+    }
+
+    const consistency = await this.ensureTransactionConsistencyUseCase.execute({
+      accessibleOwners: input.accessibleOwners,
+      blockArchivedAccount: false,
+      categoryId: input.categoryId ?? transaction.categoryId,
+      creditCardId: transaction.creditCardId as string,
+      owner: transaction.owner,
+      ownerId: transaction.ownerId,
+      type: TransactionType.EXPENSE,
+    });
+    // The transaction has a credit card id, so the consistency check resolves the card.
+    const card = consistency.card as CreditCardEntity;
+    let updated: TransactionEntity;
+
+    if (input.scope === InstallmentEditScope.ONLY_THIS) {
+      updated = await this.transactionRepository.updateTransaction({
+        categoryId: input.categoryId,
+        description: input.description,
+        id: input.id,
+        value: input.value,
+      });
+    } else {
+      await this.installmentPlanRepository.updateFromNumber({
+        categoryId: input.categoryId,
+        description: input.description,
+        fromNumber: transaction.installmentNumber as number,
+        planId: transaction.installmentPlanId as string,
+        value: input.value,
+      });
+      updated = (await this.transactionRepository.findTransactionById(
+        input.id,
+      )) as TransactionEntity;
     }
 
     const [data] = await this.computeCardInvoicesUseCase.execute({
