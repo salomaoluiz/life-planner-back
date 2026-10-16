@@ -5,6 +5,7 @@ import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/Comput
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
+import { TransactionType } from '@finance/domain/enum';
 import {
   IFinanceCreditCardRepository,
   IFinanceTransactionRepository,
@@ -15,10 +16,13 @@ import { validate } from '@shared/infra/validation';
 
 export interface InvoiceDetail {
   card: CreditCardEntity;
+  // Refunds, prepayment discounts and early payments of the invoice (spec 032).
+  credits: TransactionEntity[];
   invoice: Invoice;
   purchases: TransactionEntity[];
 }
 
+// Splits the rows stored on one invoice: expenses are purchases, income rows are credits.
 export class GetInvoiceUseCase implements UseCaseWithParams<GetInvoiceInput, InvoiceDetail> {
   constructor(
     @Inject(ComputeCardInvoicesUseCase)
@@ -38,7 +42,7 @@ export class GetInvoiceUseCase implements UseCaseWithParams<GetInvoiceInput, Inv
       throw new NotFoundException();
     }
 
-    const [[data], purchases] = await Promise.all([
+    const [[data], rows] = await Promise.all([
       this.computeCardInvoicesUseCase.execute({ cards: [card], today: input.today }),
       this.transactionRepository.findCardPurchases([
         { creditCardId: card.id, invoiceMonth: input.invoiceMonth },
@@ -47,8 +51,15 @@ export class GetInvoiceUseCase implements UseCaseWithParams<GetInvoiceInput, Inv
 
     return {
       card,
+      ...splitInvoiceRows(rows),
       invoice: buildInvoiceFor(card, input.invoiceMonth, data.totals, data.payments, input.today),
-      purchases,
     };
   }
+}
+
+export function splitInvoiceRows(rows: TransactionEntity[]) {
+  return {
+    credits: rows.filter((row) => row.type === TransactionType.INCOME),
+    purchases: rows.filter((row) => row.type === TransactionType.EXPENSE),
+  };
 }

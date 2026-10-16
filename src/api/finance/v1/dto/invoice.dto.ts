@@ -24,6 +24,20 @@ const PurchaseApiSchema = z.object({
   installmentCount: z.number().int().nullable(),
   installmentNumber: z.number().int().nullable(),
   ownerId: z.uuid(),
+  prepaid: z.boolean(),
+  value: z.number().int(),
+});
+const InvoiceCreditApiSchema = z.object({
+  accountId: z.uuid().nullable(),
+  accountName: z.string().nullable(),
+  date: z.string(),
+  description: z.string(),
+  id: z.uuid(),
+  kind: z.enum(['EARLY_PAYMENT', 'PREPAYMENT_DISCOUNT', 'REFUND']),
+  method: z.enum(InvoicePaymentMethod).nullable(),
+  refundedName: z.string().nullable(),
+  refundedPlanId: z.uuid().nullable(),
+  refundedTransactionId: z.uuid().nullable(),
   value: z.number().int(),
 });
 const InvoiceCardApiSchema = z.object({
@@ -52,6 +66,7 @@ export const PayInvoiceApiSchema = z
 
 export const InvoiceDetailApiSchema = z.object({
   card: InvoiceCardApiSchema,
+  credits: z.array(InvoiceCreditApiSchema),
   invoice: InvoiceApiSchema,
   purchases: z.array(PurchaseApiSchema),
 });

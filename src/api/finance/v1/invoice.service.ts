@@ -9,8 +9,18 @@ import { GetInvoiceUseCase, InvoiceDetail } from '@finance/application/use-case/
 import { PayInvoiceUseCase } from '@finance/application/use-case/PayInvoiceUseCase';
 import { UndoInvoicePaymentUseCase } from '@finance/application/use-case/UndoInvoicePaymentUseCase';
 import InvoicePaymentEntity from '@finance/domain/entity/InvoicePaymentEntity';
+import { SystemCategoryKey } from '@finance/domain/enum';
 
-function toDetailOutput({ card, invoice, purchases }: InvoiceDetail) {
+function toCreditKind(systemKey: null | SystemCategoryKey) {
+  if (systemKey === SystemCategoryKey.CARD_REFUND) {
+    return 'REFUND' as const;
+  }
+
+  return systemKey === SystemCategoryKey.CARD_EARLY_PAYMENT
+    ? ('EARLY_PAYMENT' as const)
+    : ('PREPAYMENT_DISCOUNT' as const);
+}
+function toDetailOutput({ card, credits, invoice, purchases }: InvoiceDetail) {
   return {
     card: {
       color: card.color,
@@ -20,6 +30,19 @@ function toDetailOutput({ card, invoice, purchases }: InvoiceDetail) {
       ownerId: card.ownerId,
       title: card.title,
     },
+    credits: credits.map((credit) => ({
+      accountId: credit.paidFromAccountId,
+      accountName: credit.paidFromAccountName,
+      date: credit.date,
+      description: credit.description,
+      id: credit.id,
+      kind: toCreditKind(credit.category.systemKey),
+      method: credit.paymentMethod,
+      refundedName: credit.refundedName,
+      refundedPlanId: credit.refundedPlanId,
+      refundedTransactionId: credit.refundedTransactionId,
+      value: credit.value,
+    })),
     invoice: toInvoiceOutput(invoice),
     purchases: purchases.map((purchase) => ({
       category: purchase.category.name,
@@ -32,6 +55,7 @@ function toDetailOutput({ card, invoice, purchases }: InvoiceDetail) {
       installmentCount: purchase.installmentCount,
       installmentNumber: purchase.installmentNumber,
       ownerId: purchase.ownerId,
+      prepaid: purchase.prepaymentId !== null,
       value: purchase.value,
     })),
   };

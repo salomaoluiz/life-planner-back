@@ -9,7 +9,7 @@ import { PayInvoiceUseCase } from '@finance/application/use-case/PayInvoiceUseCa
 import { UndoInvoicePaymentUseCase } from '@finance/application/use-case/UndoInvoicePaymentUseCase';
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
 import TransactionEntityFixture from '@finance/domain/entity/mocks/TransactionEntity.fixture';
-import { InvoicePaymentMethod, InvoiceStatus } from '@finance/domain/enum';
+import { InvoicePaymentMethod, InvoiceStatus, SystemCategoryKey } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 // region Mocks
@@ -18,11 +18,18 @@ const userId = faker.string.uuid();
 const accessibleOwners = [{ owner: OwnerType.USER, ownerId: userId }];
 const cardMock = new CreditCardEntityFixture().build();
 const purchaseMock = new TransactionEntityFixture().withCard(cardMock.id, '2026-10').build();
+const refundMock = new TransactionEntityFixture()
+  .withCredit(SystemCategoryKey.CARD_REFUND, cardMock.id, '2026-10')
+  .build();
 const invoiceMock = {
   amount: 45000,
+  amountDue: 45000,
+  carryIn: 0,
   closingDate: '2026-10-31',
   dueDate: '2026-11-10',
+  earlyPaid: 0,
   listDate: '2026-11-05',
+  net: 45000,
   payment: null,
   paymentAfterDue: false,
   paymentDate: '2026-11-05',
@@ -30,8 +37,14 @@ const invoiceMock = {
   periodStart: '2026-10-01',
   referenceMonth: '2026-10',
   status: InvoiceStatus.CLOSED,
+  total: 45000,
 };
-const detailMock = { card: cardMock, invoice: invoiceMock, purchases: [purchaseMock] };
+const detailMock = {
+  card: cardMock,
+  credits: [refundMock],
+  invoice: invoiceMock,
+  purchases: [purchaseMock],
+};
 const paymentMock = {
   accountId: null,
   accountName: null,
@@ -76,6 +89,7 @@ const mocks = {
   payInvoice: payInvoiceMock,
   payment: paymentMock,
   purchase: purchaseMock,
+  refund: refundMock,
   undoInvoicePayment: undoInvoicePaymentMock,
   userId,
 };

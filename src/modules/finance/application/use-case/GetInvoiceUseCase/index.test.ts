@@ -12,6 +12,7 @@ it('SHOULD return the card, the invoice and its purchases', async () => {
     status: 'CLOSED',
   });
   expect(result.purchases).toEqual([mocks.purchase]);
+  expect(result.credits).toEqual([mocks.refund]);
   expect(mocks.transactionRepository.findCardPurchases).toHaveBeenCalledWith([
     { creditCardId: mocks.card.id, invoiceMonth: '2026-10' },
   ]);

@@ -44,3 +44,27 @@ it('SHOULD return [] WITHOUT querying WHEN no requested owner is accessible', as
 it('SHOULD reject a malformed month', async () => {
   await expect(setup.execute({ ...mocks.input, month: '2026-1' })).rejects.toThrow();
 });
+
+it('SHOULD keep an invoice fully paid early (amount 0) AND drop a negative one without early payments', async () => {
+  mocks.compute.execute.mockResolvedValue([
+    {
+      card: mocks.card,
+      invoices: {},
+      payments: [],
+      totals: [{ amount: 0, earlyPaid: 45000, invoiceMonth: '2026-10' }],
+    },
+  ]);
+
+  expect(await setup.execute(mocks.input)).toHaveLength(1);
+
+  mocks.compute.execute.mockResolvedValue([
+    {
+      card: mocks.card,
+      invoices: {},
+      payments: [],
+      totals: [{ amount: -500, invoiceMonth: '2026-10' }],
+    },
+  ]);
+
+  expect(await setup.execute(mocks.input)).toEqual([]);
+});
