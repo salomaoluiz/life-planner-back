@@ -141,3 +141,15 @@ describe('card purchases (spec 029)', () => {
     expect(UpdateTransactionApiSchema.safeParse({ accountId: uuid }).success).toBe(true);
   });
 });
+
+describe('UpdateTransactionApiSchema scope (spec 030)', () => {
+  it('SHOULD accept ONLY_THIS and THIS_AND_NEXT AND reject anything else', () => {
+    expect(UpdateTransactionApiSchema.safeParse({ scope: 'ONLY_THIS', value: 5 }).success).toBe(
+      true,
+    );
+    expect(UpdateTransactionApiSchema.safeParse({ scope: 'THIS_AND_NEXT', value: 5 }).success).toBe(
+      true,
+    );
+    expect(UpdateTransactionApiSchema.safeParse({ scope: 'ALL', value: 5 }).success).toBe(false);
+  });
+});

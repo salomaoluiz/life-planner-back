@@ -21,6 +21,12 @@ const updatedMock = { ...transactionMock, description: 'Updated' };
 const cardMock = new CreditCardEntityFixture().withLimit(10_000).build();
 const computeMock = { execute: jest.fn() };
 const ensureConsistencyMock = { execute: jest.fn().mockResolvedValue({}) };
+const installmentPlanRepositoryMock = { updateFromNumber: jest.fn() };
+const installmentMock = new TransactionEntityFixture()
+  .withCard(cardMock.id, '2026-10')
+  .withInstallment('plan-1', 3, 10)
+  .withOwnerId(transactionMock.ownerId)
+  .build();
 const transactionRepositoryMock = {
   findTransactionById: jest.fn().mockResolvedValue(transactionMock),
   updateTransaction: jest.fn().mockResolvedValue(updatedMock),
@@ -35,12 +41,14 @@ beforeEach(async () => {
   ensureConsistencyMock.execute.mockResolvedValue({});
   computeMock.execute.mockResolvedValue([{ invoices: { used: 5000 } }]);
   transactionRepositoryMock.findTransactionById.mockResolvedValue(transactionMock);
+  installmentPlanRepositoryMock.updateFromNumber.mockResolvedValue(undefined);
 
   const module = await Test.createTestingModule({
     providers: [
       UpdateTransactionUseCase,
       { provide: ComputeCardInvoicesUseCase, useValue: computeMock },
       { provide: EnsureTransactionConsistencyUseCase, useValue: ensureConsistencyMock },
+      { provide: 'IFinanceInstallmentPlanRepository', useValue: installmentPlanRepositoryMock },
       { provide: 'IFinanceTransactionRepository', useValue: transactionRepositoryMock },
     ],
   }).compile();
@@ -54,6 +62,8 @@ const mocks = {
   compute: computeMock,
   ensureConsistency: ensureConsistencyMock,
   familyId,
+  installment: installmentMock,
+  installmentPlanRepository: installmentPlanRepositoryMock,
   transaction: transactionMock,
   transactionRepository: transactionRepositoryMock,
   updated: updatedMock,

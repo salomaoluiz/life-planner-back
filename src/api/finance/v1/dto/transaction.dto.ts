@@ -11,7 +11,7 @@ import {
   TransactionTypeApiSchema,
   ValueApiSchema,
 } from '@api/finance/v1/dto/finance-fields';
-import { SystemCategoryKey } from '@finance/domain/enum';
+import { InstallmentEditScope, SystemCategoryKey } from '@finance/domain/enum';
 
 const TransactionFieldsSchema = z.object({
   accountId: z.uuid(),
@@ -34,6 +34,7 @@ export const CreateTransactionApiSchema = TransactionFieldsSchema.partial({
 });
 
 export const UpdateTransactionApiSchema = TransactionFieldsSchema.partial()
+  .extend({ scope: z.enum(InstallmentEditScope).optional() })
   .strict()
   .refine((value) => value.accountId === undefined || value.creditCardId === undefined, {
     message: 'Send either accountId or creditCardId',

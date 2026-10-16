@@ -249,3 +249,81 @@ describe('card purchases and the invoice payment (spec 029)', () => {
     await expect(run({ accountId: 'a', creditCardId: 'c' })).rejects.toThrow(ValidationError);
   });
 });
+
+describe('installments (spec 030)', () => {
+  async function runInstallment(patch: Record<string, unknown>) {
+    return setup.execute({
+      accessibleOwners: mocks.accessibleOwners,
+      id: mocks.installment.id,
+      today: '2026-10-15',
+      ...patch,
+    } as never);
+  }
+
+  beforeEach(() => {
+    mocks.transactionRepository.findTransactionById.mockResolvedValue(mocks.installment);
+    mocks.ensureConsistency.execute.mockResolvedValue({ card: mocks.card });
+  });
+
+  it('SHOULD change ONLY that row with scope ONLY_THIS', async () => {
+    const result = await runInstallment({ scope: 'ONLY_THIS', value: 777 });
+
+    expect(mocks.transactionRepository.updateTransaction).toHaveBeenCalledWith({
+      categoryId: undefined,
+      description: undefined,
+      id: mocks.installment.id,
+      value: 777,
+    });
+    expect(mocks.installmentPlanRepository.updateFromNumber).not.toHaveBeenCalled();
+    expect(result.overLimit).toBe(false);
+  });
+
+  it('SHOULD change this and the later rows with scope THIS_AND_NEXT, starting at its number', async () => {
+    await runInstallment({ description: 'Laptop', scope: 'THIS_AND_NEXT', value: 500 });
+
+    expect(mocks.installmentPlanRepository.updateFromNumber).toHaveBeenCalledWith({
+      categoryId: undefined,
+      description: 'Laptop',
+      fromNumber: 3,
+      planId: 'plan-1',
+      value: 500,
+    });
+    expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
+    expect(mocks.transactionRepository.findTransactionById).toHaveBeenCalledTimes(2);
+  });
+
+  it('SHOULD flag overLimit WHEN the new value leaves the card above its limit', async () => {
+    mocks.compute.execute.mockResolvedValue([{ invoices: { used: 999_999 } }]);
+
+    expect((await runInstallment({ scope: 'ONLY_THIS', value: 1 })).overLimit).toBe(true);
+  });
+
+  it('SHOULD answer 400 WHEN scope is missing', async () => {
+    await expect(runInstallment({ value: 5 })).rejects.toThrow(BadRequestException);
+  });
+
+  it.each([
+    ['date', '2026-10-21'],
+    ['type', 'INCOME'],
+    ['owner', 'FAMILY'],
+    ['ownerId', 'x'],
+  ])('SHOULD answer 400 WHEN an installment edit sends %s', async (field, value) => {
+    await expect(runInstallment({ [field]: value, scope: 'ONLY_THIS', value: 5 })).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
+  it.each([['accountId'], ['creditCardId']])(
+    'SHOULD answer 422 "Edit the installment plan instead" WHEN %s is sent',
+    async (field) => {
+      await expect(runInstallment({ [field]: 'x', scope: 'ONLY_THIS' })).rejects.toThrow(
+        UnprocessableEntityException,
+      );
+    },
+  );
+
+  it('SHOULD answer 400 WHEN scope is sent for a plain transaction', async () => {
+    mocks.transactionRepository.findTransactionById.mockResolvedValue(mocks.transaction);
+    await expect(run({ scope: 'ONLY_THIS', value: 5 })).rejects.toThrow(BadRequestException);
+  });
+});
