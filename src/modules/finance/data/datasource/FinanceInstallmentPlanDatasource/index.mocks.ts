@@ -11,6 +11,9 @@ const planCreateSpy = jest.fn();
 const planDeleteSpy = jest.fn();
 const planFindUniqueSpy = jest.fn();
 const planUpdateSpy = jest.fn();
+const prepaymentDeleteSpy = jest.fn();
+const prepaymentFindUniqueSpy = jest.fn();
+const prepaymentUpdateSpy = jest.fn();
 const queryRawSpy = jest.fn();
 const rowCreateManySpy = jest.fn();
 const rowDeleteManySpy = jest.fn();
@@ -29,6 +32,11 @@ const clientMock = {
     findUnique: planFindUniqueSpy,
     update: planUpdateSpy,
   },
+  financialInstallmentPrepayment: {
+    delete: prepaymentDeleteSpy,
+    findUnique: prepaymentFindUniqueSpy,
+    update: prepaymentUpdateSpy,
+  },
   financialInvoicePayment: { findFirst: paymentFindFirstSpy },
   financialTransaction: {
     createMany: rowCreateManySpy,
@@ -46,6 +54,7 @@ beforeEach(async () => {
     callback(clientMock),
   );
   paymentFindFirstSpy.mockResolvedValue(null);
+  prepaymentFindUniqueSpy.mockResolvedValue(null);
   planFindUniqueSpy.mockResolvedValue({ credit_card_id: 'card-1' });
   rowFindManySpy.mockResolvedValue([{ invoice_month: '2026-10' }, { invoice_month: '2026-11' }]);
 
@@ -72,6 +81,9 @@ const spies = {
   planDelete: planDeleteSpy,
   planFindUnique: planFindUniqueSpy,
   planUpdate: planUpdateSpy,
+  prepaymentDelete: prepaymentDeleteSpy,
+  prepaymentFindUnique: prepaymentFindUniqueSpy,
+  prepaymentUpdate: prepaymentUpdateSpy,
   queryRaw: queryRawSpy,
   rowCreateMany: rowCreateManySpy,
   rowDeleteMany: rowDeleteManySpy,

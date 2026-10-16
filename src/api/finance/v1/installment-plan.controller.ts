@@ -19,6 +19,10 @@ import {
   CreateInstallmentPlanApiSchema,
   CreateInstallmentPlanBody,
   InstallmentPlanOutput,
+  PrepayInstallmentPlanApiSchema,
+  PrepayInstallmentPlanBody,
+  PrepaymentPreviewOutput,
+  PrepaymentPreviewQuerySchema,
   UpdateInstallmentPlanApiSchema,
   UpdateInstallmentPlanBody,
 } from '@api/finance/v1/dto/installment-plan.dto';
@@ -55,6 +59,16 @@ export class InstallmentPlanController {
     await this.installmentPlanService.delete(req.user.id, id);
   }
 
+  @ApiNoContentResponse()
+  @Delete(':id/prepayment')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deletePrepayment(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    await this.installmentPlanService.undoPrepayment(req.user.id, id);
+  }
+
   @Get(':id')
   @ZodResponse({ status: 200, type: InstallmentPlanOutput })
   async findOne(
@@ -65,6 +79,37 @@ export class InstallmentPlanController {
     const { today } = validate(TodayQuerySchema, query);
 
     return this.installmentPlanService.findOne(req.user.id, id, today);
+  }
+
+  @Get(':id/prepayment-preview')
+  @ZodResponse({ status: 200, type: PrepaymentPreviewOutput })
+  async findPrepaymentPreview(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: Record<string, unknown>,
+  ) {
+    const { targetInvoiceMonth, today } = validate(PrepaymentPreviewQuerySchema, query);
+
+    return this.installmentPlanService.prepaymentPreview(
+      req.user.id,
+      id,
+      targetInvoiceMonth,
+      today,
+    );
+  }
+
+  @Post(':id/prepayment')
+  @ZodResponse({ status: 201, type: InstallmentPlanOutput })
+  async prepay(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: PrepayInstallmentPlanBody,
+    @Query() query: Record<string, unknown>,
+  ) {
+    const input = validate(PrepayInstallmentPlanApiSchema, body);
+    const { today } = validate(TodayQuerySchema, query);
+
+    return this.installmentPlanService.prepay(req.user.id, id, input, today);
   }
 
   @Patch(':id')

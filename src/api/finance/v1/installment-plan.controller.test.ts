@@ -74,3 +74,46 @@ describe('findOne / update / delete', () => {
     expect(mocks.service.delete).toHaveBeenCalledWith(mocks.request.user.id, id);
   });
 });
+
+describe('prepayment routes', () => {
+  const id = '6f1c2b9e-1d2a-4c55-9a7e-0b8e3c1f2a10';
+
+  it('SHOULD prepay with the validated body AND the query today', async () => {
+    await setup.prepay(
+      mocks.request,
+      id,
+      { date: '2026-10-16', targetInvoiceMonth: '2026-10' } as never,
+      { today: '2026-10-16' },
+    );
+
+    expect(mocks.service.prepay).toHaveBeenCalledWith(
+      mocks.request.user.id,
+      id,
+      { date: '2026-10-16', targetInvoiceMonth: '2026-10' },
+      '2026-10-16',
+    );
+  });
+
+  it('SHOULD reject a prepay body without the target invoice', async () => {
+    await expect(
+      setup.prepay(mocks.request, id, { date: '2026-10-16' } as never, {}),
+    ).rejects.toThrow();
+  });
+
+  it('SHOULD preview the target invoice', async () => {
+    await setup.findPrepaymentPreview(mocks.request, id, { targetInvoiceMonth: '2026-10' });
+
+    expect(mocks.service.prepaymentPreview).toHaveBeenCalledWith(
+      mocks.request.user.id,
+      id,
+      '2026-10',
+      undefined,
+    );
+  });
+
+  it('SHOULD undo the prepayment', async () => {
+    await setup.deletePrepayment(mocks.request, id);
+
+    expect(mocks.service.undoPrepayment).toHaveBeenCalledWith(mocks.request.user.id, id);
+  });
+});

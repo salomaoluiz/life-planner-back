@@ -132,6 +132,7 @@ describe('Method update with a new closing day (spec 029 FR 9)', () => {
         credit_card_id: mocks.card.id,
         installment_plan_id: null,
         invoice_month: { notIn: ['2026-09'] },
+        type: 'EXPENSE',
       },
     });
     expect(spies.txUpdateMany).toHaveBeenCalledTimes(1);

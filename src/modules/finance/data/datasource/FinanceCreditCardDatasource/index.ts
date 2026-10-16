@@ -85,8 +85,10 @@ export class FinanceCreditCardDatasource implements IFinanceCreditCardDatasource
         select: { date: true, id: true, invoice_month: true },
         where: {
           credit_card_id: params.id,
+          // Credits keep the invoice they were put on (not date-derived).
           installment_plan_id: null,
           invoice_month: { notIn: [...paidMonths] },
+          type: 'EXPENSE',
         },
       });
       const idsByMonth = new Map<string, string[]>();
@@ -116,7 +118,8 @@ export class FinanceCreditCardDatasource implements IFinanceCreditCardDatasource
             select: { id: true, invoice_month: true },
           },
         },
-        where: { credit_card_id: params.id },
+        // A prepaid plan keeps the invoices of its prepayment.
+        where: { credit_card_id: params.id, prepayment: null },
       });
 
       for (const plan of plans) {

@@ -9,6 +9,7 @@ import {
   OwnerTypeApiSchema,
   ValueApiSchema,
 } from '@api/finance/v1/dto/finance-fields';
+import { InvoiceMonthSchema } from '@finance/application/dto/FinanceCommon';
 import { InvoiceStatus } from '@finance/domain/enum';
 import { MAX_INSTALLMENTS, MIN_INSTALLMENTS } from '@finance/domain/service/InstallmentPlan';
 
@@ -54,6 +55,7 @@ export const InstallmentPlanApiSchema = z.object({
       installmentNumber: z.number().int(),
       invoiceMonth: z.string(),
       invoiceStatus: z.enum(InvoiceStatus),
+      prepaid: z.boolean(),
       value: z.number().int(),
     }),
   ),
@@ -67,14 +69,49 @@ export const InstallmentPlanApiSchema = z.object({
     installmentCount: z.number().int(),
     owner: OwnerTypeApiSchema,
     ownerId: z.uuid(),
+    prepayment: z
+      .object({
+        date: z.string(),
+        discount: z.number().int(),
+        id: z.uuid(),
+        targetInvoiceMonth: z.string(),
+      })
+      .nullable(),
     totalValue: z.number().int(),
   }),
 });
 
+export const PrepayInstallmentPlanApiSchema = z
+  .object({
+    date: CalendarDateApiSchema,
+    discount: z.number().int().min(0).optional(),
+    targetInvoiceMonth: InvoiceMonthSchema,
+    today: CalendarDateApiSchema.optional(),
+  })
+  .strict();
+export const PrepaymentPreviewQuerySchema = z.object({
+  targetInvoiceMonth: InvoiceMonthSchema,
+  today: CalendarDateApiSchema.optional(),
+});
+export const PrepaymentPreviewApiSchema = z.object({
+  eligible: z.array(
+    z.object({
+      id: z.uuid(),
+      installmentNumber: z.number().int(),
+      invoiceMonth: z.string(),
+      value: z.number().int(),
+    }),
+  ),
+  total: z.number().int(),
+});
+
 export type CreateInstallmentPlanApiInput = z.infer<typeof CreateInstallmentPlanApiSchema>;
 export type InstallmentPlanOutputShape = z.infer<typeof InstallmentPlanApiSchema>;
+export type PrepayInstallmentPlanApiInput = z.infer<typeof PrepayInstallmentPlanApiSchema>;
 export type UpdateInstallmentPlanApiInput = z.infer<typeof UpdateInstallmentPlanApiSchema>;
 
 export class CreateInstallmentPlanBody extends createZodDto(CreateInstallmentPlanApiSchema) {}
 export class InstallmentPlanOutput extends createZodDto(InstallmentPlanApiSchema) {}
+export class PrepayInstallmentPlanBody extends createZodDto(PrepayInstallmentPlanApiSchema) {}
+export class PrepaymentPreviewOutput extends createZodDto(PrepaymentPreviewApiSchema) {}
 export class UpdateInstallmentPlanBody extends createZodDto(UpdateInstallmentPlanApiSchema) {}

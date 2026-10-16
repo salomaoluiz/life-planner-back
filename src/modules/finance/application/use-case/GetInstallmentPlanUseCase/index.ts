@@ -28,6 +28,8 @@ export interface InstallmentView {
   installmentNumber: number;
   invoiceMonth: string;
   invoiceStatus: InvoiceStatus;
+  // Moved into another invoice by the plan's prepayment.
+  prepaid: boolean;
   value: number;
 }
 
@@ -74,6 +76,7 @@ export class GetInstallmentPlanUseCase implements UseCaseWithParams<
         data.payments,
         input.today,
       ).status,
+      prepaid: row.prepaymentId !== null,
       value: row.value,
     }));
 

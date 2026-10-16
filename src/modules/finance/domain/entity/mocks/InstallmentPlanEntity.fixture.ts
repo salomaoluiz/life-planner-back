@@ -44,6 +44,7 @@ class InstallmentPlanEntityFixture {
       })),
       owner: OwnerType.USER,
       ownerId,
+      prepayment: null,
       totalValue: 10000,
       updatedAt: faker.date.recent(),
     };

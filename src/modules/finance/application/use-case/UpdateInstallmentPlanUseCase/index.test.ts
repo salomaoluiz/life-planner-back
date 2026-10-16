@@ -1,4 +1,8 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
 import { ValidationError } from '@shared/domain/error/ValidationError';
 
@@ -83,4 +87,31 @@ it('SHOULD answer 404 WHEN the plan is missing or not accessible', async () => {
 
 it('SHOULD require at least one field', async () => {
   await expect(setup.execute(mocks.input)).rejects.toThrow(ValidationError);
+});
+
+describe('after a prepayment (spec 032 FR 18)', () => {
+  beforeEach(() => {
+    mocks.planRepository.findPlanById.mockResolvedValue({
+      ...mocks.plan,
+      prepayment: {
+        date: '2026-10-16',
+        discount: 0,
+        id: 'prepayment-1',
+        targetInvoiceMonth: '2026-10',
+      },
+    });
+  });
+
+  it('SHOULD answer 422 for a structural change AND write nothing', async () => {
+    await expect(setup.execute({ ...mocks.input, value: 20000 })).rejects.toThrow(
+      UnprocessableEntityException,
+    );
+    expect(mocks.planRepository.recreatePlan).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD still accept description and category', async () => {
+    await setup.execute({ ...mocks.input, description: 'Laptop' });
+
+    expect(mocks.planRepository.updatePlanText).toHaveBeenCalledTimes(1);
+  });
 });

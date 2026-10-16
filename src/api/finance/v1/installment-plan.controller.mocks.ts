@@ -14,6 +14,9 @@ const serviceMock = {
   create: jest.fn(),
   delete: jest.fn(),
   findOne: jest.fn(),
+  prepay: jest.fn(),
+  prepaymentPreview: jest.fn(),
+  undoPrepayment: jest.fn(),
   update: jest.fn(),
 };
 
@@ -26,6 +29,9 @@ beforeEach(async () => {
   serviceMock.create.mockResolvedValue(outputMock);
   serviceMock.delete.mockResolvedValue(undefined);
   serviceMock.findOne.mockResolvedValue(outputMock);
+  serviceMock.prepay.mockResolvedValue(outputMock);
+  serviceMock.prepaymentPreview.mockResolvedValue({ eligible: [], total: 0 });
+  serviceMock.undoPrepayment.mockResolvedValue(undefined);
   serviceMock.update.mockResolvedValue(outputMock);
 
   const module = await Test.createTestingModule({

@@ -1,4 +1,5 @@
 import {
+  eligibleForPrepayment,
   installmentInvoiceMonths,
   isStructuralChange,
   reassignInstallmentMonths,
@@ -100,5 +101,28 @@ describe('isStructuralChange', () => {
     { date: '2026-10-21' },
   ])('is true for %p', (patch) => {
     expect(isStructuralChange(current, patch)).toBe(true);
+  });
+});
+
+describe('eligibleForPrepayment', () => {
+  const rows = [
+    { id: 'tx-4', installmentNumber: 4, invoiceMonth: '2026-10', value: 100 },
+    { id: 'tx-5', installmentNumber: 5, invoiceMonth: '2026-11', value: 100 },
+    { id: 'tx-6', installmentNumber: 6, invoiceMonth: '2026-12', value: 100 },
+  ];
+
+  it('SHOULD return the installments after the target invoice', () => {
+    expect(eligibleForPrepayment(rows, '2026-10', new Set()).map((row) => row.id)).toEqual([
+      'tx-5',
+      'tx-6',
+    ]);
+  });
+
+  it('SHOULD skip those in a paid invoice AND return [] WHEN none is after the target', () => {
+    expect(eligibleForPrepayment(rows, '2026-09', new Set(['2026-11'])).map((r) => r.id)).toEqual([
+      'tx-4',
+      'tx-6',
+    ]);
+    expect(eligibleForPrepayment(rows, '2026-12', new Set())).toEqual([]);
   });
 });

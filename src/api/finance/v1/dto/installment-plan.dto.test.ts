@@ -1,6 +1,7 @@
 import {
   CreateInstallmentPlanApiSchema,
   InstallmentPlanApiSchema,
+  PrepayInstallmentPlanApiSchema,
   UpdateInstallmentPlanApiSchema,
 } from './installment-plan.dto';
 
@@ -61,6 +62,7 @@ describe('InstallmentPlanApiSchema', () => {
           installmentNumber: 1,
           invoiceMonth: '2026-10',
           invoiceStatus: 'OPEN',
+          prepaid: false,
           value: 5,
         },
       ],
@@ -73,11 +75,34 @@ describe('InstallmentPlanApiSchema', () => {
         installmentCount: 1,
         owner: 'USER',
         ownerId: uuid,
+        prepayment: null,
         totalValue: 5,
       },
     };
 
     expect(InstallmentPlanApiSchema.safeParse(output).success).toBe(true);
     expect(InstallmentPlanApiSchema.safeParse({ ...output, overLimit: true }).success).toBe(true);
+  });
+});
+
+describe('PrepayInstallmentPlanApiSchema', () => {
+  it('SHOULD accept the spec example, with or without a discount', () => {
+    const body = { date: '2026-10-16', targetInvoiceMonth: '2026-10' };
+
+    expect(PrepayInstallmentPlanApiSchema.safeParse({ ...body, discount: 12000 }).success).toBe(
+      true,
+    );
+    expect(PrepayInstallmentPlanApiSchema.safeParse({ ...body, discount: 0 }).success).toBe(true);
+    expect(PrepayInstallmentPlanApiSchema.safeParse(body).success).toBe(true);
+  });
+
+  it('SHOULD reject a negative discount, a bad month AND unknown keys', () => {
+    const body = { date: '2026-10-16', targetInvoiceMonth: '2026-10' };
+
+    expect(PrepayInstallmentPlanApiSchema.safeParse({ ...body, discount: -1 }).success).toBe(false);
+    expect(
+      PrepayInstallmentPlanApiSchema.safeParse({ ...body, targetInvoiceMonth: '2026-13' }).success,
+    ).toBe(false);
+    expect(PrepayInstallmentPlanApiSchema.safeParse({ ...body, extra: 1 }).success).toBe(false);
   });
 });

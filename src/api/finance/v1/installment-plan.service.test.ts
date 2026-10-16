@@ -70,3 +70,46 @@ it('SHOULD delete through the use case', async () => {
     id: mocks.plan.id,
   });
 });
+
+describe('prepayment', () => {
+  it('SHOULD prepay with the body today over the query today AND map the plan', async () => {
+    const result = await setup.prepay(
+      mocks.userId,
+      mocks.plan.id,
+      { date: '2026-10-16', discount: 120, targetInvoiceMonth: '2026-10', today: '2026-10-16' },
+      '2026-10-17',
+    );
+
+    expect(mocks.prepay.execute).toHaveBeenCalledWith({
+      accessibleOwners: mocks.accessibleOwners,
+      date: '2026-10-16',
+      discount: 120,
+      id: mocks.plan.id,
+      targetInvoiceMonth: '2026-10',
+      today: '2026-10-16',
+    });
+    expect(result.plan.prepayment).toBeNull();
+  });
+
+  it('SHOULD preview only the eligible list and the total', async () => {
+    const result = await setup.prepaymentPreview(
+      mocks.userId,
+      mocks.plan.id,
+      '2026-10',
+      '2026-10-16',
+    );
+
+    expect(result.total).toBe(3334);
+    expect(result.eligible).toHaveLength(1);
+    expect(result).not.toHaveProperty('card');
+  });
+
+  it('SHOULD undo through the use case', async () => {
+    await setup.undoPrepayment(mocks.userId, mocks.plan.id);
+
+    expect(mocks.undoPrepayment.execute).toHaveBeenCalledWith({
+      accessibleOwners: mocks.accessibleOwners,
+      id: mocks.plan.id,
+    });
+  });
+});
