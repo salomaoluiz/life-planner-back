@@ -22,6 +22,7 @@ describe('FinanceTransactionMapper.toDomain', () => {
       creditCardId: null,
       date: '2026-10-03',
       description: 'Weekly groceries',
+      earlyPayment: null,
       id: mocks.raw.id,
       installmentCount: null,
       installmentNumber: null,
@@ -120,5 +121,18 @@ it('SHOULD map the credit columns: refunded name, payment method and the debit a
     prepaymentId: 'prepayment-1',
     refundedName: 'Notebook',
     refundedPlanId: 'plan-1',
+  });
+});
+
+it('SHOULD map the early payment an account debit row belongs to', () => {
+  const result = FinanceTransactionMapper.toDomain({
+    ...mocks.raw,
+    early_payment: { credit_card_id: 'card-1', id: 'early-1', invoice_month: '2026-10' },
+  });
+
+  expect(result.earlyPayment).toEqual({
+    creditCardId: 'card-1',
+    id: 'early-1',
+    invoiceMonth: '2026-10',
   });
 });

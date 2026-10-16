@@ -42,6 +42,7 @@ export type FinancialTransactionWithRelations = {
     'exclude_from_totals' | 'icon_color' | 'icon' | 'id' | 'name' | 'system_key'
   >;
   credit_card: null | Pick<FinancialCreditCard, 'color' | 'id' | 'last_digits' | 'title'>;
+  early_payment: null | Pick<FinancialTransaction, 'credit_card_id' | 'id' | 'invoice_month'>;
   installment_plan: null | Pick<FinancialInstallmentPlan, 'installment_count'>;
   paid_from_transaction: {
     account: null | Pick<FinancialAccount, 'name'>;

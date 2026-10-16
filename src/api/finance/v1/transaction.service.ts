@@ -48,6 +48,7 @@ function toTransactionOutput(
     creditCardId: transaction.creditCardId,
     date: transaction.date,
     description: transaction.description,
+    earlyPayment: transaction.earlyPayment,
     id: transaction.id,
     installmentCount: transaction.installmentCount,
     installmentNumber: transaction.installmentNumber,

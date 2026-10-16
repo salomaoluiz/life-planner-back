@@ -23,6 +23,13 @@ export interface TransactionCategorySummary {
   systemKey: null | SystemCategoryKey;
 }
 
+// The early payment (card row) an account debit row belongs to (spec 032 FR 35).
+export interface TransactionEarlyPaymentSummary {
+  creditCardId: string;
+  id: string;
+  invoiceMonth: string;
+}
+
 interface ITransactionEntity {
   account: null | TransactionAccountSummary;
   accountId: null | string;
@@ -33,6 +40,7 @@ interface ITransactionEntity {
   creditCardId: null | string;
   date: string;
   description: string;
+  earlyPayment?: null | TransactionEarlyPaymentSummary;
   id: string;
   // Total installments of the plan (join), the number of this row and the plan id; all null outside a plan.
   installmentCount: null | number;
@@ -67,6 +75,8 @@ class TransactionEntity {
   // Calendar date `YYYY-MM-DD` (no time, no timezone).
   date: string;
   description: string;
+  // Set on the INVOICE_PAYMENT debit row of an early payment.
+  earlyPayment: null | TransactionEarlyPaymentSummary;
   id: string;
   installmentCount: null | number;
   installmentNumber: null | number;
@@ -102,6 +112,7 @@ class TransactionEntity {
     this.creditCardId = params.creditCardId;
     this.date = params.date;
     this.description = params.description;
+    this.earlyPayment = params.earlyPayment ?? null;
     this.id = params.id;
     this.installmentCount = params.installmentCount;
     this.installmentNumber = params.installmentNumber;

@@ -26,6 +26,7 @@ const transactionMock: FinancialTransactionWithRelations = {
   credit_card_id: null,
   date: new Date('2026-10-03T00:00:00.000Z'),
   description: 'Weekly groceries',
+  early_payment: null,
   id: faker.string.uuid(),
   installment_number: null,
   installment_plan: null,
@@ -59,6 +60,7 @@ const includeMock = {
     },
   },
   credit_card: { select: { color: true, id: true, last_digits: true, title: true } },
+  early_payment: { select: { credit_card_id: true, id: true, invoice_month: true } },
   installment_plan: { select: { installment_count: true } },
   paid_from_transaction: {
     select: { account: { select: { name: true } }, account_id: true },

@@ -22,6 +22,7 @@ const paramsMock: TransactionEntity = {
   creditCardId: null,
   date: '2026-10-03',
   description: 'Weekly groceries',
+  earlyPayment: null,
   id: 'transaction-uuid-1',
   installmentCount: null,
   installmentNumber: null,

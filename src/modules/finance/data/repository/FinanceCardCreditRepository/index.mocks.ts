@@ -23,6 +23,7 @@ const rawMock: FinancialTransactionWithRelations = {
   credit_card_id: 'card-1',
   date: new Date('2026-10-16T00:00:00.000Z'),
   description: 'Refund',
+  early_payment: null,
   id: 'refund-1',
   installment_number: null,
   installment_plan: null,

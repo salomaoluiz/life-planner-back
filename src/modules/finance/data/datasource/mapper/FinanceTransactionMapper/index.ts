@@ -32,6 +32,13 @@ export class FinanceTransactionMapper {
       creditCardId: raw.credit_card_id,
       date: toCalendarDate(raw.date),
       description: raw.description,
+      earlyPayment: raw.early_payment
+        ? {
+            creditCardId: raw.early_payment.credit_card_id as string,
+            id: raw.early_payment.id,
+            invoiceMonth: raw.early_payment.invoice_month as string,
+          }
+        : null,
       id: raw.id,
       installmentCount: raw.installment_plan?.installment_count ?? null,
       installmentNumber: raw.installment_number,

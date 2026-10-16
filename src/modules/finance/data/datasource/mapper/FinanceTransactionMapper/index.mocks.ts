@@ -21,6 +21,7 @@ const rawTransactionMock: FinancialTransactionWithRelations = {
   credit_card_id: null,
   date: new Date('2026-10-03T00:00:00.000Z'),
   description: 'Weekly groceries',
+  early_payment: null,
   id: faker.string.uuid(),
   installment_number: null,
   installment_plan: null,

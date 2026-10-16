@@ -38,6 +38,7 @@ export const TRANSACTION_RELATIONS = {
     },
   },
   credit_card: { select: { color: true, id: true, last_digits: true, title: true } },
+  early_payment: { select: { credit_card_id: true, id: true, invoice_month: true } },
   installment_plan: { select: { installment_count: true } },
   paid_from_transaction: {
     select: { account: { select: { name: true } }, account_id: true },
