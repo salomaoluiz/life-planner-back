@@ -17,6 +17,7 @@ const testCases: { key: EnvVarKey; method: EnvServiceKey }[] = [
   { key: 'JWT_EXPIRES_IN', method: 'jwtExpiresIn' },
   { key: 'JWT_SECRET', method: 'jwtSecret' },
   { key: 'SESSION_IDLE_TTL_SECONDS', method: 'sessionIdleTtlSeconds' },
+  { key: 'SWAGGER_ENABLED', method: 'swaggerEnabled' },
 ];
 
 test.each(testCases)(
