@@ -11,6 +11,7 @@ import {
   UpdateCreditCardDatasourceParams,
 } from '@finance/data/repository/datasource/IFinanceCreditCardDatasource';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
+import { reassignInstallmentMonths } from '@finance/domain/service/InstallmentPlan';
 import { invoiceMonthOf } from '@finance/domain/service/InvoiceCalculator';
 import { Database } from '@shared/infra/db/Database';
 
@@ -82,7 +83,11 @@ export class FinanceCreditCardDatasource implements IFinanceCreditCardDatasource
       const paidMonths = new Set(payments.map((payment) => payment.invoice_month));
       const purchases = await tx.financialTransaction.findMany({
         select: { date: true, id: true, invoice_month: true },
-        where: { credit_card_id: params.id, invoice_month: { notIn: [...paidMonths] } },
+        where: {
+          credit_card_id: params.id,
+          installment_plan_id: null,
+          invoice_month: { notIn: [...paidMonths] },
+        },
       });
       const idsByMonth = new Map<string, string[]>();
 
@@ -99,6 +104,41 @@ export class FinanceCreditCardDatasource implements IFinanceCreditCardDatasource
           data: { invoice_month: month },
           where: { id: { in: ids } },
         });
+      }
+
+      // Installments keep their order: installment 1 by the date rule, k = that + (k - 1); paid rows stay.
+      const plans = await tx.financialInstallmentPlan.findMany({
+        select: {
+          date: true,
+          id: true,
+          transactions: {
+            orderBy: { installment_number: 'asc' },
+            select: { id: true, invoice_month: true },
+          },
+        },
+        where: { credit_card_id: params.id },
+      });
+
+      for (const plan of plans) {
+        const rows = plan.transactions.map((row) => ({
+          id: row.id,
+          invoiceMonth: row.invoice_month as string,
+          paid: paidMonths.has(row.invoice_month as string),
+        }));
+        const months = reassignInstallmentMonths(
+          rows,
+          invoiceMonthOf(toCalendarDate(plan.date), closingDay),
+          paidMonths,
+        );
+
+        for (const [index, row] of rows.entries()) {
+          if (months[index] !== row.invoiceMonth) {
+            await tx.financialTransaction.update({
+              data: { invoice_month: months[index] },
+              where: { id: row.id },
+            });
+          }
+        }
       }
 
       return updated;

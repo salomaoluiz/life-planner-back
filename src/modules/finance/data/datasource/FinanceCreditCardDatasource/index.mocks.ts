@@ -44,6 +44,8 @@ const updateSpy = jest.fn();
 const queryRawSpy = jest.fn();
 const transactionSpy = jest.fn();
 const paymentFindManySpy = jest.fn();
+const planFindManySpy = jest.fn();
+const txUpdateSpy = jest.fn();
 const txFindManySpy = jest.fn();
 const txUpdateManySpy = jest.fn();
 
@@ -60,8 +62,13 @@ const clientMock = {
     findUnique: findUniqueSpy,
     update: updateSpy,
   },
+  financialInstallmentPlan: { findMany: planFindManySpy },
   financialInvoicePayment: { findMany: paymentFindManySpy },
-  financialTransaction: { findMany: txFindManySpy, updateMany: txUpdateManySpy },
+  financialTransaction: {
+    findMany: txFindManySpy,
+    update: txUpdateSpy,
+    updateMany: txUpdateManySpy,
+  },
 };
 const databaseMock = { client: clientMock } as unknown as Database;
 
@@ -69,6 +76,7 @@ let setup: FinanceCreditCardDatasource;
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  planFindManySpy.mockResolvedValue([]);
   transactionSpy.mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) =>
     callback(clientMock),
   );
@@ -88,9 +96,11 @@ const spies = {
   findMany: findManySpy,
   findUnique: findUniqueSpy,
   paymentFindMany: paymentFindManySpy,
+  planFindMany: planFindManySpy,
   queryRaw: queryRawSpy,
   transaction: transactionSpy,
   txFindMany: txFindManySpy,
+  txUpdate: txUpdateSpy,
   txUpdateMany: txUpdateManySpy,
   update: updateSpy,
 };
