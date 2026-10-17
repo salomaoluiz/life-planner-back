@@ -25,6 +25,8 @@ import { invoiceMonthOf } from '@finance/domain/service/InvoiceCalculator';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
+const CARD_FOLLOWS_INVOICE = 'Card purchases follow their invoice';
+
 type ParsedUpdateInput = ReturnType<typeof UpdateTransactionSchema.parse>;
 
 export class UpdateTransactionUseCase implements UseCaseWithParams<
@@ -98,6 +100,10 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
       type: input.type ?? transaction.type,
     });
 
+    if (card && input.paid !== undefined) {
+      throw new UnprocessableEntityException(CARD_FOLLOWS_INVOICE);
+    }
+
     const needsInvoiceMonth = card !== undefined && (sourceChanged || input.date !== undefined);
     let invoiceMonth: null | string | undefined;
 
@@ -107,16 +113,21 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
       invoiceMonth = null;
     }
 
+    // Paying an unpaid account row moves its date to the payment day unless the body names one (FR 6).
+    const paying =
+      Boolean(transaction.accountId) && !card && input.paid === true && !transaction.paid;
+
     const updated = await this.transactionRepository.updateTransaction({
       accountId: movesToAccount ? input.accountId : clearedWhen(movesToCard),
       categoryId: input.categoryId,
       creditCardId: movesToCard ? input.creditCardId : clearedWhen(movesToAccount),
-      date: input.date,
+      date: paying ? (input.date ?? input.today) : input.date,
       description: input.description,
       id: input.id,
       invoiceMonth,
       owner: input.owner,
       ownerId: input.ownerId,
+      paid: paidFor(input, transaction, card !== undefined),
       type: input.type,
       value: input.value,
     });
@@ -138,6 +149,9 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
     input: ParsedUpdateInput,
     transaction: TransactionEntity,
   ): Promise<TransactionWithLimit> {
+    if (input.paid !== undefined) {
+      throw new UnprocessableEntityException(CARD_FOLLOWS_INVOICE);
+    }
     if (input.accountId !== undefined || input.creditCardId !== undefined) {
       throw new UnprocessableEntityException('Edit the installment plan instead');
     }
@@ -193,6 +207,22 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
 
     return { overLimit: data.invoices.used > card.limit, transaction: updated };
   }
+}
+
+// Moving to a card clears the status; coming back from a card needs one (CHECK paid IS NOT NULL).
+function paidFor(
+  input: ParsedUpdateInput,
+  transaction: TransactionEntity,
+  toCard: boolean,
+): boolean | null | undefined {
+  if (toCard) {
+    return transaction.accountId ? null : undefined;
+  }
+  if (transaction.creditCardId) {
+    return input.paid ?? (input.date ?? transaction.date) <= input.today;
+  }
+
+  return input.paid;
 }
 
 // Sending one source clears the other column; otherwise it stays untouched.

@@ -327,3 +327,84 @@ describe('installments (spec 030)', () => {
     await expect(run({ scope: 'ONLY_THIS', value: 5 })).rejects.toThrow(BadRequestException);
   });
 });
+
+describe('paid status (spec 033)', () => {
+  function unpaid() {
+    return { ...mocks.transaction, paid: false };
+  }
+
+  it('SHOULD move the date to today WHEN an unpaid row is paid without a date', async () => {
+    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce(unpaid());
+
+    await run({ paid: true });
+
+    expect(mocks.transactionRepository.updateTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ date: '2026-10-15', paid: true }),
+    );
+  });
+
+  it('SHOULD keep the date sent with the payment', async () => {
+    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce(unpaid());
+
+    await run({ date: '2026-10-11', paid: true });
+
+    expect(mocks.transactionRepository.updateTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ date: '2026-10-11', paid: true }),
+    );
+  });
+
+  it('SHOULD keep the date WHEN unpaying AND leave paid alone WHEN only the date changes', async () => {
+    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce({
+      ...mocks.transaction,
+      paid: true,
+    });
+    await run({ paid: false });
+    await run({ date: '2026-10-20' });
+
+    expect(mocks.transactionRepository.updateTransaction).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ date: undefined, paid: false }),
+    );
+    expect(mocks.transactionRepository.updateTransaction).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ date: '2026-10-20', paid: undefined }),
+    );
+  });
+
+  it('SHOULD refuse paid on a card row (422) AND clear paid WHEN an account row moves to a card', async () => {
+    mocks.ensureConsistency.execute.mockResolvedValue({ card: mocks.card });
+
+    await expect(run({ creditCardId: mocks.card.id, paid: true })).rejects.toThrow(
+      new UnprocessableEntityException('Card purchases follow their invoice'),
+    );
+    await run({ creditCardId: mocks.card.id });
+
+    expect(mocks.transactionRepository.updateTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ paid: null }),
+    );
+  });
+
+  it('SHOULD give a paid value WHEN a card row moves back to an account', async () => {
+    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce({
+      ...mocks.transaction,
+      accountId: null,
+      creditCardId: mocks.card.id,
+      date: '2026-10-20',
+      invoiceMonth: '2026-10',
+    });
+
+    await run({ accountId: 'new-account' });
+
+    expect(mocks.transactionRepository.updateTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ paid: false }),
+    );
+  });
+
+  it('SHOULD refuse paid on an installment (422)', async () => {
+    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce(mocks.installment);
+
+    await expect(run({ paid: true, scope: 'ONLY_THIS' })).rejects.toThrow(
+      UnprocessableEntityException,
+    );
+  });
+});

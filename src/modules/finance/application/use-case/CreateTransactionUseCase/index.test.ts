@@ -34,6 +34,7 @@ it('SHOULD check consistency, then create the transaction with integer cents AND
     invoiceMonth: undefined,
     owner: OwnerType.USER,
     ownerId: mocks.input.ownerId,
+    paid: true,
     type: mocks.input.type,
     value: 23490,
   });
@@ -166,5 +167,42 @@ describe('card purchases (spec 029)', () => {
     );
     await expect(setup.execute(cardInput())).rejects.toThrow(UnprocessableEntityException);
     expect(mocks.transactionRepository.createTransaction).not.toHaveBeenCalled();
+  });
+});
+
+describe('paid status (spec 033)', () => {
+  it('SHOULD default paid to false WHEN the account row is dated after today', async () => {
+    await setup.execute({ ...mocks.input, date: '2026-10-20' });
+
+    expect(mocks.transactionRepository.createTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ paid: false }),
+    );
+  });
+
+  it('SHOULD keep an explicit paid AND default paid to true WHEN dated today', async () => {
+    await setup.execute({ ...mocks.input, date: '2026-10-20', paid: true });
+    await setup.execute({ ...mocks.input, date: '2026-10-15' });
+
+    expect(mocks.transactionRepository.createTransaction).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ paid: true }),
+    );
+    expect(mocks.transactionRepository.createTransaction).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ paid: true }),
+    );
+  });
+
+  it('SHOULD send no paid for a card purchase AND refuse one (422)', async () => {
+    const card = { ...mocks.input, accountId: undefined, creditCardId: 'card-id' };
+
+    await setup.execute(card);
+    expect(mocks.transactionRepository.createTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ paid: undefined }),
+    );
+
+    await expect(setup.execute({ ...card, paid: false })).rejects.toThrow(
+      new UnprocessableEntityException('Card purchases follow their invoice'),
+    );
   });
 });
