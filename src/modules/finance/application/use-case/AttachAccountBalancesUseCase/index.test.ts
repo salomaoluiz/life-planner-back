@@ -2,9 +2,9 @@ import { ValidationError } from '@shared/domain/error/ValidationError';
 
 import { mocks, setup } from './index.mocks';
 
-it('SHOULD read the future sums of ALL the accounts in ONE call AND derive each balance from its ledger', async () => {
-  mocks.accountRepository.findFutureSums.mockResolvedValue([
-    { accountId: 'account-a', afterEndOfMonth: -400, afterToday: 600 },
+it('SHOULD read the unpaid sums of ALL the accounts in ONE call AND derive each balance from its ledger', async () => {
+  mocks.accountRepository.findUnpaidSums.mockResolvedValue([
+    { accountId: 'account-a', dueByEndOfMonth: -400 },
   ]);
 
   const result = await setup.execute({
@@ -12,20 +12,20 @@ it('SHOULD read the future sums of ALL the accounts in ONE call AND derive each 
     today: mocks.today,
   });
 
-  expect(mocks.accountRepository.findFutureSums).toHaveBeenCalledTimes(1);
-  expect(mocks.accountRepository.findFutureSums).toHaveBeenCalledWith({
+  expect(mocks.accountRepository.findUnpaidSums).toHaveBeenCalledTimes(1);
+  expect(mocks.accountRepository.findUnpaidSums).toHaveBeenCalledWith({
     accountIds: ['account-a', 'account-b'],
     today: mocks.today,
   });
   expect(result).toEqual([
-    { account: mocks.accountA, balance: 14400, projectedBalance: 15400 },
+    { account: mocks.accountA, balance: 15000, projectedBalance: 14600 },
     { account: mocks.accountB, balance: -300, projectedBalance: -300 },
   ]);
 });
 
 it('SHOULD return [] WITHOUT querying WHEN there are no accounts', async () => {
   expect(await setup.execute({ accounts: [], today: mocks.today })).toEqual([]);
-  expect(mocks.accountRepository.findFutureSums).not.toHaveBeenCalled();
+  expect(mocks.accountRepository.findUnpaidSums).not.toHaveBeenCalled();
 });
 
 it.each([
@@ -36,5 +36,5 @@ it.each([
   await expect(setup.execute({ accounts: [mocks.accountA], ...patch } as never)).rejects.toThrow(
     ValidationError,
   );
-  expect(mocks.accountRepository.findFutureSums).not.toHaveBeenCalled();
+  expect(mocks.accountRepository.findUnpaidSums).not.toHaveBeenCalled();
 });

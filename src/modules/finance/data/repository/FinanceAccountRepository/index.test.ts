@@ -72,20 +72,19 @@ describe('findAccounts', () => {
   });
 });
 
-describe('findFutureSums', () => {
+describe('findUnpaidSums', () => {
   it("SHOULD pass the end of today's month to the datasource AND map the rows to camelCase", async () => {
-    mocks.accountDatasource.findFutureSums.mockResolvedValue([
-      { account_id: 'acc-1', after_end_of_month: -400, after_today: 600 },
+    mocks.accountDatasource.findUnpaidSums.mockResolvedValue([
+      { account_id: 'acc-1', due_by_end_of_month: -400 },
     ]);
 
-    const result = await setup.findFutureSums({ accountIds: ['acc-1'], today: '2026-02-10' });
+    const result = await setup.findUnpaidSums({ accountIds: ['acc-1'], today: '2026-02-10' });
 
-    expect(mocks.accountDatasource.findFutureSums).toHaveBeenCalledWith({
+    expect(mocks.accountDatasource.findUnpaidSums).toHaveBeenCalledWith({
       account_ids: ['acc-1'],
       end_of_month: '2026-02-28',
-      today: '2026-02-10',
     });
-    expect(result).toEqual([{ accountId: 'acc-1', afterEndOfMonth: -400, afterToday: 600 }]);
+    expect(result).toEqual([{ accountId: 'acc-1', dueByEndOfMonth: -400 }]);
   });
 });
 

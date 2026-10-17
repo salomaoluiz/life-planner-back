@@ -16,7 +16,7 @@ describe('endOfMonth', () => {
 });
 
 describe('withBalances', () => {
-  it('SHOULD equal the ledger WHEN there is no future-dated row', () => {
+  it('SHOULD equal the ledger WHEN there is no unpaid row due this month', () => {
     expect(withBalances(mocks.account)).toEqual({
       account: mocks.account,
       balance: 15000,
@@ -24,25 +24,13 @@ describe('withBalances', () => {
     });
   });
 
-  it('SHOULD subtract the signed future rows: current drops everything after today, projected only what is after the month end', () => {
-    // Ledger 15000 includes a +1000 income dated later this month and a -400 expense next month.
+  it('SHOULD keep the ledger as the current balance AND add the unpaid rows to the projection', () => {
     const result = withBalances(mocks.account, {
       accountId: mocks.account.id,
-      afterEndOfMonth: -400,
-      afterToday: 600,
+      dueByEndOfMonth: -400,
     });
 
-    expect(result.balance).toBe(14400);
-    expect(result.projectedBalance).toBe(15400);
-  });
-
-  it('SHOULD make projected equal current WHEN today is the last day of the month (nothing is between today and month end)', () => {
-    const result = withBalances(mocks.account, {
-      accountId: mocks.account.id,
-      afterEndOfMonth: 250,
-      afterToday: 250,
-    });
-
-    expect(result.balance).toBe(result.projectedBalance);
+    expect(result.balance).toBe(15000);
+    expect(result.projectedBalance).toBe(14600);
   });
 });

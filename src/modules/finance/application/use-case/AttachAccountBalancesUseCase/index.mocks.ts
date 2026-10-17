@@ -11,7 +11,7 @@ const fixture = new AccountEntityFixture();
 const accountA = fixture.withId('account-a').withLedgerBalance(15000).build();
 const accountB = fixture.withId('account-b').withLedgerBalance(-300).build();
 
-const accountRepositoryMock = { findFutureSums: jest.fn() };
+const accountRepositoryMock = { findUnpaidSums: jest.fn() };
 
 // endregion Mocks
 
@@ -19,7 +19,7 @@ let setup: AttachAccountBalancesUseCase;
 
 beforeEach(async () => {
   jest.clearAllMocks();
-  accountRepositoryMock.findFutureSums.mockResolvedValue([]);
+  accountRepositoryMock.findUnpaidSums.mockResolvedValue([]);
 
   const module = await Test.createTestingModule({
     providers: [
