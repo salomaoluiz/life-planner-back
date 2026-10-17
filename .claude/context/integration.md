@@ -76,3 +76,5 @@ New `/finance/installment-plans` endpoints and the `scope` field of `PATCH /tran
 ## Card credits (spec 032)
 
 Invoice payloads gain `net, carryIn, total, amountDue, earlyPaid` and the detail gains `credits`; `amount` still means what is due, so spec 029/030 clients keep working. The month summary must add `earlyPaid` to `amount` (frontend `getMonthSummaryUseCase`). New endpoints: prepayment (`/installment-plans/:id/prepayment[-preview]`), refunds and early payments (`/credit-cards/:id/refunds|early-payments`), see `api.md`. New enum values `SystemCategoryKey.INSTALLMENT_PREPAYMENT_DISCOUNT | CARD_REFUND | CARD_EARLY_PAYMENT`; a card can now hold `INCOME` rows of those categories only.
+
+Spec 033 contract: transactions gain `paid: boolean` (optional on create/update input, always present on output). The meaning of account `balance` / `projectedBalance` changed (paid rows only); ship backend and app together. Unpaid rows do not move the ledger; ledger writes go through `toLedgerEntry`/`ledgerDeltas`, which read `paid`.
