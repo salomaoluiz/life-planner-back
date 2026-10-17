@@ -31,6 +31,7 @@ const rawMock: FinancialTransactionWithRelations = {
   invoice_month: '2026-10',
   owner: 'USER',
   owner_id: 'owner-1',
+  paid: true,
   paid_from_transaction: null,
   paid_from_transaction_id: null,
   payment_method: null,

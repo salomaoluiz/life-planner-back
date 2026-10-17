@@ -19,7 +19,7 @@ const accountDatasourceMock = {
   exists: jest.fn().mockResolvedValue(true),
   findById: jest.fn().mockResolvedValue(accountPersistenceMock),
   findByOwners: jest.fn().mockResolvedValue([accountPersistenceMock]),
-  findFutureSums: jest.fn().mockResolvedValue([]),
+  findUnpaidSums: jest.fn().mockResolvedValue([]),
   update: jest.fn().mockResolvedValue(accountPersistenceMock),
 };
 

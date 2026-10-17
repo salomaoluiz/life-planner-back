@@ -75,6 +75,7 @@ export class AdjustAccountBalanceUseCase implements UseCaseWithParams<
       description: BALANCE_ADJUSTMENT_DESCRIPTION,
       owner: account.owner,
       ownerId: account.ownerId,
+      paid: true,
       type: difference > 0 ? TransactionType.INCOME : TransactionType.EXPENSE,
       value: Math.abs(difference),
     });

@@ -78,36 +78,26 @@ describe('Method findByOwners', () => {
   });
 });
 
-describe('Method findFutureSums', () => {
-  it('SHOULD run ONE grouped query over the future rows only, whatever the history size', async () => {
-    spies.queryRaw.mockResolvedValue([
-      { account_id: 'acc-1', after_end_of_month: BigInt(-400), after_today: BigInt(600) },
-    ]);
+describe('Method findUnpaidSums', () => {
+  it('SHOULD run ONE grouped query over the unpaid rows up to the end of the month', async () => {
+    spies.queryRaw.mockResolvedValue([{ account_id: 'acc-1', due_by_end_of_month: BigInt(-400) }]);
 
-    const result = await setup.findFutureSums({
+    const result = await setup.findUnpaidSums({
       account_ids: ['acc-1', 'acc-2'],
       end_of_month: '2026-10-31',
-      today: '2026-10-15',
     });
 
-    expect(result).toEqual([{ account_id: 'acc-1', after_end_of_month: -400, after_today: 600 }]);
+    expect(result).toEqual([{ account_id: 'acc-1', due_by_end_of_month: -400 }]);
     expect(spies.queryRaw).toHaveBeenCalledTimes(1);
     const query = spies.queryRaw.mock.calls[0][0];
     expect(query.sql).toContain('GROUP BY');
-    expect(query.sql).toContain('"date" >');
-    expect(query.values).toEqual(
-      expect.arrayContaining(['acc-1', 'acc-2', '2026-10-15', '2026-10-31']),
-    );
+    expect(query.sql).toContain('"paid" = false');
+    expect(query.sql).toContain('"date" <=');
+    expect(query.values).toEqual(expect.arrayContaining(['acc-1', 'acc-2', '2026-10-31']));
   });
 
   it('SHOULD not query WHEN there are no accounts', async () => {
-    expect(
-      await setup.findFutureSums({
-        account_ids: [],
-        end_of_month: '2026-10-31',
-        today: '2026-10-15',
-      }),
-    ).toEqual([]);
+    expect(await setup.findUnpaidSums({ account_ids: [], end_of_month: '2026-10-31' })).toEqual([]);
     expect(spies.queryRaw).not.toHaveBeenCalled();
   });
 });

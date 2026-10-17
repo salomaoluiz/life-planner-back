@@ -6,6 +6,7 @@ import { TransactionService } from '@api/finance/v1/transaction.service';
 import { CreateTransactionUseCase } from '@finance/application/use-case/CreateTransactionUseCase';
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
 import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransactionsUseCase';
+import { ResolveCardRowsPaidUseCase } from '@finance/application/use-case/ResolveCardRowsPaidUseCase';
 import { UpdateTransactionUseCase } from '@finance/application/use-case/UpdateTransactionUseCase';
 import { TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -35,6 +36,7 @@ const transactionResultMock = {
   invoiceMonth: null,
   owner: OwnerType.USER,
   ownerId: userId,
+  paid: true,
   type: TransactionType.EXPENSE,
   updatedAt: new Date('2026-10-04T13:00:00.000Z'),
   value: 23490,
@@ -56,6 +58,9 @@ const financeAccessServiceMock = { resolve: jest.fn().mockResolvedValue(accessib
 const getTransactionsUseCaseMock = {
   execute: jest.fn().mockResolvedValue([transactionResultMock]),
 };
+const resolveCardRowsPaidUseCaseMock = {
+  execute: jest.fn().mockImplementation(async ({ transactions }) => transactions),
+};
 const updateTransactionUseCaseMock = {
   execute: jest.fn().mockResolvedValue({ overLimit: false, transaction: transactionResultMock }),
 };
@@ -74,6 +79,7 @@ beforeEach(async () => {
       { provide: DeleteTransactionUseCase, useValue: deleteTransactionUseCaseMock },
       { provide: FinanceAccessService, useValue: financeAccessServiceMock },
       { provide: GetTransactionsUseCase, useValue: getTransactionsUseCaseMock },
+      { provide: ResolveCardRowsPaidUseCase, useValue: resolveCardRowsPaidUseCaseMock },
       { provide: UpdateTransactionUseCase, useValue: updateTransactionUseCaseMock },
     ],
   }).compile();
@@ -86,6 +92,7 @@ const mocks = {
   createTransactionUseCase: createTransactionUseCaseMock,
   deleteTransactionUseCase: deleteTransactionUseCaseMock,
   getTransactionsUseCase: getTransactionsUseCaseMock,
+  resolveCardRowsPaidUseCase: resolveCardRowsPaidUseCaseMock,
   transactionApi: transactionApiMock,
   transactionResult: transactionResultMock,
   updateTransactionUseCase: updateTransactionUseCaseMock,

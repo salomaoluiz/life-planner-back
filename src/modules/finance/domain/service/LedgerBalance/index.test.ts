@@ -13,6 +13,32 @@ describe('signedValue', () => {
 });
 
 describe('ledgerDeltas', () => {
+  it('SHOULD ignore an unpaid entry on create AND delete', () => {
+    expect(ledgerDeltas(undefined, entry(accountA, TransactionType.EXPENSE, 300, false))).toEqual(
+      [],
+    );
+    expect(ledgerDeltas(entry(accountA, TransactionType.EXPENSE, 300, false), undefined)).toEqual(
+      [],
+    );
+  });
+
+  it('SHOULD move the ledger WHEN an entry turns paid OR unpaid', () => {
+    const unpaid = entry(accountA, TransactionType.EXPENSE, 300, false);
+    const paid = entry(accountA, TransactionType.EXPENSE, 300, true);
+
+    expect(ledgerDeltas(unpaid, paid)).toEqual([{ accountId: accountA, delta: -300 }]);
+    expect(ledgerDeltas(paid, unpaid)).toEqual([{ accountId: accountA, delta: 300 }]);
+  });
+
+  it('SHOULD NOT move the ledger WHEN the value of an unpaid entry changes', () => {
+    expect(
+      ledgerDeltas(
+        entry(accountA, TransactionType.EXPENSE, 300, false),
+        entry(accountA, TransactionType.EXPENSE, 500, false),
+      ),
+    ).toEqual([]);
+  });
+
   it('SHOULD add the signed value on create', () => {
     expect(ledgerDeltas(undefined, entry(accountA, TransactionType.EXPENSE, 300))).toEqual([
       { accountId: accountA, delta: -300 },
@@ -87,6 +113,7 @@ describe('ledgerDeltas', () => {
     function randomEntry(): LedgerEntry {
       return {
         accountId: accounts[Math.floor(random() * accounts.length)],
+        paid: random() < 0.7,
         type: random() < 0.5 ? TransactionType.INCOME : TransactionType.EXPENSE,
         value: 1 + Math.floor(random() * 10_000),
       };
@@ -122,7 +149,7 @@ describe('ledgerDeltas', () => {
       const expected =
         initial[accountId] +
         [...rows.values()]
-          .filter((row) => row.accountId === accountId)
+          .filter((row) => row.accountId === accountId && row.paid)
           .reduce((sum, row) => sum + signedValue(row), 0);
 
       expect(ledger[accountId]).toBe(expected);
@@ -133,15 +160,20 @@ describe('ledgerDeltas', () => {
 describe('ledgerDeltas with card purchases (null account)', () => {
   it('SHOULD have no effect for a card purchase', () => {
     expect(
-      ledgerDeltas(undefined, { accountId: null, type: TransactionType.EXPENSE, value: 10 }),
+      ledgerDeltas(undefined, {
+        accountId: null,
+        paid: true,
+        type: TransactionType.EXPENSE,
+        value: 10,
+      }),
     ).toEqual([]);
   });
 
   it('SHOULD restore the old account WHEN an account expense becomes a card purchase', () => {
     expect(
       ledgerDeltas(
-        { accountId: 'a', type: TransactionType.EXPENSE, value: 10 },
-        { accountId: null, type: TransactionType.EXPENSE, value: 10 },
+        { accountId: 'a', paid: true, type: TransactionType.EXPENSE, value: 10 },
+        { accountId: null, paid: true, type: TransactionType.EXPENSE, value: 10 },
       ),
     ).toEqual([{ accountId: 'a', delta: 10 }]);
   });

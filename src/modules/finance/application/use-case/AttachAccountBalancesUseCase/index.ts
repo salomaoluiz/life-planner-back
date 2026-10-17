@@ -9,8 +9,8 @@ import { AccountWithBalances, withBalances } from '@finance/domain/service/Accou
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
-// Current and end-of-month balances of the given accounts: ONE grouped query over the future-dated
-// rows, never the history (the stored ledger already holds everything else).
+// Current and end-of-month balances of the given accounts: ONE grouped query over the unpaid rows
+// due up to the end of the month, never the history (the stored ledger already holds the paid ones).
 export class AttachAccountBalancesUseCase implements UseCaseWithParams<
   AttachAccountBalancesInput,
   AccountWithBalances[]
@@ -27,11 +27,11 @@ export class AttachAccountBalancesUseCase implements UseCaseWithParams<
       return [];
     }
 
-    const future = await this.accountRepository.findFutureSums({
+    const unpaid = await this.accountRepository.findUnpaidSums({
       accountIds: input.accounts.map((account) => account.id),
       today: input.today,
     });
-    const sumsByAccount = new Map(future.map((sums) => [sums.accountId, sums]));
+    const sumsByAccount = new Map(unpaid.map((sums) => [sums.accountId, sums]));
 
     return input.accounts.map((account) => withBalances(account, sumsByAccount.get(account.id)));
   }

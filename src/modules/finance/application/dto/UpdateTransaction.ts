@@ -22,6 +22,7 @@ export const UpdateTransactionSchema = z
     id: z.string().min(1),
     owner: OwnerTypeSchema.optional(),
     ownerId: OwnerIdSchema.optional(),
+    paid: z.boolean().optional(),
     // Required for installments: which rows the edit reaches (spec 030 FR 11).
     scope: z.enum(InstallmentEditScope).optional(),
     today: CalendarDateSchema,
@@ -40,6 +41,7 @@ export const UpdateTransactionSchema = z
       input.description !== undefined ||
       input.owner !== undefined ||
       input.ownerId !== undefined ||
+      input.paid !== undefined ||
       input.type !== undefined ||
       input.value !== undefined,
     { message: 'At least one field is required' },

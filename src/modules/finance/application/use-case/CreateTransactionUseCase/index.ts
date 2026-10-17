@@ -1,4 +1,4 @@
-import { ForbiddenException, Inject } from '@nestjs/common';
+import { ForbiddenException, Inject, UnprocessableEntityException } from '@nestjs/common';
 
 import {
   CreateTransactionInput,
@@ -39,6 +39,10 @@ export class CreateTransactionUseCase implements UseCaseWithParams<
       throw new ForbiddenException('Owner not accessible');
     }
 
+    if (input.creditCardId !== undefined && input.paid !== undefined) {
+      throw new UnprocessableEntityException('Card purchases follow their invoice');
+    }
+
     const { card } = await this.ensureTransactionConsistencyUseCase.execute({
       accessibleOwners: input.accessibleOwners,
       accountId: input.accountId,
@@ -59,6 +63,8 @@ export class CreateTransactionUseCase implements UseCaseWithParams<
       invoiceMonth: card ? invoiceMonthOf(input.date, card.closingDay) : undefined,
       owner: input.owner,
       ownerId: input.ownerId,
+      // Account rows start paid when dated up to today (ISO dates compare as strings).
+      paid: input.accountId === undefined ? undefined : (input.paid ?? input.date <= input.today),
       type: input.type,
       value: input.value,
     });

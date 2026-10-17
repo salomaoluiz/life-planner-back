@@ -10,6 +10,7 @@ import { resolveToday } from '@api/finance/v1/finance-query';
 import { CreateTransactionUseCase } from '@finance/application/use-case/CreateTransactionUseCase';
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
 import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransactionsUseCase';
+import { ResolveCardRowsPaidUseCase } from '@finance/application/use-case/ResolveCardRowsPaidUseCase';
 import { UpdateTransactionUseCase } from '@finance/application/use-case/UpdateTransactionUseCase';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { TransactionSource } from '@finance/domain/enum';
@@ -57,6 +58,7 @@ function toTransactionOutput(
     overLimit,
     owner: transaction.owner,
     ownerId: transaction.ownerId,
+    paid: transaction.paid,
     type: transaction.type,
     updatedAt: transaction.updatedAt.toISOString(),
     value: transaction.value,
@@ -72,6 +74,7 @@ export class TransactionService {
     private readonly deleteTransactionUseCase: DeleteTransactionUseCase,
     private readonly financeAccessService: FinanceAccessService,
     private readonly getTransactionsUseCase: GetTransactionsUseCase,
+    private readonly resolveCardRowsPaidUseCase: ResolveCardRowsPaidUseCase,
     private readonly updateTransactionUseCase: UpdateTransactionUseCase,
   ) {}
 
@@ -87,8 +90,12 @@ export class TransactionService {
       accessibleOwners,
       today: resolveToday(today),
     });
+    const [resolved] = await this.resolveCardRowsPaidUseCase.execute({
+      today: resolveToday(today),
+      transactions: [transaction],
+    });
 
-    return toTransactionOutput(transaction, transaction.creditCardId ? overLimit : undefined);
+    return toTransactionOutput(resolved, transaction.creditCardId ? overLimit : undefined);
   }
 
   async delete(userId: string, id: string): Promise<void> {
@@ -101,6 +108,7 @@ export class TransactionService {
     userId: string,
     ownerIds?: string[],
     filter: { creditCardId?: string; invoiceMonth?: string; source?: TransactionSource } = {},
+    today?: string,
   ): Promise<TransactionOutput[]> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
@@ -110,7 +118,12 @@ export class TransactionService {
       ...filter,
     });
 
-    return transactions.map((transaction) => toTransactionOutput(transaction));
+    const resolved = await this.resolveCardRowsPaidUseCase.execute({
+      today: resolveToday(today),
+      transactions,
+    });
+
+    return resolved.map((transaction) => toTransactionOutput(transaction));
   }
 
   async update(
@@ -127,7 +140,11 @@ export class TransactionService {
       id,
       today: resolveToday(today),
     });
+    const [resolved] = await this.resolveCardRowsPaidUseCase.execute({
+      today: resolveToday(today),
+      transactions: [transaction],
+    });
 
-    return toTransactionOutput(transaction, transaction.creditCardId ? overLimit : undefined);
+    return toTransactionOutput(resolved, transaction.creditCardId ? overLimit : undefined);
   }
 }

@@ -99,6 +99,7 @@ it('SHOULD require systemKey (nullable) AND excludeFromTotals on the category su
     invoiceMonth: null,
     owner: 'USER',
     ownerId: id,
+    paid: true,
     type: 'INCOME',
     updatedAt: '2026-10-15T12:00:00.000Z',
     value: 5000,

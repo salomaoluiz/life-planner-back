@@ -13,6 +13,7 @@ interface LockedRow {
   account_id: null | string;
   credit_card_id: null | string;
   invoice_month: null | string;
+  paid: boolean | null;
   type: string;
   value: number;
 }
@@ -89,18 +90,20 @@ export async function lockTransactionRow(
   id: string,
 ): Promise<LockedTransactionRow | undefined> {
   const rows = await tx.$queryRaw<LockedRow[]>(
-    Prisma.sql`SELECT "account_id", "credit_card_id", "invoice_month", "type"::text AS "type", "value" FROM "financial_transactions" WHERE "id" = ${id} FOR UPDATE`,
+    Prisma.sql`SELECT "account_id", "credit_card_id", "invoice_month", "paid", "type"::text AS "type", "value" FROM "financial_transactions" WHERE "id" = ${id} FOR UPDATE`,
   );
 
   return rows.length > 0 ? toLockedRow(rows[0]) : undefined;
 }
 export function toLedgerEntry(row: {
   account_id: null | string;
+  paid: boolean | null;
   type: string;
   value: number;
 }): LedgerEntry {
   return {
     accountId: row.account_id,
+    paid: row.paid === true,
     type: TransactionType[row.type as keyof typeof TransactionType],
     value: row.value,
   };

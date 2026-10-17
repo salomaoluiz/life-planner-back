@@ -7,6 +7,7 @@ describe('Method pay', () => {
     spies.transactionCreate.mockResolvedValue({
       account_id: 'acc-1',
       id: 'tx-1',
+      paid: true,
       type: 'EXPENSE',
       value: 45000,
     });
@@ -21,6 +22,7 @@ describe('Method pay', () => {
       data: expect.objectContaining({
         account_id: 'acc-1',
         category_id: 'cat-1',
+        paid: true,
         type: 'EXPENSE',
         value: 45000,
       }),
@@ -71,6 +73,7 @@ describe('Method undo', () => {
         account_id: 'acc-1',
         credit_card_id: null,
         invoice_month: null,
+        paid: true,
         type: 'EXPENSE',
         value: 45000,
       },

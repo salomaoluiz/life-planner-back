@@ -108,6 +108,7 @@ class TransactionEntityFixture {
       invoiceMonth: null,
       owner: OwnerType.USER,
       ownerId: faker.string.uuid(),
+      paid: true,
       paidFromAccountId: null,
       paidFromAccountName: null,
       paidFromTransactionId: null,
@@ -142,6 +143,11 @@ class TransactionEntityFixture {
 
   withOwnerId(ownerId: string) {
     this.value.ownerId = ownerId;
+    return this;
+  }
+
+  withPaid(paid: boolean) {
+    this.value.paid = paid;
     return this;
   }
 

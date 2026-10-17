@@ -86,6 +86,7 @@ export class FinanceInvoicePaymentDatasource implements IFinanceInvoicePaymentDa
             description: params.description,
             owner: params.account_owner as Prisma.FinancialTransactionUncheckedCreateInput['owner'],
             owner_id: params.account_owner_id as string,
+            paid: true,
             type: TransactionType.EXPENSE,
             value: params.amount,
           },

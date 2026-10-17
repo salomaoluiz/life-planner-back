@@ -136,3 +136,26 @@ describe('card purchases (spec 029)', () => {
     });
   });
 });
+
+describe('paid status (spec 033)', () => {
+  it('SHOULD expose paid AND use the status the card resolver returns', async () => {
+    mocks.resolveCardRowsPaidUseCase.execute.mockResolvedValueOnce([
+      { ...mocks.transactionResult, paid: false },
+    ]);
+
+    const [result] = await setup.findAll(mocks.userId, undefined, {}, '2026-10-15');
+
+    expect(result.paid).toBe(false);
+    expect(mocks.resolveCardRowsPaidUseCase.execute).toHaveBeenCalledWith({
+      today: '2026-10-15',
+      transactions: [mocks.transactionResult],
+    });
+  });
+
+  it('SHOULD resolve the status of a created row', async () => {
+    const result = await setup.create(mocks.userId, {} as never, '2026-10-15');
+
+    expect(result.paid).toBe(true);
+    expect(mocks.resolveCardRowsPaidUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+});
