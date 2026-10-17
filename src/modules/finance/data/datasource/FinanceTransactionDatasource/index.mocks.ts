@@ -34,6 +34,7 @@ const transactionMock: FinancialTransactionWithRelations = {
   invoice_month: null,
   owner: 'USER',
   owner_id: faker.string.uuid(),
+  paid: true,
   paid_from_transaction: null,
   paid_from_transaction_id: null,
   payment_method: null,

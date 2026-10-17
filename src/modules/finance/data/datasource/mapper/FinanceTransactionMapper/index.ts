@@ -46,6 +46,7 @@ export class FinanceTransactionMapper {
       invoiceMonth: raw.invoice_month,
       owner: OwnerType[raw.owner],
       ownerId: raw.owner_id,
+      paid: raw.paid === true,
       paidFromAccountId: raw.paid_from_transaction?.account_id ?? null,
       paidFromAccountName: raw.paid_from_transaction?.account?.name ?? null,
       paidFromTransactionId: raw.paid_from_transaction_id,

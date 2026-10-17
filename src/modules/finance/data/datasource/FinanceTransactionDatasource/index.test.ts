@@ -47,6 +47,14 @@ describe('Method create', () => {
     });
   });
 
+  it('SHOULD NOT move the ledger WHEN the new row is unpaid', async () => {
+    spies.create.mockResolvedValue({ ...mocks.transaction, paid: false });
+
+    await setup.create({ ...params, paid: false });
+
+    expect(spies.accountUpdate).not.toHaveBeenCalled();
+  });
+
   it('SHOULD add an INCOME to the ledger', async () => {
     spies.create.mockResolvedValue({ ...mocks.transaction, type: 'INCOME', value: 500 });
 
@@ -68,7 +76,9 @@ describe('Method create', () => {
 
 describe('Method delete', () => {
   it('SHOULD lock the row, delete it AND reverse its signed value on the ledger', async () => {
-    spies.queryRaw.mockResolvedValue([{ account_id: 'acc-1', type: 'EXPENSE', value: 1000 }]);
+    spies.queryRaw.mockResolvedValue([
+      { account_id: 'acc-1', paid: true, type: 'EXPENSE', value: 1000 },
+    ]);
     spies.deleteMany.mockResolvedValue({ count: 1 });
 
     await expect(setup.delete(mocks.transaction.id)).resolves.toBeUndefined();
@@ -160,7 +170,7 @@ describe('Method findByOwners', () => {
 });
 
 describe('Method update', () => {
-  const lockedRow = [{ account_id: 'acc-1', type: 'EXPENSE', value: 1000 }];
+  const lockedRow = [{ account_id: 'acc-1', paid: true, type: 'EXPENSE', value: 1000 }];
 
   it('SHOULD update only the sent columns AND return the row with relations', async () => {
     spies.queryRaw.mockResolvedValue(lockedRow);
@@ -208,7 +218,9 @@ describe('Method update', () => {
   });
 
   it('SHOULD reverse the old account AND apply the new one WHEN the account changes (ascending id order)', async () => {
-    spies.queryRaw.mockResolvedValue([{ account_id: 'acc-b', type: 'EXPENSE', value: 200 }]);
+    spies.queryRaw.mockResolvedValue([
+      { account_id: 'acc-b', paid: true, type: 'EXPENSE', value: 200 },
+    ]);
     spies.update.mockResolvedValue({
       ...mocks.transaction,
       account_id: 'acc-a',

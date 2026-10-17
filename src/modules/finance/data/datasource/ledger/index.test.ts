@@ -11,21 +11,31 @@ import { mocks, spies } from './index.mocks';
 
 describe('toLedgerEntry', () => {
   it('SHOULD map a raw row to the domain entry', () => {
-    expect(toLedgerEntry({ account_id: 'acc-1', type: 'INCOME', value: 250 })).toEqual({
-      accountId: 'acc-1',
-      type: TransactionType.INCOME,
-      value: 250,
-    });
+    expect(toLedgerEntry({ account_id: 'acc-1', paid: false, type: 'INCOME', value: 250 })).toEqual(
+      {
+        accountId: 'acc-1',
+        paid: false,
+        type: TransactionType.INCOME,
+        value: 250,
+      },
+    );
   });
 });
 
 describe('lockTransactionRow', () => {
   it('SHOULD read the stored row with SELECT … FOR UPDATE by id AND return its ledger entry', async () => {
-    spies.queryRaw.mockResolvedValue([{ account_id: 'acc-1', type: 'EXPENSE', value: 1000 }]);
+    spies.queryRaw.mockResolvedValue([
+      { account_id: 'acc-1', paid: true, type: 'EXPENSE', value: 1000 },
+    ]);
 
     const result = await lockTransactionRow(mocks.tx, 'tx-1');
 
-    expect(result).toEqual({ accountId: 'acc-1', type: TransactionType.EXPENSE, value: 1000 });
+    expect(result).toEqual({
+      accountId: 'acc-1',
+      paid: true,
+      type: TransactionType.EXPENSE,
+      value: 1000,
+    });
     expect(spies.queryRaw).toHaveBeenCalledTimes(1);
     const query = spies.queryRaw.mock.calls[0][0];
     expect(query.sql).toContain('FOR UPDATE');

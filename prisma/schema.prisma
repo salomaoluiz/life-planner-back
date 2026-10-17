@@ -85,7 +85,7 @@ enum InvoicePaymentMethod {
 }
 
 // `owner_id` points to a user or a family, so it has no FK.
-// ledger_balance = initial_balance + every transaction (any date); it is internal and updated atomically with each transaction write (spec 028).
+// ledger_balance = initial_balance + every PAID account transaction (any date, spec 033); it is internal and updated atomically with each transaction write (spec 028).
 model FinancialAccount {
   id              String        @id @default(uuid())
   name            String
@@ -180,6 +180,8 @@ model FinancialTransaction {
   account_id               String?
   credit_card_id           String?
   invoice_month            String?               @db.Char(7)
+  // Account rows only (spec 033); card rows are NULL and derive their status from the invoice.
+  paid                     Boolean?
   category_id              String
   installment_plan_id      String?
   installment_number       Int?                  @db.SmallInt

@@ -50,6 +50,8 @@ interface ITransactionEntity {
   invoiceMonth: null | string;
   owner: OwnerType;
   ownerId: string;
+  // Stored for account rows; derived from the invoice for card rows (spec 033).
+  paid?: boolean;
   // Card credits (spec 032); all null/omitted on ordinary rows.
   paidFromAccountId?: null | string;
   paidFromAccountName?: null | string;
@@ -85,6 +87,8 @@ class TransactionEntity {
   invoiceMonth: null | string;
   owner: OwnerType;
   ownerId: string;
+  // Account rows: the stored status. Card rows: whether the invoice is paid (set by ResolveCardRowsPaidUseCase).
+  paid: boolean;
   // Account of the debit row an early payment created, and its name.
   paidFromAccountId: null | string;
   paidFromAccountName: null | string;
@@ -120,6 +124,7 @@ class TransactionEntity {
     this.invoiceMonth = params.invoiceMonth;
     this.owner = params.owner;
     this.ownerId = params.ownerId;
+    this.paid = params.paid ?? false;
     this.paidFromAccountId = params.paidFromAccountId ?? null;
     this.paidFromAccountName = params.paidFromAccountName ?? null;
     this.paidFromTransactionId = params.paidFromTransactionId ?? null;
