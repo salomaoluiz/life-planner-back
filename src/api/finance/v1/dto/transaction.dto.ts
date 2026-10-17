@@ -21,6 +21,8 @@ const TransactionFieldsSchema = z.object({
   description: DescriptionApiSchema,
   owner: OwnerTypeApiSchema,
   ownerId: OwnerIdApiSchema,
+  // Account rows only: omitted on create → paid when dated up to `today` (spec 033).
+  paid: z.boolean(),
   type: TransactionTypeApiSchema,
   value: ValueApiSchema,
 });
@@ -29,6 +31,7 @@ const TransactionFieldsSchema = z.object({
 export const CreateTransactionApiSchema = TransactionFieldsSchema.partial({
   accountId: true,
   creditCardId: true,
+  paid: true,
 }).refine((value) => (value.accountId === undefined) !== (value.creditCardId === undefined), {
   message: 'Send either accountId or creditCardId',
 });
@@ -77,6 +80,8 @@ export const TransactionApiSchema = z.object({
   overLimit: z.boolean().optional(),
   owner: OwnerTypeApiSchema,
   ownerId: z.uuid(),
+  // Stored for account rows; derived from the invoice for card rows.
+  paid: z.boolean(),
   type: TransactionTypeApiSchema,
   updatedAt: z.iso.datetime(),
   value: z.number().int(),

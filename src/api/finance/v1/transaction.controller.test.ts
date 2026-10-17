@@ -31,12 +31,25 @@ describe('findAll', () => {
       mocks.request.user.id,
       undefined,
       {},
+      undefined,
     );
     expect(mocks.transactionService.findAll).toHaveBeenNthCalledWith(
       2,
       mocks.request.user.id,
       [validBody.ownerId, validBody.accountId],
       {},
+      undefined,
+    );
+  });
+
+  it('SHOULD forward the today query for the derived card status', async () => {
+    await setup.findAll(mocks.request, { today: '2026-10-15' });
+
+    expect(mocks.transactionService.findAll).toHaveBeenCalledWith(
+      mocks.request.user.id,
+      undefined,
+      {},
+      '2026-10-15',
     );
   });
 
@@ -145,6 +158,7 @@ describe('card purchases (spec 029)', () => {
         invoiceMonth: '2026-10',
         source: 'CARD',
       },
+      undefined,
     );
     await expect(setup.findAll(mocks.request, { invoiceMonth: '2026-13' })).rejects.toThrow(
       ValidationError,

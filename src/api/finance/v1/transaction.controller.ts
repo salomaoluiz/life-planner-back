@@ -16,6 +16,7 @@ import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 import { z } from 'zod';
 
+import { CalendarDateApiSchema } from '@api/finance/v1/dto/finance-fields';
 import {
   CreateTransactionApiSchema,
   CreateTransactionBody,
@@ -36,6 +37,7 @@ const ListTransactionsQuerySchema = z.object({
   invoiceMonth: InvoiceMonthSchema.optional(),
   ownerId: OwnerIdQuerySchema,
   source: z.enum(TransactionSource).optional(),
+  today: CalendarDateApiSchema.optional(),
 });
 
 @ApiBearerAuth('JWT')
@@ -69,9 +71,9 @@ export class TransactionController {
   @Get()
   @ZodResponse({ status: 200, type: [TransactionOutput] })
   async findAll(@Request() req: JwtPayload & Request, @Query() query: Record<string, unknown>) {
-    const { ownerId, ...filter } = validate(ListTransactionsQuerySchema, query);
+    const { ownerId, today, ...filter } = validate(ListTransactionsQuerySchema, query);
 
-    return this.transactionService.findAll(req.user.id, toOwnerIds(ownerId), filter);
+    return this.transactionService.findAll(req.user.id, toOwnerIds(ownerId), filter, today);
   }
 
   @Patch(':id')
