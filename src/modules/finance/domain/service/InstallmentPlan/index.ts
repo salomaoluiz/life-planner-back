@@ -3,6 +3,23 @@ import { addInvoiceMonths } from '@finance/domain/service/InvoiceCalculator';
 export const MAX_INSTALLMENTS = 48;
 export const MIN_INSTALLMENTS = 2;
 
+export interface EligibleInstallment {
+  id: string;
+  installmentNumber: number;
+  invoiceMonth: string;
+  value: number;
+}
+
+// Spec 032 FR 13: every installment after the target invoice that is not in a paid invoice.
+export function eligibleForPrepayment(
+  installments: EligibleInstallment[],
+  targetInvoiceMonth: string,
+  paidMonths: ReadonlySet<string>,
+): EligibleInstallment[] {
+  return installments.filter(
+    (row) => row.invoiceMonth > targetInvoiceMonth && !paidMonths.has(row.invoiceMonth),
+  );
+}
 export function installmentInvoiceMonths(firstMonth: string, count: number): string[] {
   return Array.from({ length: count }, (_, index) => addInvoiceMonths(firstMonth, index));
 }

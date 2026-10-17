@@ -46,3 +46,27 @@ it('SHOULD refuse to delete one installment (422): the whole plan goes through i
   ).rejects.toThrow('Delete the installment plan');
   expect(mocks.transactionRepository.deleteTransaction).not.toHaveBeenCalled();
 });
+
+it.each(['CARD_REFUND', 'CARD_EARLY_PAYMENT', 'INSTALLMENT_PREPAYMENT_DISCOUNT'])(
+  'SHOULD refuse to delete a %s row here (422): the card endpoints own it',
+  async (systemKey) => {
+    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce({
+      ...mocks.transaction,
+      category: { ...mocks.transaction.category, systemKey },
+    });
+
+    await expect(
+      setup.execute({ accessibleOwners: mocks.accessibleOwners, id: mocks.transaction.id }),
+    ).rejects.toThrow('Use the card to change this credit');
+    expect(mocks.transactionRepository.deleteTransaction).not.toHaveBeenCalled();
+  },
+);
+
+it('SHOULD refuse to delete a purchase that has refunds (422)', async () => {
+  mocks.cardCreditRepository.countRefundsByTransactionId.mockResolvedValueOnce(1);
+
+  await expect(
+    setup.execute({ accessibleOwners: mocks.accessibleOwners, id: mocks.transaction.id }),
+  ).rejects.toThrow('Delete its refunds first');
+  expect(mocks.transactionRepository.deleteTransaction).not.toHaveBeenCalled();
+});

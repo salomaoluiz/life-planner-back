@@ -74,6 +74,9 @@ enum AccountStatus {
 enum SystemCategoryKey {
   BALANCE_ADJUSTMENT
   INVOICE_PAYMENT
+  INSTALLMENT_PREPAYMENT_DISCOUNT
+  CARD_REFUND
+  CARD_EARLY_PAYMENT
 }
 
 enum InvoicePaymentMethod {
@@ -169,21 +172,27 @@ model FinancialCategory {
 // Money is integer cents (BRL implied). `date` is a calendar date (no time, no timezone).
 // Both FKs are RESTRICT: an account or category with transactions can never be deleted by accident.
 model FinancialTransaction {
-  id                  String          @id @default(uuid())
-  description         String
-  value               Int
-  date                DateTime        @db.Date
-  type                TransactionType
-  account_id          String?
-  credit_card_id      String?
-  invoice_month       String?         @db.Char(7)
-  category_id         String
-  installment_plan_id String?
-  installment_number  Int?            @db.SmallInt
-  owner               OwnerType
-  owner_id            String
-  created_at          DateTime        @default(now()) @db.Timestamptz(6)
-  updated_at          DateTime        @updatedAt @db.Timestamptz(6)
+  id                       String                @id @default(uuid())
+  description              String
+  value                    Int
+  date                     DateTime              @db.Date
+  type                     TransactionType
+  account_id               String?
+  credit_card_id           String?
+  invoice_month            String?               @db.Char(7)
+  category_id              String
+  installment_plan_id      String?
+  installment_number       Int?                  @db.SmallInt
+  // Card credits (spec 032): refund links, prepayment, early payment method and its account debit row.
+  refunded_transaction_id  String?
+  refunded_plan_id         String?
+  prepayment_id            String?
+  payment_method           InvoicePaymentMethod?
+  paid_from_transaction_id String?               @unique
+  owner                    OwnerType
+  owner_id                 String
+  created_at               DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime              @updatedAt @db.Timestamptz(6)
 
   account          FinancialAccount?         @relation(fields: [account_id], references: [id], onDelete: Restrict)
   credit_card      FinancialCreditCard?      @relation(fields: [credit_card_id], references: [id], onDelete: Restrict)
@@ -191,7 +200,18 @@ model FinancialTransaction {
   invoice_payment  FinancialInvoicePayment?
   installment_plan FinancialInstallmentPlan? @relation(fields: [installment_plan_id], references: [id], onDelete: Restrict)
 
+  refunded_transaction  FinancialTransaction?           @relation("RefundedPurchase", fields: [refunded_transaction_id], references: [id], onDelete: Restrict)
+  refunds               FinancialTransaction[]          @relation("RefundedPurchase")
+  refunded_plan         FinancialInstallmentPlan?       @relation("RefundedPlan", fields: [refunded_plan_id], references: [id], onDelete: Restrict)
+  prepayment            FinancialInstallmentPrepayment? @relation("PrepaymentRows", fields: [prepayment_id], references: [id], onDelete: Restrict)
+  paid_from_transaction FinancialTransaction?           @relation("EarlyPaymentDebit", fields: [paid_from_transaction_id], references: [id], onDelete: Restrict)
+  early_payment         FinancialTransaction?           @relation("EarlyPaymentDebit")
+  discount_of           FinancialInstallmentPrepayment? @relation("PrepaymentDiscount")
+
   @@unique([installment_plan_id, installment_number])
+  @@index([refunded_transaction_id])
+  @@index([refunded_plan_id])
+  @@index([prepayment_id])
   @@index([installment_plan_id])
   @@index([credit_card_id, invoice_month])
   @@index([account_id, date])
@@ -285,12 +305,35 @@ model FinancialInstallmentPlan {
   created_at        DateTime  @default(now()) @db.Timestamptz(6)
   updated_at        DateTime  @updatedAt @db.Timestamptz(6)
 
-  credit_card  FinancialCreditCard    @relation(fields: [credit_card_id], references: [id], onDelete: Restrict)
-  category     FinancialCategory      @relation(fields: [category_id], references: [id], onDelete: Restrict)
+  credit_card  FinancialCreditCard             @relation(fields: [credit_card_id], references: [id], onDelete: Restrict)
+  category     FinancialCategory               @relation(fields: [category_id], references: [id], onDelete: Restrict)
   transactions FinancialTransaction[]
+  refunds      FinancialTransaction[]          @relation("RefundedPlan")
+  prepayment   FinancialInstallmentPrepayment?
 
   @@index([credit_card_id])
   @@index([category_id])
   @@index([owner, owner_id])
   @@map("financial_installment_plans")
+}
+
+// One prepayment per plan (spec 032): `original_months` keeps `{ transactionId: 'YYYY-MM' }` for undo.
+model FinancialInstallmentPrepayment {
+  id                      String    @id @default(uuid())
+  installment_plan_id     String    @unique
+  target_invoice_month    String    @db.Char(7)
+  original_months         Json
+  discount_transaction_id String?   @unique
+  date                    DateTime  @db.Date
+  owner                   OwnerType
+  owner_id                String
+  created_at              DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime  @updatedAt @db.Timestamptz(6)
+
+  installment_plan     FinancialInstallmentPlan @relation(fields: [installment_plan_id], references: [id], onDelete: Restrict)
+  discount_transaction FinancialTransaction?    @relation("PrepaymentDiscount", fields: [discount_transaction_id], references: [id], onDelete: Restrict)
+  rows                 FinancialTransaction[]   @relation("PrepaymentRows")
+
+  @@index([owner, owner_id])
+  @@map("financial_installment_prepayments")
 }

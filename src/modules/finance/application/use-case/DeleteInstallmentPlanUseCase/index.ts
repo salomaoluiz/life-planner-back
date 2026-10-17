@@ -1,11 +1,14 @@
-import { Inject, NotFoundException } from '@nestjs/common';
+import { Inject, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 
 import {
   DeleteInstallmentPlanInput,
   DeleteInstallmentPlanSchema,
 } from '@finance/application/dto/DeleteInstallmentPlan';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
-import { IFinanceInstallmentPlanRepository } from '@finance/domain/repository';
+import {
+  IFinanceCardCreditRepository,
+  IFinanceInstallmentPlanRepository,
+} from '@finance/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -15,6 +18,8 @@ export class DeleteInstallmentPlanUseCase implements UseCaseWithParams<
   void
 > {
   constructor(
+    @Inject('IFinanceCardCreditRepository')
+    private readonly cardCreditRepository: IFinanceCardCreditRepository,
     @Inject('IFinanceInstallmentPlanRepository')
     private readonly installmentPlanRepository: IFinanceInstallmentPlanRepository,
   ) {}
@@ -26,6 +31,11 @@ export class DeleteInstallmentPlanUseCase implements UseCaseWithParams<
 
     if (!plan || !hasOwnerAccess(input.accessibleOwners, plan)) {
       throw new NotFoundException();
+    }
+
+    // A plan that was refunded goes away only after its refunds (spec 032 FR 26).
+    if ((await this.cardCreditRepository.countRefundsByPlanId(plan.id)) > 0) {
+      throw new UnprocessableEntityException('Delete its refunds first');
     }
 
     await this.installmentPlanRepository.deletePlan(input.id);

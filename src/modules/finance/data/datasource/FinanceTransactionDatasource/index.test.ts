@@ -1,6 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 
-import { TransactionSource } from '@finance/domain/enum';
+import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
+import { SystemCategoryKey, TransactionSource } from '@finance/domain/enum';
 
 import { mocks, setup, spies } from './index.mocks';
 
@@ -134,8 +135,12 @@ describe('Method findByOwners', () => {
         AND: [
           { OR: [{ owner: 'USER', owner_id: mocks.owners[0].ownerId }] },
           {
-            category: { OR: [{ system_key: null }, { system_key: { not: 'INVOICE_PAYMENT' } }] },
             credit_card_id: null,
+            OR: [
+              { category: { system_key: null } },
+              { category: { system_key: { not: 'INVOICE_PAYMENT' } } },
+              { early_payment: { isNot: null } },
+            ],
           },
         ],
       },
@@ -296,13 +301,33 @@ describe('Card purchases', () => {
     expect(spies.deleteMany).not.toHaveBeenCalled();
   });
 
-  it('SHOULD sum the invoices of the cards in ONE grouped query', async () => {
+  it('SHOULD sum the NET of each invoice (purchases minus credits) AND the early payments apart', async () => {
     spies.groupBy.mockResolvedValue([
-      { _sum: { value: 450 }, credit_card_id: 'card-1', invoice_month: '2026-10' },
+      {
+        _sum: { value: 1000 },
+        category_id: 'c1',
+        credit_card_id: 'card-1',
+        invoice_month: '2026-10',
+        type: 'EXPENSE',
+      },
+      {
+        _sum: { value: 600 },
+        category_id: SYSTEM_CATEGORY_IDS[SystemCategoryKey.CARD_EARLY_PAYMENT],
+        credit_card_id: 'card-1',
+        invoice_month: '2026-10',
+        type: 'INCOME',
+      },
+      {
+        _sum: { value: 100 },
+        category_id: SYSTEM_CATEGORY_IDS[SystemCategoryKey.CARD_REFUND],
+        credit_card_id: 'card-1',
+        invoice_month: '2026-10',
+        type: 'INCOME',
+      },
     ]);
 
     expect(await setup.sumCardInvoices(['card-1'])).toEqual([
-      { amount: 450, credit_card_id: 'card-1', invoice_month: '2026-10' },
+      { amount: 300, credit_card_id: 'card-1', early_paid: 600, invoice_month: '2026-10' },
     ]);
     expect(await setup.sumCardInvoices([])).toEqual([]);
     expect(spies.groupBy).toHaveBeenCalledTimes(1);

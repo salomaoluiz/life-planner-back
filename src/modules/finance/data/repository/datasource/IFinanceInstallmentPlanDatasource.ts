@@ -1,4 +1,4 @@
-import { FinancialInstallmentPlan, OwnerType } from '@db/client';
+import { FinancialInstallmentPlan, FinancialInstallmentPrepayment, OwnerType } from '@db/client';
 import { FinancialTransactionWithRelations } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
 
 export interface CreateInstallmentPlanDatasourceParams {
@@ -11,6 +11,9 @@ export interface CreateInstallmentPlanDatasourceParams {
   rows: InstallmentRowDatasourceParams[];
 }
 export type FinancialInstallmentPlanWithRows = {
+  prepayment:
+    | ({ discount_transaction: { value: number } | null } & FinancialInstallmentPrepayment)
+    | null;
   transactions: FinancialTransactionWithRelations[];
 } & FinancialInstallmentPlan;
 export interface IFinanceInstallmentPlanDatasource {

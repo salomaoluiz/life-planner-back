@@ -6,6 +6,9 @@ import { InstallmentPlanService } from '@api/finance/v1/installment-plan.service
 import { CreateInstallmentPlanUseCase } from '@finance/application/use-case/CreateInstallmentPlanUseCase';
 import { DeleteInstallmentPlanUseCase } from '@finance/application/use-case/DeleteInstallmentPlanUseCase';
 import { GetInstallmentPlanUseCase } from '@finance/application/use-case/GetInstallmentPlanUseCase';
+import { GetPrepaymentPreviewUseCase } from '@finance/application/use-case/GetPrepaymentPreviewUseCase';
+import { PrepayInstallmentPlanUseCase } from '@finance/application/use-case/PrepayInstallmentPlanUseCase';
+import { UndoInstallmentPrepaymentUseCase } from '@finance/application/use-case/UndoInstallmentPrepaymentUseCase';
 import { UpdateInstallmentPlanUseCase } from '@finance/application/use-case/UpdateInstallmentPlanUseCase';
 import InstallmentPlanEntityFixture from '@finance/domain/entity/mocks/InstallmentPlanEntity.fixture';
 import { InvoiceStatus } from '@finance/domain/enum';
@@ -23,6 +26,7 @@ const detailsMock = {
       installmentNumber: 1,
       invoiceMonth: '2026-10',
       invoiceStatus: InvoiceStatus.OPEN,
+      prepaid: false,
       value: 3334,
     },
   ],
@@ -33,6 +37,9 @@ const createUseCaseMock = { execute: jest.fn() };
 const deleteUseCaseMock = { execute: jest.fn() };
 const financeAccessServiceMock = { resolve: jest.fn() };
 const getUseCaseMock = { execute: jest.fn() };
+const previewUseCaseMock = { execute: jest.fn() };
+const prepayUseCaseMock = { execute: jest.fn() };
+const undoPrepaymentUseCaseMock = { execute: jest.fn() };
 const updateUseCaseMock = { execute: jest.fn() };
 
 // endregion Mocks
@@ -45,6 +52,16 @@ beforeEach(async () => {
   deleteUseCaseMock.execute.mockResolvedValue(undefined);
   financeAccessServiceMock.resolve.mockResolvedValue(accessibleOwners);
   getUseCaseMock.execute.mockResolvedValue({ ...detailsMock, overLimit: undefined });
+  previewUseCaseMock.execute.mockResolvedValue({
+    card: {},
+    eligible: [
+      { id: plan.installments[0].id, installmentNumber: 1, invoiceMonth: '2026-10', value: 3334 },
+    ],
+    plan,
+    total: 3334,
+  });
+  prepayUseCaseMock.execute.mockResolvedValue(detailsMock);
+  undoPrepaymentUseCaseMock.execute.mockResolvedValue(undefined);
   updateUseCaseMock.execute.mockResolvedValue(detailsMock);
 
   const module = await Test.createTestingModule({
@@ -54,6 +71,9 @@ beforeEach(async () => {
       { provide: DeleteInstallmentPlanUseCase, useValue: deleteUseCaseMock },
       { provide: FinanceAccessService, useValue: financeAccessServiceMock },
       { provide: GetInstallmentPlanUseCase, useValue: getUseCaseMock },
+      { provide: GetPrepaymentPreviewUseCase, useValue: previewUseCaseMock },
+      { provide: PrepayInstallmentPlanUseCase, useValue: prepayUseCaseMock },
+      { provide: UndoInstallmentPrepaymentUseCase, useValue: undoPrepaymentUseCaseMock },
       { provide: UpdateInstallmentPlanUseCase, useValue: updateUseCaseMock },
     ],
   }).compile();
@@ -68,6 +88,9 @@ const mocks = {
   details: detailsMock,
   get: getUseCaseMock,
   plan,
+  prepay: prepayUseCaseMock,
+  preview: previewUseCaseMock,
+  undoPrepayment: undoPrepaymentUseCaseMock,
   update: updateUseCaseMock,
   userId,
 };

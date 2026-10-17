@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
 import TransactionEntityFixture from '@finance/domain/entity/mocks/TransactionEntity.fixture';
+import { SystemCategoryKey } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { GetInvoiceUseCase } from './index';
@@ -11,6 +12,9 @@ import { GetInvoiceUseCase } from './index';
 
 const cardMock = new CreditCardEntityFixture().build();
 const purchaseMock = new TransactionEntityFixture().withCard(cardMock.id, '2026-10').build();
+const refundMock = new TransactionEntityFixture()
+  .withCredit(SystemCategoryKey.CARD_REFUND, cardMock.id, '2026-10')
+  .build();
 const inputMock = {
   accessibleOwners: [{ owner: OwnerType.USER, ownerId: cardMock.ownerId }],
   creditCardId: cardMock.id,
@@ -31,7 +35,7 @@ beforeEach(async () => {
     { card: cardMock, payments: [], totals: [{ amount: 45000, invoiceMonth: '2026-10' }] },
   ]);
   creditCardRepositoryMock.findCreditCardById.mockResolvedValue(cardMock);
-  transactionRepositoryMock.findCardPurchases.mockResolvedValue([purchaseMock]);
+  transactionRepositoryMock.findCardPurchases.mockResolvedValue([purchaseMock, refundMock]);
 
   const module = await Test.createTestingModule({
     providers: [
@@ -50,6 +54,7 @@ const mocks = {
   creditCardRepository: creditCardRepositoryMock,
   input: inputMock,
   purchase: purchaseMock,
+  refund: refundMock,
   transactionRepository: transactionRepositoryMock,
 };
 const spies = {};

@@ -65,6 +65,9 @@ export const TransactionApiSchema = z.object({
   creditCardId: z.uuid().nullable(),
   date: z.string(),
   description: z.string(),
+  earlyPayment: z
+    .object({ creditCardId: z.uuid(), id: z.uuid(), invoiceMonth: z.string() })
+    .nullable(),
   id: z.uuid(),
   installmentCount: z.number().int().nullable(),
   installmentNumber: z.number().int().nullable(),

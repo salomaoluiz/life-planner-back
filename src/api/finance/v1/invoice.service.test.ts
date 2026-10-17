@@ -21,6 +21,12 @@ describe('findForList', () => {
       value: mocks.purchase.value,
     });
     expect(result.invoice.amount).toBe(45000);
+    expect(result.purchases[0].prepaid).toBe(false);
+    expect(result.credits[0]).toMatchObject({
+      id: mocks.refund.id,
+      kind: 'REFUND',
+      value: mocks.refund.value,
+    });
   });
 
   it('SHOULD forward the client today', async () => {

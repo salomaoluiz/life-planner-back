@@ -1,56 +1,79 @@
 import { setup, spies } from './index.mocks';
 
-it('SHOULD delete payments, transactions, installment plans, then credit cards, categories, accounts of ONE owner in ONE transaction AND return the total', async () => {
-  spies.paymentDeleteMany.mockReturnValueOnce('pay-op');
-  spies.transactionDeleteMany.mockReturnValueOnce('tx-op');
-  spies.planDeleteMany.mockReturnValueOnce('plan-op');
-  spies.creditCardDeleteMany.mockReturnValueOnce('card-op');
-  spies.categoryDeleteMany.mockReturnValueOnce('cat-op');
-  spies.accountDeleteMany.mockReturnValueOnce('acc-op');
-  spies.transaction.mockResolvedValueOnce([
-    { count: 1 },
-    { count: 4 },
-    { count: 2 },
-    { count: 1 },
-    { count: 3 },
-    { count: 2 },
-  ]);
+const where = { owner: 'USER', owner_id: 'user-id' };
+
+it('SHOULD delete the referencing rows first, then everything of ONE owner in ONE transaction AND return the total', async () => {
+  const order: string[] = [];
+
+  spies.transactionDeleteMany.mockImplementation(async (args: { where: object }) => {
+    order.push(`tx:${JSON.stringify(args.where)}`);
+
+    return { count: 2 };
+  });
+  spies.prepaymentUpdateMany.mockImplementation(async () => {
+    order.push('prepayment:unlink');
+
+    return { count: 1 };
+  });
+  spies.prepaymentDeleteMany.mockImplementation(async () => {
+    order.push('prepayment:delete');
+
+    return { count: 1 };
+  });
+  spies.paymentDeleteMany.mockImplementation(async () => {
+    order.push('payment');
+
+    return { count: 1 };
+  });
+  spies.planDeleteMany.mockImplementation(async () => {
+    order.push('plan');
+
+    return { count: 1 };
+  });
+  spies.creditCardDeleteMany.mockResolvedValue({ count: 1 });
+  spies.categoryDeleteMany.mockResolvedValue({ count: 3 });
+  spies.accountDeleteMany.mockResolvedValue({ count: 2 });
 
   const result = await setup.deleteAllByOwner({ owner: 'USER', owner_id: 'user-id' });
 
-  const where = { where: { owner: 'USER', owner_id: 'user-id' } };
-  expect(spies.paymentDeleteMany).toHaveBeenCalledWith(where);
-  expect(spies.transactionDeleteMany).toHaveBeenCalledWith(where);
-  expect(spies.planDeleteMany).toHaveBeenCalledWith(where);
-  expect(spies.creditCardDeleteMany).toHaveBeenCalledWith(where);
-  expect(spies.categoryDeleteMany).toHaveBeenCalledWith(where);
-  expect(spies.accountDeleteMany).toHaveBeenCalledWith(where);
-  expect(spies.transaction).toHaveBeenCalledWith([
-    'pay-op',
-    'tx-op',
-    'plan-op',
-    'card-op',
-    'cat-op',
-    'acc-op',
+  expect(order.map((step) => step.slice(0, 18))).toEqual([
+    'tx:{"paid_from_tra',
+    'tx:{"owner":"USER"',
+    'prepayment:unlink',
+    'tx:{"owner":"USER"',
+    'prepayment:delete',
+    'payment',
+    'tx:{"owner":"USER"',
+    'plan',
   ]);
-  expect(result).toBe(13);
+  expect(spies.prepaymentUpdateMany).toHaveBeenCalledWith({
+    data: { discount_transaction_id: null },
+    where,
+  });
+  expect(spies.transactionDeleteMany).toHaveBeenNthCalledWith(1, {
+    where: { paid_from_transaction: { is: where } },
+  });
+  expect(spies.transactionDeleteMany).toHaveBeenNthCalledWith(4, { where });
+  expect(result).toBe(2 * 4 + 1 + 1 + 1 + 1 + 1 + 3 + 2);
 });
 
 it('SHOULD return 0 WHEN the owner has nothing (second call of a retry)', async () => {
-  spies.transaction.mockResolvedValueOnce([
-    { count: 0 },
-    { count: 0 },
-    { count: 0 },
-    { count: 0 },
-    { count: 0 },
-    { count: 0 },
-  ]);
+  [
+    spies.transactionDeleteMany,
+    spies.prepaymentUpdateMany,
+    spies.prepaymentDeleteMany,
+    spies.paymentDeleteMany,
+    spies.planDeleteMany,
+    spies.creditCardDeleteMany,
+    spies.categoryDeleteMany,
+    spies.accountDeleteMany,
+  ].forEach((spy) => spy.mockResolvedValue({ count: 0 }));
 
   expect(await setup.deleteAllByOwner({ owner: 'FAMILY', owner_id: 'family-id' })).toBe(0);
 });
 
-it('SHOULD propagate a transaction failure (Prisma rolls everything back)', async () => {
-  spies.transaction.mockRejectedValueOnce(new Error('fk violation'));
+it('SHOULD propagate a failure (Prisma rolls everything back)', async () => {
+  spies.transactionDeleteMany.mockRejectedValueOnce(new Error('fk violation'));
 
   await expect(setup.deleteAllByOwner({ owner: 'USER', owner_id: 'user-id' })).rejects.toThrow(
     'fk violation',

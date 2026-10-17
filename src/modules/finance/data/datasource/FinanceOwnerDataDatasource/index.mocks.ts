@@ -8,30 +8,51 @@ import { FinanceOwnerDataDatasource } from './index';
 
 const accountDeleteManySpy = jest.fn();
 const categoryDeleteManySpy = jest.fn();
+const creditCardDeleteManySpy = jest.fn();
 const paymentDeleteManySpy = jest.fn();
 const planDeleteManySpy = jest.fn();
-const creditCardDeleteManySpy = jest.fn();
+const prepaymentDeleteManySpy = jest.fn();
+const prepaymentUpdateManySpy = jest.fn();
 const transactionDeleteManySpy = jest.fn();
 const transactionSpy = jest.fn();
 
 // endregion Spies
 
-const databaseMock = {
-  client: {
-    $transaction: transactionSpy,
-    financialAccount: { deleteMany: accountDeleteManySpy },
-    financialCategory: { deleteMany: categoryDeleteManySpy },
-    financialCreditCard: { deleteMany: creditCardDeleteManySpy },
-    financialInstallmentPlan: { deleteMany: planDeleteManySpy },
-    financialInvoicePayment: { deleteMany: paymentDeleteManySpy },
-    financialTransaction: { deleteMany: transactionDeleteManySpy },
+const clientMock = {
+  $transaction: transactionSpy,
+  financialAccount: { deleteMany: accountDeleteManySpy },
+  financialCategory: { deleteMany: categoryDeleteManySpy },
+  financialCreditCard: { deleteMany: creditCardDeleteManySpy },
+  financialInstallmentPlan: { deleteMany: planDeleteManySpy },
+  financialInstallmentPrepayment: {
+    deleteMany: prepaymentDeleteManySpy,
+    updateMany: prepaymentUpdateManySpy,
   },
-} as unknown as Database;
+  financialInvoicePayment: { deleteMany: paymentDeleteManySpy },
+  financialTransaction: { deleteMany: transactionDeleteManySpy },
+};
+const databaseMock = { client: clientMock } as unknown as Database;
 
 let setup: FinanceOwnerDataDatasource;
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  transactionSpy.mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) =>
+    callback(clientMock),
+  );
+  [
+    accountDeleteManySpy,
+    categoryDeleteManySpy,
+    creditCardDeleteManySpy,
+    paymentDeleteManySpy,
+    planDeleteManySpy,
+    prepaymentDeleteManySpy,
+    prepaymentUpdateManySpy,
+    transactionDeleteManySpy,
+  ].forEach((spy) => {
+    spy.mockReset();
+    spy.mockResolvedValue({ count: 0 });
+  });
 
   const module = await Test.createTestingModule({
     providers: [FinanceOwnerDataDatasource, { provide: Database, useValue: databaseMock }],
@@ -47,6 +68,8 @@ const spies = {
   creditCardDeleteMany: creditCardDeleteManySpy,
   paymentDeleteMany: paymentDeleteManySpy,
   planDeleteMany: planDeleteManySpy,
+  prepaymentDeleteMany: prepaymentDeleteManySpy,
+  prepaymentUpdateMany: prepaymentUpdateManySpy,
   transaction: transactionSpy,
   transactionDeleteMany: transactionDeleteManySpy,
 };

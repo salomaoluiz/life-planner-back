@@ -23,3 +23,10 @@ it('SHOULD let the paid-invoice 422 through', async () => {
 
   await expect(setup.execute(mocks.input)).rejects.toThrow(UnprocessableEntityException);
 });
+
+it('SHOULD answer 422 WHEN the plan has refunds AND delete nothing', async () => {
+  mocks.cardCreditRepository.countRefundsByPlanId.mockResolvedValueOnce(2);
+
+  await expect(setup.execute(mocks.input)).rejects.toThrow('Delete its refunds first');
+  expect(mocks.planRepository.deletePlan).not.toHaveBeenCalled();
+});

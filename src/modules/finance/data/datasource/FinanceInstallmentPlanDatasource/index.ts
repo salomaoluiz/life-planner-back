@@ -57,7 +57,29 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
       const cardId = await this.cardOf(tx, id);
       await lockCards(tx, [cardId]);
       await assertNoPaidInstallment(tx, cardId, await this.monthsOf(tx, id));
+
+      // A prepayment and its discount row point at each other: break the cycle, then drop discount, rows, record (spec 032 FR 19).
+      const prepayment = await tx.financialInstallmentPrepayment.findUnique({
+        select: { id: true },
+        where: { installment_plan_id: id },
+      });
+
+      if (prepayment) {
+        await tx.financialInstallmentPrepayment.update({
+          data: { discount_transaction_id: null },
+          where: { id: prepayment.id },
+        });
+        await tx.financialTransaction.deleteMany({
+          where: { installment_plan_id: null, prepayment_id: prepayment.id },
+        });
+      }
+
       await tx.financialTransaction.deleteMany({ where: { installment_plan_id: id } });
+
+      if (prepayment) {
+        await tx.financialInstallmentPrepayment.delete({ where: { id: prepayment.id } });
+      }
+
       await tx.financialInstallmentPlan.delete({ where: { id } });
     });
   }
@@ -65,6 +87,7 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
   async findById(id: string): Promise<FinancialInstallmentPlanWithRows | null> {
     return this.db.client.financialInstallmentPlan.findUnique({
       include: {
+        prepayment: { include: { discount_transaction: { select: { value: true } } } },
         transactions: {
           include: TRANSACTION_RELATIONS,
           orderBy: { installment_number: 'asc' },

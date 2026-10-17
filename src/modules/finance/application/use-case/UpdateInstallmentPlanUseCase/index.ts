@@ -1,4 +1,9 @@
-import { BadRequestException, Inject, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
 import {
   UpdateInstallmentPlanInput,
@@ -54,6 +59,12 @@ export class UpdateInstallmentPlanUseCase implements UseCaseWithParams<
       { count: plan.installmentCount, creditCardId: plan.creditCardId, date: plan.date, total },
       input,
     );
+
+    // After a prepayment the structural edits are blocked until it is undone (spec 032 FR 18).
+    if (structural && plan.prepayment) {
+      throw new UnprocessableEntityException('Undo the prepayment first');
+    }
+
     const cardId = input.creditCardId ?? plan.creditCardId;
     const consistency = await this.ensureTransactionConsistencyUseCase.execute({
       accessibleOwners: input.accessibleOwners,

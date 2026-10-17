@@ -91,6 +91,7 @@ it('SHOULD require systemKey (nullable) AND excludeFromTotals on the category su
     creditCardId: null,
     date: '2026-10-15',
     description: 'Balance adjustment',
+    earlyPayment: null,
     id,
     installmentCount: null,
     installmentNumber: null,

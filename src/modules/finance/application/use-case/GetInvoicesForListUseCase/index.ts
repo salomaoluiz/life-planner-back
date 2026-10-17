@@ -5,7 +5,7 @@ import {
   GetInvoicesForListSchema,
 } from '@finance/application/dto/GetInvoicesForList';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
-import { InvoiceDetail } from '@finance/application/use-case/GetInvoiceUseCase';
+import { InvoiceDetail, splitInvoiceRows } from '@finance/application/use-case/GetInvoiceUseCase';
 import { narrowOwners } from '@finance/domain/entity/OwnerAccess';
 import {
   IFinanceCreditCardRepository,
@@ -49,7 +49,11 @@ export class GetInvoicesForListUseCase implements UseCaseWithParams<
 
       return [...months]
         .map((month) => buildInvoiceFor(item.card, month, item.totals, item.payments, input.today))
-        .filter((invoice) => invoice.amount > 0 && invoice.listDate.slice(0, 7) === input.month)
+        .filter(
+          (invoice) =>
+            (invoice.amount > 0 || invoice.earlyPaid > 0) &&
+            invoice.listDate.slice(0, 7) === input.month,
+        )
         .map((invoice) => ({ card: item.card, invoice }));
     });
 
@@ -57,7 +61,7 @@ export class GetInvoicesForListUseCase implements UseCaseWithParams<
       return [];
     }
 
-    const purchases = await this.transactionRepository.findCardPurchases(
+    const rows = await this.transactionRepository.findCardPurchases(
       matches.map(({ card, invoice }) => ({
         creditCardId: card.id,
         invoiceMonth: invoice.referenceMonth,
@@ -67,11 +71,12 @@ export class GetInvoicesForListUseCase implements UseCaseWithParams<
     return matches
       .map(({ card, invoice }) => ({
         card,
-        invoice,
-        purchases: purchases.filter(
-          (purchase) =>
-            purchase.creditCardId === card.id && purchase.invoiceMonth === invoice.referenceMonth,
+        ...splitInvoiceRows(
+          rows.filter(
+            (row) => row.creditCardId === card.id && row.invoiceMonth === invoice.referenceMonth,
+          ),
         ),
+        invoice,
       }))
       .sort(
         (a, b) =>

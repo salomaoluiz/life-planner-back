@@ -58,6 +58,22 @@ describe('Method delete', () => {
     expect(spies.planDelete).toHaveBeenCalledWith({ where: { id: 'plan-1' } });
   });
 
+  it('SHOULD break the prepayment cycle, drop the discount row, the rows AND the record (spec 032 FR 19)', async () => {
+    spies.prepaymentFindUnique.mockResolvedValue({ id: 'prepayment-1' });
+
+    await setup.delete('plan-1');
+
+    expect(spies.prepaymentUpdate).toHaveBeenCalledWith({
+      data: { discount_transaction_id: null },
+      where: { id: 'prepayment-1' },
+    });
+    expect(spies.rowDeleteMany).toHaveBeenCalledWith({
+      where: { installment_plan_id: null, prepayment_id: 'prepayment-1' },
+    });
+    expect(spies.prepaymentDelete).toHaveBeenCalledWith({ where: { id: 'prepayment-1' } });
+    expect(spies.planDelete).toHaveBeenCalledWith({ where: { id: 'plan-1' } });
+  });
+
   it('SHOULD refuse WHEN an installment is paid', async () => {
     spies.paymentFindFirst.mockResolvedValue({ id: 'payment-1' });
 
@@ -80,6 +96,7 @@ describe('Method findById', () => {
     expect(spies.planFindUnique).toHaveBeenCalledWith(
       expect.objectContaining({
         include: {
+          prepayment: expect.anything(),
           transactions: expect.objectContaining({ orderBy: { installment_number: 'asc' } }),
         },
         where: { id: 'plan-1' },

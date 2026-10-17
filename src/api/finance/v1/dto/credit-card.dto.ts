@@ -81,9 +81,13 @@ export const InvoicePaymentApiSchema = z.object({
 
 export const InvoiceApiSchema = z.object({
   amount: z.number().int(),
+  amountDue: z.number().int(),
+  carryIn: z.number().int(),
   closingDate: z.string(),
   dueDate: z.string(),
+  earlyPaid: z.number().int(),
   listDate: z.string(),
+  net: z.number().int(),
   payment: InvoicePaymentApiSchema.nullable(),
   paymentAfterDue: z.boolean(),
   paymentDate: z.string(),
@@ -91,6 +95,7 @@ export const InvoiceApiSchema = z.object({
   periodStart: z.string(),
   referenceMonth: z.string(),
   status: z.enum(InvoiceStatus),
+  total: z.number().int(),
 });
 
 export const CreditCardsOverviewApiSchema = z.object({

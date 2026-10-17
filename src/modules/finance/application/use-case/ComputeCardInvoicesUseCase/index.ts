@@ -53,7 +53,11 @@ export class ComputeCardInvoicesUseCase implements UseCaseWithParams<
     return input.cards.map((card) => {
       const totals = sums
         .filter((sum) => sum.creditCardId === card.id)
-        .map((sum) => ({ amount: sum.amount, invoiceMonth: sum.invoiceMonth }));
+        .map((sum) => ({
+          amount: sum.amount,
+          earlyPaid: sum.earlyPaid,
+          invoiceMonth: sum.invoiceMonth,
+        }));
       const cardPayments = payments
         .filter((payment) => payment.creditCardId === card.id)
         .map((payment) => ({

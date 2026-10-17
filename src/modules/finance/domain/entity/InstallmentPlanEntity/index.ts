@@ -1,6 +1,13 @@
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
+export interface PlanPrepaymentSummary {
+  date: string;
+  discount: number;
+  id: string;
+  targetInvoiceMonth: string;
+}
+
 interface IInstallmentPlanEntity {
   categoryId: string;
   createdAt: Date;
@@ -12,6 +19,7 @@ interface IInstallmentPlanEntity {
   installments: TransactionEntity[];
   owner: OwnerType;
   ownerId: string;
+  prepayment?: null | PlanPrepaymentSummary;
   totalValue: number;
   updatedAt: Date;
 }
@@ -29,6 +37,8 @@ class InstallmentPlanEntity {
   installments: TransactionEntity[];
   owner: OwnerType;
   ownerId: string;
+  // The prepayment of the plan (spec 032), when there is one.
+  prepayment: null | PlanPrepaymentSummary;
   // The total used for the last split; use cases report the SUM of the installments instead.
   totalValue: number;
   updatedAt: Date;
@@ -44,6 +54,7 @@ class InstallmentPlanEntity {
     this.installments = params.installments;
     this.owner = params.owner;
     this.ownerId = params.ownerId;
+    this.prepayment = params.prepayment ?? null;
     this.totalValue = params.totalValue;
     this.updatedAt = params.updatedAt;
   }

@@ -14,6 +14,7 @@ it('SHOULD list the installments with the status of their invoice AND report the
       installmentNumber: 1,
       invoiceMonth: '2026-10',
       invoiceStatus: InvoiceStatus.PAID,
+      prepaid: false,
       value: 3334,
     },
     expect.objectContaining({ installmentNumber: 2, invoiceStatus: InvoiceStatus.OPEN }),

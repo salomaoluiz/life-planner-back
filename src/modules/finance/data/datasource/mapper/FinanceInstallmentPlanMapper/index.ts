@@ -17,6 +17,14 @@ export class FinanceInstallmentPlanMapper {
       installments: raw.transactions.map((row) => FinanceTransactionMapper.toDomain(row)),
       owner: OwnerType[raw.owner],
       ownerId: raw.owner_id,
+      prepayment: raw.prepayment
+        ? {
+            date: toCalendarDate(raw.prepayment.date),
+            discount: raw.prepayment.discount_transaction?.value ?? 0,
+            id: raw.prepayment.id,
+            targetInvoiceMonth: raw.prepayment.target_invoice_month,
+          }
+        : null,
       totalValue: raw.total_value,
       updatedAt: raw.updated_at,
     });
