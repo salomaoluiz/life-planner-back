@@ -28,6 +28,8 @@ export interface CreateTransactionDatasourceParams {
   invoice_month?: null | string;
   owner: OwnerType;
   owner_id: string;
+  // Account rows only (spec 033); card rows stay NULL.
+  paid?: boolean | null;
   type: TransactionType;
   value: number;
 }
@@ -82,6 +84,8 @@ export interface UpdateTransactionDatasourceParams {
   invoice_month?: null | string;
   owner?: OwnerType;
   owner_id?: string;
+  // true/false on account rows, null when the row moves to a card (spec 033).
+  paid?: boolean | null;
   type?: TransactionType;
   value?: number;
 }

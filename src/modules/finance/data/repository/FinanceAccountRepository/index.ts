@@ -6,11 +6,11 @@ import AccountEntity from '@finance/domain/entity/AccountEntity';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import {
   CreateAccountRepositoryParams,
-  FindFutureSumsRepositoryParams,
+  FindUnpaidSumsRepositoryParams,
   IFinanceAccountRepository,
   UpdateAccountRepositoryParams,
 } from '@finance/domain/repository';
-import { endOfMonth, FutureSums } from '@finance/domain/service/AccountBalance';
+import { endOfMonth, UnpaidSums } from '@finance/domain/service/AccountBalance';
 
 @Injectable()
 export class FinanceAccountRepository implements IFinanceAccountRepository {
@@ -53,17 +53,15 @@ export class FinanceAccountRepository implements IFinanceAccountRepository {
     return result.map((row) => FinanceAccountMapper.toDomain(row));
   }
 
-  async findFutureSums(params: FindFutureSumsRepositoryParams): Promise<FutureSums[]> {
-    const rows = await this.accountDatasource.findFutureSums({
+  async findUnpaidSums(params: FindUnpaidSumsRepositoryParams): Promise<UnpaidSums[]> {
+    const rows = await this.accountDatasource.findUnpaidSums({
       account_ids: params.accountIds,
       end_of_month: endOfMonth(params.today),
-      today: params.today,
     });
 
     return rows.map((row) => ({
       accountId: row.account_id,
-      afterEndOfMonth: row.after_end_of_month,
-      afterToday: row.after_today,
+      dueByEndOfMonth: row.due_by_end_of_month,
     }));
   }
 

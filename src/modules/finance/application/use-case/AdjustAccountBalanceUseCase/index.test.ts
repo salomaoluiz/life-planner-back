@@ -33,6 +33,7 @@ it('SHOULD record an INCOME adjustment for the positive difference, dated today,
     description: BALANCE_ADJUSTMENT_DESCRIPTION,
     owner: mocks.account.owner,
     ownerId: mocks.account.ownerId,
+    paid: true,
     type: TransactionType.INCOME,
     value: 5000,
   });

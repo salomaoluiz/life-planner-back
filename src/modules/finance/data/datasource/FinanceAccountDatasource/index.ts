@@ -5,9 +5,9 @@ import { toOwnerWhere } from '@finance/data/datasource/mapper/OwnerWhere';
 import {
   CreateAccountDatasourceParams,
   ExistsAccountDatasourceParams,
-  FindFutureSumsDatasourceParams,
-  FutureSumsRow,
+  FindUnpaidSumsDatasourceParams,
   IFinanceAccountDatasource,
+  UnpaidSumsRow,
   UpdateAccountDatasourceParams,
 } from '@finance/data/repository/datasource/IFinanceAccountDatasource';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
@@ -42,31 +42,28 @@ export class FinanceAccountDatasource implements IFinanceAccountDatasource {
     return this.db.client.financialAccount.findMany({ where: toOwnerWhere(owners) });
   }
 
-  // Signed sums (income +, expense −) of the rows dated after `today` / after the end of its month,
-  // for all the accounts in ONE grouped query served by the (account_id, date) index. It never
-  // touches the history: current = ledger − afterToday, projected = ledger − afterEndOfMonth.
-  async findFutureSums(params: FindFutureSumsDatasourceParams): Promise<FutureSumsRow[]> {
+  // Signed sums (income +, expense −) of the UNPAID rows dated up to the end of the month, for all the
+  // accounts in ONE grouped query served by the partial index on (account_id, date) WHERE paid = false.
+  async findUnpaidSums(params: FindUnpaidSumsDatasourceParams): Promise<UnpaidSumsRow[]> {
     if (params.account_ids.length === 0) {
       return [];
     }
 
     const rows = await this.db.client.$queryRaw<
-      { account_id: string; after_end_of_month: bigint; after_today: bigint }[]
+      { account_id: string; due_by_end_of_month: bigint }[]
     >(
       Prisma.sql`
         SELECT "account_id",
-          COALESCE(SUM(CASE WHEN "type" = 'INCOME' THEN "value" ELSE -"value" END), 0) AS "after_today",
-          COALESCE(SUM(CASE WHEN "type" = 'INCOME' THEN "value" ELSE -"value" END)
-            FILTER (WHERE "date" > ${params.end_of_month}::date), 0) AS "after_end_of_month"
+          COALESCE(SUM(CASE WHEN "type" = 'INCOME' THEN "value" ELSE -"value" END), 0) AS "due_by_end_of_month"
         FROM "financial_transactions"
-        WHERE "account_id" IN (${Prisma.join(params.account_ids)}) AND "date" > ${params.today}::date
+        WHERE "account_id" IN (${Prisma.join(params.account_ids)}) AND "paid" = false
+          AND "date" <= ${params.end_of_month}::date
         GROUP BY "account_id"`,
     );
 
     return rows.map((row) => ({
       account_id: row.account_id,
-      after_end_of_month: Number(row.after_end_of_month),
-      after_today: Number(row.after_today),
+      due_by_end_of_month: Number(row.due_by_end_of_month),
     }));
   }
 

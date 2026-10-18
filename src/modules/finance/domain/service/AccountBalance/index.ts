@@ -2,16 +2,15 @@ import AccountEntity from '@finance/domain/entity/AccountEntity';
 
 export interface AccountWithBalances {
   account: AccountEntity;
-  // initial + Σ signed(date <= today)
+  // initial + Σ signed(paid rows): the stored ledger
   balance: number;
-  // initial + Σ signed(date <= last day of today's month)
+  // balance + Σ signed(unpaid rows dated up to the last day of today's month)
   projectedBalance: number;
 }
-// Signed sums (income +, expense −) of the rows dated after `today` / after the end of its month.
-export interface FutureSums {
+// Signed sum (income +, expense −) of the unpaid rows dated up to the end of today's month.
+export interface UnpaidSums {
   accountId: string;
-  afterEndOfMonth: number;
-  afterToday: number;
+  dueByEndOfMonth: number;
 }
 
 // `today` is `YYYY-MM-DD`; the result is the last calendar day of that month.
@@ -22,11 +21,11 @@ export function endOfMonth(today: string): string {
   return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 }
 
-// The ledger counts every transaction whatever its date, so the derived balances subtract the future rows.
-export function withBalances(account: AccountEntity, future?: FutureSums): AccountWithBalances {
+// The ledger already counts only paid rows: the projection adds the unpaid ones due this month (overdue included).
+export function withBalances(account: AccountEntity, unpaid?: UnpaidSums): AccountWithBalances {
   return {
     account,
-    balance: account.ledgerBalance - (future?.afterToday ?? 0),
-    projectedBalance: account.ledgerBalance - (future?.afterEndOfMonth ?? 0),
+    balance: account.ledgerBalance,
+    projectedBalance: account.ledgerBalance + (unpaid?.dueByEndOfMonth ?? 0),
   };
 }

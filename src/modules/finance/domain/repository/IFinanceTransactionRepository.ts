@@ -42,6 +42,8 @@ interface CreateTransactionRepositoryParams {
   invoiceMonth?: string;
   owner: OwnerType;
   ownerId: string;
+  // Account rows only; omitted for card rows.
+  paid?: boolean;
   type: TransactionType;
   value: number;
 }
@@ -55,6 +57,8 @@ interface UpdateTransactionRepositoryParams {
   invoiceMonth?: null | string;
   owner?: OwnerType;
   ownerId?: string;
+  // true/false on account rows, null when the row moves to a card.
+  paid?: boolean | null;
   type?: TransactionType;
   value?: number;
 }

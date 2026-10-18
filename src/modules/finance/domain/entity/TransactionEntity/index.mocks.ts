@@ -30,6 +30,7 @@ const paramsMock: TransactionEntity = {
   invoiceMonth: null,
   owner: OwnerType.USER,
   ownerId: 'owner-uuid-1',
+  paid: true,
   paidFromAccountId: null,
   paidFromAccountName: null,
   paidFromTransactionId: null,

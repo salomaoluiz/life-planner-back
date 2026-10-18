@@ -20,6 +20,8 @@ export const CreateTransactionSchema = z
     description: DescriptionSchema,
     owner: OwnerTypeSchema,
     ownerId: OwnerIdSchema,
+    // Account rows only; omitted → paid when dated up to `today` (spec 033 FR 4).
+    paid: z.boolean().optional(),
     // Local calendar day of the caller: only used to read the card's invoices after a purchase.
     today: CalendarDateSchema,
     type: TransactionTypeSchema,

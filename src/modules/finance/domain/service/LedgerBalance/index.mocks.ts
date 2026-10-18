@@ -4,8 +4,8 @@ import { LedgerEntry } from './index';
 
 // region Mocks
 
-function entry(accountId: string, type: TransactionType, value: number): LedgerEntry {
-  return { accountId, type, value };
+function entry(accountId: string, type: TransactionType, value: number, paid = true): LedgerEntry {
+  return { accountId, paid, type, value };
 }
 
 // Deterministic pseudo-random numbers (no faker) so the invariant test is reproducible.

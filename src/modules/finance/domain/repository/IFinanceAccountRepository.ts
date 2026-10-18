@@ -1,7 +1,7 @@
 import AccountEntity from '@finance/domain/entity/AccountEntity';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { AccountStatus } from '@finance/domain/enum';
-import { FutureSums } from '@finance/domain/service/AccountBalance';
+import { UnpaidSums } from '@finance/domain/service/AccountBalance';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export type IFinanceAccountRepository = {
@@ -10,8 +10,8 @@ export type IFinanceAccountRepository = {
   existsByOwner(access: OwnerAccess): Promise<boolean>;
   findAccountById(id: string): Promise<AccountEntity | undefined>;
   findAccounts(owners: OwnerAccess[]): Promise<AccountEntity[]>;
-  // ONE grouped query over the rows dated after `today`; accounts without such rows are not returned.
-  findFutureSums(params: FindFutureSumsRepositoryParams): Promise<FutureSums[]>;
+  // ONE grouped query over the unpaid rows dated up to the end of `today`'s month; accounts without such rows are not returned.
+  findUnpaidSums(params: FindUnpaidSumsRepositoryParams): Promise<UnpaidSums[]>;
   updateAccount(params: UpdateAccountRepositoryParams): Promise<AccountEntity>;
 };
 
@@ -24,7 +24,7 @@ interface CreateAccountRepositoryParams {
   ownerId: string;
   status: AccountStatus;
 }
-interface FindFutureSumsRepositoryParams {
+interface FindUnpaidSumsRepositoryParams {
   accountIds: string[];
   // `YYYY-MM-DD`
   today: string;
@@ -38,6 +38,6 @@ interface UpdateAccountRepositoryParams {
 
 export {
   CreateAccountRepositoryParams,
-  FindFutureSumsRepositoryParams,
+  FindUnpaidSumsRepositoryParams,
   UpdateAccountRepositoryParams,
 };

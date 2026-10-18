@@ -70,6 +70,7 @@ export class FinanceCardCreditDatasource implements IFinanceCardCreditDatasource
         description: params.description,
         owner: params.account.owner,
         owner_id: params.account.owner_id,
+        paid: true,
         type: TransactionType.EXPENSE,
         value: params.value,
       },

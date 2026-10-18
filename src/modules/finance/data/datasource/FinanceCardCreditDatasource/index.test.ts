@@ -101,6 +101,7 @@ describe('Method createEarlyPayment', () => {
     spies.create.mockResolvedValueOnce({
       account_id: 'acc-1',
       id: 'debit-1',
+      paid: true,
       type: 'EXPENSE',
       value: 60000,
     });
@@ -114,6 +115,7 @@ describe('Method createEarlyPayment', () => {
       data: expect.objectContaining({
         account_id: 'acc-1',
         category_id: '00000000-0000-4000-8000-000000000002',
+        paid: true,
         type: 'EXPENSE',
         value: 60000,
       }),
@@ -191,6 +193,7 @@ describe('Method updateEarlyPayment', () => {
     spies.update.mockResolvedValue({
       account_id: 'acc-1',
       id: 'early-1',
+      paid: true,
       type: 'EXPENSE',
       value: 1,
     });
@@ -222,6 +225,7 @@ describe('Method updateEarlyPayment', () => {
         account_id: 'acc-1',
         credit_card_id: null,
         invoice_month: null,
+        paid: true,
         type: 'EXPENSE',
         value: 60000,
       },
@@ -253,6 +257,7 @@ describe('Method updateEarlyPayment', () => {
     spies.create.mockResolvedValue({
       account_id: 'acc-2',
       id: 'debit-2',
+      paid: true,
       type: 'EXPENSE',
       value: 60000,
     });
@@ -308,6 +313,7 @@ describe('Method deleteCredit', () => {
         account_id: 'acc-1',
         credit_card_id: 'card-1',
         invoice_month: '2026-10',
+        paid: true,
         type: 'EXPENSE',
         value: 60000,
       },

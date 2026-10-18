@@ -43,6 +43,7 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
       invoice_month: params.invoiceMonth,
       owner: params.owner,
       owner_id: params.ownerId,
+      paid: params.paid,
       type: params.type,
       value: params.value,
     });
@@ -104,6 +105,7 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
       invoice_month: params.invoiceMonth,
       owner: params.owner,
       owner_id: params.ownerId,
+      paid: params.paid,
       type: params.type,
       value: params.value,
     });

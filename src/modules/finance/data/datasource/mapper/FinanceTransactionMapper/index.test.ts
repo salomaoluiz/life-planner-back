@@ -30,6 +30,7 @@ describe('FinanceTransactionMapper.toDomain', () => {
       invoiceMonth: null,
       owner: 'FAMILY',
       ownerId: mocks.raw.owner_id,
+      paid: true,
       paidFromAccountId: null,
       paidFromAccountName: null,
       paidFromTransactionId: null,
@@ -134,5 +135,11 @@ it('SHOULD map the early payment an account debit row belongs to', () => {
     creditCardId: 'card-1',
     id: 'early-1',
     invoiceMonth: '2026-10',
+  });
+});
+
+describe('FinanceTransactionMapper paid', () => {
+  it('SHOULD map a NULL paid (card row) to false', () => {
+    expect(FinanceTransactionMapper.toDomain({ ...mocks.raw, paid: null }).paid).toBe(false);
   });
 });
