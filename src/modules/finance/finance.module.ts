@@ -29,6 +29,9 @@ import { GetInstallmentPlanUseCase } from '@finance/application/use-case/GetInst
 import { GetInvoicesForListUseCase } from '@finance/application/use-case/GetInvoicesForListUseCase';
 import { GetInvoiceUseCase } from '@finance/application/use-case/GetInvoiceUseCase';
 import { GetPrepaymentPreviewUseCase } from '@finance/application/use-case/GetPrepaymentPreviewUseCase';
+import { GetProjectionsUseCase } from '@finance/application/use-case/GetProjectionsUseCase';
+import { GetRecurrencesUseCase } from '@finance/application/use-case/GetRecurrencesUseCase';
+import { GetRecurrenceUseCase } from '@finance/application/use-case/GetRecurrenceUseCase';
 import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransactionsUseCase';
 import { HasFinanceDataByOwnerUseCase } from '@finance/application/use-case/HasFinanceDataByOwnerUseCase';
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
@@ -67,6 +70,9 @@ import { FinanceRecurrenceRepository } from '@finance/data/repository/FinanceRec
 import { FinanceTransactionRepository } from '@finance/data/repository/FinanceTransactionRepository';
 
 const useCases = [
+  GetProjectionsUseCase,
+  GetRecurrencesUseCase,
+  GetRecurrenceUseCase,
   CreateRecurrenceUseCase,
   MaterializeRecurrencesUseCase,
   CreateCardEarlyPaymentUseCase,

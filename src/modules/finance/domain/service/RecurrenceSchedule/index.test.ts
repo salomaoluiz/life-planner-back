@@ -1,5 +1,6 @@
 import { RecurrenceFrequency } from '@finance/domain/enum';
 import {
+  addDays,
   countUntil,
   lastDayOfMonth,
   occurrenceDate,
@@ -8,6 +9,7 @@ import {
   RecurrenceRule,
   toOccurrenceRows,
   totalOccurrences,
+  upcomingOccurrences,
 } from '@finance/domain/service/RecurrenceSchedule';
 
 function monthly(startDate: string, endDate?: string): RecurrenceRule {
@@ -236,5 +238,26 @@ describe('toOccurrenceRows', () => {
       { date: '2026-10-05', invoiceMonth: '2026-12', number: 1 },
       { date: '2026-11-05', invoiceMonth: '2026-12', number: 2 },
     ]);
+  });
+});
+
+describe('upcomingOccurrences', () => {
+  it('returns the first occurrences on or after the date, up to the limit', () => {
+    expect(upcomingOccurrences(monthly('2026-01-31'), '2026-03-01', 2)).toEqual([
+      { date: '2026-03-31', k: 3 },
+      { date: '2026-04-30', k: 4 },
+    ]);
+  });
+
+  it('stops at the end date', () => {
+    expect(upcomingOccurrences(monthly('2026-01-05', '2026-03-05'), '2026-02-01', 12)).toHaveLength(
+      2,
+    );
+  });
+});
+
+describe('addDays', () => {
+  it('crosses month and year boundaries', () => {
+    expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
   });
 });

@@ -132,16 +132,37 @@ export function toOccurrenceRows(
     };
   });
 }
-export function totalOccurrences(rule: RecurrenceRule, firstNumber: number): null | number {
-  return rule.endDate ? firstNumber - 1 + countUntil(rule, rule.endDate) : null;
-}
-
-function addDays(date: string, days: number): string {
+// The first `limit` occurrences dated on or after `fromDate`, honoring the end date.
+export function addDays(date: string, days: number): string {
   const [year, month, day] = parts(date);
   const next = new Date(Date.UTC(year, month - 1, day) + days * DAY_MS);
 
   return format(next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate());
 }
+export function totalOccurrences(rule: RecurrenceRule, firstNumber: number): null | number {
+  return rule.endDate ? firstNumber - 1 + countUntil(rule, rule.endDate) : null;
+}
+export function upcomingOccurrences(
+  rule: RecurrenceRule,
+  fromDate: string,
+  limit: number,
+): ScheduledOccurrence[] {
+  const result: ScheduledOccurrence[] = [];
+
+  for (let k = 1; result.length < limit; k += 1) {
+    const date = occurrenceDate(rule, k);
+
+    if (rule.endDate && date > rule.endDate) {
+      break;
+    }
+    if (date >= fromDate) {
+      result.push({ date, k });
+    }
+  }
+
+  return result;
+}
+
 function daysInMonth(year: number, month: number): number {
   return new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
