@@ -19,8 +19,10 @@ export type IFinanceRecurrenceRepository = {
   findById(id: string): Promise<RecurrenceEntity | undefined>;
   // ACTIVE series whose `nextOccurrenceDate` is on or before `horizon`.
   findDue(owners: OwnerAccess[], horizon: string): Promise<RecurrenceEntity[]>;
-  // Real rows of these series dated after `afterDate` (they hide the matching projected occurrences).
-  findFutureNumbers(recurrenceIds: string[], afterDate: string): Promise<FutureOccurrenceNumber[]>;
+  // Numbers above `afterNumber` that already have a real row (they hide the matching projected occurrences).
+  findFutureNumbers(
+    series: { afterNumber: number; recurrenceId: string }[],
+  ): Promise<FutureOccurrenceNumber[]>;
   // Real rows of the series ordered by occurrence number.
   findByOwners(owners: OwnerAccess[], filter?: FindRecurrencesFilter): Promise<RecurrenceEntity[]>;
   findOccurrences(recurrenceId: string): Promise<TransactionEntity[]>;

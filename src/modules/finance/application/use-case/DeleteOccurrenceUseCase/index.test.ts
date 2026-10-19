@@ -105,3 +105,22 @@ describe('access', () => {
     await expect(setup.execute(base)).rejects.toThrow('Not Found');
   });
 });
+
+describe('this and the next ones from a projected occurrence ahead of what exists (review)', () => {
+  it('SHOULD keep the series active up to the previous occurrence', async () => {
+    await setup.execute({
+      ...base,
+      occurrenceNumber: 12,
+      scope: InstallmentEditScope.THIS_AND_NEXT,
+    });
+
+    expect(mocks.recurrenceRepository.removeFrom.mock.calls[0][0].seriesPatch).toEqual(
+      expect.objectContaining({
+        endDate: '2026-11-05',
+        lastGeneratedNumber: 10,
+        nextOccurrenceDate: '2026-11-05',
+        status: 'ACTIVE',
+      }),
+    );
+  });
+});

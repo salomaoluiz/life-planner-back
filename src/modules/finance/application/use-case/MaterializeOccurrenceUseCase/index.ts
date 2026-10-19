@@ -77,7 +77,8 @@ export class MaterializeOccurrenceUseCase implements UseCaseWithParams<
       description: input.description,
       invoiceMonth: card ? invoiceMonthOf(date, card.closingDay) : undefined,
       number: input.occurrenceNumber,
-      paid: card ? undefined : (input.paid ?? false),
+      // A materialized occurrence is a future, unpaid row; it is paid later like any other (spec 034 FR 21).
+      paid: card ? undefined : false,
       recurrenceId: series.id,
       value: input.value,
     });

@@ -52,19 +52,6 @@ describe('UpdateRecurrenceUseCase', () => {
     );
   });
 
-  it('SHOULD reactivate an ended series WHEN the end date is removed AND the source is active', async () => {
-    mocks.recurrenceRepository.findById.mockResolvedValue({ ...mocks.series, status: 'ENDED' });
-
-    await setup.execute({ ...base, endDate: null });
-
-    expect(mocks.recurrenceRepository.applyChange).toHaveBeenCalledWith(
-      expect.objectContaining({
-        deleteAfter: null,
-        seriesPatch: expect.objectContaining({ endDate: null, status: 'ACTIVE' }),
-      }),
-    );
-  });
-
   it('SHOULD keep a series ended by archiving its account ended', async () => {
     mocks.recurrenceRepository.findById.mockResolvedValue({ ...mocks.series, status: 'ENDED' });
     mocks.accountRepository.findAccountById.mockResolvedValue({ status: 'ARCHIVED' });
@@ -110,5 +97,20 @@ describe('UpdateRecurrenceUseCase', () => {
     mocks.recurrenceRepository.findById.mockResolvedValue({ ...mocks.series, ownerId: 'other' });
 
     await expect(setup.execute({ ...base, value: 1 })).rejects.toThrow('Not Found');
+  });
+});
+
+describe('an ended series (review)', () => {
+  it('SHOULD never restart WHEN its end date is removed or extended (the rest may belong to another series)', async () => {
+    mocks.recurrenceRepository.findById.mockResolvedValue({ ...mocks.series, status: 'ENDED' });
+
+    await setup.execute({ ...base, endDate: null });
+
+    expect(mocks.recurrenceRepository.applyChange.mock.calls[0][0].seriesPatch).toEqual({
+      categoryId: undefined,
+      description: undefined,
+      endDate: null,
+      value: undefined,
+    });
   });
 });

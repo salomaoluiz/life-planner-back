@@ -110,20 +110,19 @@ describe('reads', () => {
   });
 
   it('SHOULD return no future numbers without querying WHEN there is no series', async () => {
-    expect(await setup.findFutureNumbers([], new Date())).toEqual([]);
+    expect(await setup.findFutureNumbers([])).toEqual([]);
     expect(spies.rowFindMany).not.toHaveBeenCalled();
   });
 
   it('SHOULD return the future numbers of the series', async () => {
-    const afterDate = new Date('2026-10-31T00:00:00.000Z');
     spies.rowFindMany.mockResolvedValue([{ occurrence_number: 7, recurrence_id: 'r-1' }]);
 
-    expect(await setup.findFutureNumbers(['r-1'], afterDate)).toEqual([
+    expect(await setup.findFutureNumbers([{ after_number: 5, recurrence_id: 'r-1' }])).toEqual([
       { occurrence_number: 7, recurrence_id: 'r-1' },
     ]);
     expect(spies.rowFindMany).toHaveBeenCalledWith({
       select: { occurrence_number: true, recurrence_id: true },
-      where: { date: { gt: afterDate }, recurrence_id: { in: ['r-1'] } },
+      where: { OR: [{ occurrence_number: { gt: 5 }, recurrence_id: 'r-1' }] },
     });
   });
 
@@ -518,7 +517,9 @@ describe('Method removeFrom', () => {
       account_id: null,
       credit_card_id: 'card-1',
     });
-    spies.paymentFindMany.mockResolvedValue([{ invoice_month: '2026-09' }]);
+    spies.paymentFindMany.mockResolvedValue([
+      { credit_card_id: 'card-1', invoice_month: '2026-09' },
+    ]);
     spies.rowFindMany.mockReset();
     spies.rowFindMany
       .mockResolvedValueOnce([
@@ -565,7 +566,9 @@ describe('Method removeFrom', () => {
       account_id: null,
       credit_card_id: 'card-1',
     });
-    spies.paymentFindMany.mockResolvedValue([{ invoice_month: '2026-09' }]);
+    spies.paymentFindMany.mockResolvedValue([
+      { credit_card_id: 'card-1', invoice_month: '2026-09' },
+    ]);
     spies.rowFindMany.mockReset();
     spies.rowFindMany
       .mockResolvedValueOnce([
@@ -659,5 +662,46 @@ describe('Method countBySource / exists', () => {
       select: { id: true },
       where: { owner: 'USER', owner_id: 'owner-1' },
     });
+  });
+});
+
+describe('Method removeFrom - rows left on another card', () => {
+  it('SHOULD detach a row whose paid invoice is on the card the series had BEFORE a card change', async () => {
+    spies.recurrenceFindUnique.mockResolvedValue({
+      ...mocks.source,
+      account_id: null,
+      credit_card_id: 'card-B',
+    });
+    spies.paymentFindMany.mockResolvedValue([
+      { credit_card_id: 'card-A', invoice_month: '2026-01' },
+    ]);
+    spies.rowFindMany.mockReset();
+    spies.rowFindMany
+      .mockResolvedValueOnce([
+        {
+          account_id: null,
+          credit_card_id: 'card-A',
+          id: 'old',
+          invoice_month: '2026-01',
+          paid: null,
+          type: 'EXPENSE',
+          value: 100,
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    const result = await setup.removeFrom({
+      confirm_paid: false,
+      delete_series: true,
+      detach_locked: true,
+      from_number: 0,
+      id: 'recurrence-1',
+    });
+
+    expect(result).toEqual({ deleted: 0, detached: 1 });
+    expect(spies.paymentFindMany.mock.calls[0][0].where.credit_card_id.in.sort()).toEqual([
+      'card-A',
+      'card-B',
+    ]);
   });
 });

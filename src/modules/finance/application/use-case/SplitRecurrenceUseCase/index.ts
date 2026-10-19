@@ -175,12 +175,15 @@ export class SplitRecurrenceUseCase implements UseCaseWithParams<
         status: state.status,
         type: series.type,
       };
+      // Occurrences between what exists and the split still belong to the old series: it keeps materializing them.
+      const pending = series.lastGeneratedNumber < k - 1;
+
       seriesPatch = {
         endDate: occurrenceDate(series, k - 1),
         lastGeneratedNumber: Math.min(series.lastGeneratedNumber, k - 1),
-        nextOccurrenceDate: null,
+        nextOccurrenceDate: pending ? occurrenceDate(series, series.lastGeneratedNumber + 1) : null,
         skippedNumbers: series.skippedNumbers.filter((number) => number < input.occurrenceNumber),
-        status: RecurrenceStatus.ENDED,
+        status: pending ? RecurrenceStatus.ACTIVE : RecurrenceStatus.ENDED,
       };
     }
 

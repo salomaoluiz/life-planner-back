@@ -7,10 +7,8 @@ import {
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
-import { AccountStatus, RecurrenceStatus } from '@finance/domain/enum';
+import { RecurrenceStatus } from '@finance/domain/enum';
 import {
-  IFinanceAccountRepository,
-  IFinanceCreditCardRepository,
   IFinanceRecurrenceRepository,
   SeriesPatchRepositoryParams,
 } from '@finance/domain/repository';
@@ -24,10 +22,6 @@ export class UpdateRecurrenceUseCase implements UseCaseWithParams<
   RecurrenceEntity
 > {
   constructor(
-    @Inject('IFinanceAccountRepository')
-    private readonly accountRepository: IFinanceAccountRepository,
-    @Inject('IFinanceCreditCardRepository')
-    private readonly creditCardRepository: IFinanceCreditCardRepository,
     @Inject(EnsureTransactionConsistencyUseCase)
     private readonly ensureTransactionConsistencyUseCase: EnsureTransactionConsistencyUseCase,
     @Inject('IFinanceRecurrenceRepository')
@@ -67,7 +61,7 @@ export class UpdateRecurrenceUseCase implements UseCaseWithParams<
         throw new BadRequestException('endDate must not be before the first date');
       }
 
-      Object.assign(seriesPatch, await this.endDatePatch(series, input.endDate));
+      Object.assign(seriesPatch, this.endDatePatch(series, input.endDate));
       deleteAfter = input.endDate;
     }
 
@@ -86,35 +80,24 @@ export class UpdateRecurrenceUseCase implements UseCaseWithParams<
     return (await this.recurrenceRepository.findById(series.id)) as RecurrenceEntity;
   }
 
-  // The series restarts (or ends) by the schedule; a series ended because its source was archived stays ended.
-  private async endDatePatch(
+  // An ACTIVE series follows its new end date. An ENDED one never restarts: it ended because its source was archived
+  // or because a split gave the rest of the numbering to another series (a restart would duplicate those occurrences).
+  private endDatePatch(
     series: RecurrenceEntity,
     endDate: null | string,
-  ): Promise<SeriesPatchRepositoryParams> {
+  ): SeriesPatchRepositoryParams {
+    if (series.status === RecurrenceStatus.ENDED) {
+      return { endDate };
+    }
+
     const rule = { ...series, endDate };
     const next = occurrenceDate(rule, series.lastGeneratedNumber + 1);
     const reached = endDate !== null && next > endDate;
-
-    if (
-      !reached &&
-      series.status === RecurrenceStatus.ENDED &&
-      (await this.sourceArchived(series))
-    ) {
-      return { endDate };
-    }
 
     return {
       endDate,
       nextOccurrenceDate: reached ? null : next,
       status: reached ? RecurrenceStatus.ENDED : RecurrenceStatus.ACTIVE,
     };
-  }
-
-  private async sourceArchived(series: RecurrenceEntity): Promise<boolean> {
-    const source = series.accountId
-      ? await this.accountRepository.findAccountById(series.accountId)
-      : await this.creditCardRepository.findCreditCardById(series.creditCardId as string);
-
-    return source?.status === AccountStatus.ARCHIVED;
   }
 }

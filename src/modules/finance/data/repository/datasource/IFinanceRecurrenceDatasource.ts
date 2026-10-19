@@ -78,7 +78,9 @@ export interface IFinanceRecurrenceDatasource {
     filter?: FindRecurrencesDatasourceFilter,
   ): Promise<FinancialRecurrenceWithRelations[]>;
   findDue(owners: OwnerAccess[], horizon: Date): Promise<FinancialRecurrenceWithRelations[]>;
-  findFutureNumbers(recurrenceIds: string[], afterDate: Date): Promise<FutureOccurrenceNumberRow[]>;
+  findFutureNumbers(
+    series: { after_number: number; recurrence_id: string }[],
+  ): Promise<FutureOccurrenceNumberRow[]>;
   findOccurrences(recurrenceId: string): Promise<FinancialTransactionWithRelations[]>;
   materialize(params: MaterializeRecurrenceDatasourceParams): Promise<void>;
   removeFrom(params: RemoveRecurrenceDatasourceParams): Promise<RemoveRecurrenceDatasourceResult>;

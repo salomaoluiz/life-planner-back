@@ -28,7 +28,7 @@ describe('MaterializeOccurrenceUseCase', () => {
     await setup.execute({ ...base, categoryId: 'category-2', date: '2027-04-10', paid: true });
 
     expect(mocks.recurrenceRepository.createOccurrence).toHaveBeenCalledWith(
-      expect.objectContaining({ categoryId: 'category-2', date: '2027-04-10', paid: true }),
+      expect.objectContaining({ categoryId: 'category-2', date: '2027-04-10', paid: false }),
     );
     expect(mocks.ensureConsistency.execute).toHaveBeenCalledWith(
       expect.objectContaining({ blockArchivedAccount: false, categoryId: 'category-2' }),

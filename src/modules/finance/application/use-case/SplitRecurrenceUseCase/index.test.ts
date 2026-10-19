@@ -232,3 +232,19 @@ describe('SplitRecurrenceUseCase', () => {
     await expect(setup.execute(base)).rejects.toThrow('Not Found');
   });
 });
+
+describe('splitting from a projected occurrence ahead of what exists (review)', () => {
+  it('SHOULD keep the old series active so the occurrences in between are still materialized', async () => {
+    // generated up to 10 (Oct); split at number 12 (Dec): number 11 (Nov) is neither real nor projected otherwise.
+    await setup.execute({ ...base, occurrenceNumber: 12, value: 1 });
+
+    expect(mocks.recurrenceRepository.applyChange.mock.calls[0][0].seriesPatch).toEqual(
+      expect.objectContaining({
+        endDate: '2026-11-05',
+        lastGeneratedNumber: 10,
+        nextOccurrenceDate: '2026-11-05',
+        status: 'ACTIVE',
+      }),
+    );
+  });
+});

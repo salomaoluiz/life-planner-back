@@ -58,8 +58,10 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
     }
 
     const real = await this.recurrenceRepository.findFutureNumbers(
-      series.map((item) => item.id),
-      horizon,
+      series.map((item) => ({
+        afterNumber: item.firstNumber - 1 + item.lastGeneratedNumber,
+        recurrenceId: item.id,
+      })),
     );
     const result: ProjectedOccurrence[] = [];
 

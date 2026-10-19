@@ -130,12 +130,10 @@ export class FinanceRecurrenceRepository implements IFinanceRecurrenceRepository
   }
 
   async findFutureNumbers(
-    recurrenceIds: string[],
-    afterDate: string,
+    series: { afterNumber: number; recurrenceId: string }[],
   ): Promise<FutureOccurrenceNumber[]> {
     const rows = await this.recurrenceDatasource.findFutureNumbers(
-      recurrenceIds,
-      fromCalendarDate(afterDate),
+      series.map((item) => ({ after_number: item.afterNumber, recurrence_id: item.recurrenceId })),
     );
 
     return rows.map((row) => ({

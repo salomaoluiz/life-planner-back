@@ -107,8 +107,8 @@ describe('reads', () => {
     expect(spies.recurrenceMapper).toHaveBeenCalledTimes(1);
   });
 
-  it('SHOULD return camelCase future numbers', async () => {
-    expect(await setup.findFutureNumbers(['r-1'], '2026-10-31')).toEqual([
+  it('SHOULD return camelCase future numbers AND send them by number', async () => {
+    expect(await setup.findFutureNumbers([{ afterNumber: 5, recurrenceId: 'r-1' }])).toEqual([
       { occurrenceNumber: 7, recurrenceId: 'r-1' },
     ]);
   });

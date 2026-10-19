@@ -63,6 +63,9 @@ export class DeleteOccurrenceUseCase implements UseCaseWithParams<DeleteOccurren
       return;
     }
 
+    // Occurrences between what exists and the deleted one stay with the series (it keeps materializing them).
+    const pending = series.lastGeneratedNumber < k - 1;
+
     await this.recurrenceRepository.removeFrom({
       confirmPaid: input.confirmPaid ?? false,
       deleteSeries: false,
@@ -72,9 +75,9 @@ export class DeleteOccurrenceUseCase implements UseCaseWithParams<DeleteOccurren
       seriesPatch: {
         endDate: occurrenceDate(series, k - 1),
         lastGeneratedNumber: Math.min(series.lastGeneratedNumber, k - 1),
-        nextOccurrenceDate: null,
+        nextOccurrenceDate: pending ? occurrenceDate(series, series.lastGeneratedNumber + 1) : null,
         skippedNumbers: series.skippedNumbers.filter((number) => number < input.occurrenceNumber),
-        status: RecurrenceStatus.ENDED,
+        status: pending ? RecurrenceStatus.ACTIVE : RecurrenceStatus.ENDED,
       },
     });
   }

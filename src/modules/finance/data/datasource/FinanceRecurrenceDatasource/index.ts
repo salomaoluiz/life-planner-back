@@ -248,13 +248,23 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
         },
         where: { occurrence_number: { gte: params.from_number }, recurrence_id: series.id },
       });
-      const payments = series.credit_card_id
-        ? await tx.financialInvoicePayment.findMany({
-            select: { invoice_month: true },
-            where: { credit_card_id: series.credit_card_id },
-          })
-        : [];
-      const paidMonths = new Set(payments.map((payment) => payment.invoice_month));
+      // Rows may sit on another card than the series now has (a card change leaves paid invoices where they are).
+      const cardIds = [
+        ...new Set([
+          ...(series.credit_card_id ? [series.credit_card_id] : []),
+          ...rows.flatMap((row) => (row.credit_card_id ? [row.credit_card_id] : [])),
+        ]),
+      ];
+      const payments =
+        cardIds.length > 0
+          ? await tx.financialInvoicePayment.findMany({
+              select: { credit_card_id: true, invoice_month: true },
+              where: { credit_card_id: { in: cardIds } },
+            })
+          : [];
+      const paidKeys = new Set(
+        payments.map((payment) => `${payment.credit_card_id}|${payment.invoice_month}`),
+      );
       const refunded = await tx.financialTransaction.findMany({
         select: { refunded_transaction_id: true },
         where: { refunded_transaction_id: { in: rows.map((row) => row.id) } },
@@ -262,8 +272,9 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
       const refundedIds = new Set(refunded.map((row) => row.refunded_transaction_id));
       const kept = rows.filter(
         (row) =>
-          Boolean(row.credit_card_id && paidMonths.has(row.invoice_month as string)) ||
-          refundedIds.has(row.id),
+          Boolean(
+            row.credit_card_id && paidKeys.has(`${row.credit_card_id}|${row.invoice_month}`),
+          ) || refundedIds.has(row.id),
       );
       const keptIds = new Set(kept.map((row) => row.id));
       const removable = rows.filter((row) => !keptIds.has(row.id));
@@ -475,17 +486,22 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
     });
   }
 
+  // By NUMBER, not by date: an occurrence made real early may have moved to another day (e.g. paid today).
   async findFutureNumbers(
-    recurrenceIds: string[],
-    afterDate: Date,
+    series: { after_number: number; recurrence_id: string }[],
   ): Promise<FutureOccurrenceNumberRow[]> {
-    if (recurrenceIds.length === 0) {
+    if (series.length === 0) {
       return [];
     }
 
     const rows = await this.db.client.financialTransaction.findMany({
       select: { occurrence_number: true, recurrence_id: true },
-      where: { date: { gt: afterDate }, recurrence_id: { in: recurrenceIds } },
+      where: {
+        OR: series.map((item) => ({
+          occurrence_number: { gt: item.after_number },
+          recurrence_id: item.recurrence_id,
+        })),
+      },
     });
 
     return rows.map((row) => ({
