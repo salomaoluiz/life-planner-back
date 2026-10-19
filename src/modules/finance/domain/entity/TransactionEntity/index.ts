@@ -1,4 +1,9 @@
-import { InvoicePaymentMethod, SystemCategoryKey, TransactionType } from '@finance/domain/enum';
+import {
+  InvoicePaymentMethod,
+  RecurrenceFrequency,
+  SystemCategoryKey,
+  TransactionType,
+} from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export interface TransactionAccountSummary {
@@ -48,6 +53,9 @@ interface ITransactionEntity {
   installmentPlanId: null | string;
   // `YYYY-MM` of the invoice a card purchase belongs to; null for account rows.
   invoiceMonth: null | string;
+  // Series position, total of the series (null without end date), series id and frequency (spec 034); all null outside a series.
+  occurrenceCount?: null | number;
+  occurrenceNumber?: null | number;
   owner: OwnerType;
   ownerId: string;
   // Stored for account rows; derived from the invoice for card rows (spec 033).
@@ -58,6 +66,8 @@ interface ITransactionEntity {
   paidFromTransactionId?: null | string;
   paymentMethod?: InvoicePaymentMethod | null;
   prepaymentId?: null | string;
+  recurrenceFrequency?: null | RecurrenceFrequency;
+  recurrenceId?: null | string;
   refundedName?: null | string;
   refundedPlanId?: null | string;
   refundedTransactionId?: null | string;
@@ -85,6 +95,9 @@ class TransactionEntity {
   installmentPlanId: null | string;
   // `YYYY-MM` of the invoice a card purchase belongs to; null for account rows.
   invoiceMonth: null | string;
+  // Position in the recurring series and the series total (null without an end date or outside a series).
+  occurrenceCount: null | number;
+  occurrenceNumber: null | number;
   owner: OwnerType;
   ownerId: string;
   // Account rows: the stored status. Card rows: whether the invoice is paid (set by ResolveCardRowsPaidUseCase).
@@ -97,6 +110,8 @@ class TransactionEntity {
   paymentMethod: InvoicePaymentMethod | null;
   // Set on installments moved by a prepayment and on its discount row.
   prepaymentId: null | string;
+  recurrenceFrequency: null | RecurrenceFrequency;
+  recurrenceId: null | string;
   // Description of the refunded purchase or plan.
   refundedName: null | string;
   refundedPlanId: null | string;
@@ -122,6 +137,8 @@ class TransactionEntity {
     this.installmentNumber = params.installmentNumber;
     this.installmentPlanId = params.installmentPlanId;
     this.invoiceMonth = params.invoiceMonth;
+    this.occurrenceCount = params.occurrenceCount ?? null;
+    this.occurrenceNumber = params.occurrenceNumber ?? null;
     this.owner = params.owner;
     this.ownerId = params.ownerId;
     this.paid = params.paid ?? false;
@@ -130,6 +147,8 @@ class TransactionEntity {
     this.paidFromTransactionId = params.paidFromTransactionId ?? null;
     this.paymentMethod = params.paymentMethod ?? null;
     this.prepaymentId = params.prepaymentId ?? null;
+    this.recurrenceFrequency = params.recurrenceFrequency ?? null;
+    this.recurrenceId = params.recurrenceId ?? null;
     this.refundedName = params.refundedName ?? null;
     this.refundedPlanId = params.refundedPlanId ?? null;
     this.refundedTransactionId = params.refundedTransactionId ?? null;

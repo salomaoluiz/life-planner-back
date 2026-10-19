@@ -5,6 +5,7 @@ import {
   occurrenceDate,
   occurrencesBetween,
   RecurrenceRule,
+  totalOccurrences,
 } from '@finance/domain/service/RecurrenceSchedule';
 
 function monthly(startDate: string, endDate?: string): RecurrenceRule {
@@ -94,5 +95,15 @@ describe('lastDayOfMonth', () => {
     ['2028-02-03', '2028-02-29'],
   ])('%s -> %s', (date, expected) => {
     expect(lastDayOfMonth(date)).toBe(expected);
+  });
+});
+
+describe('totalOccurrences', () => {
+  it('is null without an end date', () => {
+    expect(totalOccurrences(monthly('2026-10-05'), 1)).toBeNull();
+  });
+
+  it('continues the numbering of a split series', () => {
+    expect(totalOccurrences(monthly('2026-05-05', '2026-12-05'), 5)).toBe(12);
   });
 });

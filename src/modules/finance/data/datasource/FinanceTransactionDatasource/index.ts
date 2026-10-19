@@ -43,6 +43,7 @@ export const TRANSACTION_RELATIONS = {
   paid_from_transaction: {
     select: { account: { select: { name: true } }, account_id: true },
   },
+  recurrence: { select: { end_date: true, first_number: true, frequency: true, start_date: true } },
   refunded_plan: { select: { description: true } },
   refunded_transaction: { select: { description: true } },
 };

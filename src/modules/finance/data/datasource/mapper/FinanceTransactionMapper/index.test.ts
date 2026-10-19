@@ -28,6 +28,8 @@ describe('FinanceTransactionMapper.toDomain', () => {
       installmentNumber: null,
       installmentPlanId: null,
       invoiceMonth: null,
+      occurrenceCount: null,
+      occurrenceNumber: null,
       owner: 'FAMILY',
       ownerId: mocks.raw.owner_id,
       paid: true,
@@ -36,6 +38,8 @@ describe('FinanceTransactionMapper.toDomain', () => {
       paidFromTransactionId: null,
       paymentMethod: null,
       prepaymentId: null,
+      recurrenceFrequency: null,
+      recurrenceId: null,
       refundedName: null,
       refundedPlanId: null,
       refundedTransactionId: null,
@@ -141,5 +145,45 @@ it('SHOULD map the early payment an account debit row belongs to', () => {
 describe('FinanceTransactionMapper paid', () => {
   it('SHOULD map a NULL paid (card row) to false', () => {
     expect(FinanceTransactionMapper.toDomain({ ...mocks.raw, paid: null }).paid).toBe(false);
+  });
+});
+
+describe('FinanceTransactionMapper.toDomain recurrence', () => {
+  it('SHOULD expose the series position, frequency AND the total when the series has an end date', () => {
+    const recurrenceId = 'recurrence-id';
+    const raw = {
+      ...mocks.raw,
+      occurrence_number: 3,
+      recurrence: {
+        end_date: new Date('2027-09-05T00:00:00.000Z'),
+        first_number: 1,
+        frequency: 'MONTHLY' as const,
+        start_date: new Date('2026-10-05T00:00:00.000Z'),
+      },
+      recurrence_id: recurrenceId,
+    };
+
+    expect(FinanceTransactionMapper.toDomain(raw)).toMatchObject({
+      occurrenceCount: 12,
+      occurrenceNumber: 3,
+      recurrenceFrequency: 'MONTHLY',
+      recurrenceId,
+    });
+  });
+
+  it('SHOULD leave the total null when the series has no end date', () => {
+    const raw = {
+      ...mocks.raw,
+      occurrence_number: 1,
+      recurrence: {
+        end_date: null,
+        first_number: 1,
+        frequency: 'WEEKLY' as const,
+        start_date: new Date('2026-10-05T00:00:00.000Z'),
+      },
+      recurrence_id: 'recurrence-id',
+    };
+
+    expect(FinanceTransactionMapper.toDomain(raw).occurrenceCount).toBeNull();
   });
 });

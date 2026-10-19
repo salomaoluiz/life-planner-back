@@ -60,6 +60,11 @@ export function occurrencesBetween(
   }
 }
 
+// Spec 034 FR 4: the count shown as `k/n`; null while the series has no end date.
+export function totalOccurrences(rule: RecurrenceRule, firstNumber: number): null | number {
+  return rule.endDate ? firstNumber - 1 + countUntil(rule, rule.endDate) : null;
+}
+
 function addDays(date: string, days: number): string {
   const [year, month, day] = parts(date);
   const next = new Date(Date.UTC(year, month - 1, day) + days * DAY_MS);

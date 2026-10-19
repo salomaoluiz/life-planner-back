@@ -3,6 +3,7 @@ import {
   FinancialCategory,
   FinancialCreditCard,
   FinancialInstallmentPlan,
+  FinancialRecurrence,
   FinancialTransaction,
   OwnerType,
   TransactionType,
@@ -50,6 +51,10 @@ export type FinancialTransactionWithRelations = {
     account: null | Pick<FinancialAccount, 'name'>;
     account_id: null | string;
   } | null;
+  recurrence: null | Pick<
+    FinancialRecurrence,
+    'end_date' | 'first_number' | 'frequency' | 'start_date'
+  >;
   refunded_plan: null | Pick<FinancialInstallmentPlan, 'description'>;
   refunded_transaction: null | Pick<FinancialTransaction, 'description'>;
 } & FinancialTransaction;

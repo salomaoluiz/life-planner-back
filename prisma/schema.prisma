@@ -99,6 +99,7 @@ model FinancialAccount {
   updated_at      DateTime      @updatedAt @db.Timestamptz(6)
 
   transactions     FinancialTransaction[]
+  recurrences      FinancialRecurrence[]
   invoice_payments FinancialInvoicePayment[]
 
   @@index([owner, owner_id])
@@ -133,6 +134,7 @@ model FinancialCreditCard {
   transactions      FinancialTransaction[]
   invoice_payments  FinancialInvoicePayment[]
   installment_plans FinancialInstallmentPlan[]
+  recurrences       FinancialRecurrence[]
 
   @@index([owner, owner_id])
   @@map("financial_credit_cards")
@@ -163,6 +165,7 @@ model FinancialCategory {
   children          FinancialCategory[]        @relation("CategoryTree")
   transactions      FinancialTransaction[]
   installment_plans FinancialInstallmentPlan[]
+  recurrences       FinancialRecurrence[]
 
   @@index([owner, owner_id])
   @@index([parent_id])
@@ -185,6 +188,9 @@ model FinancialTransaction {
   category_id              String
   installment_plan_id      String?
   installment_number       Int?                  @db.SmallInt
+  // Recurring series (spec 034): both set or both null; `occurrence_number` is the position in the series.
+  recurrence_id            String?
+  occurrence_number        Int?
   // Card credits (spec 032): refund links, prepayment, early payment method and its account debit row.
   refunded_transaction_id  String?
   refunded_plan_id         String?
@@ -201,6 +207,7 @@ model FinancialTransaction {
   category         FinancialCategory         @relation(fields: [category_id], references: [id], onDelete: Restrict)
   invoice_payment  FinancialInvoicePayment?
   installment_plan FinancialInstallmentPlan? @relation(fields: [installment_plan_id], references: [id], onDelete: Restrict)
+  recurrence       FinancialRecurrence?      @relation(fields: [recurrence_id], references: [id], onDelete: Restrict)
 
   refunded_transaction  FinancialTransaction?           @relation("RefundedPurchase", fields: [refunded_transaction_id], references: [id], onDelete: Restrict)
   refunds               FinancialTransaction[]          @relation("RefundedPurchase")
@@ -211,6 +218,8 @@ model FinancialTransaction {
   discount_of           FinancialInstallmentPrepayment? @relation("PrepaymentDiscount")
 
   @@unique([installment_plan_id, installment_number])
+  @@unique([recurrence_id, occurrence_number])
+  @@index([recurrence_id])
   @@index([refunded_transaction_id])
   @@index([refunded_plan_id])
   @@index([prepayment_id])
@@ -292,6 +301,53 @@ model UserSession {
   @@index([user_id])
   @@index([last_used_at])
   @@map("user_sessions")
+}
+
+enum RecurrenceFrequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum RecurrenceStatus {
+  ACTIVE
+  ENDED
+}
+
+// A recurring transaction series (spec 034): the template plus the schedule; real rows live in `financial_transactions`.
+// CHECKs in the migration: account XOR card, end_date >= start_date.
+model FinancialRecurrence {
+  id                    String              @id @default(uuid())
+  description           String
+  value                 Int
+  type                  TransactionType
+  category_id           String
+  account_id            String?
+  credit_card_id        String?
+  frequency             RecurrenceFrequency
+  start_date            DateTime            @db.Date
+  end_date              DateTime?           @db.Date
+  first_number          Int                 @default(1)
+  last_generated_number Int                 @default(0)
+  next_occurrence_date  DateTime?           @db.Date
+  skipped_numbers       Int[]               @default([])
+  status                RecurrenceStatus    @default(ACTIVE)
+  owner                 OwnerType
+  owner_id              String
+  created_at            DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime            @updatedAt @db.Timestamptz(6)
+
+  category     FinancialCategory      @relation(fields: [category_id], references: [id], onDelete: Restrict)
+  account      FinancialAccount?      @relation(fields: [account_id], references: [id], onDelete: Restrict)
+  credit_card  FinancialCreditCard?   @relation(fields: [credit_card_id], references: [id], onDelete: Restrict)
+  transactions FinancialTransaction[]
+
+  @@index([owner, owner_id, status, next_occurrence_date])
+  @@index([account_id])
+  @@index([credit_card_id])
+  @@index([category_id])
+  @@map("financial_recurrences")
 }
 
 model FinancialInstallmentPlan {
