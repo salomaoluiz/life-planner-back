@@ -23,6 +23,7 @@ import { DeleteRecurrenceUseCase } from '@finance/application/use-case/DeleteRec
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
 import { EndRecurrencesBySourceUseCase } from '@finance/application/use-case/EndRecurrencesBySourceUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
+import { GetAccountsByIdsUseCase } from '@finance/application/use-case/GetAccountsByIdsUseCase';
 import { GetAccountsUseCase } from '@finance/application/use-case/GetAccountsUseCase';
 import { GetCategoriesUseCase } from '@finance/application/use-case/GetCategoriesUseCase';
 import { GetCreditCardByIdUseCase } from '@finance/application/use-case/GetCreditCardByIdUseCase';
@@ -113,6 +114,7 @@ const useCases = [
   EnsureTransactionConsistencyUseCase,
   GetAccountsUseCase,
   GetCategoriesUseCase,
+  GetAccountsByIdsUseCase,
   GetCreditCardByIdUseCase,
   GetCreditCardsOverviewUseCase,
   GetCreditCardsUseCase,

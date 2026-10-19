@@ -5,6 +5,7 @@ import { CreditCardService } from '@api/finance/v1/credit-card.service';
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { CreateCreditCardUseCase } from '@finance/application/use-case/CreateCreditCardUseCase';
 import { DeleteCreditCardUseCase } from '@finance/application/use-case/DeleteCreditCardUseCase';
+import { GetAccountsByIdsUseCase } from '@finance/application/use-case/GetAccountsByIdsUseCase';
 import { GetCreditCardByIdUseCase } from '@finance/application/use-case/GetCreditCardByIdUseCase';
 import { GetCreditCardsOverviewUseCase } from '@finance/application/use-case/GetCreditCardsOverviewUseCase';
 import { GetCreditCardsUseCase } from '@finance/application/use-case/GetCreditCardsUseCase';
@@ -16,6 +17,8 @@ import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 const userId = faker.string.uuid();
 const accessibleOwners = [{ owner: OwnerType.USER, ownerId: userId }];
+const linkedAccountId = faker.string.uuid();
+const linkedAccountMock = { icon: 'bank', id: linkedAccountId, name: 'Checking', status: 'ACTIVE' };
 const cardResultMock = {
   brand: 'VISA',
   closingDay: 31,
@@ -27,6 +30,7 @@ const cardResultMock = {
   limit: 500000,
   owner: OwnerType.USER,
   ownerId: userId,
+  paymentAccountId: linkedAccountId,
   paymentDay: 5,
   status: 'ACTIVE',
   title: 'Main card',
@@ -36,6 +40,7 @@ const cardApiMock = {
   ...cardResultMock,
   createdAt: '2026-10-14T12:00:00.000Z',
   owner: 'USER',
+  paymentAccount: linkedAccountMock,
   updatedAt: '2026-10-14T13:00:00.000Z',
 };
 const invoiceMock = {
@@ -83,6 +88,7 @@ const createBodyMock = {
 const createUseCaseMock = { execute: jest.fn().mockResolvedValue(cardResultMock) };
 const deleteUseCaseMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const financeAccessServiceMock = { resolve: jest.fn().mockResolvedValue(accessibleOwners) };
+const getAccountsByIdsUseCaseMock = { execute: jest.fn().mockResolvedValue([linkedAccountMock]) };
 const getByIdUseCaseMock = { execute: jest.fn().mockResolvedValue(cardResultMock) };
 const getUseCaseMock = { execute: jest.fn().mockResolvedValue([cardResultMock]) };
 const overviewUseCaseMock = { execute: jest.fn().mockResolvedValue(overviewResultMock) };
@@ -103,6 +109,7 @@ beforeEach(async () => {
       { provide: CreateCreditCardUseCase, useValue: createUseCaseMock },
       { provide: DeleteCreditCardUseCase, useValue: deleteUseCaseMock },
       { provide: FinanceAccessService, useValue: financeAccessServiceMock },
+      { provide: GetAccountsByIdsUseCase, useValue: getAccountsByIdsUseCaseMock },
       { provide: GetCreditCardByIdUseCase, useValue: getByIdUseCaseMock },
       { provide: GetCreditCardsOverviewUseCase, useValue: overviewUseCaseMock },
       { provide: GetCreditCardsUseCase, useValue: getUseCaseMock },
@@ -117,12 +124,15 @@ beforeEach(async () => {
 const mocks = {
   accessibleOwners,
   cardApi: cardApiMock,
+  cardResult: cardResultMock,
   createBody: createBodyMock,
   createUseCase: createUseCaseMock,
   deleteUseCase: deleteUseCaseMock,
   financeAccessService: financeAccessServiceMock,
+  getAccountsByIdsUseCase: getAccountsByIdsUseCaseMock,
   getByIdUseCase: getByIdUseCaseMock,
   getUseCase: getUseCaseMock,
+  linkedAccountId,
   materializeRecurrencesUseCase: materializeRecurrencesUseCaseMock,
   overviewApi: overviewApiMock,
   overviewUseCase: overviewUseCaseMock,

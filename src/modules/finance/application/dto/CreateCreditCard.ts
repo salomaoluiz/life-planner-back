@@ -25,6 +25,7 @@ export const CreateCreditCardSchema = z.object({
   limit: CreditCardLimitSchema,
   owner: OwnerTypeSchema,
   ownerId: OwnerIdSchema,
+  paymentAccountId: z.string().min(1).optional(),
   paymentDay: BillingDaySchema.optional(),
   status: z.enum(AccountStatus).default(AccountStatus.ACTIVE),
   title: NameSchema,

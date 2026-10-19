@@ -4,11 +4,15 @@ import {
   UpdateCreditCardInput,
   UpdateCreditCardSchema,
 } from '@finance/application/dto/UpdateCreditCard';
+import { assertPaymentAccount } from '@finance/application/service/PaymentAccount';
 import { EndRecurrencesBySourceUseCase } from '@finance/application/use-case/EndRecurrencesBySourceUseCase';
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { AccountStatus } from '@finance/domain/enum';
-import { IFinanceCreditCardRepository } from '@finance/domain/repository';
+import {
+  IFinanceAccountRepository,
+  IFinanceCreditCardRepository,
+} from '@finance/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -17,6 +21,8 @@ export class UpdateCreditCardUseCase implements UseCaseWithParams<
   CreditCardEntity
 > {
   constructor(
+    @Inject('IFinanceAccountRepository')
+    private readonly accountRepository: IFinanceAccountRepository,
     @Inject('IFinanceCreditCardRepository')
     private readonly creditCardRepository: IFinanceCreditCardRepository,
     @Inject(EndRecurrencesBySourceUseCase)
@@ -41,6 +47,14 @@ export class UpdateCreditCardUseCase implements UseCaseWithParams<
       throw new ForbiddenException('Owner not accessible');
     }
 
+    if (input.paymentAccountId) {
+      await assertPaymentAccount(
+        this.accountRepository,
+        input.accessibleOwners,
+        input.paymentAccountId,
+      );
+    }
+
     const updated = await this.creditCardRepository.updateCreditCard({
       brand: input.brand,
       closingDay: input.closingDay,
@@ -51,6 +65,7 @@ export class UpdateCreditCardUseCase implements UseCaseWithParams<
       limit: input.limit,
       owner: input.owner,
       ownerId: input.ownerId,
+      paymentAccountId: input.paymentAccountId,
       paymentDay: input.paymentDay,
       status: input.status,
       title: input.title,

@@ -50,3 +50,15 @@ describe('UpdateCreditCardApiSchema', () => {
     expect(UpdateCreditCardApiSchema.safeParse({ extra: 1, title: 'x' }).success).toBe(false);
   });
 });
+
+describe('payment account fields (spec 035)', () => {
+  it('SHOULD accept a uuid or null on update AND reject a non-uuid', () => {
+    expect(
+      UpdateCreditCardApiSchema.safeParse({
+        paymentAccountId: '3f9e6a3e-8f0c-4a52-9b0e-2f6d1c8f9a11',
+      }).success,
+    ).toBe(true);
+    expect(UpdateCreditCardApiSchema.safeParse({ paymentAccountId: null }).success).toBe(true);
+    expect(UpdateCreditCardApiSchema.safeParse({ paymentAccountId: 'x' }).success).toBe(false);
+  });
+});
