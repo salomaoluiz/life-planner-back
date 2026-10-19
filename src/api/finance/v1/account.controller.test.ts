@@ -184,3 +184,38 @@ describe('delete', () => {
     expect(Reflect.getMetadata(HTTP_CODE_METADATA, AccountController.prototype.delete)).toBe(204);
   });
 });
+
+describe('dailyBalances (spec 035)', () => {
+  const ownerA = '0b6a1e7c-3f4d-4b2a-8c9d-1e2f3a4b5c6d';
+
+  it('SHOULD validate the query AND call the service with the repeated owners', async () => {
+    await setup.dailyBalances(mocks.request, {
+      month: '2026-11',
+      ownerId: [ownerA],
+      today: '2026-10-20',
+    });
+
+    expect(mocks.accountService.getDailyBalances).toHaveBeenCalledWith(
+      mocks.request.user.id,
+      [ownerA],
+      '2026-11',
+      '2026-10-20',
+    );
+  });
+
+  it.each([{}, { month: '2026-13' }, { month: '2026-1' }, { month: '2026-11', today: 'x' }])(
+    'SHOULD throw ValidationError (400) for %j',
+    async (query) => {
+      await expect(setup.dailyBalances(mocks.request, query)).rejects.toThrow(ValidationError);
+    },
+  );
+
+  it('SHOULD be declared before the :id routes', () => {
+    const names = Object.getOwnPropertyNames(AccountController.prototype);
+
+    expect(Reflect.getMetadata(PATH_METADATA, AccountController.prototype.dailyBalances)).toBe(
+      'daily-balances',
+    );
+    expect(names.indexOf('dailyBalances')).toBeLessThan(names.indexOf('update'));
+  });
+});

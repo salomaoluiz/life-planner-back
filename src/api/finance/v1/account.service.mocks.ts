@@ -7,6 +7,7 @@ import { AdjustAccountBalanceUseCase } from '@finance/application/use-case/Adjus
 import { CreateAccountUseCase } from '@finance/application/use-case/CreateAccountUseCase';
 import { DeleteAccountUseCase } from '@finance/application/use-case/DeleteAccountUseCase';
 import { GetAccountsUseCase } from '@finance/application/use-case/GetAccountsUseCase';
+import { GetDailyBalancesUseCase } from '@finance/application/use-case/GetDailyBalancesUseCase';
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { UpdateAccountUseCase } from '@finance/application/use-case/UpdateAccountUseCase';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -47,6 +48,20 @@ const createAccountUseCaseMock = { execute: jest.fn().mockResolvedValue(withBala
 const deleteAccountUseCaseMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const financeAccessServiceMock = { resolve: jest.fn().mockResolvedValue(accessibleOwners) };
 const getAccountsUseCaseMock = { execute: jest.fn().mockResolvedValue([withBalancesMock]) };
+const dailyResultMock = {
+  accounts: [accountResultMock],
+  days: [
+    {
+      accounts: [{ accountId: accountResultMock.id, balance: 5 }],
+      cardsDue: 0,
+      date: '2026-11-01',
+      projected: false,
+      total: 5,
+    },
+  ],
+  month: '2026-11',
+};
+const getDailyBalancesUseCaseMock = { execute: jest.fn().mockResolvedValue(dailyResultMock) };
 const updateAccountUseCaseMock = { execute: jest.fn().mockResolvedValue(withBalancesMock) };
 
 const materializeRecurrencesUseCaseMock = { execute: jest.fn().mockResolvedValue(undefined) };
@@ -66,6 +81,7 @@ beforeEach(async () => {
       { provide: DeleteAccountUseCase, useValue: deleteAccountUseCaseMock },
       { provide: FinanceAccessService, useValue: financeAccessServiceMock },
       { provide: GetAccountsUseCase, useValue: getAccountsUseCaseMock },
+      { provide: GetDailyBalancesUseCase, useValue: getDailyBalancesUseCaseMock },
       { provide: UpdateAccountUseCase, useValue: updateAccountUseCaseMock },
       { provide: MaterializeRecurrencesUseCase, useValue: materializeRecurrencesUseCaseMock },
     ],
@@ -79,9 +95,11 @@ const mocks = {
   accountApi: accountApiMock,
   adjustAccountBalanceUseCase: adjustAccountBalanceUseCaseMock,
   createAccountUseCase: createAccountUseCaseMock,
+  dailyResult: dailyResultMock,
   deleteAccountUseCase: deleteAccountUseCaseMock,
   financeAccessService: financeAccessServiceMock,
   getAccountsUseCase: getAccountsUseCaseMock,
+  getDailyBalancesUseCase: getDailyBalancesUseCaseMock,
   materializeRecurrencesUseCase: materializeRecurrencesUseCaseMock,
   updateAccountUseCase: updateAccountUseCaseMock,
   userId,

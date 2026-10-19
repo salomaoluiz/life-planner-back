@@ -52,6 +52,32 @@ export const AccountApiSchema = z.object({
   updatedAt: z.iso.datetime(),
 });
 
+export const DailyBalancesQuerySchema = z.object({
+  month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+});
+
+export const DailyBalancesApiSchema = z.object({
+  accounts: z.array(
+    z.object({
+      icon: z.string(),
+      id: z.uuid(),
+      name: z.string(),
+      owner: OwnerTypeApiSchema,
+      ownerId: z.uuid(),
+    }),
+  ),
+  days: z.array(
+    z.object({
+      accounts: z.array(z.object({ accountId: z.uuid(), balance: z.number().int() })),
+      cardsDue: z.number().int(),
+      date: z.string(),
+      projected: z.boolean(),
+      total: z.number().int(),
+    }),
+  ),
+  month: z.string(),
+});
+
 export type AdjustAccountBalanceApiInput = z.infer<typeof AdjustAccountBalanceApiSchema>;
 export type CreateAccountApiInput = z.infer<typeof CreateAccountApiSchema>;
 export type UpdateAccountApiInput = z.infer<typeof UpdateAccountApiSchema>;
@@ -59,4 +85,5 @@ export type UpdateAccountApiInput = z.infer<typeof UpdateAccountApiSchema>;
 export class AccountOutput extends createZodDto(AccountApiSchema) {}
 export class AdjustAccountBalanceBody extends createZodDto(AdjustAccountBalanceApiSchema) {}
 export class CreateAccountBody extends createZodDto(CreateAccountApiSchema) {}
+export class DailyBalancesOutput extends createZodDto(DailyBalancesApiSchema) {}
 export class UpdateAccountBody extends createZodDto(UpdateAccountApiSchema) {}

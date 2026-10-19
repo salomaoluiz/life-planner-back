@@ -22,6 +22,8 @@ import {
   AdjustAccountBalanceBody,
   CreateAccountApiSchema,
   CreateAccountBody,
+  DailyBalancesOutput,
+  DailyBalancesQuerySchema,
   UpdateAccountApiSchema,
   UpdateAccountBody,
 } from '@api/finance/v1/dto/account.dto';
@@ -35,6 +37,8 @@ import { JwtPayload } from '@shared/infra/jwt/types';
 import { validate } from '@shared/infra/validation';
 
 const ListAccountsQuerySchema = TodayQuerySchema.extend({ ownerId: OwnerIdQuerySchema });
+
+const DailyBalancesRequestSchema = ListAccountsQuerySchema.extend(DailyBalancesQuerySchema.shape);
 
 @ApiBearerAuth('JWT')
 @Controller({
@@ -72,6 +76,23 @@ export class AccountController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async delete(@Request() req: JwtPayload & Request, @Param('id', ParseUUIDPipe) id: string) {
     await this.accountService.delete(req.user.id, id);
+  }
+
+  // Declared before every `:id` route.
+  @Get('daily-balances')
+  @ZodResponse({ status: 200, type: DailyBalancesOutput })
+  async dailyBalances(
+    @Request() req: JwtPayload & Request,
+    @Query() query: Record<string, unknown>,
+  ) {
+    const { month, ownerId, today } = validate(DailyBalancesRequestSchema, query);
+
+    return this.accountService.getDailyBalances(
+      req.user.id,
+      toOwnerIds(ownerId),
+      month,
+      resolveToday(today),
+    );
   }
 
   @Get()
