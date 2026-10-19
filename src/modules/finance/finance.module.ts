@@ -18,6 +18,8 @@ import { DeleteCategoryUseCase } from '@finance/application/use-case/DeleteCateg
 import { DeleteCreditCardUseCase } from '@finance/application/use-case/DeleteCreditCardUseCase';
 import { DeleteFinanceDataByOwnerUseCase } from '@finance/application/use-case/DeleteFinanceDataByOwnerUseCase';
 import { DeleteInstallmentPlanUseCase } from '@finance/application/use-case/DeleteInstallmentPlanUseCase';
+import { DeleteOccurrenceUseCase } from '@finance/application/use-case/DeleteOccurrenceUseCase';
+import { DeleteRecurrenceUseCase } from '@finance/application/use-case/DeleteRecurrenceUseCase';
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import { GetAccountsUseCase } from '@finance/application/use-case/GetAccountsUseCase';
@@ -73,6 +75,8 @@ import { FinanceRecurrenceRepository } from '@finance/data/repository/FinanceRec
 import { FinanceTransactionRepository } from '@finance/data/repository/FinanceTransactionRepository';
 
 const useCases = [
+  DeleteOccurrenceUseCase,
+  DeleteRecurrenceUseCase,
   MaterializeOccurrenceUseCase,
   SplitRecurrenceUseCase,
   UpdateRecurrenceUseCase,

@@ -23,6 +23,11 @@ export type IFinanceRecurrenceRepository = {
   findOccurrences(recurrenceId: string): Promise<TransactionEntity[]>;
   // Idempotent: does nothing when the stored `lastGeneratedNumber` is no longer `expectedLast`.
   materialize(params: MaterializeRecurrenceRepositoryParams): Promise<void>;
+  // One database transaction (spec 034 FR 29-31): deletes the real rows from `fromNumber` (reversing the ledger of
+  // the paid ones) and then deletes the series or patches it. Without `confirmPaid` paid account rows answer 409.
+  removeFrom(params: RemoveRecurrenceRepositoryParams): Promise<RemoveRecurrenceResult>;
+  // A projected occurrence deleted alone: it is never materialized nor projected again.
+  skipNumber(id: string, occurrenceNumber: number): Promise<void>;
 };
 
 interface ApplyRecurrenceChangeRepositoryParams {
@@ -107,6 +112,20 @@ interface OccurrenceRow {
   // Account series only; omitted = not paid.
   paid?: boolean;
 }
+interface RemoveRecurrenceRepositoryParams {
+  confirmPaid: boolean;
+  deleteSeries: boolean;
+  // true (scope ALL): card rows in a paid invoice and refunded rows stay, detached from the series.
+  // false (THIS_AND_NEXT): they refuse the delete with 422.
+  detachLocked: boolean;
+  fromNumber: number;
+  id: string;
+  seriesPatch?: SeriesPatchRepositoryParams;
+}
+interface RemoveRecurrenceResult {
+  deleted: number;
+  detached: number;
+}
 interface RowPatchRepositoryParams {
   accountId?: string;
   categoryId?: string;
@@ -139,6 +158,8 @@ export {
   MaterializeRecurrenceRepositoryParams,
   NewSeriesRepositoryParams,
   OccurrenceRow,
+  RemoveRecurrenceRepositoryParams,
+  RemoveRecurrenceResult,
   RowPatchRepositoryParams,
   SeriesPatchRepositoryParams,
 };

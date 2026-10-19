@@ -22,6 +22,8 @@ const recurrenceDatasourceMock = {
   findFutureNumbers: jest.fn().mockResolvedValue([{ occurrence_number: 7, recurrence_id: 'r-1' }]),
   findOccurrences: jest.fn().mockResolvedValue([{ id: 'transaction-1' }]),
   materialize: jest.fn().mockResolvedValue(undefined),
+  removeFrom: jest.fn().mockResolvedValue({ deleted: 0, detached: 0 }),
+  skipNumber: jest.fn().mockResolvedValue(undefined),
 };
 
 // endregion Mocks

@@ -7,6 +7,7 @@ import {
   IFinanceRecurrenceDatasource,
   NewSeriesDatasourceParams,
   OccurrenceRowDatasourceParams,
+  SeriesPatchDatasourceParams,
 } from '@finance/data/repository/datasource/IFinanceRecurrenceDatasource';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
@@ -21,6 +22,9 @@ import {
   MaterializeRecurrenceRepositoryParams,
   NewSeriesRepositoryParams,
   OccurrenceRow,
+  RemoveRecurrenceRepositoryParams,
+  RemoveRecurrenceResult,
+  SeriesPatchRepositoryParams,
 } from '@finance/domain/repository';
 
 @Injectable()
@@ -49,19 +53,7 @@ export class FinanceRecurrenceRepository implements IFinanceRecurrenceRepository
         })),
         value: rowPatch.value,
       },
-      series_patch: {
-        account_id: seriesPatch.accountId,
-        category_id: seriesPatch.categoryId,
-        credit_card_id: seriesPatch.creditCardId,
-        description: seriesPatch.description,
-        end_date: toOptionalDate(seriesPatch.endDate),
-        frequency: seriesPatch.frequency,
-        last_generated_number: seriesPatch.lastGeneratedNumber,
-        next_occurrence_date: toOptionalDate(seriesPatch.nextOccurrenceDate),
-        skipped_numbers: seriesPatch.skippedNumbers,
-        status: seriesPatch.status,
-        value: seriesPatch.value,
-      },
+      series_patch: toSeriesPatch(seriesPatch),
       source_id: params.sourceId,
     });
   }
@@ -157,6 +149,21 @@ export class FinanceRecurrenceRepository implements IFinanceRecurrenceRepository
       status: params.status,
     });
   }
+
+  async removeFrom(params: RemoveRecurrenceRepositoryParams): Promise<RemoveRecurrenceResult> {
+    return this.recurrenceDatasource.removeFrom({
+      confirm_paid: params.confirmPaid,
+      delete_series: params.deleteSeries,
+      detach_locked: params.detachLocked,
+      from_number: params.fromNumber,
+      id: params.id,
+      series_patch: params.seriesPatch ? toSeriesPatch(params.seriesPatch) : undefined,
+    });
+  }
+
+  async skipNumber(id: string, occurrenceNumber: number): Promise<void> {
+    await this.recurrenceDatasource.skipNumber(id, occurrenceNumber);
+  }
 }
 
 // `undefined` leaves the column alone, `null` clears it.
@@ -192,5 +199,20 @@ function toRow(row: OccurrenceRow): OccurrenceRowDatasourceParams {
     invoice_month: row.invoiceMonth,
     number: row.number,
     paid: row.paid,
+  };
+}
+function toSeriesPatch(patch: SeriesPatchRepositoryParams): SeriesPatchDatasourceParams {
+  return {
+    account_id: patch.accountId,
+    category_id: patch.categoryId,
+    credit_card_id: patch.creditCardId,
+    description: patch.description,
+    end_date: toOptionalDate(patch.endDate),
+    frequency: patch.frequency,
+    last_generated_number: patch.lastGeneratedNumber,
+    next_occurrence_date: toOptionalDate(patch.nextOccurrenceDate),
+    skipped_numbers: patch.skippedNumbers,
+    status: patch.status,
+    value: patch.value,
   };
 }

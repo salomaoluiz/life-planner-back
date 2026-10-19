@@ -70,3 +70,57 @@ it('SHOULD refuse to delete a purchase that has refunds (422)', async () => {
   ).rejects.toThrow('Delete its refunds first');
   expect(mocks.transactionRepository.deleteTransaction).not.toHaveBeenCalled();
 });
+
+describe('recurring occurrences (spec 034)', () => {
+  const owners = [{ owner: mocks.recurring.owner, ownerId: mocks.recurring.ownerId }];
+  async function run(scope?: string) {
+    return setup.execute({ accessibleOwners: owners, id: mocks.recurring.id, scope } as never);
+  }
+
+  beforeEach(() => {
+    mocks.transactionRepository.findTransactionById.mockResolvedValue(mocks.recurring);
+  });
+
+  it('SHOULD delete only that row with scope ONLY_THIS AND not hide numbers the series already generated', async () => {
+    await run('ONLY_THIS');
+
+    expect(mocks.transactionRepository.deleteTransaction).toHaveBeenCalledWith(mocks.recurring.id);
+    expect(mocks.recurrenceRepository.skipNumber).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD hide the number WHEN the row was a projected occurrence made real', async () => {
+    mocks.transactionRepository.findTransactionById.mockResolvedValue({
+      ...mocks.recurring,
+      occurrenceNumber: 9,
+    });
+
+    await run('ONLY_THIS');
+
+    expect(mocks.recurrenceRepository.skipNumber).toHaveBeenCalledWith('series-1', 9);
+  });
+
+  it('SHOULD not fail WHEN the series is gone', async () => {
+    mocks.recurrenceRepository.findById.mockResolvedValue(undefined);
+
+    await run('ONLY_THIS');
+
+    expect(mocks.recurrenceRepository.skipNumber).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD answer 422 "Choose the delete scope" WHEN there is no scope AND delete nothing', async () => {
+    await expect(run()).rejects.toThrow('Choose the delete scope');
+    expect(mocks.transactionRepository.deleteTransaction).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD answer 422 WHEN the scope reaches more than one occurrence', async () => {
+    await expect(run('THIS_AND_NEXT')).rejects.toThrow(
+      'Use the recurrence to delete more occurrences',
+    );
+  });
+
+  it('SHOULD keep the refunds rule on a recurring card purchase', async () => {
+    mocks.cardCreditRepository.countRefundsByTransactionId.mockResolvedValue(1);
+
+    await expect(run('ONLY_THIS')).rejects.toThrow('Delete its refunds first');
+  });
+});

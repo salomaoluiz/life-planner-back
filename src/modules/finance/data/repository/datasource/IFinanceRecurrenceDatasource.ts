@@ -79,6 +79,8 @@ export interface IFinanceRecurrenceDatasource {
   findFutureNumbers(recurrenceIds: string[], afterDate: Date): Promise<FutureOccurrenceNumberRow[]>;
   findOccurrences(recurrenceId: string): Promise<FinancialTransactionWithRelations[]>;
   materialize(params: MaterializeRecurrenceDatasourceParams): Promise<void>;
+  removeFrom(params: RemoveRecurrenceDatasourceParams): Promise<RemoveRecurrenceDatasourceResult>;
+  skipNumber(id: string, occurrenceNumber: number): Promise<void>;
 }
 export interface MaterializeRecurrenceDatasourceParams {
   expected_last: number;
@@ -111,6 +113,18 @@ export interface OccurrenceRowDatasourceParams {
   invoice_month?: string;
   number: number;
   paid?: boolean;
+}
+export interface RemoveRecurrenceDatasourceParams {
+  confirm_paid: boolean;
+  delete_series: boolean;
+  detach_locked: boolean;
+  from_number: number;
+  id: string;
+  series_patch?: SeriesPatchDatasourceParams;
+}
+export interface RemoveRecurrenceDatasourceResult {
+  deleted: number;
+  detached: number;
 }
 export interface RowPatchDatasourceParams {
   account_id?: string;

@@ -13,6 +13,11 @@ const accessibleOwners = [{ owner: OwnerType.USER, ownerId: transactionMock.owne
 const cardCreditRepositoryMock = {
   countRefundsByTransactionId: jest.fn().mockResolvedValue(0),
 };
+const recurrenceRepositoryMock = {
+  findById: jest.fn(),
+  skipNumber: jest.fn().mockResolvedValue(undefined),
+};
+const recurringMock = new TransactionEntityFixture().withRecurrence('series-1', 4, 10).build();
 const transactionRepositoryMock = {
   deleteTransaction: jest.fn().mockResolvedValue(undefined),
   findTransactionById: jest.fn().mockResolvedValue(transactionMock),
@@ -26,11 +31,18 @@ beforeEach(async () => {
   jest.clearAllMocks();
   cardCreditRepositoryMock.countRefundsByTransactionId.mockResolvedValue(0);
   transactionRepositoryMock.findTransactionById.mockResolvedValue(transactionMock);
+  recurrenceRepositoryMock.findById.mockResolvedValue({
+    firstNumber: 1,
+    id: 'series-1',
+    lastGeneratedNumber: 6,
+  });
+  recurrenceRepositoryMock.skipNumber.mockResolvedValue(undefined);
 
   const module = await Test.createTestingModule({
     providers: [
       DeleteTransactionUseCase,
       { provide: 'IFinanceCardCreditRepository', useValue: cardCreditRepositoryMock },
+      { provide: 'IFinanceRecurrenceRepository', useValue: recurrenceRepositoryMock },
       { provide: 'IFinanceTransactionRepository', useValue: transactionRepositoryMock },
     ],
   }).compile();
@@ -41,6 +53,8 @@ beforeEach(async () => {
 const mocks = {
   accessibleOwners,
   cardCreditRepository: cardCreditRepositoryMock,
+  recurrenceRepository: recurrenceRepositoryMock,
+  recurring: recurringMock,
   transaction: transactionMock,
   transactionRepository: transactionRepositoryMock,
 };

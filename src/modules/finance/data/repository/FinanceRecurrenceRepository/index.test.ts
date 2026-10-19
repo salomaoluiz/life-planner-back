@@ -258,3 +258,49 @@ describe('createOccurrence', () => {
     });
   });
 });
+
+describe('removeFrom / skipNumber', () => {
+  it('SHOULD delegate removeFrom with column names AND return the counts', async () => {
+    mocks.datasource.removeFrom.mockResolvedValue({ deleted: 3, detached: 1 });
+
+    expect(
+      await setup.removeFrom({
+        confirmPaid: true,
+        deleteSeries: false,
+        detachLocked: false,
+        fromNumber: 5,
+        id: 'recurrence-1',
+        seriesPatch: { endDate: '2026-04-05', status: RecurrenceStatus.ENDED },
+      }),
+    ).toEqual({ deleted: 3, detached: 1 });
+    expect(mocks.datasource.removeFrom).toHaveBeenCalledWith({
+      confirm_paid: true,
+      delete_series: false,
+      detach_locked: false,
+      from_number: 5,
+      id: 'recurrence-1',
+      series_patch: expect.objectContaining({
+        end_date: new Date('2026-04-05T00:00:00.000Z'),
+        status: 'ENDED',
+      }),
+    });
+  });
+
+  it('SHOULD send no series patch WHEN there is none', async () => {
+    await setup.removeFrom({
+      confirmPaid: false,
+      deleteSeries: true,
+      detachLocked: true,
+      fromNumber: 0,
+      id: 'recurrence-1',
+    });
+
+    expect(mocks.datasource.removeFrom.mock.calls[0][0].series_patch).toBeUndefined();
+  });
+
+  it('SHOULD delegate skipNumber', async () => {
+    await setup.skipNumber('recurrence-1', 4);
+
+    expect(mocks.datasource.skipNumber).toHaveBeenCalledWith('recurrence-1', 4);
+  });
+});

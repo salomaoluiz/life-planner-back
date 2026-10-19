@@ -25,10 +25,12 @@ import {
   IFinanceRecurrenceDatasource,
   MaterializeRecurrenceDatasourceParams,
   OccurrenceRowDatasourceParams,
+  RemoveRecurrenceDatasourceParams,
+  RemoveRecurrenceDatasourceResult,
 } from '@finance/data/repository/datasource/IFinanceRecurrenceDatasource';
 import { FinancialTransactionWithRelations } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
-import { ledgerDeltas } from '@finance/domain/service/LedgerBalance';
+import { LedgerDelta, ledgerDeltas } from '@finance/domain/service/LedgerBalance';
 import { Database } from '@shared/infra/db/Database';
 
 // Account, category and card summaries come back in the same query (no N+1).
@@ -202,6 +204,107 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
         });
       }
     }
+  }
+
+  // Spec 034 FR 29-31. Card rows in an invoice with a payment record and rows that were refunded can't go away:
+  // scope ALL keeps them as plain purchases, THIS_AND_NEXT refuses. Paid account rows need `confirm_paid`.
+  async removeFrom(
+    params: RemoveRecurrenceDatasourceParams,
+  ): Promise<RemoveRecurrenceDatasourceResult> {
+    return this.db.client.$transaction(async (tx) => {
+      const series = await tx.financialRecurrence.findUnique({ where: { id: params.id } });
+
+      if (!series) {
+        throw new NotFoundException();
+      }
+
+      await lockCards(tx, series.credit_card_id ? [series.credit_card_id] : []);
+      await lockSeries(tx, series.id);
+
+      const rows = await tx.financialTransaction.findMany({
+        select: {
+          account_id: true,
+          credit_card_id: true,
+          id: true,
+          invoice_month: true,
+          paid: true,
+          type: true,
+          value: true,
+        },
+        where: { occurrence_number: { gte: params.from_number }, recurrence_id: series.id },
+      });
+      const payments = series.credit_card_id
+        ? await tx.financialInvoicePayment.findMany({
+            select: { invoice_month: true },
+            where: { credit_card_id: series.credit_card_id },
+          })
+        : [];
+      const paidMonths = new Set(payments.map((payment) => payment.invoice_month));
+      const refunded = await tx.financialTransaction.findMany({
+        select: { refunded_transaction_id: true },
+        where: { refunded_transaction_id: { in: rows.map((row) => row.id) } },
+      });
+      const refundedIds = new Set(refunded.map((row) => row.refunded_transaction_id));
+      const kept = rows.filter(
+        (row) =>
+          Boolean(row.credit_card_id && paidMonths.has(row.invoice_month as string)) ||
+          refundedIds.has(row.id),
+      );
+      const keptIds = new Set(kept.map((row) => row.id));
+      const removable = rows.filter((row) => !keptIds.has(row.id));
+      const paidRows = removable.filter((row) => row.account_id && row.paid === true);
+
+      if (kept.length > 0 && !params.detach_locked) {
+        throw new UnprocessableEntityException(
+          kept.some((row) => refundedIds.has(row.id))
+            ? 'Delete its refunds first'
+            : 'An occurrence is in a paid invoice',
+        );
+      }
+      if (paidRows.length > 0 && !params.confirm_paid) {
+        throw new ConflictException({
+          detachedCount: kept.length,
+          message: 'Paid occurrences',
+          paidCount: paidRows.length,
+          paidTotal: paidRows.reduce((total, row) => total + row.value, 0),
+        });
+      }
+
+      if (kept.length > 0) {
+        await tx.financialTransaction.updateMany({
+          data: { occurrence_number: null, recurrence_id: null },
+          where: { id: { in: [...keptIds] } },
+        });
+      }
+      if (removable.length > 0) {
+        await tx.financialTransaction.deleteMany({
+          where: { id: { in: removable.map((row) => row.id) } },
+        });
+        await applyLedgerDeltas(tx, reversalOf(paidRows));
+      }
+
+      if (params.delete_series) {
+        await tx.financialRecurrence.delete({ where: { id: series.id } });
+      } else if (params.series_patch) {
+        await tx.financialRecurrence.update({
+          data: params.series_patch,
+          where: { id: series.id },
+        });
+      }
+
+      return { deleted: removable.length, detached: kept.length };
+    });
+  }
+
+  // Appends to `skipped_numbers` under the series lock so a concurrent materialization sees it.
+  async skipNumber(id: string, occurrenceNumber: number): Promise<void> {
+    await this.db.client.$transaction(async (tx) => {
+      await lockSeries(tx, id);
+      await tx.financialRecurrence.update({
+        data: { skipped_numbers: { push: occurrenceNumber } },
+        where: { id },
+      });
+    });
   }
 
   // The series, its real rows and the ledger of the paid ones commit together (spec 034 FR 18).
@@ -478,4 +581,22 @@ function templateOf(
     type: base.type,
     value: base.value,
   };
+}
+
+// One delta per account (net, ascending id), undoing every paid row that goes away.
+function reversalOf(
+  rows: { account_id: null | string; paid: boolean | null; type: string; value: number }[],
+): LedgerDelta[] {
+  const totals = new Map<string, number>();
+
+  for (const row of rows) {
+    for (const { accountId, delta } of ledgerDeltas(toLedgerEntry(row), undefined)) {
+      totals.set(accountId, (totals.get(accountId) ?? 0) + delta);
+    }
+  }
+
+  return [...totals.entries()]
+    .filter(([, delta]) => delta !== 0)
+    .map(([accountId, delta]) => ({ accountId, delta }))
+    .sort((a, b) => a.accountId.localeCompare(b.accountId));
 }

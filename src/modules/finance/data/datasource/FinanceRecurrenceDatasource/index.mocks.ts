@@ -10,6 +10,7 @@ const accountUpdateSpy = jest.fn();
 const paymentFindFirstSpy = jest.fn();
 const paymentFindManySpy = jest.fn();
 const queryRawSpy = jest.fn();
+const recurrenceDeleteSpy = jest.fn();
 const recurrenceCreateSpy = jest.fn();
 const recurrenceFindManySpy = jest.fn();
 const recurrenceFindUniqueSpy = jest.fn();
@@ -32,6 +33,7 @@ const clientMock = {
   financialInvoicePayment: { findFirst: paymentFindFirstSpy, findMany: paymentFindManySpy },
   financialRecurrence: {
     create: recurrenceCreateSpy,
+    delete: recurrenceDeleteSpy,
     findMany: recurrenceFindManySpy,
     findUnique: recurrenceFindUniqueSpy,
     update: recurrenceUpdateSpy,
@@ -105,6 +107,7 @@ const spies = {
   paymentFindMany: paymentFindManySpy,
   queryRaw: queryRawSpy,
   recurrenceCreate: recurrenceCreateSpy,
+  recurrenceDelete: recurrenceDeleteSpy,
   recurrenceFindMany: recurrenceFindManySpy,
   recurrenceFindUnique: recurrenceFindUniqueSpy,
   recurrenceUpdate: recurrenceUpdateSpy,

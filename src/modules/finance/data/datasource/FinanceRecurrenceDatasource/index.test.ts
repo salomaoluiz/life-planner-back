@@ -456,3 +456,184 @@ describe('Method createOccurrence', () => {
     await expect(setup.createOccurrence(params)).rejects.toThrow('Not Found');
   });
 });
+
+describe('Method removeFrom', () => {
+  const base = {
+    confirm_paid: false,
+    delete_series: true,
+    detach_locked: true,
+    from_number: 0,
+    id: 'recurrence-1',
+  };
+  const unpaid = {
+    account_id: 'account-1',
+    credit_card_id: null,
+    id: 'row-1',
+    invoice_month: null,
+    paid: false,
+    type: 'EXPENSE',
+    value: 100,
+  };
+  const paid = { ...unpaid, id: 'row-2', paid: true, value: 300 };
+
+  beforeEach(() => {
+    spies.recurrenceFindUnique.mockResolvedValue(mocks.source);
+    spies.rowFindMany.mockResolvedValueOnce([unpaid, paid]).mockResolvedValueOnce([]);
+  });
+
+  it('SHOULD answer 404 WHEN the series does not exist', async () => {
+    spies.recurrenceFindUnique.mockResolvedValue(null);
+
+    await expect(setup.removeFrom(base)).rejects.toThrow('Not Found');
+  });
+
+  it('SHOULD answer 409 with the counts WHEN paid rows would go away without confirmation', async () => {
+    await expect(setup.removeFrom(base)).rejects.toMatchObject({
+      response: { detachedCount: 0, message: 'Paid occurrences', paidCount: 1, paidTotal: 300 },
+      status: 409,
+    });
+    expect(spies.rowDeleteMany).not.toHaveBeenCalled();
+    expect(spies.recurrenceDelete).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD delete the rows, reverse the ledger of the paid ones AND delete the series WHEN confirmed', async () => {
+    expect(await setup.removeFrom({ ...base, confirm_paid: true })).toEqual({
+      deleted: 2,
+      detached: 0,
+    });
+
+    expect(spies.rowDeleteMany).toHaveBeenCalledWith({ where: { id: { in: ['row-1', 'row-2'] } } });
+    expect(spies.accountUpdate).toHaveBeenCalledTimes(1);
+    expect(spies.accountUpdate).toHaveBeenCalledWith({
+      data: { ledger_balance: { increment: 300 } },
+      where: { id: 'account-1' },
+    });
+    expect(spies.recurrenceDelete).toHaveBeenCalledWith({ where: { id: 'recurrence-1' } });
+  });
+
+  it('SHOULD detach card rows in a paid invoice AND refunded rows, deleting the others', async () => {
+    spies.queryRaw.mockResolvedValue([]);
+    spies.recurrenceFindUnique.mockResolvedValue({
+      ...mocks.source,
+      account_id: null,
+      credit_card_id: 'card-1',
+    });
+    spies.paymentFindMany.mockResolvedValue([{ invoice_month: '2026-09' }]);
+    spies.rowFindMany.mockReset();
+    spies.rowFindMany
+      .mockResolvedValueOnce([
+        {
+          ...unpaid,
+          account_id: null,
+          credit_card_id: 'card-1',
+          id: 'in-paid',
+          invoice_month: '2026-09',
+          paid: null,
+        },
+        {
+          ...unpaid,
+          account_id: null,
+          credit_card_id: 'card-1',
+          id: 'refunded',
+          invoice_month: '2026-10',
+          paid: null,
+        },
+        {
+          ...unpaid,
+          account_id: null,
+          credit_card_id: 'card-1',
+          id: 'open',
+          invoice_month: '2026-10',
+          paid: null,
+        },
+      ])
+      .mockResolvedValueOnce([{ refunded_transaction_id: 'refunded' }]);
+
+    expect(await setup.removeFrom(base)).toEqual({ deleted: 1, detached: 2 });
+
+    expect(spies.rowUpdateMany).toHaveBeenCalledWith({
+      data: { occurrence_number: null, recurrence_id: null },
+      where: { id: { in: ['in-paid', 'refunded'] } },
+    });
+    expect(spies.rowDeleteMany).toHaveBeenCalledWith({ where: { id: { in: ['open'] } } });
+    expect(spies.accountUpdate).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD refuse WHEN a row is in a paid invoice AND the scope does not detach', async () => {
+    spies.recurrenceFindUnique.mockResolvedValue({
+      ...mocks.source,
+      account_id: null,
+      credit_card_id: 'card-1',
+    });
+    spies.paymentFindMany.mockResolvedValue([{ invoice_month: '2026-09' }]);
+    spies.rowFindMany.mockReset();
+    spies.rowFindMany
+      .mockResolvedValueOnce([
+        {
+          ...unpaid,
+          account_id: null,
+          credit_card_id: 'card-1',
+          invoice_month: '2026-09',
+          paid: null,
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    await expect(setup.removeFrom({ ...base, detach_locked: false })).rejects.toThrow(
+      'An occurrence is in a paid invoice',
+    );
+  });
+
+  it('SHOULD refuse with "Delete its refunds first" WHEN a refunded row would be deleted', async () => {
+    spies.rowFindMany.mockReset();
+    spies.rowFindMany
+      .mockResolvedValueOnce([unpaid])
+      .mockResolvedValueOnce([{ refunded_transaction_id: 'row-1' }]);
+
+    await expect(setup.removeFrom({ ...base, detach_locked: false })).rejects.toThrow(
+      'Delete its refunds first',
+    );
+  });
+
+  it('SHOULD patch the series instead of deleting it (THIS_AND_NEXT) AND skip the delete WHEN no row is left', async () => {
+    spies.rowFindMany.mockReset();
+    spies.rowFindMany.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+
+    expect(
+      await setup.removeFrom({
+        ...base,
+        delete_series: false,
+        from_number: 5,
+        series_patch: { status: 'ENDED' },
+      }),
+    ).toEqual({ deleted: 0, detached: 0 });
+
+    expect(spies.rowDeleteMany).not.toHaveBeenCalled();
+    expect(spies.recurrenceDelete).not.toHaveBeenCalled();
+    expect(spies.recurrenceUpdate).toHaveBeenCalledWith({
+      data: { status: 'ENDED' },
+      where: { id: 'recurrence-1' },
+    });
+  });
+
+  it('SHOULD leave the series untouched WHEN it is neither deleted nor patched', async () => {
+    spies.rowFindMany.mockReset();
+    spies.rowFindMany.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+
+    await setup.removeFrom({ ...base, delete_series: false });
+
+    expect(spies.recurrenceUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe('Method skipNumber', () => {
+  it('SHOULD append the number under the series lock', async () => {
+    await setup.skipNumber('recurrence-1', 4);
+
+    expect(spies.queryRaw.mock.calls[0][0].sql).toContain('FOR UPDATE');
+    expect(spies.recurrenceUpdate).toHaveBeenCalledWith({
+      data: { skipped_numbers: { push: 4 } },
+      where: { id: 'recurrence-1' },
+    });
+  });
+});
