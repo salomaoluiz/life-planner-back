@@ -1,4 +1,8 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
@@ -100,5 +104,45 @@ describe('UpdateCreditCardUseCase', () => {
   ])('SHOULD reject %s', async (_label, patch) => {
     await expect(setup.execute({ ...mocks.base, ...patch } as never)).rejects.toThrow();
     expect(mocks.creditCardRepository.updateCreditCard).not.toHaveBeenCalled();
+  });
+
+  describe('payment account (spec 035)', () => {
+    const id = 'account-id';
+
+    it('SHOULD forward an accessible active payment account', async () => {
+      await setup.execute({ ...mocks.base, paymentAccountId: id });
+
+      expect(mocks.creditCardRepository.updateCreditCard).toHaveBeenCalledWith(
+        expect.objectContaining({ paymentAccountId: id }),
+      );
+    });
+
+    it('SHOULD throw 404 WHEN the account is missing or not accessible', async () => {
+      mocks.accountRepository.findAccountsByIds.mockResolvedValueOnce([]);
+
+      await expect(setup.execute({ ...mocks.base, paymentAccountId: id })).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(mocks.creditCardRepository.updateCreditCard).not.toHaveBeenCalled();
+    });
+
+    it('SHOULD throw 422 WHEN the account is archived', async () => {
+      mocks.accountRepository.findAccountsByIds.mockResolvedValueOnce([
+        { ...mocks.account, status: 'ARCHIVED' },
+      ]);
+
+      await expect(setup.execute({ ...mocks.base, paymentAccountId: id })).rejects.toThrow(
+        UnprocessableEntityException,
+      );
+    });
+  });
+
+  it('SHOULD forward null to remove the link without checking any account (spec 035)', async () => {
+    await setup.execute({ ...mocks.base, paymentAccountId: null });
+
+    expect(mocks.accountRepository.findAccountsByIds).not.toHaveBeenCalled();
+    expect(mocks.creditCardRepository.updateCreditCard).toHaveBeenCalledWith(
+      expect.objectContaining({ paymentAccountId: null }),
+    );
   });
 });

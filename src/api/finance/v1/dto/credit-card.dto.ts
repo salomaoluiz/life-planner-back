@@ -27,6 +27,7 @@ export const CreateCreditCardApiSchema = z.object({
   limit: CreditCardLimitSchema,
   owner: OwnerTypeApiSchema,
   ownerId: OwnerIdApiSchema,
+  paymentAccountId: z.uuid().optional(),
   paymentDay: BillingDaySchema.optional(),
   status: StatusApiSchema.default(AccountStatus.ACTIVE),
   title: NameApiSchema,
@@ -43,6 +44,7 @@ export const UpdateCreditCardApiSchema = z
     limit: CreditCardLimitSchema,
     owner: OwnerTypeApiSchema,
     ownerId: OwnerIdApiSchema,
+    paymentAccountId: z.uuid().nullable(),
     paymentDay: BillingDaySchema.nullable(),
     status: StatusApiSchema,
     title: NameApiSchema,
@@ -65,6 +67,11 @@ export const CreditCardApiSchema = z.object({
   limit: z.number().int(),
   owner: OwnerTypeApiSchema,
   ownerId: z.uuid(),
+  // The linked account is `null` for a reader who cannot access it (spec 035 FR 23).
+  paymentAccount: z
+    .object({ icon: z.string(), id: z.uuid(), name: z.string(), status: StatusApiSchema })
+    .nullable(),
+  paymentAccountId: z.uuid().nullable(),
   paymentDay: z.number().int().optional(),
   status: StatusApiSchema,
   title: z.string(),

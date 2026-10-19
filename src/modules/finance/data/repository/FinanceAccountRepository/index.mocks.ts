@@ -18,8 +18,11 @@ const accountDatasourceMock = {
   delete: jest.fn().mockResolvedValue(undefined),
   exists: jest.fn().mockResolvedValue(true),
   findById: jest.fn().mockResolvedValue(accountPersistenceMock),
+  findByIds: jest.fn().mockResolvedValue([accountPersistenceMock]),
   findByOwners: jest.fn().mockResolvedValue([accountPersistenceMock]),
+  findPaidSumsFrom: jest.fn().mockResolvedValue([]),
   findUnpaidSums: jest.fn().mockResolvedValue([]),
+  findUnpaidSumsUntil: jest.fn().mockResolvedValue([]),
   update: jest.fn().mockResolvedValue(accountPersistenceMock),
 };
 

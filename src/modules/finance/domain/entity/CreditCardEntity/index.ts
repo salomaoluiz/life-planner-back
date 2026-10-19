@@ -12,6 +12,7 @@ interface ICreditCardEntity {
   limit: number;
   owner: OwnerType;
   ownerId: string;
+  paymentAccountId?: string;
   paymentDay?: number;
   status: AccountStatus;
   title: string;
@@ -29,6 +30,7 @@ class CreditCardEntity {
   limit: number;
   owner: OwnerType;
   ownerId: string;
+  paymentAccountId?: string;
   paymentDay?: number;
   status: AccountStatus;
   title: string;
@@ -45,6 +47,7 @@ class CreditCardEntity {
     this.limit = params.limit;
     this.owner = params.owner;
     this.ownerId = params.ownerId;
+    this.paymentAccountId = params.paymentAccountId;
     this.paymentDay = params.paymentDay;
     this.status = params.status;
     this.title = params.title;

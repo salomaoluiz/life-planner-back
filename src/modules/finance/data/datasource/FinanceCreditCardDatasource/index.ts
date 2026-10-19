@@ -61,6 +61,7 @@ export class FinanceCreditCardDatasource implements IFinanceCreditCardDatasource
       limit: params.limit,
       owner: params.owner,
       owner_id: params.owner_id,
+      payment_account_id: params.payment_account_id,
       payment_day: params.payment_day,
       status: params.status,
       title: params.title,

@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 
+import AccountEntityFixture from '@finance/domain/entity/mocks/AccountEntity.fixture';
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
 import { CreditCardBrand } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -9,6 +10,10 @@ import { CreateCreditCardUseCase } from './index';
 // region Mocks
 
 const cardMock = new CreditCardEntityFixture().build();
+const accountMock = new AccountEntityFixture()
+  .withOwner(OwnerType.USER)
+  .withOwnerId(cardMock.ownerId)
+  .build();
 const updatedMock = new CreditCardEntityFixture().withId(cardMock.id).build();
 const inputMock = {
   accessibleOwners: [{ owner: OwnerType.USER, ownerId: cardMock.ownerId }],
@@ -23,6 +28,7 @@ const inputMock = {
 };
 const baseMock = { accessibleOwners: inputMock.accessibleOwners, id: cardMock.id };
 
+const accountRepositoryMock = { findAccountsByIds: jest.fn().mockResolvedValue([accountMock]) };
 const creditCardRepositoryMock = {
   createCreditCard: jest.fn().mockResolvedValue(cardMock),
   deleteCreditCard: jest.fn().mockResolvedValue(undefined),
@@ -41,6 +47,7 @@ beforeEach(async () => {
   const module = await Test.createTestingModule({
     providers: [
       CreateCreditCardUseCase,
+      { provide: 'IFinanceAccountRepository', useValue: accountRepositoryMock },
       { provide: 'IFinanceCreditCardRepository', useValue: creditCardRepositoryMock },
     ],
   }).compile();
@@ -49,6 +56,8 @@ beforeEach(async () => {
 });
 
 const mocks = {
+  account: accountMock,
+  accountRepository: accountRepositoryMock,
   base: baseMock,
   card: cardMock,
   creditCardRepository: creditCardRepositoryMock,

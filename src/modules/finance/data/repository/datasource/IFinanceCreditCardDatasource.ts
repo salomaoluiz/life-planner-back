@@ -10,6 +10,7 @@ export interface CreateCreditCardDatasourceParams {
   limit: number;
   owner: OwnerType;
   owner_id: string;
+  payment_account_id?: string;
   payment_day?: number;
   status: AccountStatus;
   title: string;
@@ -36,6 +37,7 @@ export interface UpdateCreditCardDatasourceParams {
   limit?: number;
   owner?: OwnerType;
   owner_id?: string;
+  payment_account_id?: null | string;
   payment_day?: null | number;
   status?: AccountStatus;
   title?: string;

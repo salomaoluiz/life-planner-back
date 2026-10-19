@@ -15,6 +15,7 @@ const rawCardMock: FinancialCreditCard = {
   limit: 500000,
   owner: 'FAMILY',
   owner_id: faker.string.uuid(),
+  payment_account_id: faker.string.uuid(),
   payment_day: 5,
   status: 'ARCHIVED',
   title: 'Travel',

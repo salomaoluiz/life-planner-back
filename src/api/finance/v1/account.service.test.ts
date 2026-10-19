@@ -108,3 +108,43 @@ describe('adjustBalance', () => {
     expect(result).not.toHaveProperty('ledgerBalance');
   });
 });
+
+describe('getDailyBalances (spec 035)', () => {
+  it('SHOULD materialize BEFORE reading AND map the accounts without balances', async () => {
+    const order: string[] = [];
+    mocks.materializeRecurrencesUseCase.execute.mockImplementationOnce(async () => {
+      order.push('materialize');
+    });
+    mocks.getDailyBalancesUseCase.execute.mockImplementationOnce(async () => {
+      order.push('read');
+
+      return mocks.dailyResult;
+    });
+
+    const result = await setup.getDailyBalances(mocks.userId, ['a'], '2026-11', '2026-10-20');
+
+    expect(order).toEqual(['materialize', 'read']);
+    expect(mocks.materializeRecurrencesUseCase.execute).toHaveBeenCalledWith({
+      accessibleOwners: mocks.accessibleOwners,
+      ownerIds: ['a'],
+      today: '2026-10-20',
+    });
+    expect(mocks.getDailyBalancesUseCase.execute).toHaveBeenCalledWith({
+      accessibleOwners: mocks.accessibleOwners,
+      month: '2026-11',
+      ownerIds: ['a'],
+      today: '2026-10-20',
+    });
+    expect(result.days).toEqual(mocks.dailyResult.days);
+    expect(result.accounts).toEqual([
+      {
+        icon: 'bank',
+        id: mocks.dailyResult.accounts[0].id,
+        name: 'Checking',
+        owner: 'USER',
+        ownerId: mocks.userId,
+      },
+    ]);
+    expect(JSON.stringify(result)).not.toContain('ledgerBalance');
+  });
+});

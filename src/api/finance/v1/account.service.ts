@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import {
   AccountOutput,
   CreateAccountApiInput,
+  DailyBalancesOutput,
   UpdateAccountApiInput,
 } from '@api/finance/v1/dto/account.dto';
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
@@ -10,6 +11,7 @@ import { AdjustAccountBalanceUseCase } from '@finance/application/use-case/Adjus
 import { CreateAccountUseCase } from '@finance/application/use-case/CreateAccountUseCase';
 import { DeleteAccountUseCase } from '@finance/application/use-case/DeleteAccountUseCase';
 import { GetAccountsUseCase } from '@finance/application/use-case/GetAccountsUseCase';
+import { GetDailyBalancesUseCase } from '@finance/application/use-case/GetDailyBalancesUseCase';
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { UpdateAccountUseCase } from '@finance/application/use-case/UpdateAccountUseCase';
 import { AccountWithBalances } from '@finance/domain/service/AccountBalance';
@@ -43,6 +45,7 @@ export class AccountService {
     private readonly deleteAccountUseCase: DeleteAccountUseCase,
     private readonly financeAccessService: FinanceAccessService,
     private readonly getAccountsUseCase: GetAccountsUseCase,
+    private readonly getDailyBalancesUseCase: GetDailyBalancesUseCase,
     private readonly materializeRecurrencesUseCase: MaterializeRecurrencesUseCase,
     private readonly updateAccountUseCase: UpdateAccountUseCase,
   ) {}
@@ -96,6 +99,37 @@ export class AccountService {
     const accounts = await this.getAccountsUseCase.execute({ accessibleOwners, ownerIds, today });
 
     return accounts.map((account) => toAccountOutput(account));
+  }
+
+  async getDailyBalances(
+    userId: string,
+    ownerIds: string[] | undefined,
+    month: string,
+    today: string,
+  ): Promise<DailyBalancesOutput> {
+    const accessibleOwners = await this.financeAccessService.resolve(userId);
+
+    // Spec 035 FR 17: due occurrences become real rows before the sums are read.
+    await this.materializeRecurrencesUseCase.execute({ accessibleOwners, ownerIds, today });
+
+    const result = await this.getDailyBalancesUseCase.execute({
+      accessibleOwners,
+      month,
+      ownerIds,
+      today,
+    });
+
+    return {
+      accounts: result.accounts.map((account) => ({
+        icon: account.icon,
+        id: account.id,
+        name: account.name,
+        owner: account.owner,
+        ownerId: account.ownerId,
+      })),
+      days: result.days,
+      month: result.month,
+    };
   }
 
   async update(

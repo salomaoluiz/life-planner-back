@@ -101,6 +101,7 @@ model FinancialAccount {
   transactions     FinancialTransaction[]
   recurrences      FinancialRecurrence[]
   invoice_payments FinancialInvoicePayment[]
+  payment_cards    FinancialCreditCard[]     @relation("CardPaymentAccount")
 
   @@index([owner, owner_id])
   @@map("financial_accounts")
@@ -131,12 +132,17 @@ model FinancialCreditCard {
   created_at  DateTime        @default(now()) @db.Timestamptz(6)
   updated_at  DateTime        @updatedAt @db.Timestamptz(6)
 
+  // Optional account that pays the invoice in the day balance forecast (spec 035).
+  payment_account_id String?
+  payment_account    FinancialAccount? @relation("CardPaymentAccount", fields: [payment_account_id], references: [id], onDelete: SetNull)
+
   transactions      FinancialTransaction[]
   invoice_payments  FinancialInvoicePayment[]
   installment_plans FinancialInstallmentPlan[]
   recurrences       FinancialRecurrence[]
 
   @@index([owner, owner_id])
+  @@index([payment_account_id])
   @@map("financial_credit_cards")
 }
 

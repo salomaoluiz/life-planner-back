@@ -26,8 +26,10 @@ const requestMock = { user: { id: userId } } as JwtPayload & Request;
 const accountServiceMock = {
   adjustBalance: jest.fn().mockResolvedValue(accountApiMock),
   create: jest.fn().mockResolvedValue(accountApiMock),
+  dailyBalances: jest.fn(),
   delete: jest.fn().mockResolvedValue(undefined),
   findAll: jest.fn().mockResolvedValue([accountApiMock]),
+  getDailyBalances: jest.fn().mockResolvedValue({ accounts: [], days: [], month: '2026-11' }),
   update: jest.fn().mockResolvedValue(accountApiMock),
 };
 

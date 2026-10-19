@@ -93,3 +93,38 @@ describe('delete', () => {
     await expect(setup.delete(mocks.userId, 'x')).rejects.toThrow(NotFoundException);
   });
 });
+
+describe('paymentAccount (spec 035)', () => {
+  it('SHOULD read the linked accounts ONCE per request AND fill paymentAccount', async () => {
+    mocks.getUseCase.execute.mockResolvedValueOnce([mocks.cardResult, mocks.cardResult]);
+
+    await setup.findAll(mocks.userId);
+
+    expect(mocks.getAccountsByIdsUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(mocks.getAccountsByIdsUseCase.execute).toHaveBeenCalledWith({
+      accessibleOwners: mocks.accessibleOwners,
+      ids: [mocks.linkedAccountId, mocks.linkedAccountId],
+    });
+  });
+
+  it('SHOULD keep paymentAccountId AND set paymentAccount null WHEN the reader cannot access it', async () => {
+    mocks.getAccountsByIdsUseCase.execute.mockResolvedValueOnce([]);
+
+    const result = await setup.findOne(mocks.userId, mocks.cardApi.id);
+
+    expect(result.paymentAccountId).toBe(mocks.linkedAccountId);
+    expect(result.paymentAccount).toBeNull();
+  });
+
+  it('SHOULD return nulls for a card without a link', async () => {
+    mocks.getByIdUseCase.execute.mockResolvedValueOnce({
+      ...mocks.cardResult,
+      paymentAccountId: undefined,
+    });
+
+    const result = await setup.findOne(mocks.userId, mocks.cardApi.id);
+
+    expect(result.paymentAccountId).toBeNull();
+    expect(result.paymentAccount).toBeNull();
+  });
+});

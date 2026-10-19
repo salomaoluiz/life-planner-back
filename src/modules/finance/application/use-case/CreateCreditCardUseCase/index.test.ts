@@ -1,4 +1,8 @@
-import { ForbiddenException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
@@ -79,5 +83,36 @@ describe('CreateCreditCardUseCase', () => {
   ])('SHOULD reject %s', async (_label, patch) => {
     await expect(setup.execute({ ...mocks.input, ...patch } as never)).rejects.toThrow();
     expect(mocks.creditCardRepository.createCreditCard).not.toHaveBeenCalled();
+  });
+
+  describe('payment account (spec 035)', () => {
+    const id = 'account-id';
+
+    it('SHOULD forward an accessible active payment account', async () => {
+      await setup.execute({ ...mocks.input, paymentAccountId: id });
+
+      expect(mocks.creditCardRepository.createCreditCard).toHaveBeenCalledWith(
+        expect.objectContaining({ paymentAccountId: id }),
+      );
+    });
+
+    it('SHOULD throw 404 WHEN the account is missing or not accessible', async () => {
+      mocks.accountRepository.findAccountsByIds.mockResolvedValueOnce([]);
+
+      await expect(setup.execute({ ...mocks.input, paymentAccountId: id })).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(mocks.creditCardRepository.createCreditCard).not.toHaveBeenCalled();
+    });
+
+    it('SHOULD throw 422 WHEN the account is archived', async () => {
+      mocks.accountRepository.findAccountsByIds.mockResolvedValueOnce([
+        { ...mocks.account, status: 'ARCHIVED' },
+      ]);
+
+      await expect(setup.execute({ ...mocks.input, paymentAccountId: id })).rejects.toThrow(
+        UnprocessableEntityException,
+      );
+    });
   });
 });

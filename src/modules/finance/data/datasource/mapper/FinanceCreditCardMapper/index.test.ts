@@ -15,6 +15,7 @@ describe('FinanceCreditCardMapper', () => {
         limit: 500000,
         owner: 'FAMILY',
         ownerId: mocks.raw.owner_id,
+        paymentAccountId: mocks.raw.payment_account_id,
         paymentDay: 5,
         status: 'ARCHIVED',
         title: 'Travel',
@@ -26,9 +27,11 @@ describe('FinanceCreditCardMapper', () => {
       const result = FinanceCreditCardMapper.toDomain({
         ...mocks.raw,
         last_digits: null,
+        payment_account_id: null,
         payment_day: null,
       });
 
+      expect(result.paymentAccountId).toBeUndefined();
       expect(result.paymentDay).toBeUndefined();
       expect(result.lastDigits).toBeUndefined();
     });

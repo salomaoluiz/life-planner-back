@@ -12,12 +12,15 @@ import {
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { CreateCreditCardUseCase } from '@finance/application/use-case/CreateCreditCardUseCase';
 import { DeleteCreditCardUseCase } from '@finance/application/use-case/DeleteCreditCardUseCase';
+import { GetAccountsByIdsUseCase } from '@finance/application/use-case/GetAccountsByIdsUseCase';
 import { GetCreditCardByIdUseCase } from '@finance/application/use-case/GetCreditCardByIdUseCase';
 import { GetCreditCardsOverviewUseCase } from '@finance/application/use-case/GetCreditCardsOverviewUseCase';
 import { GetCreditCardsUseCase } from '@finance/application/use-case/GetCreditCardsUseCase';
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { UpdateCreditCardUseCase } from '@finance/application/use-case/UpdateCreditCardUseCase';
+import AccountEntity from '@finance/domain/entity/AccountEntity';
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
+import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { AccountStatus } from '@finance/domain/enum';
 import { Invoice } from '@finance/domain/service/InvoiceCalculator';
 
@@ -26,7 +29,12 @@ export function toInvoiceOutput(invoice: Invoice): z.infer<typeof InvoiceApiSche
   return invoice;
 }
 
-function toCreditCardOutput(card: CreditCardEntity): CreditCardOutput {
+function toCreditCardOutput(
+  card: CreditCardEntity,
+  accounts: Map<string, AccountEntity>,
+): CreditCardOutput {
+  const account = card.paymentAccountId ? accounts.get(card.paymentAccountId) : undefined;
+
   return {
     brand: card.brand,
     closingDay: card.closingDay,
@@ -38,6 +46,10 @@ function toCreditCardOutput(card: CreditCardEntity): CreditCardOutput {
     limit: card.limit,
     owner: card.owner,
     ownerId: card.ownerId,
+    paymentAccount: account
+      ? { icon: account.icon, id: account.id, name: account.name, status: account.status }
+      : null,
+    paymentAccountId: card.paymentAccountId ?? null,
     paymentDay: card.paymentDay,
     status: card.status,
     title: card.title,
@@ -51,6 +63,7 @@ export class CreditCardService {
     private readonly createCreditCardUseCase: CreateCreditCardUseCase,
     private readonly deleteCreditCardUseCase: DeleteCreditCardUseCase,
     private readonly financeAccessService: FinanceAccessService,
+    private readonly getAccountsByIdsUseCase: GetAccountsByIdsUseCase,
     private readonly getCreditCardByIdUseCase: GetCreditCardByIdUseCase,
     private readonly getCreditCardsOverviewUseCase: GetCreditCardsOverviewUseCase,
     private readonly getCreditCardsUseCase: GetCreditCardsUseCase,
@@ -61,9 +74,9 @@ export class CreditCardService {
   async create(userId: string, input: CreateCreditCardApiInput): Promise<CreditCardOutput> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
-    return toCreditCardOutput(
-      await this.createCreditCardUseCase.execute({ ...input, accessibleOwners }),
-    );
+    const card = await this.createCreditCardUseCase.execute({ ...input, accessibleOwners });
+
+    return toCreditCardOutput(card, await this.accountsOf(accessibleOwners, [card]));
   }
 
   async delete(userId: string, id: string): Promise<void> {
@@ -81,15 +94,17 @@ export class CreditCardService {
 
     const cards = await this.getCreditCardsUseCase.execute({ accessibleOwners, ownerIds, status });
 
-    return cards.map((card) => toCreditCardOutput(card));
+    const accounts = await this.accountsOf(accessibleOwners, cards);
+
+    return cards.map((card) => toCreditCardOutput(card, accounts));
   }
 
   async findOne(userId: string, id: string): Promise<CreditCardOutput> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
-    return toCreditCardOutput(
-      await this.getCreditCardByIdUseCase.execute({ accessibleOwners, id }),
-    );
+    const card = await this.getCreditCardByIdUseCase.execute({ accessibleOwners, id });
+
+    return toCreditCardOutput(card, await this.accountsOf(accessibleOwners, [card]));
   }
 
   async findOverview(
@@ -113,11 +128,16 @@ export class CreditCardService {
       today: resolved,
     });
 
+    const accounts = await this.accountsOf(
+      accessibleOwners,
+      overview.cards.map((item) => item.card),
+    );
+
     return {
       aggregate: overview.aggregate,
       cards: overview.cards.map((item) => ({
         ...item,
-        card: toCreditCardOutput(item.card),
+        card: toCreditCardOutput(item.card, accounts),
         closedInvoices: item.closedInvoices.map((invoice) => toInvoiceOutput(invoice)),
         openInvoice: toInvoiceOutput(item.openInvoice),
         upcomingInvoices: item.upcomingInvoices.map((invoice) => toInvoiceOutput(invoice)),
@@ -132,8 +152,19 @@ export class CreditCardService {
   ): Promise<CreditCardOutput> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
-    return toCreditCardOutput(
-      await this.updateCreditCardUseCase.execute({ ...input, accessibleOwners, id }),
-    );
+    const card = await this.updateCreditCardUseCase.execute({ ...input, accessibleOwners, id });
+
+    return toCreditCardOutput(card, await this.accountsOf(accessibleOwners, [card]));
+  }
+
+  // ONE read for every linked account the caller can see; the others stay out of the map (FR 23).
+  private async accountsOf(
+    accessibleOwners: OwnerAccess[],
+    cards: CreditCardEntity[],
+  ): Promise<Map<string, AccountEntity>> {
+    const ids = cards.flatMap((card) => card.paymentAccountId ?? []);
+    const accounts = await this.getAccountsByIdsUseCase.execute({ accessibleOwners, ids });
+
+    return new Map(accounts.map((account) => [account.id, account]));
   }
 }
