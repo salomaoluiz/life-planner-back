@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 
 import { AttachAccountBalancesUseCase } from '@finance/application/use-case/AttachAccountBalancesUseCase';
+import { EndRecurrencesBySourceUseCase } from '@finance/application/use-case/EndRecurrencesBySourceUseCase';
 import AccountEntityFixture from '@finance/domain/entity/mocks/AccountEntity.fixture';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
@@ -18,6 +19,7 @@ const accountRepositoryMock = {
   updateAccount: jest.fn().mockResolvedValue(updatedMock),
 };
 const attachMock = { execute: jest.fn() };
+const endRecurrencesMock = { execute: jest.fn().mockResolvedValue(0) };
 
 // endregion Mocks
 
@@ -32,6 +34,7 @@ beforeEach(async () => {
     providers: [
       UpdateAccountUseCase,
       { provide: AttachAccountBalancesUseCase, useValue: attachMock },
+      { provide: EndRecurrencesBySourceUseCase, useValue: endRecurrencesMock },
       { provide: 'IFinanceAccountRepository', useValue: accountRepositoryMock },
     ],
   }).compile();
@@ -44,6 +47,7 @@ const mocks = {
   account: accountMock,
   accountRepository: accountRepositoryMock,
   attach: attachMock,
+  endRecurrences: endRecurrencesMock,
   updated: updatedMock,
   withBalances: withBalancesMock,
 };

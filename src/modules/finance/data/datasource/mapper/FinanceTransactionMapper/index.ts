@@ -1,7 +1,13 @@
 import { toCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
 import { FinancialTransactionWithRelations } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
-import { InvoicePaymentMethod, SystemCategoryKey, TransactionType } from '@finance/domain/enum';
+import {
+  InvoicePaymentMethod,
+  RecurrenceFrequency,
+  SystemCategoryKey,
+  TransactionType,
+} from '@finance/domain/enum';
+import { totalOccurrences } from '@finance/domain/service/RecurrenceSchedule';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export class FinanceTransactionMapper {
@@ -44,6 +50,17 @@ export class FinanceTransactionMapper {
       installmentNumber: raw.installment_number,
       installmentPlanId: raw.installment_plan_id,
       invoiceMonth: raw.invoice_month,
+      occurrenceCount: raw.recurrence
+        ? totalOccurrences(
+            {
+              endDate: raw.recurrence.end_date ? toCalendarDate(raw.recurrence.end_date) : null,
+              frequency: RecurrenceFrequency[raw.recurrence.frequency],
+              startDate: toCalendarDate(raw.recurrence.start_date),
+            },
+            raw.recurrence.first_number,
+          )
+        : null,
+      occurrenceNumber: raw.occurrence_number,
       owner: OwnerType[raw.owner],
       ownerId: raw.owner_id,
       paid: raw.paid === true,
@@ -52,6 +69,8 @@ export class FinanceTransactionMapper {
       paidFromTransactionId: raw.paid_from_transaction_id,
       paymentMethod: raw.payment_method ? InvoicePaymentMethod[raw.payment_method] : null,
       prepaymentId: raw.prepayment_id,
+      recurrenceFrequency: raw.recurrence ? RecurrenceFrequency[raw.recurrence.frequency] : null,
+      recurrenceId: raw.recurrence_id,
       refundedName: raw.refunded_transaction?.description ?? raw.refunded_plan?.description ?? null,
       refundedPlanId: raw.refunded_plan_id,
       refundedTransactionId: raw.refunded_transaction_id,

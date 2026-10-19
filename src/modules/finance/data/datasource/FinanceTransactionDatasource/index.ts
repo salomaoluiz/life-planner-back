@@ -43,6 +43,7 @@ export const TRANSACTION_RELATIONS = {
   paid_from_transaction: {
     select: { account: { select: { name: true } }, account_id: true },
   },
+  recurrence: { select: { end_date: true, first_number: true, frequency: true, start_date: true } },
   refunded_plan: { select: { description: true } },
   refunded_transaction: { select: { description: true } },
 };
@@ -57,14 +58,15 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
 
   async countByCategoryIds(categoryIds: string[]): Promise<number> {
     // A plan keeps its own category even when every installment was recategorized: it blocks the delete too.
-    const [transactions, plans] = await Promise.all([
+    const [transactions, plans, series] = await Promise.all([
       this.db.client.financialTransaction.count({ where: { category_id: { in: categoryIds } } }),
       this.db.client.financialInstallmentPlan.count({
         where: { category_id: { in: categoryIds } },
       }),
+      this.db.client.financialRecurrence.count({ where: { category_id: { in: categoryIds } } }),
     ]);
 
-    return transactions + plans;
+    return transactions + plans + series;
   }
 
   async countByCreditCardId(creditCardId: string): Promise<number> {

@@ -6,6 +6,7 @@ import { PayInvoiceApiInput } from '@api/finance/v1/dto/invoice.dto';
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { GetInvoicesForListUseCase } from '@finance/application/use-case/GetInvoicesForListUseCase';
 import { GetInvoiceUseCase, InvoiceDetail } from '@finance/application/use-case/GetInvoiceUseCase';
+import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { PayInvoiceUseCase } from '@finance/application/use-case/PayInvoiceUseCase';
 import { UndoInvoicePaymentUseCase } from '@finance/application/use-case/UndoInvoicePaymentUseCase';
 import InvoicePaymentEntity from '@finance/domain/entity/InvoicePaymentEntity';
@@ -78,6 +79,7 @@ export class InvoiceService {
     private readonly financeAccessService: FinanceAccessService,
     private readonly getInvoiceUseCase: GetInvoiceUseCase,
     private readonly getInvoicesForListUseCase: GetInvoicesForListUseCase,
+    private readonly materializeRecurrencesUseCase: MaterializeRecurrencesUseCase,
     private readonly payInvoiceUseCase: PayInvoiceUseCase,
     private readonly undoInvoicePaymentUseCase: UndoInvoicePaymentUseCase,
   ) {}
@@ -85,11 +87,19 @@ export class InvoiceService {
   async findForList(userId: string, month: string, ownerIds?: string[], today?: string) {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
+    const resolved = today ?? todayInSaoPaulo();
+
+    await this.materializeRecurrencesUseCase.execute({
+      accessibleOwners,
+      ownerIds,
+      today: resolved,
+    });
+
     const details = await this.getInvoicesForListUseCase.execute({
       accessibleOwners,
       month,
       ownerIds,
-      today: today ?? todayInSaoPaulo(),
+      today: resolved,
     });
 
     return details.map((detail) => toDetailOutput(detail));
@@ -98,12 +108,16 @@ export class InvoiceService {
   async findOne(userId: string, creditCardId: string, invoiceMonth: string, today?: string) {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
+    const resolved = today ?? todayInSaoPaulo();
+
+    await this.materializeRecurrencesUseCase.execute({ accessibleOwners, today: resolved });
+
     return toDetailOutput(
       await this.getInvoiceUseCase.execute({
         accessibleOwners,
         creditCardId,
         invoiceMonth,
-        today: today ?? todayInSaoPaulo(),
+        today: resolved,
       }),
     );
   }

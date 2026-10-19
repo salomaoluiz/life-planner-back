@@ -2,7 +2,7 @@ import { faker } from '@faker-js/faker';
 
 import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
-import { SystemCategoryKey, TransactionType } from '@finance/domain/enum';
+import { RecurrenceFrequency, SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 class TransactionEntityFixture {
@@ -106,6 +106,8 @@ class TransactionEntityFixture {
       installmentNumber: null,
       installmentPlanId: null,
       invoiceMonth: null,
+      occurrenceCount: null,
+      occurrenceNumber: null,
       owner: OwnerType.USER,
       ownerId: faker.string.uuid(),
       paid: true,
@@ -114,6 +116,8 @@ class TransactionEntityFixture {
       paidFromTransactionId: null,
       paymentMethod: null,
       prepaymentId: null,
+      recurrenceFrequency: null,
+      recurrenceId: null,
       refundedName: null,
       refundedPlanId: null,
       refundedTransactionId: null,
@@ -148,6 +152,14 @@ class TransactionEntityFixture {
 
   withPaid(paid: boolean) {
     this.value.paid = paid;
+    return this;
+  }
+
+  withRecurrence(recurrenceId: string, occurrenceNumber: number, occurrenceCount: null | number) {
+    this.value.recurrenceId = recurrenceId;
+    this.value.occurrenceNumber = occurrenceNumber;
+    this.value.occurrenceCount = occurrenceCount;
+    this.value.recurrenceFrequency = RecurrenceFrequency.MONTHLY;
     return this;
   }
 

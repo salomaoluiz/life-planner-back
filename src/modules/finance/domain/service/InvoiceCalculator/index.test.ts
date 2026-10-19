@@ -4,6 +4,7 @@ import {
   buildInvoiceFor,
   calculateInvoices,
   effectiveDay,
+  firstUnpaidInvoiceMonth,
   invoiceMonthOf,
   InvoicePaymentInfo,
   isInvoiceAssignable,
@@ -375,5 +376,15 @@ describe('credits and carry chain (spec 032)', () => {
     expect(isInvoiceAssignable(card, '2026-10', [], today)).toBe(true);
     expect(isInvoiceAssignable(card, '2027-01', [], today)).toBe(false);
     expect(isInvoiceAssignable(card, '2026-10', [paid('2026-10')], today)).toBe(false);
+  });
+});
+
+describe('firstUnpaidInvoiceMonth', () => {
+  it('SHOULD keep the month WHEN it has no payment record', () => {
+    expect(firstUnpaidInvoiceMonth('2026-10', new Set(['2026-09']))).toBe('2026-10');
+  });
+
+  it('SHOULD skip consecutive paid months, crossing the year', () => {
+    expect(firstUnpaidInvoiceMonth('2026-11', new Set(['2026-11', '2026-12']))).toBe('2027-01');
   });
 });

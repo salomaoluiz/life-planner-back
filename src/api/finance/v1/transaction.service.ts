@@ -10,10 +10,11 @@ import { resolveToday } from '@api/finance/v1/finance-query';
 import { CreateTransactionUseCase } from '@finance/application/use-case/CreateTransactionUseCase';
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
 import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransactionsUseCase';
+import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { ResolveCardRowsPaidUseCase } from '@finance/application/use-case/ResolveCardRowsPaidUseCase';
 import { UpdateTransactionUseCase } from '@finance/application/use-case/UpdateTransactionUseCase';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
-import { TransactionSource } from '@finance/domain/enum';
+import { InstallmentEditScope, TransactionSource } from '@finance/domain/enum';
 
 function toTransactionOutput(
   transaction: TransactionEntity,
@@ -55,10 +56,14 @@ function toTransactionOutput(
     installmentNumber: transaction.installmentNumber,
     installmentPlanId: transaction.installmentPlanId,
     invoiceMonth: transaction.invoiceMonth,
+    occurrenceCount: transaction.occurrenceCount,
+    occurrenceNumber: transaction.occurrenceNumber,
     overLimit,
     owner: transaction.owner,
     ownerId: transaction.ownerId,
     paid: transaction.paid,
+    recurrenceFrequency: transaction.recurrenceFrequency,
+    recurrenceId: transaction.recurrenceId,
     type: transaction.type,
     updatedAt: transaction.updatedAt.toISOString(),
     value: transaction.value,
@@ -74,6 +79,7 @@ export class TransactionService {
     private readonly deleteTransactionUseCase: DeleteTransactionUseCase,
     private readonly financeAccessService: FinanceAccessService,
     private readonly getTransactionsUseCase: GetTransactionsUseCase,
+    private readonly materializeRecurrencesUseCase: MaterializeRecurrencesUseCase,
     private readonly resolveCardRowsPaidUseCase: ResolveCardRowsPaidUseCase,
     private readonly updateTransactionUseCase: UpdateTransactionUseCase,
   ) {}
@@ -98,10 +104,10 @@ export class TransactionService {
     return toTransactionOutput(resolved, transaction.creditCardId ? overLimit : undefined);
   }
 
-  async delete(userId: string, id: string): Promise<void> {
+  async delete(userId: string, id: string, scope?: InstallmentEditScope): Promise<void> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
-    await this.deleteTransactionUseCase.execute({ accessibleOwners, id });
+    await this.deleteTransactionUseCase.execute({ accessibleOwners, id, scope });
   }
 
   async findAll(
@@ -111,6 +117,13 @@ export class TransactionService {
     today?: string,
   ): Promise<TransactionOutput[]> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
+
+    // Real occurrences up to the end of this month exist before the list is read (spec 034 FR 9).
+    await this.materializeRecurrencesUseCase.execute({
+      accessibleOwners,
+      ownerIds,
+      today: resolveToday(today),
+    });
 
     const transactions = await this.getTransactionsUseCase.execute({
       accessibleOwners,

@@ -25,6 +25,11 @@ it('SHOULD delete the referencing rows first, then everything of ONE owner in ON
 
     return { count: 1 };
   });
+  spies.recurrenceDeleteMany.mockImplementation(async () => {
+    order.push('recurrence');
+
+    return { count: 1 };
+  });
   spies.planDeleteMany.mockImplementation(async () => {
     order.push('plan');
 
@@ -44,6 +49,7 @@ it('SHOULD delete the referencing rows first, then everything of ONE owner in ON
     'prepayment:delete',
     'payment',
     'tx:{"owner":"USER"',
+    'recurrence',
     'plan',
   ]);
   expect(spies.prepaymentUpdateMany).toHaveBeenCalledWith({
@@ -54,7 +60,7 @@ it('SHOULD delete the referencing rows first, then everything of ONE owner in ON
     where: { paid_from_transaction: { is: where } },
   });
   expect(spies.transactionDeleteMany).toHaveBeenNthCalledWith(4, { where });
-  expect(result).toBe(2 * 4 + 1 + 1 + 1 + 1 + 1 + 3 + 2);
+  expect(result).toBe(2 * 4 + 1 + 1 + 1 + 1 + 1 + 1 + 3 + 2);
 });
 
 it('SHOULD return 0 WHEN the owner has nothing (second call of a retry)', async () => {

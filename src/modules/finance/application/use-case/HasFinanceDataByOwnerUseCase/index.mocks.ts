@@ -12,6 +12,7 @@ const accountRepositoryMock = { existsByOwner: jest.fn() };
 const categoryRepositoryMock = { existsByOwner: jest.fn() };
 const creditCardRepositoryMock = { existsByOwner: jest.fn() };
 const invoicePaymentRepositoryMock = { existsByOwner: jest.fn() };
+const recurrenceRepositoryMock = { existsByOwner: jest.fn() };
 const transactionRepositoryMock = { existsByOwner: jest.fn() };
 
 // endregion Mocks
@@ -24,6 +25,7 @@ beforeEach(async () => {
   categoryRepositoryMock.existsByOwner.mockResolvedValue(false);
   creditCardRepositoryMock.existsByOwner.mockResolvedValue(false);
   invoicePaymentRepositoryMock.existsByOwner.mockResolvedValue(false);
+  recurrenceRepositoryMock.existsByOwner.mockResolvedValue(false);
   transactionRepositoryMock.existsByOwner.mockResolvedValue(false);
 
   const module = await Test.createTestingModule({
@@ -33,6 +35,7 @@ beforeEach(async () => {
       { provide: 'IFinanceCategoryRepository', useValue: categoryRepositoryMock },
       { provide: 'IFinanceCreditCardRepository', useValue: creditCardRepositoryMock },
       { provide: 'IFinanceInvoicePaymentRepository', useValue: invoicePaymentRepositoryMock },
+      { provide: 'IFinanceRecurrenceRepository', useValue: recurrenceRepositoryMock },
       { provide: 'IFinanceTransactionRepository', useValue: transactionRepositoryMock },
     ],
   }).compile();
@@ -46,6 +49,7 @@ const mocks = {
   creditCardRepository: creditCardRepositoryMock,
   input: inputMock,
   invoicePaymentRepository: invoicePaymentRepositoryMock,
+  recurrenceRepository: recurrenceRepositoryMock,
   transactionRepository: transactionRepositoryMock,
 };
 const spies = {};

@@ -9,6 +9,7 @@ import {
   IFinanceCategoryRepository,
   IFinanceCreditCardRepository,
   IFinanceInvoicePaymentRepository,
+  IFinanceRecurrenceRepository,
   IFinanceTransactionRepository,
 } from '@finance/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -29,6 +30,8 @@ export class HasFinanceDataByOwnerUseCase implements UseCaseWithParams<
     private readonly creditCardRepository: IFinanceCreditCardRepository,
     @Inject('IFinanceInvoicePaymentRepository')
     private readonly invoicePaymentRepository: IFinanceInvoicePaymentRepository,
+    @Inject('IFinanceRecurrenceRepository')
+    private readonly recurrenceRepository: IFinanceRecurrenceRepository,
     @Inject('IFinanceTransactionRepository')
     private readonly transactionRepository: IFinanceTransactionRepository,
   ) {}
@@ -41,6 +44,7 @@ export class HasFinanceDataByOwnerUseCase implements UseCaseWithParams<
       this.categoryRepository.existsByOwner(input),
       this.creditCardRepository.existsByOwner(input),
       this.invoicePaymentRepository.existsByOwner(input),
+      this.recurrenceRepository.existsByOwner(input),
       this.transactionRepository.existsByOwner(input),
     ]);
 

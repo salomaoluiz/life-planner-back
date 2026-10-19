@@ -15,6 +15,7 @@ import { DeleteCreditCardUseCase } from '@finance/application/use-case/DeleteCre
 import { GetCreditCardByIdUseCase } from '@finance/application/use-case/GetCreditCardByIdUseCase';
 import { GetCreditCardsOverviewUseCase } from '@finance/application/use-case/GetCreditCardsOverviewUseCase';
 import { GetCreditCardsUseCase } from '@finance/application/use-case/GetCreditCardsUseCase';
+import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { UpdateCreditCardUseCase } from '@finance/application/use-case/UpdateCreditCardUseCase';
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { AccountStatus } from '@finance/domain/enum';
@@ -53,6 +54,7 @@ export class CreditCardService {
     private readonly getCreditCardByIdUseCase: GetCreditCardByIdUseCase,
     private readonly getCreditCardsOverviewUseCase: GetCreditCardsOverviewUseCase,
     private readonly getCreditCardsUseCase: GetCreditCardsUseCase,
+    private readonly materializeRecurrencesUseCase: MaterializeRecurrencesUseCase,
     private readonly updateCreditCardUseCase: UpdateCreditCardUseCase,
   ) {}
 
@@ -97,10 +99,18 @@ export class CreditCardService {
   ): Promise<CreditCardsOverviewOutput> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
+    const resolved = today ?? todayInSaoPaulo();
+
+    await this.materializeRecurrencesUseCase.execute({
+      accessibleOwners,
+      ownerIds,
+      today: resolved,
+    });
+
     const overview = await this.getCreditCardsOverviewUseCase.execute({
       accessibleOwners,
       ownerIds,
-      today: today ?? todayInSaoPaulo(),
+      today: resolved,
     });
 
     return {

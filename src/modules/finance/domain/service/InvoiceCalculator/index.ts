@@ -137,6 +137,16 @@ export function effectiveDay(day: number, year: number, month: number): number {
   return Math.min(day, daysInMonth(year, month));
 }
 // The invoice a purchase dated `date` lands on: on the closing day it is still that invoice, the day after it is the next one.
+// Spec 034 FR 11: the month itself, or the first later one that has no payment record.
+export function firstUnpaidInvoiceMonth(month: string, paidMonths: ReadonlySet<string>): string {
+  let result = month;
+
+  while (paidMonths.has(result)) {
+    result = addInvoiceMonths(result, 1);
+  }
+
+  return result;
+}
 export function invoiceMonthOf(date: string, closingDay: number): string {
   const current: YearMonth = { month: Number(date.slice(5, 7)), year: Number(date.slice(0, 4)) };
 

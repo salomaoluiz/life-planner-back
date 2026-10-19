@@ -27,7 +27,7 @@ import {
 import { OwnerIdQuerySchema, TodayQuerySchema, toOwnerIds } from '@api/finance/v1/finance-query';
 import { TransactionService } from '@api/finance/v1/transaction.service';
 import { InvoiceMonthSchema } from '@finance/application/dto/FinanceCommon';
-import { TransactionSource } from '@finance/domain/enum';
+import { InstallmentEditScope, TransactionSource } from '@finance/domain/enum';
 import { JwtPayload } from '@shared/infra/jwt/types';
 import { validate } from '@shared/infra/validation';
 
@@ -39,6 +39,9 @@ const ListTransactionsQuerySchema = z.object({
   source: z.enum(TransactionSource).optional(),
   today: CalendarDateApiSchema.optional(),
 });
+
+// `scope` is required (ONLY_THIS) to delete one occurrence of a recurring series (spec 034 FR 29).
+const DeleteTransactionQuerySchema = z.object({ scope: z.enum(InstallmentEditScope).optional() });
 
 @ApiBearerAuth('JWT')
 @Controller({
@@ -64,8 +67,14 @@ export class TransactionController {
   @ApiNoContentResponse()
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async delete(@Request() req: JwtPayload & Request, @Param('id', ParseUUIDPipe) id: string) {
-    await this.transactionService.delete(req.user.id, id);
+  async delete(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: Record<string, unknown>,
+  ) {
+    const { scope } = validate(DeleteTransactionQuerySchema, query);
+
+    await this.transactionService.delete(req.user.id, id, scope);
   }
 
   @Get()

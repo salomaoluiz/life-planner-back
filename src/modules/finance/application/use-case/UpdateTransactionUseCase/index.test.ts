@@ -408,3 +408,73 @@ describe('paid status (spec 033)', () => {
     );
   });
 });
+
+describe('recurring occurrences (spec 034)', () => {
+  async function runRecurring(patch: Record<string, unknown>) {
+    return setup.execute({
+      accessibleOwners: mocks.accessibleOwners,
+      id: mocks.recurring.id,
+      today: '2026-10-15',
+      ...patch,
+    } as never);
+  }
+
+  beforeEach(() => {
+    mocks.transactionRepository.findTransactionById.mockResolvedValue(mocks.recurring);
+  });
+
+  it('SHOULD change only that row with scope ONLY_THIS', async () => {
+    await runRecurring({ scope: 'ONLY_THIS', value: 777 });
+
+    expect(mocks.transactionRepository.updateTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ id: mocks.recurring.id, value: 777 }),
+    );
+  });
+
+  it('SHOULD let a payment through without scope AND move its date to today', async () => {
+    await runRecurring({ paid: true });
+
+    expect(mocks.transactionRepository.updateTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ date: '2026-10-15', paid: true }),
+    );
+  });
+
+  it('SHOULD let a payment with its own date through without scope', async () => {
+    await runRecurring({ date: '2026-10-10', paid: true });
+
+    expect(mocks.transactionRepository.updateTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ date: '2026-10-10', paid: true }),
+    );
+  });
+
+  it('SHOULD answer 422 "Choose the edit scope" WHEN another field comes without scope', async () => {
+    await expect(runRecurring({ value: 5 })).rejects.toThrow('Choose the edit scope');
+    await expect(runRecurring({ date: '2026-10-20' })).rejects.toThrow('Choose the edit scope');
+    expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD answer 422 "Use the recurrence split" for THIS_AND_NEXT', async () => {
+    await expect(runRecurring({ scope: 'THIS_AND_NEXT', value: 5 })).rejects.toThrow(
+      'Use the recurrence split',
+    );
+  });
+
+  it.each([
+    ['owner', 'FAMILY'],
+    ['ownerId', 'x'],
+  ])('SHOULD answer 422 WHEN %s is sent', async (field, value) => {
+    await expect(runRecurring({ [field]: value, scope: 'ONLY_THIS' })).rejects.toThrow(
+      'Owner cannot change on a recurring transaction',
+    );
+  });
+
+  it.each([
+    ['accountId', 'x'],
+    ['creditCardId', 'x'],
+    ['type', 'INCOME'],
+  ])('SHOULD answer 400 WHEN %s is sent', async (field, value) => {
+    await expect(runRecurring({ [field]: value, scope: 'ONLY_THIS' })).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+});

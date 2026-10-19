@@ -32,6 +32,7 @@ const transactionMock: FinancialTransactionWithRelations = {
   installment_plan: null,
   installment_plan_id: null,
   invoice_month: null,
+  occurrence_number: null,
   owner: 'USER',
   owner_id: faker.string.uuid(),
   paid: true,
@@ -39,6 +40,8 @@ const transactionMock: FinancialTransactionWithRelations = {
   paid_from_transaction_id: null,
   payment_method: null,
   prepayment_id: null,
+  recurrence: null,
+  recurrence_id: null,
   refunded_plan: null,
   refunded_plan_id: null,
   refunded_transaction: null,
@@ -66,6 +69,7 @@ const includeMock = {
   paid_from_transaction: {
     select: { account: { select: { name: true } }, account_id: true },
   },
+  recurrence: { select: { end_date: true, first_number: true, frequency: true, start_date: true } },
   refunded_plan: { select: { description: true } },
   refunded_transaction: { select: { description: true } },
 };
@@ -84,6 +88,7 @@ const findFirstSpy = jest.fn();
 const findManySpy = jest.fn();
 const groupBySpy = jest.fn();
 const findUniqueSpy = jest.fn();
+const recurrenceCountSpy = jest.fn();
 const queryRawSpy = jest.fn();
 const transactionSpy = jest.fn();
 const updateSpy = jest.fn();
@@ -97,6 +102,7 @@ const clientMock = {
   financialAccount: { update: accountUpdateSpy },
   financialInstallmentPlan: { count: planCountSpy },
   financialInvoicePayment: { findFirst: paymentFindFirstSpy },
+  financialRecurrence: { count: recurrenceCountSpy },
   financialTransaction: {
     count: countSpy,
     create: createSpy,
@@ -138,6 +144,7 @@ const spies = {
   paymentFindFirst: paymentFindFirstSpy,
   planCount: planCountSpy,
   queryRaw: queryRawSpy,
+  recurrenceCount: recurrenceCountSpy,
   transaction: transactionSpy,
   update: updateSpy,
 };

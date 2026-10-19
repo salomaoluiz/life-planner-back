@@ -37,3 +37,17 @@ describe('DeleteCreditCardUseCase', () => {
     expect(mocks.creditCardRepository.deleteCreditCard).not.toHaveBeenCalled();
   });
 });
+
+describe('recurring transactions (spec 034)', () => {
+  it('SHOULD answer 409 AND delete nothing WHEN the card has series', async () => {
+    mocks.recurrenceRepository.countBySource.mockResolvedValue(2);
+
+    await expect(setup.execute(mocks.base)).rejects.toThrow(
+      'Credit card has recurring transactions',
+    );
+    expect(mocks.recurrenceRepository.countBySource).toHaveBeenCalledWith({
+      creditCardId: mocks.card.id,
+    });
+    expect(mocks.creditCardRepository.deleteCreditCard).not.toHaveBeenCalled();
+  });
+});

@@ -45,6 +45,7 @@ export class FinanceOwnerDataDatasource implements IFinanceOwnerDataDatasource {
         await tx.financialInstallmentPrepayment.deleteMany({ where }),
         await tx.financialInvoicePayment.deleteMany({ where }),
         await tx.financialTransaction.deleteMany({ where }),
+        await tx.financialRecurrence.deleteMany({ where }),
         await tx.financialInstallmentPlan.deleteMany({ where }),
         await tx.financialCreditCard.deleteMany({ where }),
         await tx.financialCategory.deleteMany({ where }),

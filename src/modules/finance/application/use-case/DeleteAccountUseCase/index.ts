@@ -4,6 +4,7 @@ import { DeleteAccountInput, DeleteAccountSchema } from '@finance/application/dt
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import {
   IFinanceAccountRepository,
+  IFinanceRecurrenceRepository,
   IFinanceTransactionRepository,
 } from '@finance/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -13,6 +14,8 @@ export class DeleteAccountUseCase implements UseCaseWithParams<DeleteAccountInpu
   constructor(
     @Inject('IFinanceAccountRepository')
     private readonly accountRepository: IFinanceAccountRepository,
+    @Inject('IFinanceRecurrenceRepository')
+    private readonly recurrenceRepository: IFinanceRecurrenceRepository,
     @Inject('IFinanceTransactionRepository')
     private readonly transactionRepository: IFinanceTransactionRepository,
   ) {}
@@ -29,6 +32,10 @@ export class DeleteAccountUseCase implements UseCaseWithParams<DeleteAccountInpu
     // Transactions are never deleted by an account delete (the FK is RESTRICT as a safety net).
     if ((await this.transactionRepository.countByAccountId(input.id)) > 0) {
       throw new ConflictException('Account has transactions');
+    }
+
+    if ((await this.recurrenceRepository.countBySource({ accountId: input.id })) > 0) {
+      throw new ConflictException('Account has recurring transactions');
     }
 
     await this.accountRepository.deleteAccount(input.id);

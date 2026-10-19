@@ -6,9 +6,10 @@ import {
 } from '@finance/application/dto/DeleteTransaction';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { CARD_CREDIT_KEYS } from '@finance/domain/entity/SystemCategory';
-import { SystemCategoryKey } from '@finance/domain/enum';
+import { InstallmentEditScope, SystemCategoryKey } from '@finance/domain/enum';
 import {
   IFinanceCardCreditRepository,
+  IFinanceRecurrenceRepository,
   IFinanceTransactionRepository,
 } from '@finance/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -18,6 +19,8 @@ export class DeleteTransactionUseCase implements UseCaseWithParams<DeleteTransac
   constructor(
     @Inject('IFinanceCardCreditRepository')
     private readonly cardCreditRepository: IFinanceCardCreditRepository,
+    @Inject('IFinanceRecurrenceRepository')
+    private readonly recurrenceRepository: IFinanceRecurrenceRepository,
     @Inject('IFinanceTransactionRepository')
     private readonly transactionRepository: IFinanceTransactionRepository,
   ) {}
@@ -34,6 +37,13 @@ export class DeleteTransactionUseCase implements UseCaseWithParams<DeleteTransac
     // An installment only goes away with its whole plan (spec 030 FR 19).
     if (transaction.installmentPlanId) {
       throw new UnprocessableEntityException('Delete the installment plan');
+    }
+
+    if (transaction.recurrenceId && input.scope === undefined) {
+      throw new UnprocessableEntityException('Choose the delete scope');
+    }
+    if (transaction.recurrenceId && input.scope !== InstallmentEditScope.ONLY_THIS) {
+      throw new UnprocessableEntityException('Use the recurrence to delete more occurrences');
     }
 
     // The payment transaction goes away only with the payment itself.
@@ -55,5 +65,21 @@ export class DeleteTransactionUseCase implements UseCaseWithParams<DeleteTransac
     }
 
     await this.transactionRepository.deleteTransaction(input.id);
+
+    // A projected occurrence that was made real and is now deleted must not come back at the horizon (FR 29).
+    if (transaction.recurrenceId) {
+      await this.hideDeletedNumber(
+        transaction.recurrenceId,
+        transaction.occurrenceNumber as number,
+      );
+    }
+  }
+
+  private async hideDeletedNumber(recurrenceId: string, occurrenceNumber: number): Promise<void> {
+    const series = await this.recurrenceRepository.findById(recurrenceId);
+
+    if (series && occurrenceNumber > series.firstNumber - 1 + series.lastGeneratedNumber) {
+      await this.recurrenceRepository.skipNumber(series.id, occurrenceNumber);
+    }
   }
 }
