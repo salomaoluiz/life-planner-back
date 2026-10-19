@@ -62,6 +62,11 @@ class CreditCardEntityFixture {
     return this;
   }
 
+  withPaymentAccountId(paymentAccountId?: string) {
+    this.value.paymentAccountId = paymentAccountId;
+    return this;
+  }
+
   withStatus(status: AccountStatus) {
     this.value.status = status;
     return this;

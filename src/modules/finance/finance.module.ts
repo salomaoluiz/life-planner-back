@@ -29,6 +29,7 @@ import { GetCategoriesUseCase } from '@finance/application/use-case/GetCategorie
 import { GetCreditCardByIdUseCase } from '@finance/application/use-case/GetCreditCardByIdUseCase';
 import { GetCreditCardsOverviewUseCase } from '@finance/application/use-case/GetCreditCardsOverviewUseCase';
 import { GetCreditCardsUseCase } from '@finance/application/use-case/GetCreditCardsUseCase';
+import { GetDailyBalancesUseCase } from '@finance/application/use-case/GetDailyBalancesUseCase';
 import { GetInstallmentPlanUseCase } from '@finance/application/use-case/GetInstallmentPlanUseCase';
 import { GetInvoicesForListUseCase } from '@finance/application/use-case/GetInvoicesForListUseCase';
 import { GetInvoiceUseCase } from '@finance/application/use-case/GetInvoiceUseCase';
@@ -116,6 +117,7 @@ const useCases = [
   GetCategoriesUseCase,
   GetAccountsByIdsUseCase,
   GetCreditCardByIdUseCase,
+  GetDailyBalancesUseCase,
   GetCreditCardsOverviewUseCase,
   GetCreditCardsUseCase,
   GetInvoicesForListUseCase,
