@@ -8,6 +8,7 @@ import { DeleteCreditCardUseCase } from '@finance/application/use-case/DeleteCre
 import { GetCreditCardByIdUseCase } from '@finance/application/use-case/GetCreditCardByIdUseCase';
 import { GetCreditCardsOverviewUseCase } from '@finance/application/use-case/GetCreditCardsOverviewUseCase';
 import { GetCreditCardsUseCase } from '@finance/application/use-case/GetCreditCardsUseCase';
+import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { UpdateCreditCardUseCase } from '@finance/application/use-case/UpdateCreditCardUseCase';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
@@ -87,6 +88,8 @@ const getUseCaseMock = { execute: jest.fn().mockResolvedValue([cardResultMock]) 
 const overviewUseCaseMock = { execute: jest.fn().mockResolvedValue(overviewResultMock) };
 const updateUseCaseMock = { execute: jest.fn().mockResolvedValue(cardResultMock) };
 
+const materializeRecurrencesUseCaseMock = { execute: jest.fn().mockResolvedValue(undefined) };
+
 // endregion Mocks
 
 let setup: CreditCardService;
@@ -104,6 +107,7 @@ beforeEach(async () => {
       { provide: GetCreditCardsOverviewUseCase, useValue: overviewUseCaseMock },
       { provide: GetCreditCardsUseCase, useValue: getUseCaseMock },
       { provide: UpdateCreditCardUseCase, useValue: updateUseCaseMock },
+      { provide: MaterializeRecurrencesUseCase, useValue: materializeRecurrencesUseCaseMock },
     ],
   }).compile();
 
@@ -119,6 +123,7 @@ const mocks = {
   financeAccessService: financeAccessServiceMock,
   getByIdUseCase: getByIdUseCaseMock,
   getUseCase: getUseCaseMock,
+  materializeRecurrencesUseCase: materializeRecurrencesUseCaseMock,
   overviewApi: overviewApiMock,
   overviewUseCase: overviewUseCaseMock,
   updateUseCase: updateUseCaseMock,

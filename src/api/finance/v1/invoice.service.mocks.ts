@@ -5,6 +5,7 @@ import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { InvoiceService } from '@api/finance/v1/invoice.service';
 import { GetInvoicesForListUseCase } from '@finance/application/use-case/GetInvoicesForListUseCase';
 import { GetInvoiceUseCase } from '@finance/application/use-case/GetInvoiceUseCase';
+import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { PayInvoiceUseCase } from '@finance/application/use-case/PayInvoiceUseCase';
 import { UndoInvoicePaymentUseCase } from '@finance/application/use-case/UndoInvoicePaymentUseCase';
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
@@ -60,6 +61,8 @@ const getInvoicesForListMock = { execute: jest.fn().mockResolvedValue([detailMoc
 const payInvoiceMock = { execute: jest.fn().mockResolvedValue(paymentMock) };
 const undoInvoicePaymentMock = { execute: jest.fn().mockResolvedValue(undefined) };
 
+const materializeRecurrencesUseCaseMock = { execute: jest.fn().mockResolvedValue(undefined) };
+
 // endregion Mocks
 
 let setup: InvoiceService;
@@ -75,6 +78,7 @@ beforeEach(async () => {
       { provide: GetInvoicesForListUseCase, useValue: getInvoicesForListMock },
       { provide: PayInvoiceUseCase, useValue: payInvoiceMock },
       { provide: UndoInvoicePaymentUseCase, useValue: undoInvoicePaymentMock },
+      { provide: MaterializeRecurrencesUseCase, useValue: materializeRecurrencesUseCaseMock },
     ],
   }).compile();
 
@@ -86,6 +90,7 @@ const mocks = {
   card: cardMock,
   getInvoice: getInvoiceMock,
   getInvoicesForList: getInvoicesForListMock,
+  materializeRecurrencesUseCase: materializeRecurrencesUseCaseMock,
   payInvoice: payInvoiceMock,
   payment: paymentMock,
   purchase: purchaseMock,

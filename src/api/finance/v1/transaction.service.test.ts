@@ -67,6 +67,7 @@ describe('delete', () => {
     expect(mocks.deleteTransactionUseCase.execute).toHaveBeenCalledWith({
       accessibleOwners: mocks.accessibleOwners,
       id: 'tx-1',
+      scope: undefined,
     });
   });
 });
@@ -157,5 +158,39 @@ describe('paid status (spec 033)', () => {
 
     expect(result.paid).toBe(true);
     expect(mocks.resolveCardRowsPaidUseCase.execute).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('recurring transactions (spec 034)', () => {
+  it('SHOULD materialize the recurring occurrences of the owners with today BEFORE reading the list', async () => {
+    const order: string[] = [];
+
+    mocks.materializeRecurrencesUseCase.execute.mockImplementationOnce(async () => {
+      order.push('materialize');
+    });
+    mocks.getTransactionsUseCase.execute.mockImplementationOnce(async () => {
+      order.push('read');
+
+      return [];
+    });
+
+    await setup.findAll(mocks.userId, ['o1'], {}, '2026-10-17');
+
+    expect(order).toEqual(['materialize', 'read']);
+    expect(mocks.materializeRecurrencesUseCase.execute).toHaveBeenCalledWith({
+      accessibleOwners: mocks.accessibleOwners,
+      ownerIds: ['o1'],
+      today: '2026-10-17',
+    });
+  });
+
+  it('SHOULD forward the delete scope', async () => {
+    await setup.delete(mocks.userId, 'tx-1', 'ONLY_THIS' as never);
+
+    expect(mocks.deleteTransactionUseCase.execute).toHaveBeenCalledWith({
+      accessibleOwners: mocks.accessibleOwners,
+      id: 'tx-1',
+      scope: 'ONLY_THIS',
+    });
   });
 });

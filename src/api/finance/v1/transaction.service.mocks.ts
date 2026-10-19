@@ -6,6 +6,7 @@ import { TransactionService } from '@api/finance/v1/transaction.service';
 import { CreateTransactionUseCase } from '@finance/application/use-case/CreateTransactionUseCase';
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
 import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransactionsUseCase';
+import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { ResolveCardRowsPaidUseCase } from '@finance/application/use-case/ResolveCardRowsPaidUseCase';
 import { UpdateTransactionUseCase } from '@finance/application/use-case/UpdateTransactionUseCase';
 import { TransactionType } from '@finance/domain/enum';
@@ -65,6 +66,8 @@ const updateTransactionUseCaseMock = {
   execute: jest.fn().mockResolvedValue({ overLimit: false, transaction: transactionResultMock }),
 };
 
+const materializeRecurrencesUseCaseMock = { execute: jest.fn().mockResolvedValue(undefined) };
+
 // endregion Mocks
 
 let setup: TransactionService;
@@ -81,6 +84,7 @@ beforeEach(async () => {
       { provide: GetTransactionsUseCase, useValue: getTransactionsUseCaseMock },
       { provide: ResolveCardRowsPaidUseCase, useValue: resolveCardRowsPaidUseCaseMock },
       { provide: UpdateTransactionUseCase, useValue: updateTransactionUseCaseMock },
+      { provide: MaterializeRecurrencesUseCase, useValue: materializeRecurrencesUseCaseMock },
     ],
   }).compile();
 
@@ -92,6 +96,7 @@ const mocks = {
   createTransactionUseCase: createTransactionUseCaseMock,
   deleteTransactionUseCase: deleteTransactionUseCaseMock,
   getTransactionsUseCase: getTransactionsUseCaseMock,
+  materializeRecurrencesUseCase: materializeRecurrencesUseCaseMock,
   resolveCardRowsPaidUseCase: resolveCardRowsPaidUseCaseMock,
   transactionApi: transactionApiMock,
   transactionResult: transactionResultMock,

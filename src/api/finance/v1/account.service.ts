@@ -10,6 +10,7 @@ import { AdjustAccountBalanceUseCase } from '@finance/application/use-case/Adjus
 import { CreateAccountUseCase } from '@finance/application/use-case/CreateAccountUseCase';
 import { DeleteAccountUseCase } from '@finance/application/use-case/DeleteAccountUseCase';
 import { GetAccountsUseCase } from '@finance/application/use-case/GetAccountsUseCase';
+import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { UpdateAccountUseCase } from '@finance/application/use-case/UpdateAccountUseCase';
 import { AccountWithBalances } from '@finance/domain/service/AccountBalance';
 
@@ -42,6 +43,7 @@ export class AccountService {
     private readonly deleteAccountUseCase: DeleteAccountUseCase,
     private readonly financeAccessService: FinanceAccessService,
     private readonly getAccountsUseCase: GetAccountsUseCase,
+    private readonly materializeRecurrencesUseCase: MaterializeRecurrencesUseCase,
     private readonly updateAccountUseCase: UpdateAccountUseCase,
   ) {}
 
@@ -87,6 +89,9 @@ export class AccountService {
     today: string,
   ): Promise<AccountOutput[]> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
+
+    // The end-of-month balance counts the unpaid occurrences of the month (spec 034 FR 9).
+    await this.materializeRecurrencesUseCase.execute({ accessibleOwners, ownerIds, today });
 
     const accounts = await this.getAccountsUseCase.execute({ accessibleOwners, ownerIds, today });
 

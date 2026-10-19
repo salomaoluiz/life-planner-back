@@ -7,6 +7,7 @@ import { AdjustAccountBalanceUseCase } from '@finance/application/use-case/Adjus
 import { CreateAccountUseCase } from '@finance/application/use-case/CreateAccountUseCase';
 import { DeleteAccountUseCase } from '@finance/application/use-case/DeleteAccountUseCase';
 import { GetAccountsUseCase } from '@finance/application/use-case/GetAccountsUseCase';
+import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { UpdateAccountUseCase } from '@finance/application/use-case/UpdateAccountUseCase';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
@@ -48,6 +49,8 @@ const financeAccessServiceMock = { resolve: jest.fn().mockResolvedValue(accessib
 const getAccountsUseCaseMock = { execute: jest.fn().mockResolvedValue([withBalancesMock]) };
 const updateAccountUseCaseMock = { execute: jest.fn().mockResolvedValue(withBalancesMock) };
 
+const materializeRecurrencesUseCaseMock = { execute: jest.fn().mockResolvedValue(undefined) };
+
 // endregion Mocks
 
 let setup: AccountService;
@@ -64,6 +67,7 @@ beforeEach(async () => {
       { provide: FinanceAccessService, useValue: financeAccessServiceMock },
       { provide: GetAccountsUseCase, useValue: getAccountsUseCaseMock },
       { provide: UpdateAccountUseCase, useValue: updateAccountUseCaseMock },
+      { provide: MaterializeRecurrencesUseCase, useValue: materializeRecurrencesUseCaseMock },
     ],
   }).compile();
 
@@ -78,6 +82,7 @@ const mocks = {
   deleteAccountUseCase: deleteAccountUseCaseMock,
   financeAccessService: financeAccessServiceMock,
   getAccountsUseCase: getAccountsUseCaseMock,
+  materializeRecurrencesUseCase: materializeRecurrencesUseCaseMock,
   updateAccountUseCase: updateAccountUseCaseMock,
   userId,
 };

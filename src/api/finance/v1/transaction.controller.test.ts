@@ -110,15 +110,34 @@ describe('update', () => {
 
 describe('delete', () => {
   it('SHOULD delete by id AND answer 204', async () => {
-    await setup.delete(mocks.request, mocks.transaction.id);
+    await setup.delete(mocks.request, mocks.transaction.id, {});
 
     expect(mocks.transactionService.delete).toHaveBeenCalledWith(
       mocks.request.user.id,
       mocks.transaction.id,
+      undefined,
     );
     expect(Reflect.getMetadata(HTTP_CODE_METADATA, TransactionController.prototype.delete)).toBe(
       204,
     );
+  });
+});
+
+describe('delete scope (spec 034)', () => {
+  it('SHOULD forward the scope of a recurring occurrence', async () => {
+    await setup.delete(mocks.request, mocks.transaction.id, { scope: 'ONLY_THIS' });
+
+    expect(mocks.transactionService.delete).toHaveBeenCalledWith(
+      mocks.request.user.id,
+      mocks.transaction.id,
+      'ONLY_THIS',
+    );
+  });
+
+  it('SHOULD reject an unknown scope', async () => {
+    await expect(
+      setup.delete(mocks.request, mocks.transaction.id, { scope: 'ALL' }),
+    ).rejects.toThrow(ValidationError);
   });
 });
 

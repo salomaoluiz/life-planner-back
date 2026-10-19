@@ -11,7 +11,7 @@ import {
   TransactionTypeApiSchema,
   ValueApiSchema,
 } from '@api/finance/v1/dto/finance-fields';
-import { InstallmentEditScope, SystemCategoryKey } from '@finance/domain/enum';
+import { InstallmentEditScope, RecurrenceFrequency, SystemCategoryKey } from '@finance/domain/enum';
 
 const TransactionFieldsSchema = z.object({
   accountId: z.uuid(),
@@ -78,10 +78,15 @@ export const TransactionApiSchema = z.object({
   invoiceMonth: z.string().nullable(),
   // Only on create / update responses of card purchases: the purchase left the card over its limit.
   overLimit: z.boolean().optional(),
+  // Series position / total (null without end date) / id / frequency; all null outside a recurring series.
+  occurrenceCount: z.number().int().nullable(),
+  occurrenceNumber: z.number().int().nullable(),
   owner: OwnerTypeApiSchema,
   ownerId: z.uuid(),
   // Stored for account rows; derived from the invoice for card rows.
   paid: z.boolean(),
+  recurrenceFrequency: z.enum(RecurrenceFrequency).nullable(),
+  recurrenceId: z.uuid().nullable(),
   type: TransactionTypeApiSchema,
   updatedAt: z.iso.datetime(),
   value: z.number().int(),
