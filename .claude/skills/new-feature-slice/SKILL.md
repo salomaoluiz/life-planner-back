@@ -53,7 +53,7 @@ Placeholders: `<m>` module (e.g. `finance`), `X` PascalCase entity, `x` camelCas
 
 ## 6b. E2E guardrail → CLAUDE.md rule 14
 
-- [ ] Run `yarn e2e` (full suite, read only the printed summary). A backend-only slice needs no new flow; report exit code 2 as "not validated".
+- [ ] Run `yarn e2e --changed`, then once `yarn e2e` (full suite); read only the printed summary. A backend-only slice needs no new flow; report exit code 2 as "not validated".
 
 ## 7. Integration → `.claude/context/integration.md`
 
