@@ -51,6 +51,7 @@ import { FinanceInstallmentPlanDatasource } from '@finance/data/datasource/Finan
 import { FinanceInvoicePaymentDatasource } from '@finance/data/datasource/FinanceInvoicePaymentDatasource';
 import { FinanceOwnerDataDatasource } from '@finance/data/datasource/FinanceOwnerDataDatasource';
 import { FinancePrepaymentDatasource } from '@finance/data/datasource/FinancePrepaymentDatasource';
+import { FinanceRecurrenceDatasource } from '@finance/data/datasource/FinanceRecurrenceDatasource';
 import { FinanceTransactionDatasource } from '@finance/data/datasource/FinanceTransactionDatasource';
 import { FinanceAccountRepository } from '@finance/data/repository/FinanceAccountRepository';
 import { FinanceCardCreditRepository } from '@finance/data/repository/FinanceCardCreditRepository';
@@ -60,6 +61,7 @@ import { FinanceInstallmentPlanRepository } from '@finance/data/repository/Finan
 import { FinanceInvoicePaymentRepository } from '@finance/data/repository/FinanceInvoicePaymentRepository';
 import { FinanceOwnerDataRepository } from '@finance/data/repository/FinanceOwnerDataRepository';
 import { FinancePrepaymentRepository } from '@finance/data/repository/FinancePrepaymentRepository';
+import { FinanceRecurrenceRepository } from '@finance/data/repository/FinanceRecurrenceRepository';
 import { FinanceTransactionRepository } from '@finance/data/repository/FinanceTransactionRepository';
 
 const useCases = [
@@ -128,6 +130,8 @@ const useCases = [
     { provide: 'IFinanceOwnerDataDatasource', useClass: FinanceOwnerDataDatasource },
     { provide: 'IFinancePrepaymentRepository', useClass: FinancePrepaymentRepository },
     { provide: 'IFinancePrepaymentDatasource', useClass: FinancePrepaymentDatasource },
+    { provide: 'IFinanceRecurrenceRepository', useClass: FinanceRecurrenceRepository },
+    { provide: 'IFinanceRecurrenceDatasource', useClass: FinanceRecurrenceDatasource },
     { provide: 'IFinanceTransactionRepository', useClass: FinanceTransactionRepository },
     { provide: 'IFinanceTransactionDatasource', useClass: FinanceTransactionDatasource },
   ],
