@@ -22,6 +22,16 @@ export enum InvoiceStatus {
   OPEN = 'OPEN',
   PAID = 'PAID',
 }
+export enum RecurrenceFrequency {
+  BIWEEKLY = 'BIWEEKLY',
+  MONTHLY = 'MONTHLY',
+  WEEKLY = 'WEEKLY',
+  YEARLY = 'YEARLY',
+}
+export enum RecurrenceStatus {
+  ACTIVE = 'ACTIVE',
+  ENDED = 'ENDED',
+}
 export enum SystemCategoryKey {
   BALANCE_ADJUSTMENT = 'BALANCE_ADJUSTMENT',
   CARD_EARLY_PAYMENT = 'CARD_EARLY_PAYMENT',
