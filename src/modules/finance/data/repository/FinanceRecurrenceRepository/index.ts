@@ -13,6 +13,7 @@ import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import {
   ApplyRecurrenceChangeRepositoryParams,
+  CreateOccurrenceRepositoryParams,
   CreateRecurrenceRepositoryParams,
   FindRecurrencesFilter,
   FutureOccurrenceNumber,
@@ -83,6 +84,21 @@ export class FinanceRecurrenceRepository implements IFinanceRecurrenceRepository
       type: params.type,
       value: params.value,
     });
+  }
+
+  async createOccurrence(params: CreateOccurrenceRepositoryParams): Promise<TransactionEntity> {
+    const row = await this.recurrenceDatasource.createOccurrence({
+      category_id: params.categoryId,
+      date: fromCalendarDate(params.date),
+      description: params.description,
+      invoice_month: params.invoiceMonth,
+      number: params.number,
+      paid: params.paid,
+      recurrence_id: params.recurrenceId,
+      value: params.value,
+    });
+
+    return FinanceTransactionMapper.toDomain(row);
   }
 
   async findById(id: string): Promise<RecurrenceEntity | undefined> {

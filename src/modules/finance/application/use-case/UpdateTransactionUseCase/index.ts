@@ -64,8 +64,12 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
     if (transaction.installmentPlanId) {
       return this.updateInstallment(input, transaction);
     }
-    if (input.scope !== undefined) {
-      throw new BadRequestException('Scope only applies to installments');
+    if (transaction.recurrenceId) {
+      assertRecurringEdit(input);
+    } else if (input.scope !== undefined) {
+      throw new BadRequestException(
+        'Scope only applies to installments and recurring transactions',
+      );
     }
 
     // The rules are checked against the resulting record (patch merged over the stored one).
@@ -206,6 +210,42 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
     });
 
     return { overLimit: data.invoices.used > card.limit, transaction: updated };
+  }
+}
+
+// Spec 034 FR 21: paying (± a date) needs no scope; any other change on a recurring row is ONLY_THIS.
+function assertRecurringEdit(input: ParsedUpdateInput): void {
+  const onlyPaying =
+    input.paid !== undefined &&
+    input.accountId === undefined &&
+    input.categoryId === undefined &&
+    input.creditCardId === undefined &&
+    input.description === undefined &&
+    input.owner === undefined &&
+    input.ownerId === undefined &&
+    input.type === undefined &&
+    input.value === undefined;
+
+  if (onlyPaying) {
+    return;
+  }
+  if (input.owner !== undefined || input.ownerId !== undefined) {
+    throw new UnprocessableEntityException('Owner cannot change on a recurring transaction');
+  }
+  if (input.scope === undefined) {
+    throw new UnprocessableEntityException('Choose the edit scope');
+  }
+  if (input.scope === InstallmentEditScope.THIS_AND_NEXT) {
+    throw new UnprocessableEntityException('Use the recurrence split');
+  }
+  if (
+    input.accountId !== undefined ||
+    input.creditCardId !== undefined ||
+    input.type !== undefined
+  ) {
+    throw new BadRequestException(
+      'Only value, description, category, date and paid can change here',
+    );
   }
 }
 

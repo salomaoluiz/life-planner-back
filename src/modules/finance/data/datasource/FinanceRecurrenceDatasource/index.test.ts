@@ -380,3 +380,79 @@ describe('Method apply', () => {
     expect(spies.rowDeleteMany).not.toHaveBeenCalled();
   });
 });
+
+describe('Method createOccurrence', () => {
+  const params = {
+    date: new Date('2027-03-05T00:00:00.000Z'),
+    number: 7,
+    recurrence_id: 'recurrence-1',
+    value: 250000,
+  };
+  const created = {
+    account_id: 'account-1',
+    paid: false,
+    type: 'EXPENSE',
+    value: 250000,
+  };
+
+  beforeEach(() => {
+    spies.recurrenceFindUnique.mockResolvedValue(mocks.source);
+    spies.rowFindFirst.mockResolvedValue(null);
+    spies.rowCreate.mockResolvedValue(created);
+  });
+
+  it('SHOULD create the numbered row with the edits over the template AND not advance the series', async () => {
+    expect(await setup.createOccurrence({ ...params, description: 'Rent March' })).toBe(created);
+
+    expect(spies.rowCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        account_id: 'account-1',
+        description: 'Rent March',
+        occurrence_number: 7,
+        paid: false,
+        recurrence_id: 'recurrence-1',
+        value: 250000,
+      }),
+      include: expect.any(Object),
+    });
+    expect(spies.recurrenceUpdate).not.toHaveBeenCalled();
+    expect(spies.accountUpdate).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD apply the ledger WHEN the new row is paid', async () => {
+    spies.rowCreate.mockResolvedValue({ ...created, paid: true });
+
+    await setup.createOccurrence({ ...params, paid: true });
+
+    expect(spies.accountUpdate).toHaveBeenCalledWith({
+      data: { ledger_balance: { increment: -250000 } },
+      where: { id: 'account-1' },
+    });
+  });
+
+  it('SHOULD refuse a number that already has a row (409)', async () => {
+    spies.rowFindFirst.mockResolvedValue({ id: 'row-7' });
+
+    await expect(setup.createOccurrence(params)).rejects.toThrow('Occurrence already exists');
+    expect(spies.rowCreate).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD refuse a card row on a paid invoice', async () => {
+    spies.recurrenceFindUnique.mockResolvedValue({
+      ...mocks.source,
+      account_id: null,
+      credit_card_id: 'card-1',
+    });
+    spies.paymentFindFirst.mockResolvedValue({ id: 'payment-1' });
+
+    await expect(setup.createOccurrence({ ...params, invoice_month: '2027-03' })).rejects.toThrow(
+      'Invoice is paid',
+    );
+  });
+
+  it('SHOULD answer 404 WHEN the series does not exist', async () => {
+    spies.recurrenceFindUnique.mockResolvedValue(null);
+
+    await expect(setup.createOccurrence(params)).rejects.toThrow('Not Found');
+  });
+});

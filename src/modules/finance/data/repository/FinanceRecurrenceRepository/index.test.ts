@@ -233,3 +233,28 @@ describe('applyChange', () => {
     );
   });
 });
+
+describe('createOccurrence', () => {
+  it('SHOULD delegate with column names AND return the transaction', async () => {
+    mocks.datasource.createOccurrence.mockResolvedValue({ id: 'transaction-1' });
+
+    expect(
+      await setup.createOccurrence({
+        date: '2027-03-05',
+        number: 7,
+        recurrenceId: 'recurrence-1',
+        value: 250000,
+      }),
+    ).toEqual({ id: 'transaction-1' });
+    expect(mocks.datasource.createOccurrence).toHaveBeenCalledWith({
+      category_id: undefined,
+      date: new Date('2027-03-05T00:00:00.000Z'),
+      description: undefined,
+      invoice_month: undefined,
+      number: 7,
+      paid: undefined,
+      recurrence_id: 'recurrence-1',
+      value: 250000,
+    });
+  });
+});

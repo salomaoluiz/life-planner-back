@@ -34,6 +34,7 @@ import { GetRecurrencesUseCase } from '@finance/application/use-case/GetRecurren
 import { GetRecurrenceUseCase } from '@finance/application/use-case/GetRecurrenceUseCase';
 import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransactionsUseCase';
 import { HasFinanceDataByOwnerUseCase } from '@finance/application/use-case/HasFinanceDataByOwnerUseCase';
+import { MaterializeOccurrenceUseCase } from '@finance/application/use-case/MaterializeOccurrenceUseCase';
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { PayInvoiceUseCase } from '@finance/application/use-case/PayInvoiceUseCase';
 import { PrepayInstallmentPlanUseCase } from '@finance/application/use-case/PrepayInstallmentPlanUseCase';
@@ -72,6 +73,7 @@ import { FinanceRecurrenceRepository } from '@finance/data/repository/FinanceRec
 import { FinanceTransactionRepository } from '@finance/data/repository/FinanceTransactionRepository';
 
 const useCases = [
+  MaterializeOccurrenceUseCase,
   SplitRecurrenceUseCase,
   UpdateRecurrenceUseCase,
   GetProjectionsUseCase,

@@ -20,6 +20,16 @@ export interface ApplyRecurrenceChangeDatasourceParams {
   series_patch: SeriesPatchDatasourceParams;
   source_id: string;
 }
+export interface CreateOccurrenceDatasourceParams {
+  category_id?: string;
+  date: Date;
+  description?: string;
+  invoice_month?: string;
+  number: number;
+  paid?: boolean;
+  recurrence_id: string;
+  value?: number;
+}
 export interface CreateRecurrenceDatasourceParams {
   account_id?: string;
   category_id: string;
@@ -57,6 +67,9 @@ export interface FutureOccurrenceNumberRow {
 export interface IFinanceRecurrenceDatasource {
   apply(params: ApplyRecurrenceChangeDatasourceParams): Promise<string>;
   create(params: CreateRecurrenceDatasourceParams): Promise<string>;
+  createOccurrence(
+    params: CreateOccurrenceDatasourceParams,
+  ): Promise<FinancialTransactionWithRelations>;
   findById(id: string): Promise<FinancialRecurrenceWithRelations | null>;
   findByOwners(
     owners: OwnerAccess[],

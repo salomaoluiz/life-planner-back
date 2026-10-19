@@ -1,9 +1,15 @@
-import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
 import { Prisma } from '@db/client';
 import { TRANSACTION_RELATIONS } from '@finance/data/datasource/FinanceTransactionDatasource';
 import {
   applyLedgerDeltas,
+  assertInvoiceNotPaid,
   assertInvoicesNotPaid,
   lockCards,
   toLedgerEntry,
@@ -11,6 +17,7 @@ import {
 import { toOwnerWhere } from '@finance/data/datasource/mapper/OwnerWhere';
 import {
   ApplyRecurrenceChangeDatasourceParams,
+  CreateOccurrenceDatasourceParams,
   CreateRecurrenceDatasourceParams,
   FinancialRecurrenceWithRelations,
   FindRecurrencesDatasourceFilter,
@@ -255,6 +262,61 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
       }
 
       return series.id;
+    });
+  }
+
+  // The real row of a projected occurrence (FR 21): the series is not advanced; the unique
+  // `(recurrence_id, occurrence_number)` makes the horizon skip it later and refuses a second one.
+  async createOccurrence(
+    params: CreateOccurrenceDatasourceParams,
+  ): Promise<FinancialTransactionWithRelations> {
+    return this.db.client.$transaction(async (tx) => {
+      const series = await tx.financialRecurrence.findUnique({
+        where: { id: params.recurrence_id },
+      });
+
+      if (!series) {
+        throw new NotFoundException();
+      }
+
+      await lockCards(tx, series.credit_card_id ? [series.credit_card_id] : []);
+      await lockSeries(tx, series.id);
+      await assertInvoiceNotPaid(tx, series.credit_card_id, params.invoice_month);
+
+      const existing = await tx.financialTransaction.findFirst({
+        select: { id: true },
+        where: { occurrence_number: params.number, recurrence_id: series.id },
+      });
+
+      if (existing) {
+        throw new ConflictException('Occurrence already exists');
+      }
+
+      const [data] = toRows(
+        [
+          {
+            date: params.date,
+            invoice_month: params.invoice_month,
+            number: params.number,
+            paid: params.paid,
+          },
+        ],
+        {
+          ...series,
+          category_id: params.category_id ?? series.category_id,
+          description: params.description ?? series.description,
+          value: params.value ?? series.value,
+        },
+        series.id,
+      );
+      const created = await tx.financialTransaction.create({
+        data,
+        include: TRANSACTION_RELATIONS,
+      });
+
+      await applyLedgerDeltas(tx, ledgerDeltas(undefined, toLedgerEntry(created)));
+
+      return created;
     });
   }
 

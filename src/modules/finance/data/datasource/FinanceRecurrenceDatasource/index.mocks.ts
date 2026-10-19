@@ -15,7 +15,9 @@ const recurrenceFindManySpy = jest.fn();
 const recurrenceFindUniqueSpy = jest.fn();
 const recurrenceUpdateSpy = jest.fn();
 const rowCreateManySpy = jest.fn();
+const rowCreateSpy = jest.fn();
 const rowDeleteManySpy = jest.fn();
+const rowFindFirstSpy = jest.fn();
 const rowFindManySpy = jest.fn();
 const rowUpdateManySpy = jest.fn();
 const rowUpdateSpy = jest.fn();
@@ -35,8 +37,10 @@ const clientMock = {
     update: recurrenceUpdateSpy,
   },
   financialTransaction: {
+    create: rowCreateSpy,
     createMany: rowCreateManySpy,
     deleteMany: rowDeleteManySpy,
+    findFirst: rowFindFirstSpy,
     findMany: rowFindManySpy,
     update: rowUpdateSpy,
     updateMany: rowUpdateManySpy,
@@ -104,8 +108,10 @@ const spies = {
   recurrenceFindMany: recurrenceFindManySpy,
   recurrenceFindUnique: recurrenceFindUniqueSpy,
   recurrenceUpdate: recurrenceUpdateSpy,
+  rowCreate: rowCreateSpy,
   rowCreateMany: rowCreateManySpy,
   rowDeleteMany: rowDeleteManySpy,
+  rowFindFirst: rowFindFirstSpy,
   rowFindMany: rowFindManySpy,
   rowUpdate: rowUpdateSpy,
   rowUpdateMany: rowUpdateManySpy,

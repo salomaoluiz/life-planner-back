@@ -11,6 +11,8 @@ export type IFinanceRecurrenceRepository = {
   applyChange(params: ApplyRecurrenceChangeRepositoryParams): Promise<string>;
   // One database transaction: the series, its real rows and the ledger of the paid ones. Returns the series id.
   create(params: CreateRecurrenceRepositoryParams): Promise<string>;
+  // Creates the real row of a projected occurrence, with the edits of the caller (spec 034 FR 21).
+  createOccurrence(params: CreateOccurrenceRepositoryParams): Promise<TransactionEntity>;
   findById(id: string): Promise<RecurrenceEntity | undefined>;
   // ACTIVE series whose `nextOccurrenceDate` is on or before `horizon`.
   findDue(owners: OwnerAccess[], horizon: string): Promise<RecurrenceEntity[]>;
@@ -34,6 +36,16 @@ interface ApplyRecurrenceChangeRepositoryParams {
   rowPatch: RowPatchRepositoryParams;
   seriesPatch: SeriesPatchRepositoryParams;
   sourceId: string;
+}
+interface CreateOccurrenceRepositoryParams {
+  categoryId?: string;
+  date: string;
+  description?: string;
+  invoiceMonth?: string;
+  number: number;
+  paid?: boolean;
+  recurrenceId: string;
+  value?: number;
 }
 interface CreateRecurrenceRepositoryParams {
   accountId?: string;
@@ -120,6 +132,7 @@ interface SeriesPatchRepositoryParams {
 
 export {
   ApplyRecurrenceChangeRepositoryParams,
+  CreateOccurrenceRepositoryParams,
   CreateRecurrenceRepositoryParams,
   FindRecurrencesFilter,
   FutureOccurrenceNumber,

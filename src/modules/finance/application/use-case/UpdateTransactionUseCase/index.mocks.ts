@@ -27,6 +27,13 @@ const installmentMock = new TransactionEntityFixture()
   .withInstallment('plan-1', 3, 10)
   .withOwnerId(transactionMock.ownerId)
   .build();
+const recurringMock = {
+  ...new TransactionEntityFixture()
+    .withRecurrence('series-1', 4, 10)
+    .withOwnerId(transactionMock.ownerId)
+    .build(),
+  paid: false,
+};
 const transactionRepositoryMock = {
   findTransactionById: jest.fn().mockResolvedValue(transactionMock),
   updateTransaction: jest.fn().mockResolvedValue(updatedMock),
@@ -64,6 +71,7 @@ const mocks = {
   familyId,
   installment: installmentMock,
   installmentPlanRepository: installmentPlanRepositoryMock,
+  recurring: recurringMock,
   transaction: transactionMock,
   transactionRepository: transactionRepositoryMock,
   updated: updatedMock,
