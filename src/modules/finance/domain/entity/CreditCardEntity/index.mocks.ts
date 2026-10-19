@@ -16,6 +16,7 @@ const paramsMock: CreditCardEntity = {
   limit: 500000,
   owner: OwnerType.USER,
   ownerId: 'owner-uuid-456',
+  paymentAccountId: 'account-id',
   paymentDay: 5,
   status: AccountStatus.ACTIVE,
   title: 'Main card',

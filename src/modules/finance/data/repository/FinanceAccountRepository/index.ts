@@ -6,11 +6,14 @@ import AccountEntity from '@finance/domain/entity/AccountEntity';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import {
   CreateAccountRepositoryParams,
+  FindPaidSumsFromRepositoryParams,
   FindUnpaidSumsRepositoryParams,
+  FindUnpaidSumsUntilRepositoryParams,
   IFinanceAccountRepository,
   UpdateAccountRepositoryParams,
 } from '@finance/domain/repository';
 import { endOfMonth, UnpaidSums } from '@finance/domain/service/AccountBalance';
+import { DatedAmount } from '@finance/domain/service/DailyBalance';
 
 @Injectable()
 export class FinanceAccountRepository implements IFinanceAccountRepository {
@@ -53,6 +56,21 @@ export class FinanceAccountRepository implements IFinanceAccountRepository {
     return result.map((row) => FinanceAccountMapper.toDomain(row));
   }
 
+  async findAccountsByIds(ids: string[]): Promise<AccountEntity[]> {
+    const result = await this.accountDatasource.findByIds(ids);
+
+    return result.map((row) => FinanceAccountMapper.toDomain(row));
+  }
+
+  async findPaidSumsFrom(params: FindPaidSumsFromRepositoryParams): Promise<DatedAmount[]> {
+    const rows = await this.accountDatasource.findPaidSumsFrom({
+      account_ids: params.accountIds,
+      from: params.from,
+    });
+
+    return rows.map((row) => ({ accountId: row.account_id, amount: row.amount, date: row.date }));
+  }
+
   async findUnpaidSums(params: FindUnpaidSumsRepositoryParams): Promise<UnpaidSums[]> {
     const rows = await this.accountDatasource.findUnpaidSums({
       account_ids: params.accountIds,
@@ -63,6 +81,15 @@ export class FinanceAccountRepository implements IFinanceAccountRepository {
       accountId: row.account_id,
       dueByEndOfMonth: row.due_by_end_of_month,
     }));
+  }
+
+  async findUnpaidSumsUntil(params: FindUnpaidSumsUntilRepositoryParams): Promise<DatedAmount[]> {
+    const rows = await this.accountDatasource.findUnpaidSumsUntil({
+      account_ids: params.accountIds,
+      to: params.to,
+    });
+
+    return rows.map((row) => ({ accountId: row.account_id, amount: row.amount, date: row.date }));
   }
 
   async updateAccount(params: UpdateAccountRepositoryParams): Promise<AccountEntity> {

@@ -101,3 +101,35 @@ describe('updateAccount', () => {
     expect(result).toBe(mocks.accountEntity);
   });
 });
+
+describe('findAccountsByIds', () => {
+  it('SHOULD map the rows to entities', async () => {
+    expect(await setup.findAccountsByIds(['id-1'])).toEqual([mocks.accountEntity]);
+    expect(mocks.accountDatasource.findByIds).toHaveBeenCalledWith(['id-1']);
+  });
+});
+
+describe('findPaidSumsFrom / findUnpaidSumsUntil', () => {
+  it('SHOULD translate params AND rows', async () => {
+    const row = { account_id: 'a', amount: -5, date: '2026-11-02' };
+    mocks.accountDatasource.findPaidSumsFrom.mockResolvedValueOnce([row]);
+    mocks.accountDatasource.findUnpaidSumsUntil.mockResolvedValueOnce([row]);
+
+    const expected = [{ accountId: 'a', amount: -5, date: '2026-11-02' }];
+
+    expect(await setup.findPaidSumsFrom({ accountIds: ['a'], from: '2026-11-01' })).toEqual(
+      expected,
+    );
+    expect(mocks.accountDatasource.findPaidSumsFrom).toHaveBeenCalledWith({
+      account_ids: ['a'],
+      from: '2026-11-01',
+    });
+    expect(await setup.findUnpaidSumsUntil({ accountIds: ['a'], to: '2026-11-30' })).toEqual(
+      expected,
+    );
+    expect(mocks.accountDatasource.findUnpaidSumsUntil).toHaveBeenCalledWith({
+      account_ids: ['a'],
+      to: '2026-11-30',
+    });
+  });
+});

@@ -4,8 +4,11 @@ import { FinancialAccount, Prisma } from '@db/client';
 import { toOwnerWhere } from '@finance/data/datasource/mapper/OwnerWhere';
 import {
   CreateAccountDatasourceParams,
+  DatedSumRow,
   ExistsAccountDatasourceParams,
+  FindPaidSumsDatasourceParams,
   FindUnpaidSumsDatasourceParams,
+  FindUnpaidSumsUntilDatasourceParams,
   IFinanceAccountDatasource,
   UnpaidSumsRow,
   UpdateAccountDatasourceParams,
@@ -38,8 +41,38 @@ export class FinanceAccountDatasource implements IFinanceAccountDatasource {
     return this.db.client.financialAccount.findUnique({ where: { id } });
   }
 
+  async findByIds(ids: string[]): Promise<FinancialAccount[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    return this.db.client.financialAccount.findMany({ where: { id: { in: ids } } });
+  }
+
   async findByOwners(owners: OwnerAccess[]): Promise<FinancialAccount[]> {
     return this.db.client.financialAccount.findMany({ where: toOwnerWhere(owners) });
+  }
+
+  // Signed sums per account and day of the PAID rows dated from `from` on (spec 035 FR 15), ONE grouped query
+  // served by the (account_id, date) index.
+  async findPaidSumsFrom(params: FindPaidSumsDatasourceParams): Promise<DatedSumRow[]> {
+    if (params.account_ids.length === 0) {
+      return [];
+    }
+
+    const rows = await this.db.client.$queryRaw<
+      { account_id: string; amount: bigint; date: string }[]
+    >(
+      Prisma.sql`
+        SELECT "account_id", to_char("date", 'YYYY-MM-DD') AS "date",
+          COALESCE(SUM(CASE WHEN "type" = 'INCOME' THEN "value" ELSE -"value" END), 0) AS "amount"
+        FROM "financial_transactions"
+        WHERE "account_id" IN (${Prisma.join(params.account_ids)}) AND "paid" = true
+          AND "date" >= ${params.from}::date
+        GROUP BY "account_id", "date"`,
+    );
+
+    return rows.map((row) => ({ ...row, amount: Number(row.amount) }));
   }
 
   // Signed sums (income +, expense −) of the UNPAID rows dated up to the end of the month, for all the
@@ -65,6 +98,27 @@ export class FinanceAccountDatasource implements IFinanceAccountDatasource {
       account_id: row.account_id,
       due_by_end_of_month: Number(row.due_by_end_of_month),
     }));
+  }
+
+  // Signed sums per account and day of the UNPAID rows dated up to `to` (served by the partial index).
+  async findUnpaidSumsUntil(params: FindUnpaidSumsUntilDatasourceParams): Promise<DatedSumRow[]> {
+    if (params.account_ids.length === 0) {
+      return [];
+    }
+
+    const rows = await this.db.client.$queryRaw<
+      { account_id: string; amount: bigint; date: string }[]
+    >(
+      Prisma.sql`
+        SELECT "account_id", to_char("date", 'YYYY-MM-DD') AS "date",
+          COALESCE(SUM(CASE WHEN "type" = 'INCOME' THEN "value" ELSE -"value" END), 0) AS "amount"
+        FROM "financial_transactions"
+        WHERE "account_id" IN (${Prisma.join(params.account_ids)}) AND "paid" = false
+          AND "date" <= ${params.to}::date
+        GROUP BY "account_id", "date"`,
+    );
+
+    return rows.map((row) => ({ ...row, amount: Number(row.amount) }));
   }
 
   async update(params: UpdateAccountDatasourceParams): Promise<FinancialAccount> {

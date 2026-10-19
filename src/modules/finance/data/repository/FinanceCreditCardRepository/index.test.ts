@@ -14,6 +14,7 @@ describe('createCreditCard', () => {
       limit: 500000,
       owner: OwnerType.USER,
       ownerId: 'owner-id',
+      paymentAccountId: 'account-1',
       paymentDay: 5,
       status: AccountStatus.ACTIVE,
       title: 'Main card',
@@ -28,6 +29,7 @@ describe('createCreditCard', () => {
       limit: 500000,
       owner: 'USER',
       owner_id: 'owner-id',
+      payment_account_id: 'account-1',
       payment_day: 5,
       status: 'ACTIVE',
       title: 'Main card',
@@ -78,6 +80,7 @@ describe('updateCreditCard', () => {
       id: 'id-1',
       lastDigits: null,
       ownerId: 'new-owner',
+      paymentAccountId: null,
       paymentDay: null,
     });
 
@@ -91,6 +94,7 @@ describe('updateCreditCard', () => {
       limit: undefined,
       owner: undefined,
       owner_id: 'new-owner',
+      payment_account_id: null,
       payment_day: null,
       status: undefined,
       title: undefined,

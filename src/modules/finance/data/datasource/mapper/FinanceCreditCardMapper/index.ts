@@ -16,6 +16,7 @@ export class FinanceCreditCardMapper {
       limit: raw.limit,
       owner: OwnerType[raw.owner],
       ownerId: raw.owner_id,
+      paymentAccountId: raw.payment_account_id ?? undefined,
       paymentDay: raw.payment_day ?? undefined,
       status: AccountStatus[raw.status],
       title: raw.title,

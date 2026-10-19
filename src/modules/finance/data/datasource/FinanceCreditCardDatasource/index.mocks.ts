@@ -20,6 +20,7 @@ const cardMock: FinancialCreditCard = {
   limit: 500000,
   owner: 'USER',
   owner_id: faker.string.uuid(),
+  payment_account_id: null,
   payment_day: 5,
   status: 'ACTIVE',
   title: 'Main card',

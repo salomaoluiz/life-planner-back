@@ -115,3 +115,57 @@ describe('Method update', () => {
     });
   });
 });
+
+describe('Method findByIds', () => {
+  it('SHOULD query by id list in ONE findMany AND skip the query for an empty list', async () => {
+    spies.findMany.mockResolvedValue([mocks.account]);
+
+    expect(await setup.findByIds([mocks.account.id])).toEqual([mocks.account]);
+    expect(spies.findMany).toHaveBeenCalledWith({ where: { id: { in: [mocks.account.id] } } });
+
+    spies.findMany.mockClear();
+    expect(await setup.findByIds([])).toEqual([]);
+    expect(spies.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('Method findPaidSumsFrom', () => {
+  it('SHOULD run ONE grouped query over the paid rows from the date AND map bigint to number', async () => {
+    spies.queryRaw.mockResolvedValue([
+      { account_id: 'acc-1', amount: BigInt(-300), date: '2026-11-10' },
+    ]);
+
+    const result = await setup.findPaidSumsFrom({ account_ids: ['acc-1'], from: '2026-11-01' });
+
+    expect(result).toEqual([{ account_id: 'acc-1', amount: -300, date: '2026-11-10' }]);
+    const query = spies.queryRaw.mock.calls[0][0];
+    expect(query.sql).toContain('"paid" = true');
+    expect(query.sql).toContain('GROUP BY "account_id", "date"');
+    expect(query.values).toEqual(expect.arrayContaining(['acc-1', '2026-11-01']));
+  });
+
+  it('SHOULD not query WHEN there are no accounts', async () => {
+    expect(await setup.findPaidSumsFrom({ account_ids: [], from: '2026-11-01' })).toEqual([]);
+    expect(spies.queryRaw).not.toHaveBeenCalled();
+  });
+});
+
+describe('Method findUnpaidSumsUntil', () => {
+  it('SHOULD run ONE grouped query over the unpaid rows up to the date', async () => {
+    spies.queryRaw.mockResolvedValue([
+      { account_id: 'acc-1', amount: BigInt(200), date: '2026-11-20' },
+    ]);
+
+    const result = await setup.findUnpaidSumsUntil({ account_ids: ['acc-1'], to: '2026-11-30' });
+
+    expect(result).toEqual([{ account_id: 'acc-1', amount: 200, date: '2026-11-20' }]);
+    const query = spies.queryRaw.mock.calls[0][0];
+    expect(query.sql).toContain('"paid" = false');
+    expect(query.sql).toContain('"date" <=');
+  });
+
+  it('SHOULD not query WHEN there are no accounts', async () => {
+    expect(await setup.findUnpaidSumsUntil({ account_ids: [], to: '2026-11-30' })).toEqual([]);
+    expect(spies.queryRaw).not.toHaveBeenCalled();
+  });
+});
