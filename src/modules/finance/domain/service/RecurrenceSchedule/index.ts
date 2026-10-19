@@ -1,5 +1,24 @@
-import { RecurrenceFrequency } from '@finance/domain/enum';
+import { RecurrenceFrequency, RecurrenceStatus } from '@finance/domain/enum';
+import { firstUnpaidInvoiceMonth, invoiceMonthOf } from '@finance/domain/service/InvoiceCalculator';
 
+export interface MaterializationPlan {
+  // Position of the last occurrence up to the horizon (skipped ones included), or the previous one when nothing is due.
+  lastGeneratedNumber: number;
+  nextOccurrenceDate: null | string;
+  // Rows to insert, skipped numbers already left out.
+  occurrences: PlannedOccurrence[];
+  status: RecurrenceStatus;
+}
+export interface OccurrenceRowPlan {
+  date: string;
+  invoiceMonth?: string;
+  number: number;
+  paid?: boolean;
+}
+export interface PlannedOccurrence extends ScheduledOccurrence {
+  // Displayed number: `firstNumber - 1 + k`.
+  number: number;
+}
 export interface RecurrenceRule {
   // Inclusive; null/undefined = no end.
   endDate?: null | string;
@@ -19,10 +38,35 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export function countUntil(rule: RecurrenceRule, endDate: string): number {
   return occurrencesBetween({ ...rule, endDate: null }, rule.startDate, endDate).length;
 }
+// Spec 034 FR 8-9: which real rows a series needs up to `horizon`, and where the series stands afterwards.
 export function lastDayOfMonth(date: string): string {
   const [year, month] = parts(date);
 
   return format(year, month, daysInMonth(year, month));
+}
+export function planMaterialization(params: {
+  firstNumber: number;
+  horizon: string;
+  lastGeneratedNumber: number;
+  rule: RecurrenceRule;
+  skippedNumbers: number[];
+}): MaterializationPlan {
+  const { firstNumber, horizon, lastGeneratedNumber, rule, skippedNumbers } = params;
+  const pending = occurrencesBetween(
+    rule,
+    occurrenceDate(rule, lastGeneratedNumber + 1),
+    horizon,
+  ).map((occurrence) => ({ ...occurrence, number: firstNumber - 1 + occurrence.k }));
+  const last = pending.length > 0 ? pending[pending.length - 1].k : lastGeneratedNumber;
+  const next = occurrenceDate(rule, last + 1);
+  const ended = Boolean(rule.endDate && next > rule.endDate);
+
+  return {
+    lastGeneratedNumber: last,
+    nextOccurrenceDate: ended ? null : next,
+    occurrences: pending.filter((occurrence) => !skippedNumbers.includes(occurrence.number)),
+    status: ended ? RecurrenceStatus.ENDED : RecurrenceStatus.ACTIVE,
+  };
 }
 
 // Spec 034 FR 3: always computed from the start date, never from the previous occurrence.
@@ -61,6 +105,33 @@ export function occurrencesBetween(
 }
 
 // Spec 034 FR 4: the count shown as `k/n`; null while the series has no end date.
+// Turns planned occurrences into rows. Card series: the invoice of the date by the closing rule, moved to the
+// first later invoice without a payment record (FR 11). Account series: `firstPaid` applies to occurrence 1 only;
+// every other row is created not paid (FR 10).
+export function toOccurrenceRows(
+  occurrences: PlannedOccurrence[],
+  card?: { closingDay: number; paidMonths: ReadonlySet<string> },
+  firstPaid?: boolean,
+): OccurrenceRowPlan[] {
+  return occurrences.map((occurrence) => {
+    if (card) {
+      return {
+        date: occurrence.date,
+        invoiceMonth: firstUnpaidInvoiceMonth(
+          invoiceMonthOf(occurrence.date, card.closingDay),
+          card.paidMonths,
+        ),
+        number: occurrence.number,
+      };
+    }
+
+    return {
+      date: occurrence.date,
+      number: occurrence.number,
+      paid: occurrence.k === 1 ? (firstPaid ?? false) : false,
+    };
+  });
+}
 export function totalOccurrences(rule: RecurrenceRule, firstNumber: number): null | number {
   return rule.endDate ? firstNumber - 1 + countUntil(rule, rule.endDate) : null;
 }

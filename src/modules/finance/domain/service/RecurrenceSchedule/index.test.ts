@@ -4,7 +4,9 @@ import {
   lastDayOfMonth,
   occurrenceDate,
   occurrencesBetween,
+  planMaterialization,
   RecurrenceRule,
+  toOccurrenceRows,
   totalOccurrences,
 } from '@finance/domain/service/RecurrenceSchedule';
 
@@ -105,5 +107,134 @@ describe('totalOccurrences', () => {
 
   it('continues the numbering of a split series', () => {
     expect(totalOccurrences(monthly('2026-05-05', '2026-12-05'), 5)).toBe(12);
+  });
+});
+
+describe('planMaterialization', () => {
+  const weekly: RecurrenceRule = { frequency: RecurrenceFrequency.WEEKLY, startDate: '2026-10-01' };
+
+  it('creates the rest of the month AND moves the series to the next occurrence', () => {
+    const plan = planMaterialization({
+      firstNumber: 1,
+      horizon: '2026-10-31',
+      lastGeneratedNumber: 1,
+      rule: weekly,
+      skippedNumbers: [],
+    });
+
+    expect(plan.occurrences.map((occurrence) => occurrence.date)).toEqual([
+      '2026-10-08',
+      '2026-10-15',
+      '2026-10-22',
+      '2026-10-29',
+    ]);
+    expect(plan).toMatchObject({
+      lastGeneratedNumber: 5,
+      nextOccurrenceDate: '2026-11-05',
+      status: 'ACTIVE',
+    });
+  });
+
+  it('catches up a long absence in one plan', () => {
+    const plan = planMaterialization({
+      firstNumber: 1,
+      horizon: '2026-12-31',
+      lastGeneratedNumber: 1,
+      rule: monthly('2026-10-05'),
+      skippedNumbers: [],
+    });
+
+    expect(plan.occurrences.map((occurrence) => occurrence.date)).toEqual([
+      '2026-11-05',
+      '2026-12-05',
+    ]);
+  });
+
+  it('leaves skipped numbers out but still advances past them', () => {
+    const plan = planMaterialization({
+      firstNumber: 1,
+      horizon: '2026-10-31',
+      lastGeneratedNumber: 1,
+      rule: weekly,
+      skippedNumbers: [3],
+    });
+
+    expect(plan.occurrences.map((occurrence) => occurrence.number)).toEqual([2, 4, 5]);
+    expect(plan.lastGeneratedNumber).toBe(5);
+  });
+
+  it('numbers a split series from its first number', () => {
+    const plan = planMaterialization({
+      firstNumber: 5,
+      horizon: '2026-12-31',
+      lastGeneratedNumber: 0,
+      rule: monthly('2026-10-05'),
+      skippedNumbers: [],
+    });
+
+    expect(plan.occurrences.map((occurrence) => occurrence.number)).toEqual([5, 6, 7]);
+  });
+
+  it('ends the series when the end date is reached', () => {
+    const plan = planMaterialization({
+      firstNumber: 1,
+      horizon: '2026-12-31',
+      lastGeneratedNumber: 0,
+      rule: monthly('2026-10-05', '2026-11-05'),
+      skippedNumbers: [],
+    });
+
+    expect(plan).toMatchObject({
+      lastGeneratedNumber: 2,
+      nextOccurrenceDate: null,
+      status: 'ENDED',
+    });
+  });
+
+  it('plans nothing before the series starts', () => {
+    const plan = planMaterialization({
+      firstNumber: 1,
+      horizon: '2026-10-31',
+      lastGeneratedNumber: 0,
+      rule: monthly('2026-11-05'),
+      skippedNumbers: [],
+    });
+
+    expect(plan).toMatchObject({
+      lastGeneratedNumber: 0,
+      nextOccurrenceDate: '2026-11-05',
+      occurrences: [],
+      status: 'ACTIVE',
+    });
+  });
+});
+
+describe('toOccurrenceRows', () => {
+  const planned = [
+    { date: '2026-10-05', k: 1, number: 1 },
+    { date: '2026-11-05', k: 2, number: 2 },
+  ];
+
+  it('applies the paid flag to occurrence 1 only on account series', () => {
+    expect(toOccurrenceRows(planned, undefined, true)).toEqual([
+      { date: '2026-10-05', number: 1, paid: true },
+      { date: '2026-11-05', number: 2, paid: false },
+    ]);
+  });
+
+  it('creates account rows not paid by default', () => {
+    expect(toOccurrenceRows(planned)[0].paid).toBe(false);
+  });
+
+  it('assigns the invoice by the closing day AND moves it past paid invoices', () => {
+    const rows = toOccurrenceRows(planned, {
+      closingDay: 10,
+      paidMonths: new Set(['2026-10', '2026-11']),
+    });
+
+    expect(rows).toEqual([
+      { date: '2026-10-05', invoiceMonth: '2026-12', number: 1 },
+      { date: '2026-11-05', invoiceMonth: '2026-12', number: 2 },
+    ]);
   });
 });

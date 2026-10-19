@@ -9,6 +9,7 @@ import { CreateCardRefundUseCase } from '@finance/application/use-case/CreateCar
 import { CreateCategoryUseCase } from '@finance/application/use-case/CreateCategoryUseCase';
 import { CreateCreditCardUseCase } from '@finance/application/use-case/CreateCreditCardUseCase';
 import { CreateInstallmentPlanUseCase } from '@finance/application/use-case/CreateInstallmentPlanUseCase';
+import { CreateRecurrenceUseCase } from '@finance/application/use-case/CreateRecurrenceUseCase';
 import { CreateTransactionUseCase } from '@finance/application/use-case/CreateTransactionUseCase';
 import { DeleteAccountUseCase } from '@finance/application/use-case/DeleteAccountUseCase';
 import { DeleteCardEarlyPaymentUseCase } from '@finance/application/use-case/DeleteCardEarlyPaymentUseCase';
@@ -30,6 +31,7 @@ import { GetInvoiceUseCase } from '@finance/application/use-case/GetInvoiceUseCa
 import { GetPrepaymentPreviewUseCase } from '@finance/application/use-case/GetPrepaymentPreviewUseCase';
 import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransactionsUseCase';
 import { HasFinanceDataByOwnerUseCase } from '@finance/application/use-case/HasFinanceDataByOwnerUseCase';
+import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { PayInvoiceUseCase } from '@finance/application/use-case/PayInvoiceUseCase';
 import { PrepayInstallmentPlanUseCase } from '@finance/application/use-case/PrepayInstallmentPlanUseCase';
 import { ResolveCardRowsPaidUseCase } from '@finance/application/use-case/ResolveCardRowsPaidUseCase';
@@ -65,6 +67,8 @@ import { FinanceRecurrenceRepository } from '@finance/data/repository/FinanceRec
 import { FinanceTransactionRepository } from '@finance/data/repository/FinanceTransactionRepository';
 
 const useCases = [
+  CreateRecurrenceUseCase,
+  MaterializeRecurrencesUseCase,
   CreateCardEarlyPaymentUseCase,
   CreateCardRefundUseCase,
   DeleteCardEarlyPaymentUseCase,
