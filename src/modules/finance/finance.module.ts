@@ -21,6 +21,7 @@ import { DeleteInstallmentPlanUseCase } from '@finance/application/use-case/Dele
 import { DeleteOccurrenceUseCase } from '@finance/application/use-case/DeleteOccurrenceUseCase';
 import { DeleteRecurrenceUseCase } from '@finance/application/use-case/DeleteRecurrenceUseCase';
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
+import { EndRecurrencesBySourceUseCase } from '@finance/application/use-case/EndRecurrencesBySourceUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import { GetAccountsUseCase } from '@finance/application/use-case/GetAccountsUseCase';
 import { GetCategoriesUseCase } from '@finance/application/use-case/GetCategoriesUseCase';
@@ -75,6 +76,7 @@ import { FinanceRecurrenceRepository } from '@finance/data/repository/FinanceRec
 import { FinanceTransactionRepository } from '@finance/data/repository/FinanceTransactionRepository';
 
 const useCases = [
+  EndRecurrencesBySourceUseCase,
   DeleteOccurrenceUseCase,
   DeleteRecurrenceUseCase,
   MaterializeOccurrenceUseCase,

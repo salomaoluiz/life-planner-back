@@ -5,7 +5,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 
-import { Prisma } from '@db/client';
+import { OwnerType, Prisma } from '@db/client';
 import { TRANSACTION_RELATIONS } from '@finance/data/datasource/FinanceTransactionDatasource';
 import {
   applyLedgerDeltas,
@@ -72,6 +72,21 @@ interface SeriesTemplate {
 @Injectable()
 export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource {
   constructor(private readonly db: Database) {}
+
+  async countBySource(source: { account_id?: string; credit_card_id?: string }): Promise<number> {
+    return this.db.client.financialRecurrence.count({
+      where: { account_id: source.account_id, credit_card_id: source.credit_card_id },
+    });
+  }
+
+  async exists(access: { owner: OwnerType; owner_id: string }): Promise<boolean> {
+    const found = await this.db.client.financialRecurrence.findFirst({
+      select: { id: true },
+      where: { owner: access.owner, owner_id: access.owner_id },
+    });
+
+    return found !== null;
+  }
 
   // Spec 034 FR 20-25 in ONE transaction. Only rows that are not locked (paid account rows, card rows in an
   // invoice with a payment record) take value / source changes; the others keep them and still take text.

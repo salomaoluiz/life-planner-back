@@ -30,6 +30,27 @@ describe('UpdateCreditCardUseCase', () => {
     );
   });
 
+  it('SHOULD end the recurring series of the card WHEN it is archived (spec 034)', async () => {
+    await setup.execute({ ...mocks.base, status: 'ARCHIVED' as never });
+
+    expect(mocks.endRecurrences.execute).toHaveBeenCalledWith({
+      accessibleOwners: mocks.base.accessibleOwners,
+      creditCardId: mocks.card.id,
+    });
+  });
+
+  it('SHOULD NOT end series WHEN the card was already archived OR is not being archived', async () => {
+    mocks.creditCardRepository.findCreditCardById.mockResolvedValueOnce({
+      ...mocks.card,
+      status: 'ARCHIVED',
+    });
+    await setup.execute({ ...mocks.base, status: 'ARCHIVED' as never });
+    await setup.execute({ ...mocks.base, status: 'ACTIVE' as never });
+    await setup.execute({ ...mocks.base, title: 'x' });
+
+    expect(mocks.endRecurrences.execute).not.toHaveBeenCalled();
+  });
+
   it('SHOULD move the card to a family the caller belongs to', async () => {
     await setup.execute({
       ...mocks.base,

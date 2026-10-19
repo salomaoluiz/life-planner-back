@@ -25,12 +25,28 @@ it('SHOULD update only the sent fields AND return the account with its balances'
   expect(result).toBe(mocks.withBalances);
 });
 
-it('SHOULD allow archiving', async () => {
+it('SHOULD allow archiving AND end the recurring series of the account (spec 034)', async () => {
   await setup.execute({ ...base(), status: AccountStatus.ARCHIVED });
 
   expect(mocks.accountRepository.updateAccount).toHaveBeenCalledWith(
     expect.objectContaining({ status: AccountStatus.ARCHIVED }),
   );
+  expect(mocks.endRecurrences.execute).toHaveBeenCalledWith({
+    accessibleOwners: mocks.accessibleOwners,
+    accountId: mocks.account.id,
+  });
+});
+
+it('SHOULD NOT end series WHEN the account was already archived OR is not being archived', async () => {
+  mocks.accountRepository.findAccountById.mockResolvedValueOnce({
+    ...mocks.account,
+    status: AccountStatus.ARCHIVED,
+  });
+  await setup.execute({ ...base(), status: AccountStatus.ARCHIVED });
+  await setup.execute({ ...base(), status: AccountStatus.ACTIVE });
+  await setup.execute({ ...base(), name: 'x' });
+
+  expect(mocks.endRecurrences.execute).not.toHaveBeenCalled();
 });
 
 it.each([

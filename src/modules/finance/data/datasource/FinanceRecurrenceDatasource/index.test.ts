@@ -637,3 +637,27 @@ describe('Method skipNumber', () => {
     });
   });
 });
+
+describe('Method countBySource / exists', () => {
+  it('SHOULD count the series of an account OR a card', async () => {
+    spies.recurrenceCount.mockResolvedValue(2);
+
+    expect(await setup.countBySource({ account_id: 'account-1' })).toBe(2);
+    expect(spies.recurrenceCount).toHaveBeenCalledWith({
+      where: { account_id: 'account-1', credit_card_id: undefined },
+    });
+  });
+
+  it('SHOULD tell whether an owner has series', async () => {
+    spies.recurrenceFindFirst
+      .mockResolvedValueOnce({ id: 'recurrence-1' })
+      .mockResolvedValueOnce(null);
+
+    expect(await setup.exists({ owner: 'USER', owner_id: 'owner-1' })).toBe(true);
+    expect(await setup.exists({ owner: 'USER', owner_id: 'owner-1' })).toBe(false);
+    expect(spies.recurrenceFindFirst).toHaveBeenCalledWith({
+      select: { id: true },
+      where: { owner: 'USER', owner_id: 'owner-1' },
+    });
+  });
+});

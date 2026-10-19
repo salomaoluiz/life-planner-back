@@ -56,3 +56,17 @@ it('SHOULD answer 404 BEFORE counting WHEN the account is not accessible (no inf
   ).rejects.toThrow(NotFoundException);
   expect(mocks.transactionRepository.countByAccountId).not.toHaveBeenCalled();
 });
+
+describe('recurring transactions (spec 034)', () => {
+  it('SHOULD answer 409 AND delete nothing WHEN the account has series', async () => {
+    mocks.recurrenceRepository.countBySource.mockResolvedValue(1);
+
+    await expect(
+      setup.execute({ accessibleOwners: mocks.accessibleOwners, id: mocks.account.id }),
+    ).rejects.toThrow('Account has recurring transactions');
+    expect(mocks.recurrenceRepository.countBySource).toHaveBeenCalledWith({
+      accountId: mocks.account.id,
+    });
+    expect(mocks.accountRepository.deleteAccount).not.toHaveBeenCalled();
+  });
+});

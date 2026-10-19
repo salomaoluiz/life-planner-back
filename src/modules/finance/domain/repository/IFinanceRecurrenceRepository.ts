@@ -12,7 +12,10 @@ export type IFinanceRecurrenceRepository = {
   // One database transaction: the series, its real rows and the ledger of the paid ones. Returns the series id.
   create(params: CreateRecurrenceRepositoryParams): Promise<string>;
   // Creates the real row of a projected occurrence, with the edits of the caller (spec 034 FR 21).
+  // Series (any status) of an account OR a card: they block deleting it (FK RESTRICT, spec 034 FR 35).
+  countBySource(source: { accountId?: string; creditCardId?: string }): Promise<number>;
   createOccurrence(params: CreateOccurrenceRepositoryParams): Promise<TransactionEntity>;
+  existsByOwner(access: OwnerAccess): Promise<boolean>;
   findById(id: string): Promise<RecurrenceEntity | undefined>;
   // ACTIVE series whose `nextOccurrenceDate` is on or before `horizon`.
   findDue(owners: OwnerAccess[], horizon: string): Promise<RecurrenceEntity[]>;

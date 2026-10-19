@@ -13,11 +13,15 @@ describe('Method countByAccountId / countByCategoryIds', () => {
     expect(spies.count).toHaveBeenCalledWith({ where: { account_id: 'acc-1' } });
   });
 
-  it('SHOULD count the transactions AND the installment plans of ANY of the given categories', async () => {
+  it('SHOULD count the transactions, the installment plans AND the recurrences of ANY of the given categories', async () => {
     spies.count.mockResolvedValue(1);
     spies.planCount.mockResolvedValue(2);
+    spies.recurrenceCount.mockResolvedValue(4);
 
-    expect(await setup.countByCategoryIds(['c1', 'c2'])).toBe(3);
+    expect(await setup.countByCategoryIds(['c1', 'c2'])).toBe(7);
+    expect(spies.recurrenceCount).toHaveBeenCalledWith({
+      where: { category_id: { in: ['c1', 'c2'] } },
+    });
     expect(spies.count).toHaveBeenCalledWith({ where: { category_id: { in: ['c1', 'c2'] } } });
     expect(spies.planCount).toHaveBeenCalledWith({ where: { category_id: { in: ['c1', 'c2'] } } });
   });

@@ -58,6 +58,13 @@ export class FinanceRecurrenceRepository implements IFinanceRecurrenceRepository
     });
   }
 
+  async countBySource(source: { accountId?: string; creditCardId?: string }): Promise<number> {
+    return this.recurrenceDatasource.countBySource({
+      account_id: source.accountId,
+      credit_card_id: source.creditCardId,
+    });
+  }
+
   async create(params: CreateRecurrenceRepositoryParams): Promise<string> {
     return this.recurrenceDatasource.create({
       account_id: params.accountId,
@@ -91,6 +98,10 @@ export class FinanceRecurrenceRepository implements IFinanceRecurrenceRepository
     });
 
     return FinanceTransactionMapper.toDomain(row);
+  }
+
+  async existsByOwner(access: OwnerAccess): Promise<boolean> {
+    return this.recurrenceDatasource.exists({ owner: access.owner, owner_id: access.ownerId });
   }
 
   async findById(id: string): Promise<RecurrenceEntity | undefined> {

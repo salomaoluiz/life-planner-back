@@ -17,6 +17,7 @@ const accountRepositoryMock = {
 
 // endregion Mocks
 
+const recurrenceRepositoryMock = { countBySource: jest.fn().mockResolvedValue(0) };
 const transactionRepositoryMock = { countByAccountId: jest.fn().mockResolvedValue(0) };
 
 let setup: DeleteAccountUseCase;
@@ -25,11 +26,13 @@ beforeEach(async () => {
   jest.clearAllMocks();
   accountRepositoryMock.findAccountById.mockResolvedValue(accountMock);
   transactionRepositoryMock.countByAccountId.mockResolvedValue(0);
+  recurrenceRepositoryMock.countBySource.mockResolvedValue(0);
 
   const module = await Test.createTestingModule({
     providers: [
       DeleteAccountUseCase,
       { provide: 'IFinanceAccountRepository', useValue: accountRepositoryMock },
+      { provide: 'IFinanceRecurrenceRepository', useValue: recurrenceRepositoryMock },
       { provide: 'IFinanceTransactionRepository', useValue: transactionRepositoryMock },
     ],
   }).compile();
@@ -41,6 +44,7 @@ const mocks = {
   accessibleOwners,
   account: accountMock,
   accountRepository: accountRepositoryMock,
+  recurrenceRepository: recurrenceRepositoryMock,
   transactionRepository: transactionRepositoryMock,
 };
 const spies = {};

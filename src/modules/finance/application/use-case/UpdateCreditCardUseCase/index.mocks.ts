@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 
+import { EndRecurrencesBySourceUseCase } from '@finance/application/use-case/EndRecurrencesBySourceUseCase';
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
 import { CreditCardBrand } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -23,6 +24,7 @@ const inputMock = {
 };
 const baseMock = { accessibleOwners: inputMock.accessibleOwners, id: cardMock.id };
 
+const endRecurrencesMock = { execute: jest.fn().mockResolvedValue(0) };
 const creditCardRepositoryMock = {
   createCreditCard: jest.fn().mockResolvedValue(cardMock),
   deleteCreditCard: jest.fn().mockResolvedValue(undefined),
@@ -41,6 +43,7 @@ beforeEach(async () => {
   const module = await Test.createTestingModule({
     providers: [
       UpdateCreditCardUseCase,
+      { provide: EndRecurrencesBySourceUseCase, useValue: endRecurrencesMock },
       { provide: 'IFinanceCreditCardRepository', useValue: creditCardRepositoryMock },
     ],
   }).compile();
@@ -52,6 +55,7 @@ const mocks = {
   base: baseMock,
   card: cardMock,
   creditCardRepository: creditCardRepositoryMock,
+  endRecurrences: endRecurrencesMock,
   input: inputMock,
   updated: updatedMock,
 };

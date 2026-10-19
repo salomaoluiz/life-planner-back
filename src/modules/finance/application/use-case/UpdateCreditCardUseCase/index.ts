@@ -4,8 +4,10 @@ import {
   UpdateCreditCardInput,
   UpdateCreditCardSchema,
 } from '@finance/application/dto/UpdateCreditCard';
+import { EndRecurrencesBySourceUseCase } from '@finance/application/use-case/EndRecurrencesBySourceUseCase';
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
+import { AccountStatus } from '@finance/domain/enum';
 import { IFinanceCreditCardRepository } from '@finance/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
@@ -17,6 +19,8 @@ export class UpdateCreditCardUseCase implements UseCaseWithParams<
   constructor(
     @Inject('IFinanceCreditCardRepository')
     private readonly creditCardRepository: IFinanceCreditCardRepository,
+    @Inject(EndRecurrencesBySourceUseCase)
+    private readonly endRecurrencesBySourceUseCase: EndRecurrencesBySourceUseCase,
   ) {}
 
   async execute(params: UpdateCreditCardInput): Promise<CreditCardEntity> {
@@ -37,7 +41,7 @@ export class UpdateCreditCardUseCase implements UseCaseWithParams<
       throw new ForbiddenException('Owner not accessible');
     }
 
-    return this.creditCardRepository.updateCreditCard({
+    const updated = await this.creditCardRepository.updateCreditCard({
       brand: input.brand,
       closingDay: input.closingDay,
       color: input.color,
@@ -51,5 +55,15 @@ export class UpdateCreditCardUseCase implements UseCaseWithParams<
       status: input.status,
       title: input.title,
     });
+
+    // Archiving ends its recurring series (spec 034 FR 34); reactivating does not restart them.
+    if (input.status === AccountStatus.ARCHIVED && card.status !== AccountStatus.ARCHIVED) {
+      await this.endRecurrencesBySourceUseCase.execute({
+        accessibleOwners: input.accessibleOwners,
+        creditCardId: card.id,
+      });
+    }
+
+    return updated;
   }
 }

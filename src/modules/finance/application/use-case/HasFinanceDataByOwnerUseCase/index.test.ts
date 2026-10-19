@@ -10,6 +10,7 @@ it.each([
   ['an account', 'accountRepository'],
   ['a category', 'categoryRepository'],
   ['a credit card', 'creditCardRepository'],
+  ['a recurring transaction', 'recurrenceRepository'],
   ['a transaction', 'transactionRepository'],
 ] as const)('SHOULD return true WHEN the owner has only %s', async (_label, repository) => {
   mocks[repository].existsByOwner.mockResolvedValueOnce(true);
@@ -24,6 +25,7 @@ it('SHOULD ask each repository about exactly that owner (other owners data does 
     mocks.accountRepository,
     mocks.categoryRepository,
     mocks.creditCardRepository,
+    mocks.recurrenceRepository,
     mocks.transactionRepository,
   ]) {
     expect(repository.existsByOwner).toHaveBeenCalledTimes(1);

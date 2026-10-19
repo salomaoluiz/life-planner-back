@@ -23,6 +23,7 @@ const inputMock = {
 };
 const baseMock = { accessibleOwners: inputMock.accessibleOwners, id: cardMock.id };
 
+const recurrenceRepositoryMock = { countBySource: jest.fn() };
 const transactionRepositoryMock = { countByCreditCardId: jest.fn() };
 const creditCardRepositoryMock = {
   createCreditCard: jest.fn().mockResolvedValue(cardMock),
@@ -39,11 +40,13 @@ let setup: DeleteCreditCardUseCase;
 beforeEach(async () => {
   jest.clearAllMocks();
   transactionRepositoryMock.countByCreditCardId.mockResolvedValue(0);
+  recurrenceRepositoryMock.countBySource.mockResolvedValue(0);
 
   const module = await Test.createTestingModule({
     providers: [
       DeleteCreditCardUseCase,
       { provide: 'IFinanceCreditCardRepository', useValue: creditCardRepositoryMock },
+      { provide: 'IFinanceRecurrenceRepository', useValue: recurrenceRepositoryMock },
       { provide: 'IFinanceTransactionRepository', useValue: transactionRepositoryMock },
     ],
   }).compile();
@@ -56,6 +59,7 @@ const mocks = {
   card: cardMock,
   creditCardRepository: creditCardRepositoryMock,
   input: inputMock,
+  recurrenceRepository: recurrenceRepositoryMock,
   transactionRepository: transactionRepositoryMock,
   updated: updatedMock,
 };

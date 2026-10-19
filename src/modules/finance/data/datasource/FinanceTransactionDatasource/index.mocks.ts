@@ -88,6 +88,7 @@ const findFirstSpy = jest.fn();
 const findManySpy = jest.fn();
 const groupBySpy = jest.fn();
 const findUniqueSpy = jest.fn();
+const recurrenceCountSpy = jest.fn();
 const queryRawSpy = jest.fn();
 const transactionSpy = jest.fn();
 const updateSpy = jest.fn();
@@ -101,6 +102,7 @@ const clientMock = {
   financialAccount: { update: accountUpdateSpy },
   financialInstallmentPlan: { count: planCountSpy },
   financialInvoicePayment: { findFirst: paymentFindFirstSpy },
+  financialRecurrence: { count: recurrenceCountSpy },
   financialTransaction: {
     count: countSpy,
     create: createSpy,
@@ -142,6 +144,7 @@ const spies = {
   paymentFindFirst: paymentFindFirstSpy,
   planCount: planCountSpy,
   queryRaw: queryRawSpy,
+  recurrenceCount: recurrenceCountSpy,
   transaction: transactionSpy,
   update: updateSpy,
 };

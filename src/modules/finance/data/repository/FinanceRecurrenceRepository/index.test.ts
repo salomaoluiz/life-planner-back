@@ -304,3 +304,18 @@ describe('removeFrom / skipNumber', () => {
     expect(mocks.datasource.skipNumber).toHaveBeenCalledWith('recurrence-1', 4);
   });
 });
+
+describe('countBySource / existsByOwner', () => {
+  it('SHOULD delegate with column names', async () => {
+    mocks.datasource.countBySource.mockResolvedValue(2);
+    mocks.datasource.exists.mockResolvedValue(true);
+
+    expect(await setup.countBySource({ creditCardId: 'card-1' })).toBe(2);
+    expect(mocks.datasource.countBySource).toHaveBeenCalledWith({
+      account_id: undefined,
+      credit_card_id: 'card-1',
+    });
+    expect(await setup.existsByOwner({ owner: OwnerType.FAMILY, ownerId: 'family-1' })).toBe(true);
+    expect(mocks.datasource.exists).toHaveBeenCalledWith({ owner: 'FAMILY', owner_id: 'family-1' });
+  });
+});

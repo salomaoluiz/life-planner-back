@@ -66,10 +66,12 @@ export interface FutureOccurrenceNumberRow {
 }
 export interface IFinanceRecurrenceDatasource {
   apply(params: ApplyRecurrenceChangeDatasourceParams): Promise<string>;
+  countBySource(source: { account_id?: string; credit_card_id?: string }): Promise<number>;
   create(params: CreateRecurrenceDatasourceParams): Promise<string>;
   createOccurrence(
     params: CreateOccurrenceDatasourceParams,
   ): Promise<FinancialTransactionWithRelations>;
+  exists(access: { owner: OwnerType; owner_id: string }): Promise<boolean>;
   findById(id: string): Promise<FinancialRecurrenceWithRelations | null>;
   findByOwners(
     owners: OwnerAccess[],

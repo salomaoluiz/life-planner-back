@@ -7,6 +7,7 @@ import {
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import {
   IFinanceCreditCardRepository,
+  IFinanceRecurrenceRepository,
   IFinanceTransactionRepository,
 } from '@finance/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -16,6 +17,8 @@ export class DeleteCreditCardUseCase implements UseCaseWithParams<DeleteCreditCa
   constructor(
     @Inject('IFinanceCreditCardRepository')
     private readonly creditCardRepository: IFinanceCreditCardRepository,
+    @Inject('IFinanceRecurrenceRepository')
+    private readonly recurrenceRepository: IFinanceRecurrenceRepository,
     @Inject('IFinanceTransactionRepository')
     private readonly transactionRepository: IFinanceTransactionRepository,
   ) {}
@@ -32,6 +35,10 @@ export class DeleteCreditCardUseCase implements UseCaseWithParams<DeleteCreditCa
     // Purchases (and so every payment) keep the card: archive it instead.
     if ((await this.transactionRepository.countByCreditCardId(card.id)) > 0) {
       throw new ConflictException('Credit card has transactions');
+    }
+
+    if ((await this.recurrenceRepository.countBySource({ creditCardId: card.id })) > 0) {
+      throw new ConflictException('Credit card has recurring transactions');
     }
 
     await this.creditCardRepository.deleteCreditCard(input.id);
