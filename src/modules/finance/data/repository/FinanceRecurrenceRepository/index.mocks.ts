@@ -13,6 +13,7 @@ jest.mock('@finance/data/datasource/mapper/FinanceRecurrenceMapper');
 jest.mock('@finance/data/datasource/mapper/FinanceTransactionMapper');
 
 const recurrenceDatasourceMock = {
+  apply: jest.fn().mockResolvedValue('recurrence-1'),
   create: jest.fn().mockResolvedValue('recurrence-1'),
   findById: jest.fn().mockResolvedValue({ id: 'recurrence-1' }),
   findByOwners: jest.fn().mockResolvedValue([{ id: 'recurrence-1' }]),

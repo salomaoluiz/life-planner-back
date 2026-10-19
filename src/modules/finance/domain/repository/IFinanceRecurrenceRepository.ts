@@ -5,6 +5,10 @@ import { RecurrenceFrequency, RecurrenceStatus, TransactionType } from '@finance
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export type IFinanceRecurrenceRepository = {
+  // One database transaction (spec 034 FR 20-25): patches the series and its rows from `fromNumber`, optionally
+  // moving them to a new series, deleting rows after an end date or replacing them. Returns the id of the
+  // series that holds the rows from `fromNumber` on (the new one when `newSeries` is set).
+  applyChange(params: ApplyRecurrenceChangeRepositoryParams): Promise<string>;
   // One database transaction: the series, its real rows and the ledger of the paid ones. Returns the series id.
   create(params: CreateRecurrenceRepositoryParams): Promise<string>;
   findById(id: string): Promise<RecurrenceEntity | undefined>;
@@ -19,6 +23,18 @@ export type IFinanceRecurrenceRepository = {
   materialize(params: MaterializeRecurrenceRepositoryParams): Promise<void>;
 };
 
+interface ApplyRecurrenceChangeRepositoryParams {
+  // Rows dated after this day are deleted; refused when one is paid / in a paid invoice.
+  deleteAfter?: null | string;
+  fromNumber: number;
+  newSeries?: NewSeriesRepositoryParams | null;
+  // Deletes the rows from `fromNumber` (refused when one is paid) and inserts these instead.
+  replaceRows?: null | OccurrenceRow[];
+  // Only editable rows (unpaid account rows, card rows in invoices without a payment record) take value / source changes.
+  rowPatch: RowPatchRepositoryParams;
+  seriesPatch: SeriesPatchRepositoryParams;
+  sourceId: string;
+}
 interface CreateRecurrenceRepositoryParams {
   accountId?: string;
   categoryId: string;
@@ -54,6 +70,24 @@ interface MaterializeRecurrenceRepositoryParams {
   status: RecurrenceStatus;
 }
 // One real occurrence to insert: `number` is the displayed occurrence number.
+interface NewSeriesRepositoryParams {
+  accountId?: string;
+  categoryId: string;
+  creditCardId?: string;
+  description: string;
+  endDate: null | string;
+  firstNumber: number;
+  frequency: RecurrenceFrequency;
+  lastGeneratedNumber: number;
+  nextOccurrenceDate: null | string;
+  owner: OwnerType;
+  ownerId: string;
+  skippedNumbers: number[];
+  startDate: string;
+  status: RecurrenceStatus;
+  type: TransactionType;
+  value: number;
+}
 interface OccurrenceRow {
   date: string;
   invoiceMonth?: string;
@@ -61,11 +95,37 @@ interface OccurrenceRow {
   // Account series only; omitted = not paid.
   paid?: boolean;
 }
+interface RowPatchRepositoryParams {
+  accountId?: string;
+  categoryId?: string;
+  creditCardId?: string;
+  description?: string;
+  // New invoice month per row (a card change recomputes them).
+  invoiceMonths?: { id: string; invoiceMonth: string }[];
+  value?: number;
+}
+interface SeriesPatchRepositoryParams {
+  accountId?: string;
+  categoryId?: string;
+  creditCardId?: string;
+  description?: string;
+  endDate?: null | string;
+  frequency?: RecurrenceFrequency;
+  lastGeneratedNumber?: number;
+  nextOccurrenceDate?: null | string;
+  skippedNumbers?: number[];
+  status?: RecurrenceStatus;
+  value?: number;
+}
 
 export {
+  ApplyRecurrenceChangeRepositoryParams,
   CreateRecurrenceRepositoryParams,
   FindRecurrencesFilter,
   FutureOccurrenceNumber,
   MaterializeRecurrenceRepositoryParams,
+  NewSeriesRepositoryParams,
   OccurrenceRow,
+  RowPatchRepositoryParams,
+  SeriesPatchRepositoryParams,
 };

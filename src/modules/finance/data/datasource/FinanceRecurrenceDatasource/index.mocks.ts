@@ -8,13 +8,17 @@ import { FinanceRecurrenceDatasource } from './index';
 
 const accountUpdateSpy = jest.fn();
 const paymentFindFirstSpy = jest.fn();
+const paymentFindManySpy = jest.fn();
 const queryRawSpy = jest.fn();
 const recurrenceCreateSpy = jest.fn();
 const recurrenceFindManySpy = jest.fn();
 const recurrenceFindUniqueSpy = jest.fn();
 const recurrenceUpdateSpy = jest.fn();
 const rowCreateManySpy = jest.fn();
+const rowDeleteManySpy = jest.fn();
 const rowFindManySpy = jest.fn();
+const rowUpdateManySpy = jest.fn();
+const rowUpdateSpy = jest.fn();
 const transactionSpy = jest.fn();
 
 // endregion Spies
@@ -23,14 +27,20 @@ const clientMock = {
   $queryRaw: queryRawSpy,
   $transaction: transactionSpy,
   financialAccount: { update: accountUpdateSpy },
-  financialInvoicePayment: { findFirst: paymentFindFirstSpy },
+  financialInvoicePayment: { findFirst: paymentFindFirstSpy, findMany: paymentFindManySpy },
   financialRecurrence: {
     create: recurrenceCreateSpy,
     findMany: recurrenceFindManySpy,
     findUnique: recurrenceFindUniqueSpy,
     update: recurrenceUpdateSpy,
   },
-  financialTransaction: { createMany: rowCreateManySpy, findMany: rowFindManySpy },
+  financialTransaction: {
+    createMany: rowCreateManySpy,
+    deleteMany: rowDeleteManySpy,
+    findMany: rowFindManySpy,
+    update: rowUpdateSpy,
+    updateMany: rowUpdateManySpy,
+  },
 };
 
 let setup: FinanceRecurrenceDatasource;
@@ -42,6 +52,7 @@ beforeEach(async () => {
   );
   paymentFindFirstSpy.mockResolvedValue(null);
   recurrenceCreateSpy.mockResolvedValue({ id: 'recurrence-1' });
+  paymentFindManySpy.mockResolvedValue([]);
 
   const module = await Test.createTestingModule({
     providers: [
@@ -52,6 +63,18 @@ beforeEach(async () => {
 
   setup = module.get(FinanceRecurrenceDatasource);
 });
+
+const sourceMock = {
+  account_id: 'account-1',
+  category_id: 'cat-1',
+  credit_card_id: null,
+  description: 'Rent',
+  id: 'recurrence-1',
+  owner: 'USER' as const,
+  owner_id: 'owner-1',
+  type: 'EXPENSE' as const,
+  value: 200000,
+};
 
 const mocks = {
   accountParams: {
@@ -70,17 +93,22 @@ const mocks = {
     type: 'EXPENSE' as const,
     value: 200000,
   },
+  source: sourceMock,
 };
 const spies = {
   accountUpdate: accountUpdateSpy,
   paymentFindFirst: paymentFindFirstSpy,
+  paymentFindMany: paymentFindManySpy,
   queryRaw: queryRawSpy,
   recurrenceCreate: recurrenceCreateSpy,
   recurrenceFindMany: recurrenceFindManySpy,
   recurrenceFindUnique: recurrenceFindUniqueSpy,
   recurrenceUpdate: recurrenceUpdateSpy,
   rowCreateMany: rowCreateManySpy,
+  rowDeleteMany: rowDeleteManySpy,
   rowFindMany: rowFindManySpy,
+  rowUpdate: rowUpdateSpy,
+  rowUpdateMany: rowUpdateManySpy,
   transaction: transactionSpy,
 };
 

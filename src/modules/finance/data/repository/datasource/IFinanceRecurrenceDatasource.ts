@@ -11,6 +11,15 @@ import {
 import { FinancialTransactionWithRelations } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 
+export interface ApplyRecurrenceChangeDatasourceParams {
+  delete_after?: Date | null;
+  from_number: number;
+  new_series?: NewSeriesDatasourceParams | null;
+  replace_rows?: null | OccurrenceRowDatasourceParams[];
+  row_patch: RowPatchDatasourceParams;
+  series_patch: SeriesPatchDatasourceParams;
+  source_id: string;
+}
 export interface CreateRecurrenceDatasourceParams {
   account_id?: string;
   category_id: string;
@@ -46,6 +55,7 @@ export interface FutureOccurrenceNumberRow {
   recurrence_id: string;
 }
 export interface IFinanceRecurrenceDatasource {
+  apply(params: ApplyRecurrenceChangeDatasourceParams): Promise<string>;
   create(params: CreateRecurrenceDatasourceParams): Promise<string>;
   findById(id: string): Promise<FinancialRecurrenceWithRelations | null>;
   findByOwners(
@@ -65,9 +75,48 @@ export interface MaterializeRecurrenceDatasourceParams {
   rows: OccurrenceRowDatasourceParams[];
   status: RecurrenceStatus;
 }
+export interface NewSeriesDatasourceParams {
+  account_id?: string;
+  category_id: string;
+  credit_card_id?: string;
+  description: string;
+  end_date: Date | null;
+  first_number: number;
+  frequency: RecurrenceFrequency;
+  last_generated_number: number;
+  next_occurrence_date: Date | null;
+  owner: OwnerType;
+  owner_id: string;
+  skipped_numbers: number[];
+  start_date: Date;
+  status: RecurrenceStatus;
+  type: TransactionType;
+  value: number;
+}
 export interface OccurrenceRowDatasourceParams {
   date: Date;
   invoice_month?: string;
   number: number;
   paid?: boolean;
+}
+export interface RowPatchDatasourceParams {
+  account_id?: string;
+  category_id?: string;
+  credit_card_id?: string;
+  description?: string;
+  invoice_months?: { id: string; invoice_month: string }[];
+  value?: number;
+}
+export interface SeriesPatchDatasourceParams {
+  account_id?: string;
+  category_id?: string;
+  credit_card_id?: string;
+  description?: string;
+  end_date?: Date | null;
+  frequency?: RecurrenceFrequency;
+  last_generated_number?: number;
+  next_occurrence_date?: Date | null;
+  skipped_numbers?: number[];
+  status?: RecurrenceStatus;
+  value?: number;
 }

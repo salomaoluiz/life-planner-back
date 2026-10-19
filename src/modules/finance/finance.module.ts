@@ -39,6 +39,7 @@ import { PayInvoiceUseCase } from '@finance/application/use-case/PayInvoiceUseCa
 import { PrepayInstallmentPlanUseCase } from '@finance/application/use-case/PrepayInstallmentPlanUseCase';
 import { ResolveCardRowsPaidUseCase } from '@finance/application/use-case/ResolveCardRowsPaidUseCase';
 import { ResolveRefundLinkUseCase } from '@finance/application/use-case/ResolveRefundLinkUseCase';
+import { SplitRecurrenceUseCase } from '@finance/application/use-case/SplitRecurrenceUseCase';
 import { UndoInstallmentPrepaymentUseCase } from '@finance/application/use-case/UndoInstallmentPrepaymentUseCase';
 import { UndoInvoicePaymentUseCase } from '@finance/application/use-case/UndoInvoicePaymentUseCase';
 import { UpdateAccountUseCase } from '@finance/application/use-case/UpdateAccountUseCase';
@@ -47,6 +48,7 @@ import { UpdateCardRefundUseCase } from '@finance/application/use-case/UpdateCar
 import { UpdateCategoryUseCase } from '@finance/application/use-case/UpdateCategoryUseCase';
 import { UpdateCreditCardUseCase } from '@finance/application/use-case/UpdateCreditCardUseCase';
 import { UpdateInstallmentPlanUseCase } from '@finance/application/use-case/UpdateInstallmentPlanUseCase';
+import { UpdateRecurrenceUseCase } from '@finance/application/use-case/UpdateRecurrenceUseCase';
 import { UpdateTransactionUseCase } from '@finance/application/use-case/UpdateTransactionUseCase';
 import { FinanceAccountDatasource } from '@finance/data/datasource/FinanceAccountDatasource';
 import { FinanceCardCreditDatasource } from '@finance/data/datasource/FinanceCardCreditDatasource';
@@ -70,6 +72,8 @@ import { FinanceRecurrenceRepository } from '@finance/data/repository/FinanceRec
 import { FinanceTransactionRepository } from '@finance/data/repository/FinanceTransactionRepository';
 
 const useCases = [
+  SplitRecurrenceUseCase,
+  UpdateRecurrenceUseCase,
   GetProjectionsUseCase,
   GetRecurrencesUseCase,
   GetRecurrenceUseCase,

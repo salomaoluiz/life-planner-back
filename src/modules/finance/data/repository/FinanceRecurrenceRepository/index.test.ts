@@ -147,3 +147,89 @@ describe('materialize', () => {
     });
   });
 });
+
+describe('applyChange', () => {
+  it('SHOULD translate the patches to columns AND the dates to UTC-midnight Dates', async () => {
+    mocks.datasource.apply.mockResolvedValue('recurrence-2');
+
+    const id = await setup.applyChange({
+      deleteAfter: '2026-12-05',
+      fromNumber: 5,
+      newSeries: {
+        categoryId: 'cat-1',
+        description: 'Rent',
+        endDate: null,
+        firstNumber: 5,
+        frequency: RecurrenceFrequency.MONTHLY,
+        lastGeneratedNumber: 0,
+        nextOccurrenceDate: '2026-11-05',
+        owner: OwnerType.USER,
+        ownerId: 'owner-1',
+        skippedNumbers: [],
+        startDate: '2026-11-05',
+        status: RecurrenceStatus.ACTIVE,
+        type: TransactionType.EXPENSE,
+        value: 220000,
+      },
+      replaceRows: [{ date: '2026-11-05', number: 5 }],
+      rowPatch: { invoiceMonths: [{ id: 'row-1', invoiceMonth: '2026-11' }], value: 220000 },
+      seriesPatch: {
+        endDate: '2026-10-05',
+        nextOccurrenceDate: null,
+        status: RecurrenceStatus.ENDED,
+      },
+      sourceId: 'recurrence-1',
+    });
+
+    expect(id).toBe('recurrence-2');
+    expect(mocks.datasource.apply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        delete_after: new Date('2026-12-05T00:00:00.000Z'),
+        from_number: 5,
+        new_series: expect.objectContaining({
+          end_date: null,
+          first_number: 5,
+          next_occurrence_date: new Date('2026-11-05T00:00:00.000Z'),
+          start_date: new Date('2026-11-05T00:00:00.000Z'),
+        }),
+        replace_rows: [
+          {
+            date: new Date('2026-11-05T00:00:00.000Z'),
+            invoice_month: undefined,
+            number: 5,
+            paid: undefined,
+          },
+        ],
+        row_patch: expect.objectContaining({
+          invoice_months: [{ id: 'row-1', invoice_month: '2026-11' }],
+          value: 220000,
+        }),
+        series_patch: expect.objectContaining({
+          end_date: new Date('2026-10-05T00:00:00.000Z'),
+          next_occurrence_date: null,
+          status: 'ENDED',
+        }),
+        source_id: 'recurrence-1',
+      }),
+    );
+  });
+
+  it('SHOULD leave undefined patches undefined AND pass null for no new series', async () => {
+    await setup.applyChange({
+      fromNumber: 1,
+      rowPatch: {},
+      seriesPatch: {},
+      sourceId: 'recurrence-1',
+    });
+
+    expect(mocks.datasource.apply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        delete_after: undefined,
+        new_series: null,
+        replace_rows: null,
+        row_patch: expect.objectContaining({ invoice_months: undefined }),
+        series_patch: expect.objectContaining({ end_date: undefined }),
+      }),
+    );
+  });
+});

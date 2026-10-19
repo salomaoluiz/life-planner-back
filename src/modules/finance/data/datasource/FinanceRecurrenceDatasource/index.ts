@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 
 import { Prisma } from '@db/client';
 import { TRANSACTION_RELATIONS } from '@finance/data/datasource/FinanceTransactionDatasource';
@@ -10,6 +10,7 @@ import {
 } from '@finance/data/datasource/ledger';
 import { toOwnerWhere } from '@finance/data/datasource/mapper/OwnerWhere';
 import {
+  ApplyRecurrenceChangeDatasourceParams,
   CreateRecurrenceDatasourceParams,
   FinancialRecurrenceWithRelations,
   FindRecurrencesDatasourceFilter,
@@ -39,6 +40,15 @@ export const RECURRENCE_RELATIONS = {
   credit_card: { select: { color: true, id: true, last_digits: true, title: true } },
 };
 
+interface LockableRow {
+  credit_card_id: null | string;
+  id: string;
+  invoice_month: null | string;
+  paid: boolean | null;
+}
+
+const LOCKABLE_SELECT = { credit_card_id: true, id: true, invoice_month: true, paid: true };
+
 interface SeriesTemplate {
   account_id: null | string;
   category_id: string;
@@ -53,6 +63,139 @@ interface SeriesTemplate {
 @Injectable()
 export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource {
   constructor(private readonly db: Database) {}
+
+  // Spec 034 FR 20-25 in ONE transaction. Only rows that are not locked (paid account rows, card rows in an
+  // invoice with a payment record) take value / source changes; the others keep them and still take text.
+  async apply(params: ApplyRecurrenceChangeDatasourceParams): Promise<string> {
+    return this.db.client.$transaction(async (tx) => {
+      const source = await tx.financialRecurrence.findUnique({ where: { id: params.source_id } });
+
+      if (!source) {
+        throw new NotFoundException();
+      }
+
+      const cardIds = [
+        source.credit_card_id,
+        params.series_patch.credit_card_id,
+        params.row_patch.credit_card_id,
+        params.new_series?.credit_card_id,
+      ].filter((id): id is string => typeof id === 'string');
+
+      await lockCards(tx, cardIds);
+      await lockSeries(tx, source.id);
+
+      const payments = await tx.financialInvoicePayment.findMany({
+        select: { credit_card_id: true, invoice_month: true },
+        where: { credit_card_id: { in: cardIds } },
+      });
+      const paidKeys = new Set(payments.map((p) => `${p.credit_card_id}|${p.invoice_month}`));
+      function isLocked(row: LockableRow): boolean {
+        return row.credit_card_id
+          ? paidKeys.has(`${row.credit_card_id}|${row.invoice_month}`)
+          : row.paid === true;
+      }
+
+      if (params.delete_after) {
+        const late = await tx.financialTransaction.findMany({
+          select: LOCKABLE_SELECT,
+          where: { date: { gt: params.delete_after }, recurrence_id: source.id },
+        });
+
+        if (late.some(isLocked)) {
+          throw new UnprocessableEntityException('Occurrences after the new end date are paid');
+        }
+
+        await tx.financialTransaction.deleteMany({
+          where: { id: { in: late.map((row) => row.id) } },
+        });
+      }
+
+      const affected = await tx.financialTransaction.findMany({
+        select: LOCKABLE_SELECT,
+        where: { occurrence_number: { gte: params.from_number }, recurrence_id: source.id },
+      });
+      const affectedIds = affected.map((row) => row.id);
+      let targetId = source.id;
+
+      if (params.new_series) {
+        const created = await tx.financialRecurrence.create({
+          data: params.new_series,
+          select: { id: true },
+        });
+
+        targetId = created.id;
+      }
+
+      if (params.replace_rows) {
+        if (affected.some(isLocked)) {
+          throw new UnprocessableEntityException('An occurrence is paid');
+        }
+
+        await tx.financialTransaction.deleteMany({ where: { id: { in: affectedIds } } });
+        await tx.financialTransaction.createMany({
+          data: toRows(params.replace_rows, templateOf(source, params), targetId),
+        });
+      } else {
+        await this.patchRows(tx, params, affected, targetId, isLocked);
+      }
+
+      await tx.financialRecurrence.update({
+        data: params.series_patch,
+        where: { id: source.id },
+      });
+
+      return targetId;
+    });
+  }
+
+  private async patchRows(
+    tx: Prisma.TransactionClient,
+    params: ApplyRecurrenceChangeDatasourceParams,
+    affected: LockableRow[],
+    targetId: string,
+    isLocked: (row: LockableRow) => boolean,
+  ): Promise<void> {
+    const { row_patch: patch } = params;
+    const editable = affected.filter((row) => !isLocked(row)).map((row) => row.id);
+
+    if (affected.length === 0) {
+      return;
+    }
+    if (targetId !== params.source_id) {
+      await tx.financialTransaction.updateMany({
+        data: { recurrence_id: targetId },
+        where: { id: { in: affected.map((row) => row.id) } },
+      });
+    }
+    if (patch.description !== undefined || patch.category_id !== undefined) {
+      await tx.financialTransaction.updateMany({
+        data: { category_id: patch.category_id, description: patch.description },
+        where: { id: { in: affected.map((row) => row.id) } },
+      });
+    }
+    if (
+      patch.value !== undefined ||
+      patch.account_id !== undefined ||
+      patch.credit_card_id !== undefined
+    ) {
+      await tx.financialTransaction.updateMany({
+        data: {
+          account_id: patch.account_id,
+          credit_card_id: patch.credit_card_id,
+          value: patch.value,
+        },
+        where: { id: { in: editable } },
+      });
+    }
+    for (const item of patch.invoice_months ?? []) {
+      if (editable.includes(item.id)) {
+        await tx.financialTransaction.update({
+          data: { invoice_month: item.invoice_month },
+          where: { id: item.id },
+        });
+      }
+    }
+  }
 
   // The series, its real rows and the ledger of the paid ones commit together (spec 034 FR 18).
   async create(params: CreateRecurrenceDatasourceParams): Promise<string> {
@@ -243,4 +386,34 @@ function toRows(
     type: template.type,
     value: template.value,
   }));
+}
+
+// Serializes this change with the materialization of the same series.
+async function lockSeries(tx: Prisma.TransactionClient, id: string): Promise<void> {
+  await tx.$queryRaw(
+    Prisma.sql`SELECT "id" FROM "financial_recurrences" WHERE "id" = ${id} FOR UPDATE`,
+  );
+}
+// The template new rows of a replace take: the new series when there is one, else the source with its patch.
+function templateOf(
+  source: SeriesTemplate,
+  params: ApplyRecurrenceChangeDatasourceParams,
+): SeriesTemplate {
+  const base = params.new_series ?? {
+    ...source,
+    ...Object.fromEntries(
+      Object.entries(params.series_patch).filter(([, value]) => value !== undefined),
+    ),
+  };
+
+  return {
+    account_id: base.account_id ?? null,
+    category_id: base.category_id,
+    credit_card_id: base.credit_card_id ?? null,
+    description: base.description,
+    owner: base.owner,
+    owner_id: base.owner_id,
+    type: base.type,
+    value: base.value,
+  };
 }
