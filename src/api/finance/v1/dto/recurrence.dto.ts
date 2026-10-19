@@ -137,6 +137,7 @@ export const ProjectedOccurrenceApiSchema = z.object({
   date: z.string(),
   description: z.string(),
   frequency: FrequencyApiSchema,
+  invoiceListDate: z.string().nullable(),
   invoiceMonth: z.string().nullable(),
   occurrenceCount: z.number().int().nullable(),
   occurrenceNumber: z.number().int(),

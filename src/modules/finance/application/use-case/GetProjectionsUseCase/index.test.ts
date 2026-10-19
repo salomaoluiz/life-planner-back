@@ -62,6 +62,8 @@ describe('GetProjectionsUseCase', () => {
     const result = await setup.execute({ ...base, to: '2026-11' });
 
     expect(result[0].invoiceMonth).toBe('2026-11');
+    // Closing day 10, due day of the fixture card: the planned payment day of that invoice.
+    expect(result[0].invoiceListDate).toMatch(/^2026-1[12]-\d{2}$/);
     expect(mocks.creditCardRepository.findCreditCardById).toHaveBeenCalledWith(mocks.card.id);
   });
 

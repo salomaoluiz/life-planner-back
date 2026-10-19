@@ -9,7 +9,7 @@ import {
   IFinanceCreditCardRepository,
   IFinanceRecurrenceRepository,
 } from '@finance/domain/repository';
-import { invoiceMonthOf } from '@finance/domain/service/InvoiceCalculator';
+import { buildInvoiceFor, invoiceMonthOf } from '@finance/domain/service/InvoiceCalculator';
 import {
   addDays,
   lastDayOfMonth,
@@ -72,7 +72,7 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
         (occurrence) => !hidden.has(item.firstNumber - 1 + occurrence.k),
       );
 
-      result.push(...(await this.project(item, scheduled)));
+      result.push(...(await this.project(item, scheduled, input.today)));
     }
 
     return result.sort(
@@ -84,27 +84,36 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
   async project(
     series: RecurrenceEntity,
     scheduled: ScheduledOccurrence[],
+    today: string,
   ): Promise<ProjectedOccurrence[]> {
     const card = series.creditCardId
       ? await this.creditCardRepository.findCreditCardById(series.creditCardId)
       : undefined;
 
-    return scheduled.map((occurrence) => ({
-      account: series.account,
-      category: series.category,
-      creditCard: series.creditCard,
-      date: occurrence.date,
-      description: series.description,
-      frequency: series.frequency,
-      invoiceMonth: card ? invoiceMonthOf(occurrence.date, card.closingDay) : null,
-      occurrenceCount: series.occurrenceCount,
-      occurrenceNumber: series.firstNumber - 1 + occurrence.k,
-      owner: series.owner,
-      ownerId: series.ownerId,
-      recurrenceId: series.id,
-      type: series.type,
-      value: series.value,
-    }));
+    return scheduled.map((occurrence) => {
+      const invoiceMonth = card ? invoiceMonthOf(occurrence.date, card.closingDay) : null;
+
+      return {
+        account: series.account,
+        category: series.category,
+        creditCard: series.creditCard,
+        date: occurrence.date,
+        description: series.description,
+        frequency: series.frequency,
+        invoiceListDate:
+          card && invoiceMonth
+            ? buildInvoiceFor(card, invoiceMonth, [], [], today).paymentDate
+            : null,
+        invoiceMonth,
+        occurrenceCount: series.occurrenceCount,
+        occurrenceNumber: series.firstNumber - 1 + occurrence.k,
+        owner: series.owner,
+        ownerId: series.ownerId,
+        recurrenceId: series.id,
+        type: series.type,
+        value: series.value,
+      };
+    });
   }
 }
 

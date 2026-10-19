@@ -31,6 +31,7 @@ const projectedMock = {
   date: '2026-11-05',
   description: seriesMock.description,
   frequency: seriesMock.frequency,
+  invoiceListDate: null,
   invoiceMonth: null,
   occurrenceCount: 12,
   occurrenceNumber: 2,

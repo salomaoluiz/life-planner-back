@@ -33,6 +33,7 @@ function toProjectedOutput(item: ProjectedOccurrence) {
     date: item.date,
     description: item.description,
     frequency: item.frequency,
+    invoiceListDate: item.invoiceListDate,
     invoiceMonth: item.invoiceMonth,
     occurrenceCount: item.occurrenceCount,
     occurrenceNumber: item.occurrenceNumber,

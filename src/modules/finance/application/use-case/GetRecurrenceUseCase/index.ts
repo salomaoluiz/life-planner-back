@@ -65,7 +65,7 @@ export class GetRecurrenceUseCase implements UseCaseWithParams<
 
     return {
       occurrences,
-      projected: await this.getProjectionsUseCase.project(recurrence, scheduled),
+      projected: await this.getProjectionsUseCase.project(recurrence, scheduled, input.today),
       recurrence,
     };
   }
