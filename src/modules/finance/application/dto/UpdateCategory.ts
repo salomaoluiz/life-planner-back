@@ -8,6 +8,7 @@ import {
   NameSchema,
   TransactionTypeSchema,
 } from '@finance/application/dto/FinanceCommon';
+import { AccountStatus } from '@finance/domain/enum';
 
 export const UpdateCategorySchema = z
   .object({
@@ -21,6 +22,8 @@ export const UpdateCategorySchema = z
     parentId: z.string().min(1).nullable().optional(),
     // Only switching a single-scope category to ALL exists (spec 038 FR 3); there is no way back.
     scope: z.literal(ALL_SCOPES).optional(),
+    // ARCHIVED / ACTIVE applies to the whole subtree (spec 041).
+    status: z.enum(AccountStatus).optional(),
     type: TransactionTypeSchema.optional(),
   })
   .refine(
@@ -30,6 +33,7 @@ export const UpdateCategorySchema = z
       input.name !== undefined ||
       input.parentId !== undefined ||
       input.scope !== undefined ||
+      input.status !== undefined ||
       input.type !== undefined,
     { message: 'At least one field is required' },
   );

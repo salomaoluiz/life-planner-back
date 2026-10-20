@@ -12,6 +12,7 @@ import CategoryEntity from '@finance/domain/entity/CategoryEntity';
 import { belongsToOwner, isVisibleTo } from '@finance/domain/entity/CategoryScope';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { isSystemCategoryId } from '@finance/domain/entity/SystemCategory';
+import { AccountStatus } from '@finance/domain/enum';
 import { IFinanceCategoryRepository } from '@finance/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -49,6 +50,10 @@ export class CreateCategoryUseCase implements UseCaseWithParams<
 
       if (!parent || !isVisibleTo(parent, input.accessibleOwners)) {
         throw new NotFoundException('Parent category not found');
+      }
+
+      if (parent.status === AccountStatus.ARCHIVED) {
+        throw new UnprocessableEntityException('Parent category is archived');
       }
 
       // A child follows its parent's scopes: ALL under ALL, a single scope under the same single scope.

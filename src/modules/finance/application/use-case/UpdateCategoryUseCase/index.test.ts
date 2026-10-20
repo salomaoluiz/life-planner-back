@@ -7,7 +7,7 @@ import {
 
 import CategoryEntityFixture from '@finance/domain/entity/mocks/CategoryEntity.fixture';
 import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
-import { SystemCategoryKey, TransactionType } from '@finance/domain/enum';
+import { AccountStatus, SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { ValidationError } from '@shared/domain/error/ValidationError';
 
@@ -264,5 +264,79 @@ describe('ALL scope', () => {
 
   it('SHOULD reject a scope other than ALL (there is no way back)', async () => {
     await expect(runAll('all-root', { scope: 'PERSONAL' })).rejects.toThrow(ValidationError);
+  });
+});
+
+describe('archiving (spec 041)', () => {
+  it('SHOULD archive a parent together with every descendant', async () => {
+    await run('a', { status: AccountStatus.ARCHIVED });
+
+    expect(mocks.categoryRepository.updateCategory).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'a',
+        status: AccountStatus.ARCHIVED,
+        subtreeIds: ['b', 'c'],
+      }),
+    );
+  });
+
+  it('SHOULD archive a single child alone', async () => {
+    await run('c', { status: AccountStatus.ARCHIVED });
+
+    expect(mocks.categoryRepository.updateCategory).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'c', status: AccountStatus.ARCHIVED, subtreeIds: [] }),
+    );
+  });
+
+  it('SHOULD reactivate a parent with every descendant', async () => {
+    mocks.categoryRepository.findCategoryById.mockImplementation(async (id: string) => ({
+      ...[mocks.nodes.a, mocks.nodes.b, mocks.nodes.c].find((node) => node.id === id),
+      status: AccountStatus.ARCHIVED,
+    }));
+
+    await run('a', { status: AccountStatus.ACTIVE });
+
+    expect(mocks.categoryRepository.updateCategory).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'a', status: AccountStatus.ACTIVE, subtreeIds: ['b', 'c'] }),
+    );
+  });
+
+  it('SHOULD refuse (422) to reactivate a child whose parent is archived', async () => {
+    mocks.categoryRepository.findCategoryById.mockImplementation(async (id: string) => ({
+      ...[mocks.nodes.a, mocks.nodes.b].find((node) => node.id === id),
+      status: AccountStatus.ARCHIVED,
+    }));
+
+    await expect(run('b', { status: AccountStatus.ACTIVE })).rejects.toThrow(
+      new UnprocessableEntityException('Parent category is archived'),
+    );
+    expect(mocks.categoryRepository.updateCategory).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD NOT send a status WHEN it equals the current one', async () => {
+    await run('a', { name: 'Renamed', status: AccountStatus.ACTIVE });
+
+    expect(mocks.categoryRepository.updateCategory).toHaveBeenCalledWith(
+      expect.objectContaining({ status: undefined, subtreeIds: undefined }),
+    );
+  });
+
+  it('SHOULD refuse (422) to archive a system category', async () => {
+    await expect(
+      run(SYSTEM_CATEGORY_IDS[SystemCategoryKey.BALANCE_ADJUSTMENT], {
+        status: AccountStatus.ARCHIVED,
+      }),
+    ).rejects.toThrow(new UnprocessableEntityException('System categories cannot be archived'));
+  });
+
+  it('SHOULD refuse (422) to move a category under an archived parent', async () => {
+    mocks.categoryRepository.findCategoryById.mockImplementation(async (id: string) => ({
+      ...[mocks.nodes.a, mocks.nodes.d, mocks.nodes.e].find((node) => node.id === id),
+      status: id === 'a' ? AccountStatus.ARCHIVED : AccountStatus.ACTIVE,
+    }));
+
+    await expect(run('d', { parentId: 'a' })).rejects.toThrow(
+      new UnprocessableEntityException('Parent category is archived'),
+    );
   });
 });

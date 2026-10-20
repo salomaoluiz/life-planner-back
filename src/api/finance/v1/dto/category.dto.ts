@@ -10,6 +10,7 @@ import {
   OwnerTypeApiSchema,
   TransactionTypeApiSchema,
 } from '@api/finance/v1/dto/finance-fields';
+import { AccountStatus } from '@finance/domain/enum';
 
 export const CATEGORY_SCOPES = ['PERSONAL', 'FAMILY', 'ALL'] as const;
 
@@ -36,6 +37,8 @@ export const UpdateCategoryApiSchema = z
     parentId: z.uuid().nullable(),
     // Turns a single-scope main category into an All category; there is no way back.
     scope: z.literal('ALL'),
+    // Archives / reactivates the category with its whole subtree (spec 041).
+    status: z.enum(AccountStatus),
     type: TransactionTypeApiSchema,
   })
   .partial()

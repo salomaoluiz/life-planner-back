@@ -13,6 +13,7 @@ import CategoryEntity from '@finance/domain/entity/CategoryEntity';
 import { isVisibleTo, sameScopes } from '@finance/domain/entity/CategoryScope';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { isSystemCategoryId } from '@finance/domain/entity/SystemCategory';
+import { AccountStatus } from '@finance/domain/enum';
 import {
   IFinanceCategoryRepository,
   IFinanceTransactionRepository,
@@ -39,7 +40,11 @@ export class UpdateCategoryUseCase implements UseCaseWithParams<
     const input = validate(UpdateCategorySchema, params);
 
     if (isSystemCategoryId(input.id) || (input.parentId && isSystemCategoryId(input.parentId))) {
-      throw new UnprocessableEntityException('System categories cannot be changed');
+      throw new UnprocessableEntityException(
+        input.status !== undefined
+          ? 'System categories cannot be archived'
+          : 'System categories cannot be changed',
+      );
     }
 
     const category = await this.categoryRepository.findCategoryById(input.id);
@@ -58,6 +63,17 @@ export class UpdateCategoryUseCase implements UseCaseWithParams<
       owners: category.scopes,
     });
     const descendants = collectDescendants(scopeCategories, category.id);
+
+    // Spec 041: archive / reactivate the category together with its whole subtree (no-op when unchanged).
+    const status = input.status !== category.status ? input.status : undefined;
+
+    if (status === AccountStatus.ACTIVE && category.parentId !== undefined) {
+      const parent = await this.categoryRepository.findCategoryById(category.parentId);
+
+      if (parent?.status === AccountStatus.ARCHIVED) {
+        throw new UnprocessableEntityException('Parent category is archived');
+      }
+    }
 
     // Spec 038 FR 3: a single-scope root becomes ALL (with its subtree); there is no way back.
     const switchesToAll = input.scope === ALL_SCOPES && !category.allScopes;
@@ -107,6 +123,10 @@ export class UpdateCategoryUseCase implements UseCaseWithParams<
           throw new NotFoundException('Parent category not found');
         }
 
+        if (parent.status === AccountStatus.ARCHIVED) {
+          throw new UnprocessableEntityException('Parent category is archived');
+        }
+
         // Same scopes as the category: ALL under ALL (same creator scopes), a single scope under the same scope.
         if (parent.allScopes !== category.allScopes || !sameScopes(parent, category)) {
           throw new BadRequestException('Parent category belongs to another owner');
@@ -145,7 +165,9 @@ export class UpdateCategoryUseCase implements UseCaseWithParams<
       name: input.name,
       parentId: parentChanges ? (nextParentId ?? null) : undefined,
       scope,
+      status,
       subtreeDepths,
+      subtreeIds: status && descendants.map((child) => child.id),
       type: input.type,
     });
   }
