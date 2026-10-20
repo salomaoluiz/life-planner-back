@@ -55,6 +55,7 @@ export const CategoryApiSchema = z.object({
   scope: z.enum(CATEGORY_SCOPES),
   // The scopes the caller can access (for ALL, `owner/ownerId` is the first of them).
   scopes: z.array(z.object({ owner: OwnerTypeApiSchema, ownerId: z.uuid() })),
+  status: z.enum(['ACTIVE', 'ARCHIVED']),
   type: TransactionTypeApiSchema,
   updatedAt: z.iso.datetime(),
 });

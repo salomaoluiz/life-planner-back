@@ -170,6 +170,8 @@ model FinancialCategory {
   // creator's Personal scope and `scopes` lists them all. Single-scope rows keep `all_scopes = false`.
   all_scopes          Boolean            @default(false)
   creator_id          String?
+  // Spec 041: ARCHIVED categories leave the pickers that create or change records; history is kept.
+  status              AccountStatus      @default(ACTIVE)
   created_at          DateTime           @default(now()) @db.Timestamptz(6)
   updated_at          DateTime           @updatedAt @db.Timestamptz(6)
 

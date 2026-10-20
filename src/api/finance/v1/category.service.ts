@@ -38,6 +38,7 @@ function toCategoryOutput(
     parentId: category.parentId ?? null,
     scope: categoryScopeKind(category),
     scopes,
+    status: category.status,
     type: category.type,
     updatedAt: category.updatedAt.toISOString(),
   };

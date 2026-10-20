@@ -15,6 +15,7 @@ describe('FinanceCategoryMapper.toDomain', () => {
       ownerId: mocks.rawChild.owner_id,
       parentId: mocks.rawChild.parent_id,
       scopes: [{ owner: 'FAMILY', ownerId: mocks.rawChild.owner_id }],
+      status: 'ACTIVE',
       type: 'INCOME',
       updatedAt: mocks.rawChild.updated_at,
     });
@@ -27,6 +28,12 @@ describe('FinanceCategoryMapper.toDomain', () => {
     expect(entity.creatorId).toBe(mocks.rawAll.creator_id);
     expect(entity.scopes).toEqual(
       mocks.rawAll.scopes.map((scope) => ({ owner: scope.owner, ownerId: scope.owner_id })),
+    );
+  });
+
+  it('SHOULD map an ARCHIVED status', () => {
+    expect(FinanceCategoryMapper.toDomain({ ...mocks.rawChild, status: 'ARCHIVED' }).status).toBe(
+      'ARCHIVED',
     );
   });
 

@@ -2,7 +2,7 @@ import { faker } from '@faker-js/faker';
 
 import CategoryEntity from '@finance/domain/entity/CategoryEntity';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
-import { TransactionType } from '@finance/domain/enum';
+import { AccountStatus, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 class CategoryEntityFixture {
@@ -34,6 +34,7 @@ class CategoryEntityFixture {
       ownerId,
       parentId: undefined,
       scopes: [{ owner: OwnerType.USER, ownerId }],
+      status: AccountStatus.ACTIVE,
       type: TransactionType.EXPENSE,
       updatedAt: faker.date.recent(),
     };
@@ -84,6 +85,11 @@ class CategoryEntityFixture {
 
   withParentId(parentId?: string) {
     this.value.parentId = parentId;
+    return this;
+  }
+
+  withStatus(status: AccountStatus) {
+    this.value.status = status;
     return this;
   }
 
