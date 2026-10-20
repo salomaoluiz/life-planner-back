@@ -6,6 +6,7 @@ import { GetOwnedFamilyIdsUseCase } from '@family/application/use-case/GetOwnedF
 import { GetUserFamilyIdsUseCase } from '@family/application/use-case/GetUserFamilyIdsUseCase';
 import { RemoveUserFromFamiliesUseCase } from '@family/application/use-case/RemoveUserFromFamiliesUseCase';
 import { DetachCategoryCreatorFromFamilyUseCase } from '@finance/application/use-case/DetachCategoryCreatorFromFamilyUseCase';
+import { DetachTagCreatorFromFamilyUseCase } from '@finance/application/use-case/DetachTagCreatorFromFamilyUseCase';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { ILogger, LogLevel } from '@shared/infra/logger/types';
 import { ConfirmUserEmailUseCase } from '@user/application/use-case/ConfirmUserEmailUseCase';
@@ -17,6 +18,7 @@ export class AccountDeletionService {
     private readonly confirmUserEmailUseCase: ConfirmUserEmailUseCase,
     private readonly deleteUserUseCase: DeleteUserUseCase,
     private readonly detachCategoryCreatorFromFamilyUseCase: DetachCategoryCreatorFromFamilyUseCase,
+    private readonly detachTagCreatorFromFamilyUseCase: DetachTagCreatorFromFamilyUseCase,
     private readonly getOwnedFamilyIdsUseCase: GetOwnedFamilyIdsUseCase,
     private readonly getUserFamilyIdsUseCase: GetUserFamilyIdsUseCase,
     @Inject('ILogger') private readonly logger: ILogger,
@@ -39,6 +41,8 @@ export class AccountDeletionService {
     const memberFamilyIds = await this.getUserFamilyIdsUseCase.execute(userId);
     for (const familyId of memberFamilyIds) {
       await this.detachCategoryCreatorFromFamilyUseCase.execute({ familyId, userId });
+      // Spec 043 §4: same for their All tags.
+      await this.detachTagCreatorFromFamilyUseCase.execute({ familyId, userId });
     }
 
     const purged: Record<string, number> = {};

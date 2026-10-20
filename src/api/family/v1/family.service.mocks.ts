@@ -12,8 +12,10 @@ import { GetUserFamiliesUseCase } from '@family/application/use-case/GetUserFami
 import { UpdateFamilyUseCase } from '@family/application/use-case/UpdateFamilyUseCase';
 import { FamilyStatus } from '@family/domain/enum';
 import { AddFamilyToCategoryScopesUseCase } from '@finance/application/use-case/AddFamilyToCategoryScopesUseCase';
+import { AddFamilyToTagScopesUseCase } from '@finance/application/use-case/AddFamilyToTagScopesUseCase';
 import { GetFamilyArchiveBlockersUseCase } from '@finance/application/use-case/GetFamilyArchiveBlockersUseCase';
 import { RemoveFamilyFromCategoryScopesUseCase } from '@finance/application/use-case/RemoveFamilyFromCategoryScopesUseCase';
+import { RemoveFamilyFromTagScopesUseCase } from '@finance/application/use-case/RemoveFamilyFromTagScopesUseCase';
 import { FindUserByIdUseCase } from '@user/application/use-case/FindUserByIdUseCase';
 
 // region Mocks
@@ -37,6 +39,8 @@ const familyApiMock = {
 };
 
 const addFamilyToCategoryScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
+const addFamilyToTagScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
+const removeFamilyFromTagScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const removeFamilyFromCategoryScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const createFamilyUseCaseMock = { execute: jest.fn().mockResolvedValue(familyResultMock) };
 const deleteFamilyUseCaseMock = { execute: jest.fn().mockResolvedValue(undefined) };
@@ -75,6 +79,8 @@ beforeEach(async () => {
     providers: [
       FamilyService,
       { provide: AddFamilyToCategoryScopesUseCase, useValue: addFamilyToCategoryScopesMock },
+      { provide: AddFamilyToTagScopesUseCase, useValue: addFamilyToTagScopesMock },
+      { provide: RemoveFamilyFromTagScopesUseCase, useValue: removeFamilyFromTagScopesMock },
       {
         provide: RemoveFamilyFromCategoryScopesUseCase,
         useValue: removeFamilyFromCategoryScopesMock,
@@ -97,6 +103,7 @@ beforeEach(async () => {
 
 const mocks = {
   addFamilyToCategoryScopes: addFamilyToCategoryScopesMock,
+  addFamilyToTagScopes: addFamilyToTagScopesMock,
   createFamilyUseCase: createFamilyUseCaseMock,
   deleteFamilyUseCase: deleteFamilyUseCaseMock,
   ensureFamilyOwnerUseCase: ensureFamilyOwnerUseCaseMock,
@@ -111,6 +118,7 @@ const mocks = {
   noBlockers,
   recordsCheck: recordsCheckMock,
   removeFamilyFromCategoryScopes: removeFamilyFromCategoryScopesMock,
+  removeFamilyFromTagScopes: removeFamilyFromTagScopesMock,
   updateFamilyUseCase: updateFamilyUseCaseMock,
   userId,
 };

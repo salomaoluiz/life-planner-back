@@ -8,7 +8,9 @@ import { GetFamilyInvitePreviewUseCase } from '@family/application/use-case/GetF
 import { GetFamilyMembersUseCase } from '@family/application/use-case/GetFamilyMembersUseCase';
 import { InviteFamilyMemberUseCase } from '@family/application/use-case/InviteFamilyMemberUseCase';
 import { AddFamilyToCategoryScopesUseCase } from '@finance/application/use-case/AddFamilyToCategoryScopesUseCase';
+import { AddFamilyToTagScopesUseCase } from '@finance/application/use-case/AddFamilyToTagScopesUseCase';
 import { DetachCategoryCreatorFromFamilyUseCase } from '@finance/application/use-case/DetachCategoryCreatorFromFamilyUseCase';
+import { DetachTagCreatorFromFamilyUseCase } from '@finance/application/use-case/DetachTagCreatorFromFamilyUseCase';
 import { FindUserByIdUseCase } from '@user/application/use-case/FindUserByIdUseCase';
 import { FindUsersByIdsUseCase } from '@user/application/use-case/FindUsersByIdsUseCase';
 
@@ -55,6 +57,8 @@ const callerMock = {
 const acceptFamilyInviteUseCaseMock = { execute: jest.fn() };
 const addFamilyToCategoryScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const detachCategoryCreatorMock = { execute: jest.fn().mockResolvedValue(0) };
+const addFamilyToTagScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
+const detachTagCreatorMock = { execute: jest.fn().mockResolvedValue(0) };
 const deleteFamilyMemberUseCaseMock = { execute: jest.fn() };
 const findUserByIdUseCaseMock = { execute: jest.fn() };
 const findUsersByIdsUseCaseMock = { execute: jest.fn() };
@@ -91,6 +95,8 @@ beforeEach(async () => {
       FamilyMemberService,
       { provide: AcceptFamilyInviteUseCase, useValue: acceptFamilyInviteUseCaseMock },
       { provide: AddFamilyToCategoryScopesUseCase, useValue: addFamilyToCategoryScopesMock },
+      { provide: AddFamilyToTagScopesUseCase, useValue: addFamilyToTagScopesMock },
+      { provide: DetachTagCreatorFromFamilyUseCase, useValue: detachTagCreatorMock },
       {
         provide: DetachCategoryCreatorFromFamilyUseCase,
         useValue: detachCategoryCreatorMock,
@@ -111,9 +117,11 @@ beforeEach(async () => {
 const mocks = {
   acceptFamilyInviteUseCase: acceptFamilyInviteUseCaseMock,
   addFamilyToCategoryScopes: addFamilyToCategoryScopesMock,
+  addFamilyToTagScopes: addFamilyToTagScopesMock,
   caller: callerMock,
   deleteFamilyMemberUseCase: deleteFamilyMemberUseCaseMock,
   detachCategoryCreator: detachCategoryCreatorMock,
+  detachTagCreator: detachTagCreatorMock,
   familyId,
   findUserByIdUseCase: findUserByIdUseCaseMock,
   findUsersByIdsUseCase: findUsersByIdsUseCaseMock,

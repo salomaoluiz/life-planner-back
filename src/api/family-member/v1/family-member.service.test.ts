@@ -162,12 +162,22 @@ describe('delete', () => {
     });
   });
 
+  it('SHOULD give the family its own copy of the removed user All tags', async () => {
+    await setup.delete(mocks.userId, 'member-id');
+
+    expect(mocks.detachTagCreator.execute).toHaveBeenCalledWith({
+      familyId: mocks.familyId,
+      userId: mocks.otherUserId,
+    });
+  });
+
   it('SHOULD skip the categories WHEN a pending invite (no user) is cancelled', async () => {
     mocks.deleteFamilyMemberUseCase.execute.mockResolvedValueOnce({ familyId: mocks.familyId });
 
     await setup.delete(mocks.userId, 'member-id');
 
     expect(mocks.detachCategoryCreator.execute).not.toHaveBeenCalled();
+    expect(mocks.detachTagCreator.execute).not.toHaveBeenCalled();
   });
 });
 
@@ -236,6 +246,10 @@ describe('accept', () => {
     await setup.accept(mocks.userId, 'raw-token');
 
     expect(mocks.addFamilyToCategoryScopes.execute).toHaveBeenCalledWith({
+      familyId: mocks.familyId,
+      userId: mocks.userId,
+    });
+    expect(mocks.addFamilyToTagScopes.execute).toHaveBeenCalledWith({
       familyId: mocks.familyId,
       userId: mocks.userId,
     });

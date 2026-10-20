@@ -6,6 +6,8 @@ import {
   DescriptionSchema,
   INT4_MAX,
   INT4_MIN,
+  TagNameSchema,
+  TagNamesSchema,
   ValueSchema,
 } from '@finance/application/dto/FinanceCommon';
 import { TransactionType } from '@finance/domain/enum';
@@ -20,6 +22,9 @@ export const IconColorApiSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
 export const NameApiSchema = z.string().trim().min(1).max(60);
 export const OwnerIdApiSchema = z.uuid();
 export const OwnerTypeApiSchema = z.enum(OwnerType);
+// Spec 043: 1-30 characters after trimming; at most 10 per record. Names differing only by case collapse later.
+export const TagNameApiSchema = TagNameSchema;
+export const TagNamesApiSchema = TagNamesSchema;
 export const TransactionTypeApiSchema = z.enum(TransactionType);
 
 // PATCH bodies: `.partial().strict()` rejects unknown keys (incl. owner/ownerId) AND `{}` is rejected here.

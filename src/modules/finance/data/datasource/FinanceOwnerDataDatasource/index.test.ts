@@ -38,6 +38,7 @@ it('SHOULD delete the referencing rows first, then everything of ONE owner in ON
   spies.creditCardDeleteMany.mockResolvedValue({ count: 1 });
   spies.categoryDeleteMany.mockResolvedValue({ count: 3 });
   spies.accountDeleteMany.mockResolvedValue({ count: 2 });
+  spies.tagDeleteMany.mockResolvedValue({ count: 5 });
 
   const result = await setup.deleteAllByOwner({ owner: 'USER', owner_id: 'user-id' });
 
@@ -60,7 +61,8 @@ it('SHOULD delete the referencing rows first, then everything of ONE owner in ON
     where: { paid_from_transaction: { is: where } },
   });
   expect(spies.transactionDeleteMany).toHaveBeenNthCalledWith(4, { where });
-  expect(result).toBe(2 * 4 + 1 + 1 + 1 + 1 + 1 + 1 + 3 + 2);
+  expect(result).toBe(2 * 4 + 1 + 1 + 1 + 1 + 1 + 1 + 3 + 5 + 2);
+  expect(spies.tagDeleteMany).toHaveBeenCalledWith({ where });
 });
 
 it('SHOULD return 0 WHEN the owner has nothing (second call of a retry)', async () => {

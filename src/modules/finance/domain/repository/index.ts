@@ -7,4 +7,5 @@ export * from './IFinanceInvoicePaymentRepository';
 export * from './IFinanceOwnerDataRepository';
 export * from './IFinancePrepaymentRepository';
 export * from './IFinanceRecurrenceRepository';
+export * from './IFinanceTagRepository';
 export * from './IFinanceTransactionRepository';
