@@ -10,6 +10,7 @@ describe('create', () => {
     const id = await setup.create({
       accountId: 'account-1',
       categoryId: 'cat-1',
+      currency: 'BRL' as const,
       description: 'Rent',
       endDate: '2027-09-05',
       frequency: RecurrenceFrequency.MONTHLY,
@@ -29,6 +30,7 @@ describe('create', () => {
       account_id: 'account-1',
       category_id: 'cat-1',
       credit_card_id: undefined,
+      currency: 'BRL' as const,
       description: 'Rent',
       end_date: new Date('2027-09-05T00:00:00.000Z'),
       frequency: 'MONTHLY',
@@ -55,6 +57,7 @@ describe('create', () => {
     await setup.create({
       categoryId: 'cat-1',
       creditCardId: 'card-1',
+      currency: 'BRL' as const,
       description: 'Gym',
       frequency: RecurrenceFrequency.WEEKLY,
       lastGeneratedNumber: 0,
@@ -157,6 +160,7 @@ describe('applyChange', () => {
       fromNumber: 5,
       newSeries: {
         categoryId: 'cat-1',
+        currency: 'BRL' as const,
         description: 'Rent',
         endDate: null,
         firstNumber: 5,

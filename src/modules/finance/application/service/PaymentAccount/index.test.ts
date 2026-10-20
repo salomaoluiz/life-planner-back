@@ -18,15 +18,15 @@ describe('assertPaymentAccount', () => {
 
   it('SHOULD pass for an accessible active account', async () => {
     await expect(
-      assertPaymentAccount(repo([account]), access, account.id),
+      assertPaymentAccount(repo([account]), access, account.id, 'BRL'),
     ).resolves.toBeUndefined();
   });
 
   it('SHOULD throw 404 WHEN the account is missing or not accessible', async () => {
-    await expect(assertPaymentAccount(repo([]), access, account.id)).rejects.toThrow(
+    await expect(assertPaymentAccount(repo([]), access, account.id, 'BRL')).rejects.toThrow(
       NotFoundException,
     );
-    await expect(assertPaymentAccount(repo([account]), [], account.id)).rejects.toThrow(
+    await expect(assertPaymentAccount(repo([account]), [], account.id, 'BRL')).rejects.toThrow(
       NotFoundException,
     );
   });
@@ -34,7 +34,7 @@ describe('assertPaymentAccount', () => {
   it('SHOULD throw 422 WHEN the account is archived', async () => {
     const archived = { ...account, status: AccountStatus.ARCHIVED };
 
-    await expect(assertPaymentAccount(repo([archived]), access, account.id)).rejects.toThrow(
+    await expect(assertPaymentAccount(repo([archived]), access, account.id, 'BRL')).rejects.toThrow(
       UnprocessableEntityException,
     );
   });

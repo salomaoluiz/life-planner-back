@@ -27,6 +27,7 @@ export class CreateAccountUseCase implements UseCaseWithParams<
     }
 
     const account = await this.accountRepository.createAccount({
+      currency: input.currency,
       icon: input.icon,
       initialBalance: input.initialBalance,
       name: input.name,

@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   AccessibleOwnersSchema,
+  CurrencySchema,
   OwnerIdSchema,
   OwnerTypeSchema,
   TransactionTypeSchema,
@@ -15,6 +16,8 @@ export const EnsureTransactionConsistencySchema = z
     blockArchivedAccount: z.boolean().default(false),
     categoryId: z.string().min(1),
     creditCardId: z.string().min(1).optional(),
+    // When set, must equal the currency of the account or card (spec 040 FR 4).
+    currency: CurrencySchema.optional(),
     owner: OwnerTypeSchema,
     ownerId: OwnerIdSchema,
     type: TransactionTypeSchema,

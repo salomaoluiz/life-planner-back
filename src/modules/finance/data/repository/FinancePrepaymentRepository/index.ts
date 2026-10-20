@@ -23,6 +23,7 @@ export class FinancePrepaymentRepository implements IFinancePrepaymentRepository
     const result = await this.prepaymentDatasource.prepay({
       category_id: params.categoryId,
       credit_card_id: params.creditCardId,
+      currency: params.currency,
       date: fromCalendarDate(params.date),
       discount: params.discount,
       discount_description: params.discountDescription,

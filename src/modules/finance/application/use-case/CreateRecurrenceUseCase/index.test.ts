@@ -123,3 +123,20 @@ describe('CreateRecurrenceUseCase', () => {
     );
   });
 });
+
+describe('currency (spec 040)', () => {
+  it('SHOULD create the series in the currency of the account AND check a sent currency against it', async () => {
+    mocks.ensureConsistency.execute.mockResolvedValueOnce({
+      account: { currency: 'USD' },
+    });
+
+    await setup.execute({ ...mocks.input, currency: 'USD' });
+
+    expect(mocks.ensureConsistency.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ currency: 'USD' }),
+    );
+    expect(mocks.recurrenceRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ currency: 'USD' }),
+    );
+  });
+});

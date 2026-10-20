@@ -96,6 +96,7 @@ export class FinancePrepaymentDatasource implements IFinancePrepaymentDatasource
           data: {
             category_id: params.category_id,
             credit_card_id: params.credit_card_id,
+            currency: params.currency,
             date: params.date,
             description: params.discount_description,
             invoice_month: params.target_invoice_month,

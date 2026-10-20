@@ -70,3 +70,7 @@ Migration `recurring_transactions`: enums `RecurrenceFrequency`, `RecurrenceStat
 ### Category scopes (spec 038)
 
 Migration `category_all_scopes`: `financial_categories.all_scopes boolean default false`, `creator_id text?`, and `financial_category_scopes (category_id → financial_categories CASCADE, owner, owner_id)` unique `(category_id, owner, owner_id)`, index `(owner, owner_id)`. Single-scope rows have no scope rows; every row of an ALL tree has its own.
+
+### Currency columns (spec 040)
+
+`currency VARCHAR(3) NOT NULL DEFAULT 'BRL'` on `financial_accounts`, `financial_credit_cards`, `financial_transactions`, `financial_recurrences` and `financial_installment_plans` (migration `20261020000200_currency_per_transaction`). Validated in code against `SUPPORTED_CURRENCIES` (no enum); a new code needs no migration. Every transaction row equals the currency of its account/card; generated rows copy the series/plan currency. Money stays integer minor units.

@@ -29,6 +29,7 @@ it('SHOULD record an INCOME adjustment for the positive difference, dated today,
   expect(mocks.transactionRepository.createTransaction).toHaveBeenCalledWith({
     accountId: mocks.account.id,
     categoryId: SYSTEM_CATEGORY_IDS[SystemCategoryKey.BALANCE_ADJUSTMENT],
+    currency: 'BRL' as const,
     date: mocks.today,
     description: BALANCE_ADJUSTMENT_DESCRIPTION,
     owner: mocks.account.owner,
@@ -133,4 +134,17 @@ it.each([
     } as never),
   ).rejects.toThrow(ValidationError);
   expect(mocks.transactionRepository.createTransaction).not.toHaveBeenCalled();
+});
+
+it('SHOULD record the adjustment in the currency of the account', async () => {
+  mocks.accountRepository.findAccountById.mockResolvedValueOnce({
+    ...mocks.account,
+    currency: 'USD',
+  });
+
+  await run(12000);
+
+  expect(mocks.transactionRepository.createTransaction).toHaveBeenCalledWith(
+    expect.objectContaining({ currency: 'USD' }),
+  );
 });

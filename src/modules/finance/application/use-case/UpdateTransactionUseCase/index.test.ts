@@ -31,6 +31,7 @@ it('SHOULD validate the RESULTING record (patch merged over the stored one) AND 
     blockArchivedAccount: false,
     categoryId: mocks.transaction.categoryId,
     creditCardId: undefined,
+    currency: 'BRL' as const,
     owner: mocks.transaction.owner,
     ownerId: mocks.transaction.ownerId,
     type: mocks.transaction.type,
@@ -476,5 +477,19 @@ describe('recurring occurrences (spec 034)', () => {
     await expect(runRecurring({ [field]: value, scope: 'ONLY_THIS' })).rejects.toThrow(
       BadRequestException,
     );
+  });
+});
+
+describe('currency (spec 040)', () => {
+  it('SHOULD check the stored currency against the new account AND write nothing WHEN it refuses', async () => {
+    mocks.ensureConsistency.execute.mockRejectedValueOnce(
+      new UnprocessableEntityException('Transaction currency must match the account currency'),
+    );
+
+    await expect(run({ accountId: 'other-account' })).rejects.toThrow(UnprocessableEntityException);
+    expect(mocks.ensureConsistency.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ currency: mocks.transaction.currency }),
+    );
+    expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
   });
 });

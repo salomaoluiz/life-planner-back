@@ -1,6 +1,7 @@
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { AccountStatus, CreditCardBrand } from '@finance/domain/enum';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export type IFinanceCreditCardRepository = {
@@ -16,6 +17,7 @@ interface CreateCreditCardRepositoryParams {
   brand: CreditCardBrand;
   closingDay: number;
   color: string;
+  currency: CurrencyCode;
   dueDay: number;
   lastDigits?: string;
   limit: number;

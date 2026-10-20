@@ -64,6 +64,7 @@ export class CreateCardRefundUseCase implements UseCaseWithParams<
     return this.cardCreditRepository.createRefund({
       categoryId: SYSTEM_CATEGORY_IDS[SystemCategoryKey.CARD_REFUND],
       creditCardId: card.id,
+      currency: card.currency,
       date: input.date,
       description: input.description,
       invoiceMonth: input.invoiceMonth,

@@ -82,6 +82,7 @@ export class FinanceInvoicePaymentDatasource implements IFinanceInvoicePaymentDa
           data: {
             account_id: params.account_id,
             category_id: params.category_id,
+            currency: params.currency,
             date: params.paid_on,
             description: params.description,
             owner: params.account_owner as Prisma.FinancialTransactionUncheckedCreateInput['owner'],

@@ -1,10 +1,12 @@
 import { AccountStatus, CreditCardBrand, FinancialCreditCard, OwnerType } from '@db/client';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 
 export interface CreateCreditCardDatasourceParams {
   brand: CreditCardBrand;
   closing_day: number;
   color: string;
+  currency: CurrencyCode;
   due_day: number;
   last_digits?: string;
   limit: number;

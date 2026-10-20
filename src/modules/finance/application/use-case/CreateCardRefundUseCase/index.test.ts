@@ -11,6 +11,7 @@ it('SHOULD create the refund on the chosen invoice with the link cap AND the car
   expect(mocks.cardCreditRepository.createRefund).toHaveBeenCalledWith({
     categoryId: '00000000-0000-4000-8000-000000000004',
     creditCardId: mocks.card.id,
+    currency: 'BRL' as const,
     date: '2026-10-16',
     description: 'Refund · Notebook',
     invoiceMonth: '2026-10',

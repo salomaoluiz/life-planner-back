@@ -44,6 +44,7 @@ export class FinanceInvoicePaymentRepository implements IFinanceInvoicePaymentRe
       amount: params.amount,
       category_id: params.categoryId,
       credit_card_id: params.creditCardId,
+      currency: params.currency,
       description: params.description,
       invoice_month: params.invoiceMonth,
       method: params.method,

@@ -2,6 +2,7 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
 import {
+  CurrencyApiSchema,
   hasAtLeastOneField,
   IconColorApiSchema,
   NameApiSchema,
@@ -15,6 +16,7 @@ import {
   LastDigitsSchema,
 } from '@finance/application/dto/CreditCardCommon';
 import { AccountStatus, InvoicePaymentMethod, InvoiceStatus } from '@finance/domain/enum';
+import { DEFAULT_CURRENCY } from '@finance/domain/enum/Currency';
 
 const StatusApiSchema = z.enum(AccountStatus);
 
@@ -22,6 +24,7 @@ export const CreateCreditCardApiSchema = z.object({
   brand: CreditCardBrandSchema,
   closingDay: BillingDaySchema,
   color: IconColorApiSchema,
+  currency: CurrencyApiSchema.default(DEFAULT_CURRENCY),
   dueDay: BillingDaySchema,
   lastDigits: LastDigitsSchema.optional(),
   limit: CreditCardLimitSchema,
@@ -61,6 +64,7 @@ export const CreditCardApiSchema = z.object({
   closingDay: z.number().int(),
   color: z.string(),
   createdAt: z.iso.datetime(),
+  currency: CurrencyApiSchema,
   dueDay: z.number().int(),
   id: z.uuid(),
   lastDigits: z.string().optional(),
@@ -91,6 +95,7 @@ export const InvoiceApiSchema = z.object({
   amountDue: z.number().int(),
   carryIn: z.number().int(),
   closingDate: z.string(),
+  currency: CurrencyApiSchema,
   dueDate: z.string(),
   earlyPaid: z.number().int(),
   listDate: z.string(),

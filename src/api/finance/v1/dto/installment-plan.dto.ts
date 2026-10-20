@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import {
   CalendarDateApiSchema,
+  CurrencyApiSchema,
   DescriptionApiSchema,
   hasAtLeastOneField,
   OwnerIdApiSchema,
@@ -20,6 +21,7 @@ export const CreateInstallmentPlanApiSchema = z
   .object({
     categoryId: z.uuid(),
     creditCardId: z.uuid(),
+    currency: CurrencyApiSchema.optional(),
     date: CalendarDateApiSchema,
     description: DescriptionApiSchema,
     installments: InstallmentsApiSchema,
@@ -63,6 +65,7 @@ export const InstallmentPlanApiSchema = z.object({
   plan: z.object({
     categoryId: z.uuid(),
     creditCardId: z.uuid(),
+    currency: CurrencyApiSchema,
     date: z.string(),
     description: z.string(),
     id: z.uuid(),

@@ -1,9 +1,11 @@
 import { FinancialInstallmentPlan, FinancialInstallmentPrepayment, OwnerType } from '@db/client';
 import { FinancialTransactionWithRelations } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 
 export interface CreateInstallmentPlanDatasourceParams {
   category_id: string;
   credit_card_id: string;
+  currency: CurrencyCode;
   date: Date;
   description: string;
   owner: OwnerType;

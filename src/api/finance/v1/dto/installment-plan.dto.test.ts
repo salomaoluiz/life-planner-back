@@ -69,6 +69,7 @@ describe('InstallmentPlanApiSchema', () => {
       plan: {
         categoryId: uuid,
         creditCardId: uuid,
+        currency: 'BRL',
         date: '2026-10-20',
         description: 'Notebook',
         id: uuid,

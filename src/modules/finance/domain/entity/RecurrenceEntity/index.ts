@@ -4,6 +4,7 @@ import {
   TransactionCategorySummary,
 } from '@finance/domain/entity/TransactionEntity';
 import { RecurrenceFrequency, RecurrenceStatus, TransactionType } from '@finance/domain/enum';
+import { CurrencyCode, DEFAULT_CURRENCY } from '@finance/domain/enum/Currency';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 interface IRecurrenceEntity {
@@ -14,6 +15,7 @@ interface IRecurrenceEntity {
   createdAt: Date;
   creditCard: null | TransactionCardSummary;
   creditCardId: null | string;
+  currency?: CurrencyCode;
   description: string;
   endDate: null | string;
   firstNumber: number;
@@ -42,6 +44,7 @@ class RecurrenceEntity {
   createdAt: Date;
   creditCard: null | TransactionCardSummary;
   creditCardId: null | string;
+  currency: CurrencyCode;
   description: string;
   // Inclusive; null = runs until the user ends it.
   endDate: null | string;
@@ -73,6 +76,7 @@ class RecurrenceEntity {
     this.createdAt = params.createdAt;
     this.creditCard = params.creditCard;
     this.creditCardId = params.creditCardId;
+    this.currency = params.currency ?? DEFAULT_CURRENCY;
     this.description = params.description;
     this.endDate = params.endDate;
     this.firstNumber = params.firstNumber;

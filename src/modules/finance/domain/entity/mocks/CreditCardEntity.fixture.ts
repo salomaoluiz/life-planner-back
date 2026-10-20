@@ -28,6 +28,7 @@ class CreditCardEntityFixture {
       closingDay: 31,
       color: '#3B5BDB',
       createdAt: faker.date.past(),
+      currency: 'BRL',
       dueDay: 10,
       id: faker.string.uuid(),
       lastDigits: '1234',

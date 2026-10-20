@@ -74,7 +74,7 @@ describe('create', () => {
 
     expect(mocks.accountService.create).toHaveBeenCalledWith(
       mocks.request.user.id,
-      { ...validBody, initialBalance: 0, status: 'ACTIVE' },
+      { ...validBody, currency: 'BRL', initialBalance: 0, status: 'ACTIVE' },
       '2026-10-15',
     );
     expect(result).toEqual(mocks.account);

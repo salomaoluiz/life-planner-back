@@ -62,3 +62,15 @@ describe('payment account fields (spec 035)', () => {
     expect(UpdateCreditCardApiSchema.safeParse({ paymentAccountId: 'x' }).success).toBe(false);
   });
 });
+
+describe('currency (spec 040)', () => {
+  it('SHOULD default to BRL, accept USD AND reject an unknown code', () => {
+    expect(CreateCreditCardApiSchema.parse(create).currency).toBe('BRL');
+    expect(CreateCreditCardApiSchema.parse({ ...create, currency: 'USD' }).currency).toBe('USD');
+    expect(CreateCreditCardApiSchema.safeParse({ ...create, currency: 'XYZ' }).success).toBe(false);
+  });
+
+  it('SHOULD reject currency on PATCH', () => {
+    expect(UpdateCreditCardApiSchema.safeParse({ currency: 'BRL' }).success).toBe(false);
+  });
+});

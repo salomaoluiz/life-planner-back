@@ -18,6 +18,7 @@ describe('FinanceRecurrenceMapper.toDomain', () => {
       createdAt: mocks.raw.created_at,
       creditCard: null,
       creditCardId: null,
+      currency: 'BRL' as const,
       description: 'Rent',
       endDate: '2027-09-05',
       firstNumber: 1,

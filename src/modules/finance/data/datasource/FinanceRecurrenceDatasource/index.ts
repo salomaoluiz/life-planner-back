@@ -62,6 +62,7 @@ interface SeriesTemplate {
   account_id: null | string;
   category_id: string;
   credit_card_id: null | string;
+  currency: string;
   description: string;
   owner: Prisma.FinancialTransactionCreateManyInput['owner'];
   owner_id: string;
@@ -350,6 +351,7 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
           account_id: params.account_id,
           category_id: params.category_id,
           credit_card_id: params.credit_card_id,
+          currency: params.currency,
           description: params.description,
           end_date: params.end_date,
           frequency: params.frequency,
@@ -368,6 +370,7 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
         account_id: params.account_id ?? null,
         category_id: params.category_id,
         credit_card_id: params.credit_card_id ?? null,
+        currency: params.currency,
         description: params.description,
         owner: params.owner,
         owner_id: params.owner_id,
@@ -527,6 +530,7 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
           account_id: null | string;
           category_id: string;
           credit_card_id: null | string;
+          currency: string;
           description: string;
           last_generated_number: number;
           owner: SeriesTemplate['owner'];
@@ -535,7 +539,7 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
           value: number;
         }[]
       >(
-        Prisma.sql`SELECT "account_id", "category_id", "credit_card_id", "description", "last_generated_number", "owner"::text AS "owner", "owner_id", "type"::text AS "type", "value" FROM "financial_recurrences" WHERE "id" = ${params.id} FOR UPDATE`,
+        Prisma.sql`SELECT "account_id", "category_id", "credit_card_id", "currency", "description", "last_generated_number", "owner"::text AS "owner", "owner_id", "type"::text AS "type", "value" FROM "financial_recurrences" WHERE "id" = ${params.id} FOR UPDATE`,
       );
 
       if (locked.length === 0 || locked[0].last_generated_number !== params.expected_last) {
@@ -571,6 +575,7 @@ function toRows(
     account_id: template.account_id,
     category_id: template.category_id,
     credit_card_id: template.credit_card_id,
+    currency: template.currency,
     date: row.date,
     description: template.description,
     invoice_month: row.invoice_month ?? null,
@@ -606,6 +611,7 @@ function templateOf(
     account_id: base.account_id ?? null,
     category_id: base.category_id,
     credit_card_id: base.credit_card_id ?? null,
+    currency: base.currency,
     description: base.description,
     owner: base.owner,
     owner_id: base.owner_id,

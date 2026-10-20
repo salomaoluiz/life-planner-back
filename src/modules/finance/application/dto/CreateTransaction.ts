@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   AccessibleOwnersSchema,
   CalendarDateSchema,
+  CurrencySchema,
   DescriptionSchema,
   OwnerIdSchema,
   OwnerTypeSchema,
@@ -16,6 +17,7 @@ export const CreateTransactionSchema = z
     accountId: z.string().min(1).optional(),
     categoryId: z.string().min(1),
     creditCardId: z.string().min(1).optional(),
+    currency: CurrencySchema.optional(),
     date: CalendarDateSchema,
     description: DescriptionSchema,
     owner: OwnerTypeSchema,

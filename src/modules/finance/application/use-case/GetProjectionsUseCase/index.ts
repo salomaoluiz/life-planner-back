@@ -99,6 +99,7 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
         account: series.account,
         category: series.category,
         creditCard: series.creditCard,
+        currency: series.currency,
         date: occurrence.date,
         description: series.description,
         frequency: series.frequency,

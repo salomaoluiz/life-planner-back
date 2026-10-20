@@ -36,6 +36,7 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
         data: {
           category_id: params.category_id,
           credit_card_id: params.credit_card_id,
+          currency: params.currency,
           date: params.date,
           description: params.description,
           installment_count: params.rows.length,
@@ -123,6 +124,7 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
         data: toRows(params.rows, {
           category_id: params.category_id,
           credit_card_id: params.credit_card_id,
+          currency: plan.currency,
           date: params.date,
           description: params.description,
           owner: plan.owner,
@@ -197,6 +199,7 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
 interface RowsContext {
   category_id: string;
   credit_card_id: string;
+  currency: string;
   date: Date;
   description: string;
   owner: Prisma.FinancialTransactionCreateManyInput['owner'];
@@ -214,6 +217,7 @@ function toRows(
   return rows.map((row, index) => ({
     category_id: context.category_id,
     credit_card_id: context.credit_card_id,
+    currency: context.currency,
     date: context.date,
     description: context.description,
     installment_number: index + 1,

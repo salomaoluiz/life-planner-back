@@ -1,6 +1,7 @@
 import AccountEntity from '@finance/domain/entity/AccountEntity';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { AccountStatus } from '@finance/domain/enum';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { UnpaidSums } from '@finance/domain/service/AccountBalance';
 import { DatedAmount } from '@finance/domain/service/DailyBalance';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -22,6 +23,7 @@ export type IFinanceAccountRepository = {
 };
 
 interface CreateAccountRepositoryParams {
+  currency: CurrencyCode;
   icon: string;
   // The new account starts with ledger == initial (no transactions yet).
   initialBalance: number;

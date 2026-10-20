@@ -14,7 +14,12 @@ describe('CreateAccountApiSchema', () => {
   it('SHOULD default initialBalance to 0 AND status to ACTIVE, trimming strings', () => {
     const result = CreateAccountApiSchema.parse({ ...valid, name: '  Checking ' });
 
-    expect(result).toEqual({ ...valid, initialBalance: 0, status: AccountStatus.ACTIVE });
+    expect(result).toEqual({
+      currency: 'BRL' as const,
+      ...valid,
+      initialBalance: 0,
+      status: AccountStatus.ACTIVE,
+    });
   });
 
   it('SHOULD accept the int4 bounds', () => {
@@ -72,4 +77,17 @@ it('SHOULD accept only an integer target for the balance adjustment AND reject e
   expect(AdjustAccountBalanceApiSchema.safeParse({ balance: 1.5 }).success).toBe(false);
   expect(AdjustAccountBalanceApiSchema.safeParse({}).success).toBe(false);
   expect(AdjustAccountBalanceApiSchema.safeParse({ balance: 1, extra: 1 }).success).toBe(false);
+});
+
+describe('currency (spec 040)', () => {
+  it('SHOULD accept a supported currency on create AND reject an unknown one', () => {
+    expect(CreateAccountApiSchema.parse({ ...valid, currency: 'USD' }).currency).toBe('USD');
+    expect(CreateAccountApiSchema.safeParse({ ...valid, currency: 'XYZ' }).success).toBe(false);
+    expect(CreateAccountApiSchema.safeParse({ ...valid, currency: 'usd' }).success).toBe(false);
+  });
+
+  it('SHOULD reject currency on PATCH, even the same one', () => {
+    expect(UpdateAccountApiSchema.safeParse({ currency: 'BRL' }).success).toBe(false);
+    expect(UpdateAccountApiSchema.safeParse({ currency: 'BRL', name: 'x' }).success).toBe(false);
+  });
 });

@@ -1,4 +1,5 @@
 import { FinancialInstallmentPrepayment, OwnerType } from '@db/client';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 
 export type FinancialPrepaymentWithDiscount = {
   discount_transaction: { value: number } | null;
@@ -11,6 +12,7 @@ export interface IFinancePrepaymentDatasource {
 export interface PrepayDatasourceParams {
   category_id: string;
   credit_card_id: string;
+  currency: CurrencyCode;
   date: Date;
   discount: number;
   discount_description: string;

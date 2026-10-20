@@ -98,6 +98,7 @@ export class SplitRecurrenceUseCase implements UseCaseWithParams<
       blockArchivedAccount: sourceChanged,
       categoryId: target.categoryId,
       creditCardId: target.creditCardId,
+      currency: series.currency,
       owner: series.owner,
       ownerId: series.ownerId,
       type: series.type,
@@ -162,6 +163,7 @@ export class SplitRecurrenceUseCase implements UseCaseWithParams<
     } else {
       newSeries = {
         ...common,
+        currency: series.currency,
         ...sourceFields,
         endDate: target.endDate,
         firstNumber: input.occurrenceNumber,

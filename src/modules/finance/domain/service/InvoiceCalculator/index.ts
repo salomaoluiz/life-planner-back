@@ -1,8 +1,11 @@
 import { InvoicePaymentMethod, InvoiceStatus } from '@finance/domain/enum';
+import { CurrencyCode, DEFAULT_CURRENCY } from '@finance/domain/enum/Currency';
 
 export interface BillingCard {
   closingDay: number;
   createdAt: Date;
+  // Spec 040: the invoice is in the card's currency.
+  currency?: CurrencyCode;
   dueDay: number;
   limit: number;
   paymentDay?: number;
@@ -22,6 +25,7 @@ export interface Invoice {
   amountDue: number;
   carryIn: number;
   closingDate: string;
+  currency: CurrencyCode;
   dueDate: string;
   earlyPaid: number;
   // Day the invoice appears in the transactions list: the real `paidOn` once paid, else the planned `paymentDate`.
@@ -205,6 +209,7 @@ function buildInvoice(
     amountDue,
     carryIn: entry.carryIn,
     closingDate,
+    currency: card.currency ?? DEFAULT_CURRENCY,
     dueDate,
     earlyPaid,
     listDate: payment ? payment.paidOn : paymentDate,

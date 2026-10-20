@@ -24,6 +24,7 @@ export class FinanceAccountRepository implements IFinanceAccountRepository {
 
   async createAccount(params: CreateAccountRepositoryParams): Promise<AccountEntity> {
     const result = await this.accountDatasource.create({
+      currency: params.currency,
       icon: params.icon,
       initial_balance: params.initialBalance,
       ledger_balance: params.initialBalance,

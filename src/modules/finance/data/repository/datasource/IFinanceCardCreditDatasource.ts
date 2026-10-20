@@ -1,5 +1,6 @@
 import { InvoicePaymentMethod, OwnerType } from '@db/client';
 import { FinancialTransactionWithRelations } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 
 export interface CardCreditAccountDatasourceParams {
   id: string;
@@ -12,6 +13,7 @@ export interface CreateEarlyPaymentDatasourceParams {
   account_description: string;
   category_id: string;
   credit_card_id: string;
+  currency: CurrencyCode;
   date: Date;
   description: string;
   expected_net: number;
@@ -24,6 +26,7 @@ export interface CreateEarlyPaymentDatasourceParams {
 export interface CreateRefundDatasourceParams {
   category_id: string;
   credit_card_id: string;
+  currency: CurrencyCode;
   date: Date;
   description: string;
   invoice_month: string;

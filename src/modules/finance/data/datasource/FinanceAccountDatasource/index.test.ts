@@ -4,6 +4,7 @@ describe('Method create', () => {
   it('SHOULD insert the account AND return the row', async () => {
     spies.create.mockResolvedValue(mocks.account);
     const params = {
+      currency: 'BRL' as const,
       icon: 'bank',
       initial_balance: 100000,
       ledger_balance: 100000,

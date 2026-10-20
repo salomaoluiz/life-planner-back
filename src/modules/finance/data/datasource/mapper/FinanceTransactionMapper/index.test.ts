@@ -20,6 +20,7 @@ describe('FinanceTransactionMapper.toDomain', () => {
       createdAt: mocks.raw.created_at,
       creditCard: null,
       creditCardId: null,
+      currency: 'BRL' as const,
       date: '2026-10-03',
       description: 'Weekly groceries',
       earlyPayment: null,

@@ -49,6 +49,7 @@ export class CreateInstallmentPlanUseCase implements UseCaseWithParams<
       blockArchivedAccount: true,
       categoryId: input.categoryId,
       creditCardId: input.creditCardId,
+      currency: input.currency,
       owner: input.owner,
       ownerId: input.ownerId,
       type: TransactionType.EXPENSE,
@@ -60,6 +61,7 @@ export class CreateInstallmentPlanUseCase implements UseCaseWithParams<
     const id = await this.installmentPlanRepository.createPlan({
       categoryId: input.categoryId,
       creditCardId: card.id,
+      currency: card.currency,
       date: input.date,
       description: input.description,
       months: installmentInvoiceMonths(

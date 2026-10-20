@@ -90,6 +90,7 @@ const mocks = {
   accountParams: {
     account_id: 'account-1',
     category_id: 'cat-1',
+    currency: 'BRL' as const,
     description: 'Rent',
     end_date: null,
     frequency: 'MONTHLY' as const,

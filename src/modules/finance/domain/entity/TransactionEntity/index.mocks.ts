@@ -20,6 +20,7 @@ const paramsMock: TransactionEntity = {
   createdAt: new Date('2026-10-04T12:00:00.000Z'),
   creditCard: null,
   creditCardId: null,
+  currency: 'BRL' as const,
   date: '2026-10-03',
   description: 'Weekly groceries',
   earlyPayment: null,

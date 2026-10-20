@@ -92,6 +92,7 @@ model FinancialAccount {
   icon            String
   initial_balance Int           @default(0)
   ledger_balance  Int           @default(0)
+  currency String @default("BRL") @db.VarChar(3)
   status          AccountStatus @default(ACTIVE)
   owner           OwnerType
   owner_id        String
@@ -126,6 +127,7 @@ model FinancialCreditCard {
   payment_day Int?            @db.SmallInt
   color       String
   last_digits String?         @db.Char(4)
+  currency String @default("BRL") @db.VarChar(3)
   status      AccountStatus   @default(ACTIVE)
   owner       OwnerType
   owner_id    String
@@ -221,6 +223,7 @@ model FinancialTransaction {
   prepayment_id            String?
   payment_method           InvoicePaymentMethod?
   paid_from_transaction_id String?               @unique
+  currency String @default("BRL") @db.VarChar(3)
   owner                    OwnerType
   owner_id                 String
   created_at               DateTime              @default(now()) @db.Timestamptz(6)
@@ -357,6 +360,7 @@ model FinancialRecurrence {
   next_occurrence_date  DateTime?           @db.Date
   skipped_numbers       Int[]               @default([])
   status                RecurrenceStatus    @default(ACTIVE)
+  currency String @default("BRL") @db.VarChar(3)
   owner                 OwnerType
   owner_id              String
   created_at            DateTime            @default(now()) @db.Timestamptz(6)
@@ -382,6 +386,7 @@ model FinancialInstallmentPlan {
   total_value       Int
   installment_count Int       @db.SmallInt
   date              DateTime  @db.Date
+  currency String @default("BRL") @db.VarChar(3)
   owner             OwnerType
   owner_id          String
   created_at        DateTime  @default(now()) @db.Timestamptz(6)

@@ -18,6 +18,7 @@ describe('create', () => {
 
     expect(mocks.creditCardService.create).toHaveBeenCalledWith(userId, {
       ...createBody,
+      currency: 'BRL',
       status: 'ACTIVE',
     });
     expect(result).toEqual(mocks.card);

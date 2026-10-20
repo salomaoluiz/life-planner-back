@@ -1,4 +1,5 @@
 import InstallmentPlanEntity from '@finance/domain/entity/InstallmentPlanEntity';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export type IFinanceInstallmentPlanRepository = {
@@ -17,6 +18,7 @@ export type IFinanceInstallmentPlanRepository = {
 interface CreateInstallmentPlanRepositoryParams {
   categoryId: string;
   creditCardId: string;
+  currency: CurrencyCode;
   date: string;
   description: string;
   months: string[];

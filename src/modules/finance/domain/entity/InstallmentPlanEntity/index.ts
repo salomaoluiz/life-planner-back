@@ -1,4 +1,5 @@
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
+import { CurrencyCode, DEFAULT_CURRENCY } from '@finance/domain/enum/Currency';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export interface PlanPrepaymentSummary {
@@ -12,6 +13,7 @@ interface IInstallmentPlanEntity {
   categoryId: string;
   createdAt: Date;
   creditCardId: string;
+  currency?: CurrencyCode;
   date: string;
   description: string;
   id: string;
@@ -28,6 +30,7 @@ class InstallmentPlanEntity {
   categoryId: string;
   createdAt: Date;
   creditCardId: string;
+  currency: CurrencyCode;
   // Purchase date `YYYY-MM-DD`.
   date: string;
   description: string;
@@ -47,6 +50,7 @@ class InstallmentPlanEntity {
     this.categoryId = params.categoryId;
     this.createdAt = params.createdAt;
     this.creditCardId = params.creditCardId;
+    this.currency = params.currency ?? DEFAULT_CURRENCY;
     this.date = params.date;
     this.description = params.description;
     this.id = params.id;

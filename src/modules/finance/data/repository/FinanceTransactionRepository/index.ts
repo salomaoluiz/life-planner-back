@@ -38,6 +38,7 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
       account_id: params.accountId,
       category_id: params.categoryId,
       credit_card_id: params.creditCardId,
+      currency: params.currency,
       date: fromCalendarDate(params.date),
       description: params.description,
       invoice_month: params.invoiceMonth,

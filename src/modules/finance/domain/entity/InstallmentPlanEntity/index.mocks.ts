@@ -8,6 +8,7 @@ const paramsMock: InstallmentPlanEntity = {
   categoryId: 'category-uuid-1',
   createdAt: new Date('2026-10-04T12:00:00.000Z'),
   creditCardId: 'card-uuid-1',
+  currency: 'BRL' as const,
   date: '2026-10-20',
   description: 'Notebook',
   id: 'plan-uuid-1',

@@ -40,6 +40,7 @@ function toCreditCardOutput(
     closingDay: card.closingDay,
     color: card.color,
     createdAt: card.createdAt.toISOString(),
+    currency: card.currency,
     dueDay: card.dueDay,
     id: card.id,
     lastDigits: card.lastDigits,

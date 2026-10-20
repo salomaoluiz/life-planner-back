@@ -29,6 +29,7 @@ it('SHOULD check consistency, then create the transaction with integer cents AND
     accountId: mocks.input.accountId,
     categoryId: mocks.input.categoryId,
     creditCardId: undefined,
+    currency: 'BRL',
     date: '2026-10-03',
     description: 'Weekly groceries',
     invoiceMonth: undefined,
@@ -203,6 +204,53 @@ describe('paid status (spec 033)', () => {
 
     await expect(setup.execute({ ...card, paid: false })).rejects.toThrow(
       new UnprocessableEntityException('Card purchases follow their invoice'),
+    );
+  });
+});
+
+describe('currency (spec 040)', () => {
+  it('SHOULD create the row in the currency of the account WHEN none is sent', async () => {
+    mocks.ensureConsistency.execute.mockResolvedValueOnce({
+      account: { ...mocks.account, currency: 'USD' },
+    });
+
+    await setup.execute(mocks.input);
+
+    expect(mocks.transactionRepository.createTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ currency: 'USD' }),
+    );
+  });
+
+  it('SHOULD create the row in the currency of the card for a card purchase', async () => {
+    mocks.ensureConsistency.execute.mockResolvedValueOnce({
+      card: { ...mocks.card, currency: 'EUR' },
+    });
+    mocks.compute.execute.mockResolvedValueOnce([{ invoices: { used: 0 } }]);
+
+    await setup.execute({ ...mocks.input, accountId: undefined, creditCardId: mocks.card.id });
+
+    expect(mocks.transactionRepository.createTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ currency: 'EUR' }),
+    );
+  });
+
+  it('SHOULD ask the consistency check to match the sent currency AND write nothing WHEN it refuses', async () => {
+    mocks.ensureConsistency.execute.mockRejectedValueOnce(
+      new UnprocessableEntityException('Transaction currency must match the account currency'),
+    );
+
+    await expect(setup.execute({ ...mocks.input, currency: 'USD' })).rejects.toThrow(
+      UnprocessableEntityException,
+    );
+    expect(mocks.ensureConsistency.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ currency: 'USD' }),
+    );
+    expect(mocks.transactionRepository.createTransaction).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD answer 400 WHEN the currency is not supported', async () => {
+    await expect(setup.execute({ ...mocks.input, currency: 'XYZ' as never })).rejects.toThrow(
+      ValidationError,
     );
   });
 });

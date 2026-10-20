@@ -25,6 +25,7 @@ function toAccountOutput({
   return {
     balance,
     createdAt: account.createdAt.toISOString(),
+    currency: account.currency,
     icon: account.icon,
     id: account.id,
     initialBalance: account.initialBalance,

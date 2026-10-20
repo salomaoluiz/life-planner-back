@@ -10,6 +10,7 @@ import {
 } from '@db/client';
 import { FinancialTransactionWithRelations } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 
 export interface ApplyRecurrenceChangeDatasourceParams {
   delete_after?: Date | null;
@@ -34,6 +35,7 @@ export interface CreateRecurrenceDatasourceParams {
   account_id?: string;
   category_id: string;
   credit_card_id?: string;
+  currency: CurrencyCode;
   description: string;
   end_date: Date | null;
   frequency: RecurrenceFrequency;
@@ -98,6 +100,7 @@ export interface NewSeriesDatasourceParams {
   account_id?: string;
   category_id: string;
   credit_card_id?: string;
+  currency: CurrencyCode;
   description: string;
   end_date: Date | null;
   first_number: number;

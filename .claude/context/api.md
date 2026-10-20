@@ -146,3 +146,11 @@ Keep this table updated when endpoints change, and mirror changes in `integratio
 ### Daily balances and the card payment account (spec 035)
 
 `GET /api/v1/finance/accounts/daily-balances?month=YYYY-MM&ownerId=&today=` (declared before the `:id` routes): one item per calendar day with `total`, `cardsDue`, `projected` and the balance of each active account at the **end of that day** (paid rows on their date; from `today` on also unpaid rows, projected occurrences and card invoices still to pay). `400` invalid month or more than 12 months after today's month (`Month is too far ahead`); `403` when any `ownerId` is not accessible (unlike the other reads, which drop it silently). Materializes recurrences first. Cards accept/return `paymentAccountId` (`POST`/`PATCH /credit-cards`: `404 Account not found`, `422 Account is archived`, `null` removes) and `paymentAccount { id, name, icon, status } | null` (null for a reader without access to the account).
+
+### Currency per resource (spec 040)
+
+- Accounts, credit cards, transactions, recurrences (incl. `/recurrences/projections`), installment plans and invoices return `"currency": "BRL"`. The supported list is `SUPPORTED_CURRENCIES = ['BRL','USD','EUR']` (`@finance/domain/enum/Currency`, validated by `CurrencySchema`, no Prisma enum); default `DEFAULT_CURRENCY = 'BRL'`.
+- Create bodies (`POST /accounts`, `/credit-cards`, `/transactions`, `/recurrences`, `/installment-plans`) accept an optional `currency`; a code outside the list → 400. It is **not accepted on PATCH** of accounts and cards (400, `.strict()`).
+- A transaction, recurrence or plan takes the currency of its account/card when none is sent. A different one → 422 `Transaction currency must match the account currency` / `... the credit card currency` (`EnsureTransactionConsistencyUseCase`, also on update/split/plan recreate, where the stored currency is checked against the new account/card).
+- Money moves between an account and a card (invoice payment, early payment, card `paymentAccountId`) need one currency, else 422 `Account currency must match the credit card currency`.
+- System rows (balance adjustment, invoice payment, prepayment discount, refund, early payment and its account debit) take the currency of their account/card.

@@ -8,6 +8,7 @@ describe('Method create', () => {
   const params = {
     category_id: 'cat-1',
     credit_card_id: 'card-1',
+    currency: 'BRL' as const,
     date,
     description: 'Notebook',
     owner: 'USER' as const,

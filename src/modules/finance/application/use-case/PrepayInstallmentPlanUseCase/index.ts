@@ -52,6 +52,7 @@ export class PrepayInstallmentPlanUseCase implements UseCaseWithParams<
     await this.prepaymentRepository.prepay({
       categoryId: SYSTEM_CATEGORY_IDS[SystemCategoryKey.INSTALLMENT_PREPAYMENT_DISCOUNT],
       creditCardId: card.id,
+      currency: card.currency,
       date: input.date,
       discount,
       discountDescription: `Prepayment discount · ${plan.description}`,

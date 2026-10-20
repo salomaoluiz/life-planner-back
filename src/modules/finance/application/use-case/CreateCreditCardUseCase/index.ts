@@ -37,6 +37,7 @@ export class CreateCreditCardUseCase implements UseCaseWithParams<
         this.accountRepository,
         input.accessibleOwners,
         input.paymentAccountId,
+        input.currency,
       );
     }
 
@@ -44,6 +45,7 @@ export class CreateCreditCardUseCase implements UseCaseWithParams<
       brand: input.brand,
       closingDay: input.closingDay,
       color: input.color,
+      currency: input.currency,
       dueDay: input.dueDay,
       lastDigits: input.lastDigits,
       limit: input.limit,

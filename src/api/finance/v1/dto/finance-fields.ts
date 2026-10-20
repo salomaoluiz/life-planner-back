@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   CalendarDateSchema,
+  CurrencySchema,
   DescriptionSchema,
   INT4_MAX,
   INT4_MIN,
@@ -12,6 +13,7 @@ import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export const BalanceApiSchema = z.number().int().min(INT4_MIN).max(INT4_MAX);
 export const CalendarDateApiSchema = CalendarDateSchema;
+export const CurrencyApiSchema = CurrencySchema;
 export const DescriptionApiSchema = DescriptionSchema;
 export const IconApiSchema = z.string().trim().min(1).max(50);
 export const IconColorApiSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/);

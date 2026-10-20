@@ -37,6 +37,7 @@ function toInstallmentPlanOutput({
     plan: {
       categoryId: plan.categoryId,
       creditCardId: plan.creditCardId,
+      currency: plan.currency,
       date: plan.date,
       description: plan.description,
       id: plan.id,

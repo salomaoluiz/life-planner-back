@@ -24,6 +24,7 @@ const transactionMock: FinancialTransactionWithRelations = {
   created_at: faker.date.past(),
   credit_card: null,
   credit_card_id: null,
+  currency: 'BRL' as const,
   date: new Date('2026-10-03T00:00:00.000Z'),
   description: 'Weekly groceries',
   early_payment: null,

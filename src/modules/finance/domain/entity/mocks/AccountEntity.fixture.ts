@@ -20,6 +20,7 @@ class AccountEntityFixture {
   withDefault() {
     this.value = {
       createdAt: faker.date.past(),
+      currency: 'BRL',
       icon: 'bank',
       id: faker.string.uuid(),
       initialBalance: 0,
