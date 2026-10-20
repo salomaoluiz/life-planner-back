@@ -16,6 +16,8 @@ describe('createCategory', () => {
     });
 
     expect(mocks.categoryDatasource.create).toHaveBeenCalledWith({
+      all_scopes: undefined,
+      creator_id: undefined,
       depth_level: 0,
       icon: 'cart',
       icon_color: '#000000',
@@ -23,9 +25,63 @@ describe('createCategory', () => {
       owner: 'USER',
       owner_id: 'owner-id',
       parent_id: undefined,
+      scopes: undefined,
       type: 'EXPENSE',
     });
     expect(result).toBe(mocks.categoryEntity);
+  });
+
+  it('SHOULD pass the ALL flag, the creator and the snake_case scopes', async () => {
+    await setup.createCategory({
+      allScopes: true,
+      creatorId: 'creator',
+      depthLevel: 0,
+      icon: 'cart',
+      iconColor: '#000000',
+      name: 'Groceries',
+      owner: OwnerType.USER,
+      ownerId: 'creator',
+      scopes: [
+        { owner: OwnerType.USER, ownerId: 'creator' },
+        { owner: OwnerType.FAMILY, ownerId: 'family' },
+      ],
+      type: TransactionType.EXPENSE,
+    });
+
+    expect(mocks.categoryDatasource.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        all_scopes: true,
+        creator_id: 'creator',
+        scopes: [
+          { owner: 'USER', owner_id: 'creator' },
+          { owner: 'FAMILY', owner_id: 'family' },
+        ],
+      }),
+    );
+  });
+});
+
+describe('scope methods', () => {
+  it('SHOULD translate addScope, removeScope and detachFamilyScope to the datasource', async () => {
+    const family = { owner: OwnerType.FAMILY, ownerId: 'family' };
+
+    await setup.addScope({ creatorId: 'creator', owner: family });
+    await setup.removeScope(family);
+
+    expect(mocks.categoryDatasource.addScope).toHaveBeenCalledWith({
+      creator_id: 'creator',
+      owner: 'FAMILY',
+      owner_id: 'family',
+    });
+    expect(mocks.categoryDatasource.removeScope).toHaveBeenCalledWith({
+      owner: 'FAMILY',
+      owner_id: 'family',
+    });
+    expect(await setup.detachFamilyScope({ creatorId: 'creator', familyId: 'family' })).toBe(2);
+    expect(mocks.categoryDatasource.detachFamilyScope).toHaveBeenCalledWith({
+      creator_id: 'creator',
+      family_id: 'family',
+    });
   });
 });
 

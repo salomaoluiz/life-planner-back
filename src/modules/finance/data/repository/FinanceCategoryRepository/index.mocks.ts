@@ -1,7 +1,9 @@
 import { Test } from '@nestjs/testing';
 
-import { FinancialCategory } from '@db/client';
-import { FinanceCategoryMapper } from '@finance/data/datasource/mapper/FinanceCategoryMapper';
+import {
+  FinanceCategoryMapper,
+  FinancialCategoryWithScopes,
+} from '@finance/data/datasource/mapper/FinanceCategoryMapper';
 import CategoryEntityFixture from '@finance/domain/entity/mocks/CategoryEntity.fixture';
 
 import { FinanceCategoryRepository } from './index';
@@ -11,14 +13,17 @@ import { FinanceCategoryRepository } from './index';
 jest.mock('@finance/data/datasource/mapper/FinanceCategoryMapper');
 
 const categoryEntityMock = new CategoryEntityFixture().build();
-const categoryPersistenceMock = { id: categoryEntityMock.id } as FinancialCategory;
+const categoryPersistenceMock = { id: categoryEntityMock.id } as FinancialCategoryWithScopes;
 
 const categoryDatasourceMock = {
+  addScope: jest.fn().mockResolvedValue(undefined),
   create: jest.fn().mockResolvedValue(categoryPersistenceMock),
   delete: jest.fn().mockResolvedValue(undefined),
+  detachFamilyScope: jest.fn().mockResolvedValue(2),
   exists: jest.fn().mockResolvedValue(true),
   findById: jest.fn().mockResolvedValue(categoryPersistenceMock),
   findByOwners: jest.fn().mockResolvedValue([categoryPersistenceMock]),
+  removeScope: jest.fn().mockResolvedValue(undefined),
   update: jest.fn().mockResolvedValue(categoryPersistenceMock),
 };
 

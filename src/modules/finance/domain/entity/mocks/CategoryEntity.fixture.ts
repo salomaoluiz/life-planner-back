@@ -1,6 +1,7 @@
 import { faker } from '@faker-js/faker';
 
 import CategoryEntity from '@finance/domain/entity/CategoryEntity';
+import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
@@ -18,19 +19,34 @@ class CategoryEntityFixture {
   }
 
   withDefault() {
+    const ownerId = faker.string.uuid();
+
     this.value = {
+      allScopes: false,
       createdAt: faker.date.past(),
+      creatorId: undefined,
       depthLevel: 0,
       icon: 'folder',
       iconColor: '#000000',
       id: faker.string.uuid(),
       name: faker.commerce.department(),
       owner: OwnerType.USER,
-      ownerId: faker.string.uuid(),
+      ownerId,
       parentId: undefined,
+      scopes: [{ owner: OwnerType.USER, ownerId }],
       type: TransactionType.EXPENSE,
       updatedAt: faker.date.recent(),
     };
+    return this;
+  }
+
+  // An ALL category: `owner/ownerId` is the creator's Personal scope, which must be one of `scopes`.
+  withAllScopes(scopes: OwnerAccess[], creatorId: string) {
+    this.value.allScopes = true;
+    this.value.creatorId = creatorId;
+    this.value.owner = OwnerType.USER;
+    this.value.ownerId = creatorId;
+    this.value.scopes = scopes;
     return this;
   }
 
@@ -56,11 +72,13 @@ class CategoryEntityFixture {
 
   withOwner(owner: OwnerType) {
     this.value.owner = owner;
+    this.value.scopes = [{ owner, ownerId: this.value.ownerId }];
     return this;
   }
 
   withOwnerId(ownerId: string) {
     this.value.ownerId = ownerId;
+    this.value.scopes = [{ owner: this.value.owner, ownerId }];
     return this;
   }
 

@@ -6,6 +6,7 @@ import CategoryEntity from './index';
 // region Mocks
 
 const paramsMock: CategoryEntity = {
+  allScopes: false,
   createdAt: new Date('2026-10-04T12:00:00.000Z'),
   depthLevel: 1,
   icon: 'cart',
@@ -15,6 +16,7 @@ const paramsMock: CategoryEntity = {
   owner: OwnerType.FAMILY,
   ownerId: 'owner-uuid-456',
   parentId: 'parent-uuid-789',
+  scopes: [{ owner: OwnerType.FAMILY, ownerId: 'owner-uuid-456' }],
   type: TransactionType.EXPENSE,
   updatedAt: new Date('2026-10-04T13:00:00.000Z'),
 };
