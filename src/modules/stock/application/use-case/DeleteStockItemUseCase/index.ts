@@ -6,6 +6,7 @@ import {
   DeleteStockItemInput,
   DeleteStockItemSchema,
 } from '@stock/application/dto/DeleteStockItem';
+import { ensureOwnerWritable } from '@stock/application/service/OwnerWritable';
 import { hasOwnerAccess } from '@stock/domain/entity/OwnerAccess';
 import { IStockRepository } from '@stock/domain/repository';
 
@@ -23,6 +24,8 @@ export class DeleteStockItemUseCase implements UseCaseWithParams<DeleteStockItem
     if (!item || !hasOwnerAccess(input.accessibleOwners, item)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, item);
 
     await this.stockRepository.delete(input.id);
   }

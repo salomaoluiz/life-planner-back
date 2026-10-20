@@ -27,6 +27,19 @@ describe('MaterializeRecurrencesUseCase', () => {
     });
   });
 
+  it('SHOULD never materialize for an archived family, even when it is requested explicitly (spec 042)', async () => {
+    const archived = mocks.accessibleOwners.map((access) => ({ ...access, archived: true }));
+
+    await setup.execute({
+      ...base,
+      accessibleOwners: archived,
+      ownerIds: archived.map((a) => a.ownerId),
+    });
+
+    expect(mocks.recurrenceRepository.findDue).not.toHaveBeenCalled();
+    expect(mocks.recurrenceRepository.materialize).not.toHaveBeenCalled();
+  });
+
   it('SHOULD not skip numbers that were deleted as projected', async () => {
     mocks.recurrenceRepository.findDue.mockResolvedValue([
       { ...mocks.weeklySeries, skippedNumbers: [3] },

@@ -36,7 +36,10 @@ export class MaterializeRecurrencesUseCase implements UseCaseWithParams<
 
   async execute(params: MaterializeRecurrencesInput): Promise<void> {
     const input = validate(MaterializeRecurrencesSchema, params);
-    const owners = narrowOwners(input.accessibleOwners, input.ownerIds);
+    // Safety net (spec 042 FR 10): never write rows for an archived family, even when it is requested explicitly.
+    const owners = narrowOwners(input.accessibleOwners, input.ownerIds).filter(
+      (access) => !access.archived,
+    );
 
     if (owners.length === 0) {
       return;

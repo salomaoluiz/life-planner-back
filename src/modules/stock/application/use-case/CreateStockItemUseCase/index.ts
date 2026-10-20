@@ -6,6 +6,7 @@ import {
   CreateStockItemInput,
   CreateStockItemSchema,
 } from '@stock/application/dto/CreateStockItem';
+import { ensureOwnerWritable } from '@stock/application/service/OwnerWritable';
 import { hasOwnerAccess } from '@stock/domain/entity/OwnerAccess';
 import StockEntity from '@stock/domain/entity/StockEntity';
 import { IStockRepository } from '@stock/domain/repository';
@@ -25,6 +26,8 @@ export class CreateStockItemUseCase implements UseCaseWithParams<
     if (!hasOwnerAccess(input.accessibleOwners, { owner: input.owner, ownerId: input.ownerId })) {
       throw new ForbiddenException('Owner not accessible');
     }
+
+    ensureOwnerWritable(input.accessibleOwners, { owner: input.owner, ownerId: input.ownerId });
 
     return this.stockRepository.create({
       barcode: input.barcode,

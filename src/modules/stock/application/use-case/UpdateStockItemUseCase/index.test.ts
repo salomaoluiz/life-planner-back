@@ -91,3 +91,13 @@ it.each([
     expect(mocks.stockRepository.update).not.toHaveBeenCalled();
   },
 );
+
+it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)', async () => {
+  const input = { ...base(), quantity: 1 };
+  const accessibleOwners = input.accessibleOwners.map((access) => ({ ...access, archived: true }));
+
+  await expect(setup.execute({ ...input, accessibleOwners })).rejects.toMatchObject({
+    message: 'Family is archived',
+    status: 422,
+  });
+});

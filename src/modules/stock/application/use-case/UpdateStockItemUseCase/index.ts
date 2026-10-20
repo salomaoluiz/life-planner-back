@@ -6,6 +6,7 @@ import {
   UpdateStockItemInput,
   UpdateStockItemSchema,
 } from '@stock/application/dto/UpdateStockItem';
+import { ensureOwnerWritable } from '@stock/application/service/OwnerWritable';
 import { hasOwnerAccess } from '@stock/domain/entity/OwnerAccess';
 import StockEntity from '@stock/domain/entity/StockEntity';
 import { IStockRepository } from '@stock/domain/repository';
@@ -29,12 +30,18 @@ export class UpdateStockItemUseCase implements UseCaseWithParams<
       throw new NotFoundException();
     }
 
+    ensureOwnerWritable(input.accessibleOwners, item);
+
     if (
       input.owner !== undefined &&
       input.ownerId !== undefined &&
       !hasOwnerAccess(input.accessibleOwners, { owner: input.owner, ownerId: input.ownerId })
     ) {
       throw new ForbiddenException('Owner not accessible');
+    }
+
+    if (input.owner !== undefined && input.ownerId !== undefined) {
+      ensureOwnerWritable(input.accessibleOwners, { owner: input.owner, ownerId: input.ownerId });
     }
 
     return this.stockRepository.update({
