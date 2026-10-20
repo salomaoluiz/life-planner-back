@@ -97,6 +97,8 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
       accessibleOwners: input.accessibleOwners,
       accountId: targetAccountId,
       blockArchivedAccount: sourceChanged,
+      blockArchivedCategory:
+        input.categoryId !== undefined && input.categoryId !== transaction.categoryId,
       categoryId: input.categoryId ?? transaction.categoryId,
       creditCardId: targetCardId,
       currency: transaction.currency,
@@ -175,6 +177,8 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
     const consistency = await this.ensureTransactionConsistencyUseCase.execute({
       accessibleOwners: input.accessibleOwners,
       blockArchivedAccount: false,
+      blockArchivedCategory:
+        input.categoryId !== undefined && input.categoryId !== transaction.categoryId,
       categoryId: input.categoryId ?? transaction.categoryId,
       creditCardId: transaction.creditCardId as string,
       currency: transaction.currency,

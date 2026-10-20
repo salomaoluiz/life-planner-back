@@ -29,6 +29,7 @@ it('SHOULD validate the RESULTING record (patch merged over the stored one) AND 
     accessibleOwners: mocks.accessibleOwners,
     accountId: mocks.transaction.accountId,
     blockArchivedAccount: false,
+    blockArchivedCategory: false,
     categoryId: mocks.transaction.categoryId,
     creditCardId: undefined,
     currency: 'BRL' as const,
@@ -63,6 +64,7 @@ it('SHOULD check a new account / category / type against the stored owner', asyn
     expect.objectContaining({
       accountId: 'new-account',
       blockArchivedAccount: true,
+      blockArchivedCategory: true,
       categoryId: 'new-category',
       ownerId: mocks.transaction.ownerId,
       type: TransactionType.INCOME,
@@ -136,6 +138,16 @@ it.each([
 ])('SHOULD throw ValidationError WHEN the patch is %s', async (_label, patch) => {
   await expect(run(patch)).rejects.toThrow(ValidationError);
   expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
+});
+
+describe('archived categories (spec 041)', () => {
+  it('SHOULD NOT block the category WHEN the update keeps the stored one (even if archived)', async () => {
+    await run({ categoryId: mocks.transaction.categoryId, value: 5 });
+
+    expect(mocks.ensureConsistency.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ blockArchivedCategory: false }),
+    );
+  });
 });
 
 describe('archived accounts and balance adjustments (spec 028)', () => {

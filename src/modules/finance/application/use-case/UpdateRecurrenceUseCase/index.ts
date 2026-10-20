@@ -41,6 +41,7 @@ export class UpdateRecurrenceUseCase implements UseCaseWithParams<
         accessibleOwners: input.accessibleOwners,
         accountId: series.accountId ?? undefined,
         blockArchivedAccount: false,
+        blockArchivedCategory: input.categoryId !== series.categoryId,
         categoryId: input.categoryId,
         creditCardId: series.creditCardId ?? undefined,
         owner: series.owner,

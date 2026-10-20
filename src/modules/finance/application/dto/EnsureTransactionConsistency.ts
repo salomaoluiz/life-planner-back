@@ -14,6 +14,8 @@ export const EnsureTransactionConsistencySchema = z
     accountId: z.string().min(1).optional(),
     // Create, and an update that MOVES the transaction to another account or card, may not target an archived one.
     blockArchivedAccount: z.boolean().default(false),
+    // Create, and an update that CHANGES the category, may not target an archived one (spec 041 FR 11).
+    blockArchivedCategory: z.boolean().default(false),
     categoryId: z.string().min(1),
     creditCardId: z.string().min(1).optional(),
     // When set, must equal the currency of the account or card (spec 040 FR 4).
