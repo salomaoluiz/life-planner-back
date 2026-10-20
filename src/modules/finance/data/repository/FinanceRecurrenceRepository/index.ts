@@ -55,6 +55,7 @@ export class FinanceRecurrenceRepository implements IFinanceRecurrenceRepository
       },
       series_patch: toSeriesPatch(seriesPatch),
       source_id: params.sourceId,
+      tag_names: params.tags,
     });
   }
 
@@ -81,6 +82,7 @@ export class FinanceRecurrenceRepository implements IFinanceRecurrenceRepository
       rows: params.rows.map(toRow),
       start_date: fromCalendarDate(params.startDate),
       status: params.status,
+      tag_names: params.tags,
       type: params.type,
       value: params.value,
     });
@@ -95,6 +97,7 @@ export class FinanceRecurrenceRepository implements IFinanceRecurrenceRepository
       number: params.number,
       paid: params.paid,
       recurrence_id: params.recurrenceId,
+      tag_names: params.tags,
       value: params.value,
     });
 

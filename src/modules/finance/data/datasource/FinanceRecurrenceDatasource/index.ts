@@ -16,6 +16,15 @@ import {
 } from '@finance/data/datasource/ledger';
 import { toOwnerWhere } from '@finance/data/datasource/mapper/OwnerWhere';
 import {
+  applyTagNames,
+  copyRecurrenceTags,
+  copyRecurrenceTagsToRows,
+  resolveTagIds,
+  setRecurrenceTags,
+  setTransactionTags,
+  TAG_INCLUDE,
+} from '@finance/data/datasource/tags';
+import {
   ApplyRecurrenceChangeDatasourceParams,
   CreateOccurrenceDatasourceParams,
   CreateRecurrenceDatasourceParams,
@@ -47,6 +56,7 @@ export const RECURRENCE_RELATIONS = {
     },
   },
   credit_card: { select: { color: true, id: true, last_digits: true, title: true } },
+  tags: { ...TAG_INCLUDE.tags, select: { tag: { select: { id: true, name: true } } } },
 };
 
 interface LockableRow {
@@ -169,8 +179,54 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
         where: { id: source.id },
       });
 
+      await this.applyTags(tx, params, source, targetId);
+
       return targetId;
     });
+  }
+
+  // Spec 043 FR 11. Names replace the tags of the target series and of its rows from `from_number` on (an ONLY_THIS
+  // edit goes through the transaction update). Without names a split gives the new series the old tags, and
+  // replaced rows get the series tags.
+  private async applyTags(
+    tx: Prisma.TransactionClient,
+    params: ApplyRecurrenceChangeDatasourceParams,
+    source: { id: string; owner: OwnerType; owner_id: string },
+    targetId: string,
+  ): Promise<void> {
+    if (params.tag_names !== undefined) {
+      const tagIds = await resolveTagIds(tx, {
+        names: params.tag_names,
+        owner: source.owner,
+        ownerId: source.owner_id,
+      });
+      const rows = await tx.financialTransaction.findMany({
+        select: { id: true },
+        where: { occurrence_number: { gte: params.from_number }, recurrence_id: targetId },
+      });
+
+      await setRecurrenceTags(tx, targetId, tagIds);
+
+      if (rows.length > 0) {
+        await setTransactionTags(
+          tx,
+          rows.map((row) => row.id),
+          tagIds,
+        );
+      }
+
+      return;
+    }
+
+    if (targetId !== source.id) {
+      await copyRecurrenceTags(tx, source.id, targetId);
+    }
+
+    if (params.replace_rows) {
+      await copyRecurrenceTagsToRows(tx, targetId, {
+        occurrence_number: { gte: params.from_number },
+      });
+    }
   }
 
   private async patchRows(
@@ -379,8 +435,19 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
       };
       const rows = toRows(params.rows, template, series.id);
 
+      if (params.tag_names && params.tag_names.length > 0) {
+        const tagIds = await resolveTagIds(tx, {
+          names: params.tag_names,
+          owner: params.owner,
+          ownerId: params.owner_id,
+        });
+
+        await setRecurrenceTags(tx, series.id, tagIds);
+      }
+
       if (rows.length > 0) {
         await tx.financialTransaction.createMany({ data: rows });
+        await copyRecurrenceTagsToRows(tx, series.id);
         for (const row of rows) {
           const entry = toLedgerEntry({
             account_id: row.account_id ?? null,
@@ -448,7 +515,22 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
 
       await applyLedgerDeltas(tx, ledgerDeltas(undefined, toLedgerEntry(created)));
 
-      return created;
+      // The occurrence takes the tags of the series unless the caller named others.
+      if (params.tag_names === undefined) {
+        await copyRecurrenceTagsToRows(tx, series.id, { id: created.id });
+      } else {
+        await applyTagNames(tx, {
+          names: params.tag_names,
+          owner: series.owner,
+          ownerId: series.owner_id,
+          where: { id: created.id },
+        });
+      }
+
+      return tx.financialTransaction.findUniqueOrThrow({
+        include: TRANSACTION_RELATIONS,
+        where: { id: created.id },
+      });
     });
   }
 
@@ -547,9 +629,23 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
       }
 
       if (params.rows.length > 0) {
+        const numbers = params.rows.map((row) => row.number);
+        // A row made real earlier (and maybe untagged by the user) keeps its tags.
+        const existing = await tx.financialTransaction.findMany({
+          select: { occurrence_number: true },
+          where: { occurrence_number: { in: numbers }, recurrence_id: params.id },
+        });
+
         await tx.financialTransaction.createMany({
           data: toRows(params.rows, locked[0], params.id),
           skipDuplicates: true,
+        });
+        await copyRecurrenceTagsToRows(tx, params.id, {
+          occurrence_number: {
+            in: numbers.filter(
+              (number) => !existing.some((row) => row.occurrence_number === number),
+            ),
+          },
         });
       }
 

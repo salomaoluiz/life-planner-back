@@ -1,5 +1,4 @@
-import { Prisma } from '@db/client';
-import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
+import { OwnerType, Prisma } from '@db/client';
 
 // Tags come back with the rows, in the stored order (spec 043 FR 8).
 export const TAG_INCLUDE = {
@@ -9,9 +8,64 @@ export const TAG_INCLUDE = {
   },
 } as const;
 
+// Resolves `names` in the owner and replaces the tags of every transaction matching `where` (one database
+// transaction with the caller's write). Returns the ids it tagged.
+export async function applyTagNames(
+  tx: Prisma.TransactionClient,
+  params: {
+    names: string[];
+    owner: OwnerType;
+    ownerId: string;
+    where: Prisma.FinancialTransactionWhereInput;
+  },
+): Promise<string[]> {
+  const [tagIds, rows] = await Promise.all([
+    resolveTagIds(tx, params),
+    tx.financialTransaction.findMany({ select: { id: true }, where: params.where }),
+  ]);
+
+  if (rows.length > 0) {
+    await setTransactionTags(
+      tx,
+      rows.map((row) => row.id),
+      tagIds,
+    );
+  }
+
+  return rows.map((row) => row.id);
+}
+
+// The tag ids of one transaction in the stored order (a plan recreate carries them over).
+export async function tagIdsOfRow(
+  tx: Prisma.TransactionClient,
+  where: Prisma.FinancialTransactionWhereInput,
+): Promise<string[]> {
+  const row = await tx.financialTransaction.findFirst({
+    orderBy: { installment_number: 'asc' },
+    select: { tags: { orderBy: { position: 'asc' }, select: { tag_id: true } } },
+    where,
+  });
+
+  return (row?.tags ?? []).map((link) => link.tag_id);
+}
+
+// The names of the tags of one transaction, in order (an owner change re-resolves them).
 export type TagLinks = Prisma.FinancialTransactionTagGetPayload<{
   select: { tag: { select: { id: true; name: true } } };
 }>[];
+
+export async function tagNamesOfRow(
+  tx: Prisma.TransactionClient,
+  transactionId: string,
+): Promise<string[]> {
+  const links = await tx.financialTransactionTag.findMany({
+    orderBy: { position: 'asc' },
+    select: { tag: { select: { name: true } } },
+    where: { transaction_id: transactionId },
+  });
+
+  return links.map((link) => link.tag.name);
+}
 
 // Unique names (ignoring case, first spelling and order win).
 export function uniqueNames(names: string[]): string[] {

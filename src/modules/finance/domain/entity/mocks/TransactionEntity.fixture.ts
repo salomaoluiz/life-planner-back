@@ -122,6 +122,7 @@ class TransactionEntityFixture {
       refundedName: null,
       refundedPlanId: null,
       refundedTransactionId: null,
+      tags: [],
       type: TransactionType.EXPENSE,
       updatedAt: faker.date.recent(),
       value: faker.number.int({ max: 100_000, min: 1 }),

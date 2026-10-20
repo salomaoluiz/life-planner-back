@@ -34,6 +34,7 @@ const paramsMock: RecurrenceEntity = {
   skippedNumbers: [],
   startDate: '2026-10-05',
   status: RecurrenceStatus.ACTIVE,
+  tags: [],
   type: TransactionType.EXPENSE,
   updatedAt: new Date('2026-10-04T13:00:00.000Z'),
   value: 200000,

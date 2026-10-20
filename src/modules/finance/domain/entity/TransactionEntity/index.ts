@@ -1,3 +1,4 @@
+import { TagRef } from '@finance/domain/entity/TagEntity';
 import {
   InvoicePaymentMethod,
   RecurrenceFrequency,
@@ -73,6 +74,8 @@ interface ITransactionEntity {
   refundedName?: null | string;
   refundedPlanId?: null | string;
   refundedTransactionId?: null | string;
+  // Spec 043: the tags of the row, in the stored order.
+  tags?: TagRef[];
   type: TransactionType;
   updatedAt: Date;
   value: number;
@@ -119,6 +122,7 @@ class TransactionEntity {
   refundedName: null | string;
   refundedPlanId: null | string;
   refundedTransactionId: null | string;
+  tags: TagRef[];
   type: TransactionType;
   updatedAt: Date;
   // Integer cents, always > 0; the sign comes from `type`.
@@ -156,6 +160,7 @@ class TransactionEntity {
     this.refundedName = params.refundedName ?? null;
     this.refundedPlanId = params.refundedPlanId ?? null;
     this.refundedTransactionId = params.refundedTransactionId ?? null;
+    this.tags = params.tags ?? [];
     this.type = params.type;
     this.updatedAt = params.updatedAt;
     this.value = params.value;

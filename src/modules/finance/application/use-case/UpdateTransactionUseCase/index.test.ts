@@ -520,3 +520,24 @@ it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)'
     status: 422,
   });
 });
+
+it('SHOULD pass the tag names (and [] to clear them) to the repository', async () => {
+  await run({ tags: ['fixo'] });
+
+  expect(mocks.transactionRepository.updateTransaction).toHaveBeenCalledWith(
+    expect.objectContaining({ tags: ['fixo'] }),
+  );
+
+  await run({ tags: [] });
+
+  expect(mocks.transactionRepository.updateTransaction).toHaveBeenLastCalledWith(
+    expect.objectContaining({ tags: [] }),
+  );
+});
+
+it('SHOULD accept a tags-only patch AND reject more than 10 tags', async () => {
+  await expect(run({ tags: [] })).resolves.toBeDefined();
+  await expect(run({ tags: Array.from({ length: 11 }, (_, i) => `t${i}`) })).rejects.toThrow(
+    ValidationError,
+  );
+});

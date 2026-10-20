@@ -7,6 +7,8 @@ Pure TypeScript. No Nest, Prisma or npm imports.
 Plain classes with a constructor taking one params interface; fields **sorted alphabetically** (perfectionist). Default export.
 
 ```ts
+`TagEntity` (spec 043: `name`, `owner/ownerId`, `allScopes`, `creatorId`, `scopes`, `usageCount`; `TagRef = { id, name }` on `TransactionEntity.tags` / `RecurrenceEntity.tags` / `ProjectedOccurrence.tags`; helpers in `TagScope`).
+
 interface ICategoryEntity { id: string; name: string; ... }
 class CategoryEntity {
   id: string;

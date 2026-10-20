@@ -47,6 +47,8 @@ interface ApplyRecurrenceChangeRepositoryParams {
   rowPatch: RowPatchRepositoryParams;
   seriesPatch: SeriesPatchRepositoryParams;
   sourceId: string;
+  // See the datasource: `undefined` keeps the tags, a list replaces them on the target series and its rows.
+  tags?: string[];
 }
 interface CreateOccurrenceRepositoryParams {
   categoryId?: string;
@@ -56,6 +58,7 @@ interface CreateOccurrenceRepositoryParams {
   number: number;
   paid?: boolean;
   recurrenceId: string;
+  tags?: string[];
   value?: number;
 }
 interface CreateRecurrenceRepositoryParams {
@@ -73,6 +76,7 @@ interface CreateRecurrenceRepositoryParams {
   rows: OccurrenceRow[];
   startDate: string;
   status: RecurrenceStatus;
+  tags?: string[];
   type: TransactionType;
   value: number;
 }

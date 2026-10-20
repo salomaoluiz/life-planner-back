@@ -41,6 +41,7 @@ function toProjectedOutput(item: ProjectedOccurrence) {
     owner: item.owner,
     ownerId: item.ownerId,
     recurrenceId: item.recurrenceId,
+    tags: item.tags,
     type: item.type,
     value: item.value,
   };
@@ -65,6 +66,7 @@ function toRecurrenceOutput(series: RecurrenceEntity) {
     ownerId: series.ownerId,
     startDate: series.startDate,
     status: series.status,
+    tags: series.tags,
     type: series.type,
     value: series.value,
   };

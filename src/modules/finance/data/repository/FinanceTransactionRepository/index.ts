@@ -45,6 +45,7 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
       owner: params.owner,
       owner_id: params.ownerId,
       paid: params.paid,
+      tag_names: params.tags,
       type: params.type,
       value: params.value,
     });
@@ -107,6 +108,7 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
       owner: params.owner,
       owner_id: params.ownerId,
       paid: params.paid,
+      tag_names: params.tags,
       type: params.type,
       value: params.value,
     });

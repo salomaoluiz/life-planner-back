@@ -58,6 +58,7 @@ class RecurrenceEntityFixture {
       skippedNumbers: [],
       startDate: '2026-10-05',
       status: RecurrenceStatus.ACTIVE,
+      tags: [],
       type: TransactionType.EXPENSE,
       updatedAt: faker.date.recent(),
       value: faker.number.int({ max: 100_000, min: 1 }),

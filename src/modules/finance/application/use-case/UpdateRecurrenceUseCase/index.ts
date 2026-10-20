@@ -79,6 +79,7 @@ export class UpdateRecurrenceUseCase implements UseCaseWithParams<
       },
       seriesPatch,
       sourceId: series.id,
+      tags: input.tags,
     });
 
     return (await this.recurrenceRepository.findById(series.id)) as RecurrenceEntity;

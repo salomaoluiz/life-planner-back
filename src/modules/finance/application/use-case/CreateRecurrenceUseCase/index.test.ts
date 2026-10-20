@@ -150,3 +150,13 @@ it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)'
     status: 422,
   });
 });
+
+describe('tags (spec 043)', () => {
+  it('SHOULD store the tag names on the series', async () => {
+    await setup.execute({ ...mocks.input, tags: ['fixo'] });
+
+    expect(mocks.recurrenceRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ tags: ['fixo'] }),
+    );
+  });
+});

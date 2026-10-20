@@ -93,3 +93,11 @@ it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)'
     status: 422,
   });
 });
+
+it('SHOULD pass the tag names to the plan creation (spec 043 FR 10)', async () => {
+  await setup.execute({ ...mocks.input, tags: ['viagem'] });
+
+  expect(mocks.planRepository.createPlan).toHaveBeenCalledWith(
+    expect.objectContaining({ tags: ['viagem'] }),
+  );
+});

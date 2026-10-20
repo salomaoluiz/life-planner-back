@@ -101,6 +101,7 @@ export class UpdateInstallmentPlanUseCase implements UseCaseWithParams<
         description: input.description ?? plan.description,
         id: plan.id,
         months: installmentInvoiceMonths(invoiceMonthOf(date, card.closingDay), count),
+        tags: input.tags,
         values: splitInstallments(newTotal, count),
       });
     } else {
@@ -108,6 +109,7 @@ export class UpdateInstallmentPlanUseCase implements UseCaseWithParams<
         categoryId: input.categoryId,
         description: input.description,
         id: plan.id,
+        tags: input.tags,
       });
     }
 

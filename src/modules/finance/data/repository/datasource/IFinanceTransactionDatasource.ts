@@ -33,6 +33,7 @@ export interface CreateTransactionDatasourceParams {
   owner_id: string;
   // Account rows only (spec 033); card rows stay NULL.
   paid?: boolean | null;
+  tag_names?: string[];
   type: TransactionType;
   value: number;
 }
@@ -59,6 +60,8 @@ export type FinancialTransactionWithRelations = {
   >;
   refunded_plan: null | Pick<FinancialInstallmentPlan, 'description'>;
   refunded_transaction: null | Pick<FinancialTransaction, 'description'>;
+  // Spec 043: present on every read through TRANSACTION_RELATIONS, in the stored order.
+  tags?: { tag: { id: string; name: string } }[];
 } & FinancialTransaction;
 export interface FindTransactionsFilter {
   creditCardId?: string;
@@ -93,6 +96,7 @@ export interface UpdateTransactionDatasourceParams {
   owner_id?: string;
   // true/false on account rows, null when the row moves to a card (spec 033).
   paid?: boolean | null;
+  tag_names?: string[];
   type?: TransactionType;
   value?: number;
 }

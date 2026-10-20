@@ -74,6 +74,7 @@ export class CreateInstallmentPlanUseCase implements UseCaseWithParams<
       ),
       owner: input.owner,
       ownerId: input.ownerId,
+      tags: input.tags,
       values: splitInstallments(input.value, input.installments),
     });
 

@@ -8,6 +8,7 @@ import {
   hasAtLeastOneField,
   OwnerIdApiSchema,
   OwnerTypeApiSchema,
+  TagNamesApiSchema,
   ValueApiSchema,
 } from '@api/finance/v1/dto/finance-fields';
 import { InvoiceMonthSchema } from '@finance/application/dto/FinanceCommon';
@@ -27,6 +28,7 @@ export const CreateInstallmentPlanApiSchema = z
     installments: InstallmentsApiSchema,
     owner: OwnerTypeApiSchema,
     ownerId: OwnerIdApiSchema,
+    tags: TagNamesApiSchema.optional(),
     today: CalendarDateApiSchema.optional(),
     value: ValueApiSchema,
   })
@@ -42,6 +44,7 @@ export const UpdateInstallmentPlanApiSchema = z
     date: CalendarDateApiSchema,
     description: DescriptionApiSchema,
     installments: InstallmentsApiSchema,
+    tags: TagNamesApiSchema,
     value: ValueApiSchema,
   })
   .partial()

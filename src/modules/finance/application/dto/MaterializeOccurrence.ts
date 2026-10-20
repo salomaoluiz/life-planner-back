@@ -4,6 +4,7 @@ import {
   AccessibleOwnersSchema,
   CalendarDateSchema,
   DescriptionSchema,
+  TagNamesSchema,
   ValueSchema,
 } from '@finance/application/dto/FinanceCommon';
 
@@ -16,6 +17,7 @@ export const MaterializeOccurrenceSchema = z.object({
   // Account series only.
   paid: z.boolean().optional(),
   recurrenceId: z.string().min(1),
+  tags: TagNamesSchema.optional(),
   today: CalendarDateSchema,
   value: ValueSchema.optional(),
 });

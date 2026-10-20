@@ -46,6 +46,8 @@ interface CreateTransactionRepositoryParams {
   ownerId: string;
   // Account rows only; omitted for card rows.
   paid?: boolean;
+  // Spec 043: tag names, resolved (or created) in the owner inside the write.
+  tags?: string[];
   type: TransactionType;
   value: number;
 }
@@ -61,6 +63,8 @@ interface UpdateTransactionRepositoryParams {
   ownerId?: string;
   // true/false on account rows, null when the row moves to a card.
   paid?: boolean | null;
+  // `undefined` leaves the tags untouched, `[]` removes them all.
+  tags?: string[];
   type?: TransactionType;
   value?: number;
 }

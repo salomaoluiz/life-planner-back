@@ -125,3 +125,21 @@ it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)'
     status: 422,
   });
 });
+
+describe('tags (spec 043)', () => {
+  it('SHOULD pass the names to the text-only update AND count as a field', async () => {
+    await setup.execute({ ...mocks.input, tags: ['fixo'] });
+
+    expect(mocks.planRepository.updatePlanText).toHaveBeenCalledWith(
+      expect.objectContaining({ tags: ['fixo'] }),
+    );
+  });
+
+  it('SHOULD pass the names to a recreate (undefined keeps the old tags)', async () => {
+    await setup.execute({ ...mocks.input, installments: 12, tags: [], value: 12000 });
+
+    expect(mocks.planRepository.recreatePlan).toHaveBeenCalledWith(
+      expect.objectContaining({ tags: [] }),
+    );
+  });
+});

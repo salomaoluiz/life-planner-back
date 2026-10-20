@@ -323,3 +323,50 @@ describe('countBySource / existsByOwner', () => {
     expect(mocks.datasource.exists).toHaveBeenCalledWith({ owner: 'FAMILY', owner_id: 'family-1' });
   });
 });
+
+describe('tags (spec 043)', () => {
+  it('SHOULD send the names as tag_names on create, applyChange and createOccurrence', async () => {
+    mocks.datasource.createOccurrence.mockResolvedValue({ id: 'transaction-1' });
+
+    await setup.create({
+      accountId: 'account-1',
+      categoryId: 'cat-1',
+      currency: 'BRL',
+      description: 'Rent',
+      frequency: RecurrenceFrequency.MONTHLY,
+      lastGeneratedNumber: 0,
+      nextOccurrenceDate: null,
+      owner: OwnerType.USER,
+      ownerId: 'owner-1',
+      rows: [],
+      startDate: '2026-10-05',
+      status: RecurrenceStatus.ACTIVE,
+      tags: ['a'],
+      type: TransactionType.EXPENSE,
+      value: 1,
+    });
+    await setup.applyChange({
+      fromNumber: 1,
+      rowPatch: {},
+      seriesPatch: {},
+      sourceId: 'series-1',
+      tags: ['b'],
+    });
+    await setup.createOccurrence({
+      date: '2026-10-05',
+      number: 3,
+      recurrenceId: 'series-1',
+      tags: ['c'],
+    });
+
+    expect(mocks.datasource.create).toHaveBeenCalledWith(
+      expect.objectContaining({ tag_names: ['a'] }),
+    );
+    expect(mocks.datasource.apply).toHaveBeenCalledWith(
+      expect.objectContaining({ tag_names: ['b'] }),
+    );
+    expect(mocks.datasource.createOccurrence).toHaveBeenCalledWith(
+      expect.objectContaining({ tag_names: ['c'] }),
+    );
+  });
+});

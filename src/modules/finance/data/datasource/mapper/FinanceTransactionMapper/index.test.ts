@@ -44,6 +44,7 @@ describe('FinanceTransactionMapper.toDomain', () => {
       refundedName: null,
       refundedPlanId: null,
       refundedTransactionId: null,
+      tags: [],
       type: 'EXPENSE',
       updatedAt: mocks.raw.updated_at,
       value: 23490,

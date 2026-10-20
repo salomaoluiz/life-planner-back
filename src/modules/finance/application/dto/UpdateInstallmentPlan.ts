@@ -5,6 +5,7 @@ import {
   AccessibleOwnersSchema,
   CalendarDateSchema,
   DescriptionSchema,
+  TagNamesSchema,
   ValueSchema,
 } from '@finance/application/dto/FinanceCommon';
 
@@ -17,6 +18,8 @@ export const UpdateInstallmentPlanSchema = z
     description: DescriptionSchema.optional(),
     id: z.string().min(1),
     installments: InstallmentsSchema.optional(),
+    // `[]` removes every tag; omitted keeps them (also across a recreate).
+    tags: TagNamesSchema.optional(),
     today: CalendarDateSchema,
     // The new TOTAL in cents.
     value: ValueSchema.optional(),
@@ -28,6 +31,7 @@ export const UpdateInstallmentPlanSchema = z
       input.date !== undefined ||
       input.description !== undefined ||
       input.installments !== undefined ||
+      input.tags !== undefined ||
       input.value !== undefined,
     { message: 'At least one field is required' },
   );

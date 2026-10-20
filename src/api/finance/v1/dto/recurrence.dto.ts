@@ -8,9 +8,11 @@ import {
   hasAtLeastOneField,
   OwnerIdApiSchema,
   OwnerTypeApiSchema,
+  TagNamesApiSchema,
   TransactionTypeApiSchema,
   ValueApiSchema,
 } from '@api/finance/v1/dto/finance-fields';
+import { TagRefApiSchema } from '@api/finance/v1/dto/tag.dto';
 import { TransactionApiSchema } from '@api/finance/v1/dto/transaction.dto';
 import { InvoiceMonthSchema } from '@finance/application/dto/FinanceCommon';
 import { InstallmentEditScope, RecurrenceFrequency, RecurrenceStatus } from '@finance/domain/enum';
@@ -31,6 +33,7 @@ export const CreateRecurrenceApiSchema = z
     owner: OwnerTypeApiSchema,
     ownerId: OwnerIdApiSchema,
     paid: z.boolean().optional(),
+    tags: TagNamesApiSchema.optional(),
     type: TransactionTypeApiSchema,
     value: ValueApiSchema,
   })
@@ -49,6 +52,7 @@ export const UpdateRecurrenceApiSchema = z
     categoryId: z.uuid(),
     description: DescriptionApiSchema,
     endDate: CalendarDateApiSchema.nullable(),
+    tags: TagNamesApiSchema,
     value: ValueApiSchema,
   })
   .partial()
@@ -65,6 +69,7 @@ export const SplitRecurrenceApiSchema = z
     endDate: CalendarDateApiSchema.nullable(),
     frequency: FrequencyApiSchema,
     occurrenceNumber: z.number().int().min(1),
+    tags: TagNamesApiSchema,
     value: ValueApiSchema,
   })
   .partial()
@@ -82,6 +87,7 @@ export const MaterializeOccurrenceApiSchema = z
     description: DescriptionApiSchema,
     paid: z.boolean(),
     scope: z.literal(InstallmentEditScope.ONLY_THIS),
+    tags: TagNamesApiSchema,
     value: ValueApiSchema,
   })
   .partial()
@@ -130,6 +136,7 @@ export const RecurrenceApiSchema = z.object({
   ownerId: z.uuid(),
   startDate: z.string(),
   status: z.enum(RecurrenceStatus),
+  tags: z.array(TagRefApiSchema),
   type: TransactionTypeApiSchema,
   value: z.number().int(),
 });
@@ -148,6 +155,7 @@ export const ProjectedOccurrenceApiSchema = z.object({
   owner: OwnerTypeApiSchema,
   ownerId: z.uuid(),
   recurrenceId: z.uuid(),
+  tags: z.array(TagRefApiSchema),
   type: TransactionTypeApiSchema,
   value: z.number().int(),
 });

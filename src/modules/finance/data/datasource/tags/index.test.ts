@@ -1,5 +1,3 @@
-import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
-
 import {
   copyRecurrenceTags,
   copyRecurrenceTagsToRows,
@@ -24,7 +22,7 @@ describe('uniqueNames', () => {
 });
 
 describe('resolveTagIds', () => {
-  const params = { owner: OwnerType.FAMILY, ownerId: 'fam' };
+  const params = { owner: 'FAMILY' as const, ownerId: 'fam' };
 
   it('SHOULD return nothing WHEN there are no names', async () => {
     expect(await resolveTagIds(mocks.tx, { ...params, names: [] })).toEqual([]);

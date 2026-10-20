@@ -42,6 +42,28 @@ describe('Method create', () => {
     expect(data[2].installment_number).toBe(3);
   });
 
+  it('SHOULD resolve the tag names in the owner AND attach them to every row (spec 043)', async () => {
+    spies.planCreate.mockResolvedValue({ id: 'plan-1' });
+    spies.tagFindMany.mockResolvedValue([{ all_scopes: false, id: 'tag-old', name: 'Viagem' }]);
+    spies.tagCreate.mockResolvedValue({ id: 'tag-new' });
+    spies.rowFindMany.mockResolvedValue([{ id: 'r1' }, { id: 'r2' }]);
+
+    await setup.create({ ...params, tag_names: ['viagem', 'presente'] });
+
+    expect(spies.tagCreate).toHaveBeenCalledWith({
+      data: { creator_id: 'owner-1', name: 'presente', owner: 'USER', owner_id: 'owner-1' },
+      select: { id: true },
+    });
+    expect(spies.tagLinkCreateMany).toHaveBeenCalledWith({
+      data: [
+        { position: 0, tag_id: 'tag-old', transaction_id: 'r1' },
+        { position: 1, tag_id: 'tag-new', transaction_id: 'r1' },
+        { position: 0, tag_id: 'tag-old', transaction_id: 'r2' },
+        { position: 1, tag_id: 'tag-new', transaction_id: 'r2' },
+      ],
+    });
+  });
+
   it('SHOULD write nothing WHEN a target invoice is paid', async () => {
     spies.paymentFindFirst.mockResolvedValue({ id: 'payment-1' });
 
@@ -162,6 +184,31 @@ describe('Method recreate', () => {
     expect(spies.rowCreateMany.mock.calls[0][0].data).toHaveLength(3);
   });
 
+  it('SHOULD carry the tags of the first installment over to the new rows', async () => {
+    spies.planUpdate.mockResolvedValue({ owner: 'USER', owner_id: 'owner-1' });
+    spies.rowFindFirst.mockResolvedValue({ tags: [{ tag_id: 'tag-1' }, { tag_id: 'tag-2' }] });
+    spies.rowFindMany.mockResolvedValue([{ id: 'n1', invoice_month: '2026-10' }]);
+
+    await setup.recreate(params);
+
+    expect(spies.tagLinkCreateMany).toHaveBeenCalledWith({
+      data: [
+        { position: 0, tag_id: 'tag-1', transaction_id: 'n1' },
+        { position: 1, tag_id: 'tag-2', transaction_id: 'n1' },
+      ],
+    });
+  });
+
+  it('SHOULD tag the new rows with the given names instead (and none for [])', async () => {
+    spies.planUpdate.mockResolvedValue({ owner: 'USER', owner_id: 'owner-1' });
+    spies.rowFindFirst.mockResolvedValue({ tags: [{ tag_id: 'tag-1' }] });
+    spies.rowFindMany.mockResolvedValue([{ id: 'n1', invoice_month: '2026-10' }]);
+
+    await setup.recreate({ ...params, tag_names: [] });
+
+    expect(spies.tagLinkCreateMany).not.toHaveBeenCalled();
+  });
+
   it('SHOULD refuse WHEN an old installment is paid', async () => {
     spies.paymentFindFirst.mockResolvedValue({ id: 'payment-1' });
 
@@ -188,6 +235,23 @@ describe('Method updateFromNumber', () => {
     expect(spies.rowUpdateMany).toHaveBeenCalledWith({
       data: { category_id: undefined, description: undefined, value: 5 },
       where,
+    });
+  });
+
+  it('SHOULD replace the tags of the rows from the number on WHEN names are given', async () => {
+    spies.tagCreate.mockResolvedValue({ id: 'tag-new' });
+    spies.rowFindMany.mockResolvedValue([{ id: 'r2' }, { id: 'r3' }]);
+
+    await setup.updateFromNumber({ from_number: 2, plan_id: 'plan-1', tag_names: ['novo'] });
+
+    expect(spies.tagLinkDeleteMany).toHaveBeenCalledWith({
+      where: { transaction_id: { in: ['r2', 'r3'] } },
+    });
+    expect(spies.tagLinkCreateMany).toHaveBeenCalledWith({
+      data: [
+        { position: 0, tag_id: 'tag-new', transaction_id: 'r2' },
+        { position: 0, tag_id: 'tag-new', transaction_id: 'r3' },
+      ],
     });
   });
 
@@ -222,5 +286,24 @@ describe('Method updateText', () => {
       data,
       where: { installment_plan_id: 'plan-1' },
     });
+  });
+
+  it('SHOULD set the tags of every row WHEN names are given, none for []', async () => {
+    spies.tagFindMany.mockResolvedValue([{ all_scopes: true, id: 'tag-all', name: 'Fixo' }]);
+    spies.rowFindMany.mockResolvedValue([{ id: 'r1' }]);
+
+    await setup.updateText({ id: 'plan-1', tag_names: ['fixo'] });
+
+    expect(spies.tagLinkCreateMany).toHaveBeenCalledWith({
+      data: [{ position: 0, tag_id: 'tag-all', transaction_id: 'r1' }],
+    });
+
+    spies.tagLinkCreateMany.mockClear();
+    await setup.updateText({ id: 'plan-1', tag_names: [] });
+
+    expect(spies.tagLinkDeleteMany).toHaveBeenLastCalledWith({
+      where: { transaction_id: { in: ['r1'] } },
+    });
+    expect(spies.tagLinkCreateMany).toHaveBeenCalledWith({ data: [] });
   });
 });

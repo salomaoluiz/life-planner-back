@@ -4,6 +4,7 @@ import {
   AccessibleOwnersSchema,
   CalendarDateSchema,
   DescriptionSchema,
+  TagNamesSchema,
   ValueSchema,
 } from '@finance/application/dto/FinanceCommon';
 import { RecurrenceFrequency } from '@finance/domain/enum';
@@ -16,6 +17,7 @@ export const UpdateRecurrenceSchema = z.object({
   // `null` removes the end date.
   endDate: CalendarDateSchema.nullable().optional(),
   id: z.string().min(1),
+  tags: TagNamesSchema.optional(),
   today: CalendarDateSchema,
   value: ValueSchema.optional(),
 });
@@ -32,6 +34,7 @@ export const SplitRecurrenceSchema = z
     frequency: z.enum(RecurrenceFrequency).optional(),
     id: z.string().min(1),
     occurrenceNumber: z.number().int().min(1),
+    tags: TagNamesSchema.optional(),
     today: CalendarDateSchema,
     value: ValueSchema.optional(),
   })

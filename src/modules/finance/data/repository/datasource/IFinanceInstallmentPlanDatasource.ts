@@ -12,6 +12,7 @@ export interface CreateInstallmentPlanDatasourceParams {
   owner: OwnerType;
   owner_id: string;
   rows: InstallmentRowDatasourceParams[];
+  tag_names?: string[];
 }
 export type FinancialInstallmentPlanWithCard = {
   credit_card: { closing_day: number };
@@ -46,16 +47,19 @@ export interface RecreateInstallmentPlanDatasourceParams {
   description: string;
   id: string;
   rows: InstallmentRowDatasourceParams[];
+  tag_names?: string[];
 }
 export interface UpdateInstallmentPlanTextDatasourceParams {
   category_id?: string;
   description?: string;
   id: string;
+  tag_names?: string[];
 }
 export interface UpdateInstallmentsFromDatasourceParams {
   category_id?: string;
   description?: string;
   from_number: number;
   plan_id: string;
+  tag_names?: string[];
   value?: number;
 }

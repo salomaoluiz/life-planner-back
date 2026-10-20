@@ -8,6 +8,7 @@ import {
   toLedgerEntry,
 } from '@finance/data/datasource/ledger';
 import { toOwnerWhere } from '@finance/data/datasource/mapper/OwnerWhere';
+import { applyTagNames, TAG_INCLUDE, tagNamesOfRow } from '@finance/data/datasource/tags';
 import {
   CardInvoiceKey,
   CardInvoiceSum,
@@ -46,6 +47,7 @@ export const TRANSACTION_RELATIONS = {
   recurrence: { select: { end_date: true, first_number: true, frequency: true, start_date: true } },
   refunded_plan: { select: { description: true } },
   refunded_transaction: { select: { description: true } },
+  tags: TAG_INCLUDE.tags,
 };
 
 @Injectable()
@@ -81,14 +83,29 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
       await lockCards(tx, params.credit_card_id ? [params.credit_card_id] : []);
       await assertInvoiceNotPaid(tx, params.credit_card_id, params.invoice_month);
 
+      const { tag_names: tagNames, ...data } = params;
       const created = await tx.financialTransaction.create({
-        data: params,
+        data,
         include: TRANSACTION_RELATIONS,
       });
 
       await applyLedgerDeltas(tx, ledgerDeltas(undefined, toLedgerEntry(created)));
 
-      return created;
+      if (tagNames === undefined || tagNames.length === 0) {
+        return created;
+      }
+
+      await applyTagNames(tx, {
+        names: tagNames,
+        owner: created.owner,
+        ownerId: created.owner_id,
+        where: { id: created.id },
+      });
+
+      return tx.financialTransaction.findUniqueOrThrow({
+        include: TRANSACTION_RELATIONS,
+        where: { id: created.id },
+      });
     });
   }
 
@@ -236,6 +253,13 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
         );
       }
 
+      const previousOwner =
+        params.owner === undefined && params.owner_id === undefined
+          ? undefined
+          : await tx.financialTransaction.findUnique({
+              select: { owner: true, owner_id: true },
+              where: { id: params.id },
+            });
       const updated = await tx.financialTransaction.update({
         data: {
           account_id: params.account_id,
@@ -256,7 +280,28 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
 
       await applyLedgerDeltas(tx, ledgerDeltas(stored, toLedgerEntry(updated)));
 
-      return updated;
+      // Spec 043 FR 9/12: names replace the set; a new owner re-resolves the current names in that owner.
+      const ownerChanged =
+        Boolean(previousOwner) &&
+        (updated.owner !== previousOwner?.owner || updated.owner_id !== previousOwner?.owner_id);
+      const names =
+        params.tag_names ?? (ownerChanged ? await tagNamesOfRow(tx, updated.id) : undefined);
+
+      if (names === undefined) {
+        return updated;
+      }
+
+      await applyTagNames(tx, {
+        names,
+        owner: updated.owner,
+        ownerId: updated.owner_id,
+        where: { id: updated.id },
+      });
+
+      return tx.financialTransaction.findUniqueOrThrow({
+        include: TRANSACTION_RELATIONS,
+        where: { id: updated.id },
+      });
     });
   }
 }
