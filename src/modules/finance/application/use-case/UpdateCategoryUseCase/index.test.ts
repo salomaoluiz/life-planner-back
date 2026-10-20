@@ -5,8 +5,10 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 
+import CategoryEntityFixture from '@finance/domain/entity/mocks/CategoryEntity.fixture';
 import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
 import { SystemCategoryKey, TransactionType } from '@finance/domain/enum';
+import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { ValidationError } from '@shared/domain/error/ValidationError';
 
 import { mocks, setup } from './index.mocks';
@@ -187,5 +189,80 @@ describe('system categories (spec 028)', () => {
   it('SHOULD throw Unprocessable (422) WHEN moving a category under a system category', async () => {
     await expect(run('a', { parentId: systemId })).rejects.toThrow(UnprocessableEntityException);
     expect(mocks.categoryRepository.updateCategory).not.toHaveBeenCalled();
+  });
+});
+
+describe('ALL scope', () => {
+  const family = { owner: OwnerType.FAMILY, ownerId: 'family-id' };
+  const allScopes = [{ owner: OwnerType.USER, ownerId: mocks.userId }, family];
+  const allRoot = new CategoryEntityFixture()
+    .withId('all-root')
+    .withAllScopes(allScopes, mocks.userId)
+    .build();
+  const allChild = new CategoryEntityFixture()
+    .withId('all-child')
+    .withAllScopes(allScopes, mocks.userId)
+    .withParentId('all-root')
+    .withDepthLevel(1)
+    .build();
+
+  async function runAll(id: string, patch: Record<string, unknown>) {
+    return run(id, { callerId: mocks.userId, ...patch });
+  }
+
+  it('SHOULD switch a root to ALL with its WHOLE subtree, the caller as creator and their accessible scopes', async () => {
+    await runAll('a', { scope: 'ALL' });
+
+    expect(mocks.categoryRepository.updateCategory).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'a',
+        scope: {
+          creatorId: mocks.userId,
+          scopes: mocks.accessibleOwners,
+          subtreeIds: ['b', 'c'],
+        },
+      }),
+    );
+  });
+
+  it('SHOULD refuse (400) to switch a category that has a parent', async () => {
+    await expect(runAll('b', { scope: 'ALL' })).rejects.toThrow(BadRequestException);
+    expect(mocks.categoryRepository.updateCategory).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD refuse (400) to switch to ALL while moving under a parent', async () => {
+    await expect(runAll('d', { parentId: 'a', scope: 'ALL' })).rejects.toThrow(BadRequestException);
+  });
+
+  it('SHOULD treat scope ALL on an ALL category as a no-op for the scopes', async () => {
+    mocks.categoryRepository.findCategoryById.mockResolvedValueOnce(allRoot);
+    mocks.categoryRepository.findCategories.mockResolvedValue([allRoot, allChild]);
+
+    await runAll('all-root', { name: 'Renamed', scope: 'ALL' });
+
+    expect(mocks.categoryRepository.updateCategory).toHaveBeenCalledWith(
+      expect.objectContaining({ scope: undefined }),
+    );
+  });
+
+  it('SHOULD refuse (400) to move a single-scope category under an ALL parent', async () => {
+    mocks.categoryRepository.findCategoryById
+      .mockResolvedValueOnce(mocks.nodes.d)
+      .mockResolvedValueOnce(allRoot);
+
+    await expect(runAll('d', { parentId: 'all-root' })).rejects.toThrow(BadRequestException);
+  });
+
+  it('SHOULD refuse (400) to move an ALL category under a single-scope parent', async () => {
+    mocks.categoryRepository.findCategoryById
+      .mockResolvedValueOnce(allChild)
+      .mockResolvedValueOnce(mocks.nodes.a);
+    mocks.categoryRepository.findCategories.mockResolvedValue([allRoot, allChild]);
+
+    await expect(runAll('all-child', { parentId: 'a' })).rejects.toThrow(BadRequestException);
+  });
+
+  it('SHOULD reject a scope other than ALL (there is no way back)', async () => {
+    await expect(runAll('all-root', { scope: 'PERSONAL' })).rejects.toThrow(ValidationError);
   });
 });

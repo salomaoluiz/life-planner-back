@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   AccessibleOwnersSchema,
+  ALL_SCOPES,
   IconColorSchema,
   IconSchema,
   NameSchema,
@@ -11,12 +12,15 @@ import {
 export const UpdateCategorySchema = z
   .object({
     accessibleOwners: AccessibleOwnersSchema,
+    callerId: z.string().min(1).optional(),
     icon: IconSchema.optional(),
     iconColor: IconColorSchema.optional(),
     id: z.string().min(1),
     name: NameSchema.optional(),
     // `null` makes the category a root.
     parentId: z.string().min(1).nullable().optional(),
+    // Only switching a single-scope category to ALL exists (spec 038 FR 3); there is no way back.
+    scope: z.literal(ALL_SCOPES).optional(),
     type: TransactionTypeSchema.optional(),
   })
   .refine(
@@ -25,6 +29,7 @@ export const UpdateCategorySchema = z
       input.iconColor !== undefined ||
       input.name !== undefined ||
       input.parentId !== undefined ||
+      input.scope !== undefined ||
       input.type !== undefined,
     { message: 'At least one field is required' },
   );

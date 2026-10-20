@@ -35,3 +35,16 @@ it('SHOULD throw ValidationError WHEN the type filter is unknown', async () => {
     setup.execute({ accessibleOwners: mocks.accessibleOwners, type: 'OTHER' } as never),
   ).rejects.toThrow(ValidationError);
 });
+
+it('SHOULD query every requested owner in ONE call so an ALL category comes back once', async () => {
+  await setup.execute({
+    accessibleOwners: mocks.accessibleOwners,
+    ownerIds: [mocks.userId, mocks.familyId],
+  });
+
+  expect(mocks.categoryRepository.findCategories).toHaveBeenCalledTimes(1);
+  expect(mocks.categoryRepository.findCategories).toHaveBeenCalledWith({
+    owners: mocks.accessibleOwners,
+    type: undefined,
+  });
+});

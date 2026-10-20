@@ -9,6 +9,7 @@ import {
   EnsureTransactionConsistencyInput,
   EnsureTransactionConsistencySchema,
 } from '@finance/application/dto/EnsureTransactionConsistency';
+import { belongsToOwner, isVisibleTo } from '@finance/domain/entity/CategoryScope';
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { hasOwnerAccess, OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { isSystemCategoryId } from '@finance/domain/entity/SystemCategory';
@@ -86,11 +87,12 @@ export class EnsureTransactionConsistencyUseCase implements UseCaseWithParams<
 
     const category = await this.categoryRepository.findCategoryById(input.categoryId);
 
-    if (!category || !hasOwnerAccess(input.accessibleOwners, category)) {
+    if (!category || !isVisibleTo(category, input.accessibleOwners)) {
       throw new NotFoundException('Category not found');
     }
 
-    if (category.owner !== input.owner || category.ownerId !== input.ownerId) {
+    // An ALL category serves every scope it belongs to (spec 038 FR 4).
+    if (!belongsToOwner(category, { owner: input.owner, ownerId: input.ownerId })) {
       throw new BadRequestException('Category belongs to another owner');
     }
 

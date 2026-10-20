@@ -5,6 +5,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 
+import CategoryEntityFixture from '@finance/domain/entity/mocks/CategoryEntity.fixture';
 import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
 import { SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -70,7 +71,14 @@ it('SHOULD throw Forbidden (403) WHEN the owner is not accessible, BEFORE touchi
 
 it.each([
   ['does not exist', undefined],
-  ['belongs to someone the caller cannot access', { ...mocks.parent, ownerId: 'stranger' }],
+  [
+    'belongs to someone the caller cannot access',
+    {
+      ...mocks.parent,
+      ownerId: 'stranger',
+      scopes: [{ owner: OwnerType.USER, ownerId: 'stranger' }],
+    },
+  ],
 ])('SHOULD throw NotFound (404) WHEN the parent %s', async (_label, found) => {
   mocks.categoryRepository.findCategoryById.mockResolvedValueOnce(found);
 
@@ -81,7 +89,12 @@ it.each([
 it.each([
   [
     'another owner type (accessible FAMILY parent for a USER category)',
-    { ...mocks.parent, owner: OwnerType.FAMILY, ownerId: 'family-id' },
+    {
+      ...mocks.parent,
+      owner: OwnerType.FAMILY,
+      ownerId: 'family-id',
+      scopes: [{ owner: OwnerType.FAMILY, ownerId: 'family-id' }],
+    },
   ],
   [
     'another type (INCOME parent, EXPENSE child)',
@@ -120,4 +133,73 @@ it('SHOULD throw Unprocessable (422) WHEN the parent is a system category (nothi
   ).rejects.toThrow(UnprocessableEntityException);
   expect(mocks.categoryRepository.findCategoryById).not.toHaveBeenCalled();
   expect(mocks.categoryRepository.createCategory).not.toHaveBeenCalled();
+});
+
+describe('ALL scope', () => {
+  const allScopes = [
+    { owner: OwnerType.USER, ownerId: mocks.userId },
+    { owner: OwnerType.FAMILY, ownerId: mocks.familyId },
+  ];
+  const allInput = {
+    accessibleOwners: allScopes,
+    callerId: mocks.userId,
+    icon: 'store',
+    name: 'Supermarket',
+    owner: 'ALL' as const,
+    type: TransactionType.EXPENSE,
+  };
+  const allParent = new CategoryEntityFixture()
+    .withId('all-parent')
+    .withAllScopes(allScopes, mocks.userId)
+    .build();
+
+  it('SHOULD create ONE category linked to the Personal scope and every accessible family', async () => {
+    await setup.execute(allInput);
+
+    expect(mocks.categoryRepository.createCategory).toHaveBeenCalledTimes(1);
+    expect(mocks.categoryRepository.createCategory).toHaveBeenCalledWith({
+      allScopes: true,
+      creatorId: mocks.userId,
+      depthLevel: 0,
+      icon: 'store',
+      iconColor: '#000000',
+      name: 'Supermarket',
+      owner: OwnerType.USER,
+      ownerId: mocks.userId,
+      parentId: undefined,
+      scopes: allScopes,
+      type: TransactionType.EXPENSE,
+    });
+  });
+
+  it('SHOULD make a child of an ALL category ALL with the parent scopes AND creator', async () => {
+    mocks.categoryRepository.findCategoryById.mockResolvedValueOnce(allParent);
+
+    await setup.execute({ ...allInput, parentId: 'all-parent' });
+
+    expect(mocks.categoryRepository.createCategory).toHaveBeenCalledWith(
+      expect.objectContaining({
+        allScopes: true,
+        creatorId: mocks.userId,
+        depthLevel: 1,
+        scopes: allParent.scopes,
+      }),
+    );
+  });
+
+  it.each([
+    ['ALL under a single-scope parent', allInput, mocks.parent],
+    ['single-scope under an ALL parent', mocks.input, allParent],
+  ])('SHOULD throw BadRequest (400) WHEN creating %s', async (_label, input, parent) => {
+    mocks.categoryRepository.findCategoryById.mockResolvedValueOnce(parent);
+
+    await expect(setup.execute({ ...input, parentId: 'p' })).rejects.toThrow(BadRequestException);
+    expect(mocks.categoryRepository.createCategory).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD throw a validation error WHEN a single-scope category has no ownerId', async () => {
+    await expect(setup.execute({ ...mocks.input, ownerId: undefined } as never)).rejects.toThrow(
+      ValidationError,
+    );
+  });
 });
