@@ -10,6 +10,7 @@ import {
   AdjustAccountBalanceSchema,
 } from '@finance/application/dto/AdjustAccountBalance';
 import { INT4_MAX } from '@finance/application/dto/FinanceCommon';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { AttachAccountBalancesUseCase } from '@finance/application/use-case/AttachAccountBalancesUseCase';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import {
@@ -48,6 +49,8 @@ export class AdjustAccountBalanceUseCase implements UseCaseWithParams<
     if (!account || !hasOwnerAccess(input.accessibleOwners, account)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, account);
 
     if (account.status === AccountStatus.ARCHIVED) {
       throw new UnprocessableEntityException('Account is archived');

@@ -4,6 +4,7 @@ import {
   DeleteCreditCardInput,
   DeleteCreditCardSchema,
 } from '@finance/application/dto/DeleteCreditCard';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import {
   IFinanceCreditCardRepository,
@@ -31,6 +32,8 @@ export class DeleteCreditCardUseCase implements UseCaseWithParams<DeleteCreditCa
     if (!card || !hasOwnerAccess(input.accessibleOwners, card)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, card);
 
     // Purchases (and so every payment) keep the card: archive it instead.
     if ((await this.transactionRepository.countByCreditCardId(card.id)) > 0) {

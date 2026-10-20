@@ -4,6 +4,7 @@ import {
   DeleteTransactionInput,
   DeleteTransactionSchema,
 } from '@finance/application/dto/DeleteTransaction';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { CARD_CREDIT_KEYS } from '@finance/domain/entity/SystemCategory';
 import { InstallmentEditScope, SystemCategoryKey } from '@finance/domain/enum';
@@ -33,6 +34,8 @@ export class DeleteTransactionUseCase implements UseCaseWithParams<DeleteTransac
     if (!transaction || !hasOwnerAccess(input.accessibleOwners, transaction)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, transaction);
 
     // An installment only goes away with its whole plan (spec 030 FR 19).
     if (transaction.installmentPlanId) {

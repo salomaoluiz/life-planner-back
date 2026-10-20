@@ -9,6 +9,7 @@ import {
   MaterializeOccurrenceInput,
   MaterializeOccurrenceSchema,
 } from '@finance/application/dto/MaterializeOccurrence';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { TransactionWithLimit } from '@finance/application/use-case/CreateTransactionUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
@@ -41,6 +42,8 @@ export class MaterializeOccurrenceUseCase implements UseCaseWithParams<
     if (!series || !hasOwnerAccess(input.accessibleOwners, series)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, series);
 
     const k = input.occurrenceNumber - series.firstNumber + 1;
     const scheduled = k >= 1 ? occurrenceDate(series, k) : undefined;

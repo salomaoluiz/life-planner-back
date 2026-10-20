@@ -4,6 +4,7 @@ import {
   UpdateCardRefundInput,
   UpdateCardRefundSchema,
 } from '@finance/application/dto/UpdateCardRefund';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { ResolveRefundLinkUseCase } from '@finance/application/use-case/ResolveRefundLinkUseCase';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
@@ -44,6 +45,8 @@ export class UpdateCardRefundUseCase implements UseCaseWithParams<
     if (!card || !hasOwnerAccess(input.accessibleOwners, card)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, card);
 
     const refund = await this.transactionRepository.findTransactionById(input.id);
 

@@ -4,6 +4,7 @@ import {
   PrepayInstallmentPlanInput,
   PrepayInstallmentPlanSchema,
 } from '@finance/application/dto/PrepayInstallmentPlan';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import {
   GetInstallmentPlanUseCase,
   InstallmentPlanDetails,
@@ -38,6 +39,8 @@ export class PrepayInstallmentPlanUseCase implements UseCaseWithParams<
       targetInvoiceMonth: input.targetInvoiceMonth,
       today: input.today,
     });
+
+    ensureOwnerWritable(input.accessibleOwners, card);
 
     if (card.status === AccountStatus.ARCHIVED) {
       throw new UnprocessableEntityException('Credit card is archived');

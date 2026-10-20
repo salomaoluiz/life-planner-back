@@ -1,6 +1,7 @@
 import { ForbiddenException, Inject } from '@nestjs/common';
 
 import { CreateAccountInput, CreateAccountSchema } from '@finance/application/dto/CreateAccount';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { AttachAccountBalancesUseCase } from '@finance/application/use-case/AttachAccountBalancesUseCase';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { IFinanceAccountRepository } from '@finance/domain/repository';
@@ -25,6 +26,8 @@ export class CreateAccountUseCase implements UseCaseWithParams<
     if (!hasOwnerAccess(input.accessibleOwners, { owner: input.owner, ownerId: input.ownerId })) {
       throw new ForbiddenException('Owner not accessible');
     }
+
+    ensureOwnerWritable(input.accessibleOwners, { owner: input.owner, ownerId: input.ownerId });
 
     const account = await this.accountRepository.createAccount({
       currency: input.currency,

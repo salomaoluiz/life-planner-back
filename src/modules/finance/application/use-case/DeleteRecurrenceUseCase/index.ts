@@ -4,6 +4,7 @@ import {
   DeleteRecurrenceInput,
   DeleteRecurrenceSchema,
 } from '@finance/application/dto/DeleteRecurrence';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { IFinanceRecurrenceRepository, RemoveRecurrenceResult } from '@finance/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -27,6 +28,8 @@ export class DeleteRecurrenceUseCase implements UseCaseWithParams<
     if (!series || !hasOwnerAccess(input.accessibleOwners, series)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, series);
 
     return this.recurrenceRepository.removeFrom({
       confirmPaid: input.confirmPaid ?? false,

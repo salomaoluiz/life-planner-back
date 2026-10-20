@@ -10,6 +10,7 @@ import {
   UpdateTransactionInput,
   UpdateTransactionSchema,
 } from '@finance/application/dto/UpdateTransaction';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { TransactionWithLimit } from '@finance/application/use-case/CreateTransactionUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
@@ -53,6 +54,8 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
       throw new NotFoundException();
     }
 
+    ensureOwnerWritable(input.accessibleOwners, transaction);
+
     // Payments are removed by undoing the invoice payment; adjustments can be deleted, never edited.
     if (transaction.category.systemKey === SystemCategoryKey.INVOICE_PAYMENT) {
       throw new UnprocessableEntityException('Use the invoice to change this payment');
@@ -79,6 +82,8 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
     if (!hasOwnerAccess(input.accessibleOwners, { owner, ownerId })) {
       throw new ForbiddenException('Owner not accessible');
     }
+
+    ensureOwnerWritable(input.accessibleOwners, { owner, ownerId });
 
     // Sending one source switches to it and clears the other.
     const movesToCard = input.creditCardId !== undefined;

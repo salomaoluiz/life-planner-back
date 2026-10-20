@@ -9,6 +9,7 @@ import {
   CreateCardEarlyPaymentInput,
   CreateCardEarlyPaymentSchema,
 } from '@finance/application/dto/CreateCardEarlyPayment';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { ACCOUNT_CARD_CURRENCY_MISMATCH } from '@finance/application/service/PaymentAccount';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
@@ -49,6 +50,8 @@ export class CreateCardEarlyPaymentUseCase implements UseCaseWithParams<
     if (!card || !hasOwnerAccess(input.accessibleOwners, card)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, card);
     if (input.date > input.today) {
       throw new BadRequestException('The date cannot be after today');
     }

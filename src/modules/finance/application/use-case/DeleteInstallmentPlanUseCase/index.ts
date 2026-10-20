@@ -4,6 +4,7 @@ import {
   DeleteInstallmentPlanInput,
   DeleteInstallmentPlanSchema,
 } from '@finance/application/dto/DeleteInstallmentPlan';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import {
   IFinanceCardCreditRepository,
@@ -32,6 +33,8 @@ export class DeleteInstallmentPlanUseCase implements UseCaseWithParams<
     if (!plan || !hasOwnerAccess(input.accessibleOwners, plan)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, plan);
 
     // A plan that was refunded goes away only after its refunds (spec 032 FR 26).
     if ((await this.cardCreditRepository.countRefundsByPlanId(plan.id)) > 0) {

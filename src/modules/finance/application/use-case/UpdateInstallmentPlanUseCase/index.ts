@@ -9,6 +9,7 @@ import {
   UpdateInstallmentPlanInput,
   UpdateInstallmentPlanSchema,
 } from '@finance/application/dto/UpdateInstallmentPlan';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import {
@@ -53,6 +54,8 @@ export class UpdateInstallmentPlanUseCase implements UseCaseWithParams<
     if (!plan || !hasOwnerAccess(input.accessibleOwners, plan)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, plan);
 
     const total = plan.installments.reduce((sum, row) => sum + row.value, 0);
     const structural = isStructuralChange(

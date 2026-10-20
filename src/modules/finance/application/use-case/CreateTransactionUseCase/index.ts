@@ -4,6 +4,7 @@ import {
   CreateTransactionInput,
   CreateTransactionSchema,
 } from '@finance/application/dto/CreateTransaction';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import AccountEntity from '@finance/domain/entity/AccountEntity';
@@ -39,6 +40,8 @@ export class CreateTransactionUseCase implements UseCaseWithParams<
     if (!hasOwnerAccess(input.accessibleOwners, { owner: input.owner, ownerId: input.ownerId })) {
       throw new ForbiddenException('Owner not accessible');
     }
+
+    ensureOwnerWritable(input.accessibleOwners, { owner: input.owner, ownerId: input.ownerId });
 
     if (input.creditCardId !== undefined && input.paid !== undefined) {
       throw new UnprocessableEntityException('Card purchases follow their invoice');

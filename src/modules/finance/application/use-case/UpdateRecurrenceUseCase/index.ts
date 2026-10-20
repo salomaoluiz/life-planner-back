@@ -4,6 +4,7 @@ import {
   UpdateRecurrenceInput,
   UpdateRecurrenceSchema,
 } from '@finance/application/dto/UpdateRecurrence';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
@@ -35,6 +36,8 @@ export class UpdateRecurrenceUseCase implements UseCaseWithParams<
     if (!series || !hasOwnerAccess(input.accessibleOwners, series)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, series);
 
     if (input.categoryId !== undefined) {
       await this.ensureTransactionConsistencyUseCase.execute({

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { DeleteCategoryInput, DeleteCategorySchema } from '@finance/application/dto/DeleteCategory';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { isVisibleTo } from '@finance/domain/entity/CategoryScope';
 import { isSystemCategoryId } from '@finance/domain/entity/SystemCategory';
 import {
@@ -36,6 +37,8 @@ export class DeleteCategoryUseCase implements UseCaseWithParams<DeleteCategoryIn
     if (!category || !isVisibleTo(category, input.accessibleOwners)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, category);
 
     // Deleting a category also deletes its subtree (FK cascade): refuse if ANY category in it is used, in ANY scope.
     const scopeCategories = await this.categoryRepository.findCategories({

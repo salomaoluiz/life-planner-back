@@ -4,6 +4,7 @@ import {
   DeleteCardRefundInput,
   DeleteCardRefundSchema,
 } from '@finance/application/dto/DeleteCardRefund';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { SystemCategoryKey } from '@finance/domain/enum';
 import {
@@ -33,6 +34,8 @@ export class DeleteCardRefundUseCase implements UseCaseWithParams<DeleteCardRefu
     if (!card || !hasOwnerAccess(input.accessibleOwners, card)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, card);
 
     const refund = await this.transactionRepository.findTransactionById(input.id);
 

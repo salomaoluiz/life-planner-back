@@ -8,6 +8,7 @@ import {
 
 import { CreateCategoryInput, CreateCategorySchema } from '@finance/application/dto/CreateCategory';
 import { ALL_SCOPES } from '@finance/application/dto/FinanceCommon';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import CategoryEntity from '@finance/domain/entity/CategoryEntity';
 import { belongsToOwner, isVisibleTo } from '@finance/domain/entity/CategoryScope';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
@@ -37,6 +38,9 @@ export class CreateCategoryUseCase implements UseCaseWithParams<
     if (!hasOwnerAccess(input.accessibleOwners, target)) {
       throw new ForbiddenException('Owner not accessible');
     }
+
+    // An All category (target = the creator's Personal scope) is never blocked by an archived family.
+    ensureOwnerWritable(input.accessibleOwners, target);
 
     let depthLevel = 0;
     let parent: CategoryEntity | undefined;

@@ -145,3 +145,13 @@ it('SHOULD write the payment row in the currency of the card', async () => {
     expect.objectContaining({ currency: 'USD' }),
   );
 });
+
+it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)', async () => {
+  const input = mocks.input;
+  const accessibleOwners = input.accessibleOwners.map((access) => ({ ...access, archived: true }));
+
+  await expect(setup.execute({ ...input, accessibleOwners })).rejects.toMatchObject({
+    message: 'Family is archived',
+    status: 422,
+  });
+});

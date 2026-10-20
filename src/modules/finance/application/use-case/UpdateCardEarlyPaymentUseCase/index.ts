@@ -9,6 +9,7 @@ import {
   UpdateCardEarlyPaymentInput,
   UpdateCardEarlyPaymentSchema,
 } from '@finance/application/dto/UpdateCardEarlyPayment';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { ACCOUNT_CARD_CURRENCY_MISMATCH } from '@finance/application/service/PaymentAccount';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { hasOwnerAccess, OwnerAccess } from '@finance/domain/entity/OwnerAccess';
@@ -51,6 +52,8 @@ export class UpdateCardEarlyPaymentUseCase implements UseCaseWithParams<
     if (!card || !hasOwnerAccess(input.accessibleOwners, card)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, card);
 
     const payment = await this.transactionRepository.findTransactionById(input.id);
 

@@ -4,6 +4,7 @@ import {
   CreateCardRefundInput,
   CreateCardRefundSchema,
 } from '@finance/application/dto/CreateCardRefund';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { ResolveRefundLinkUseCase } from '@finance/application/use-case/ResolveRefundLinkUseCase';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
@@ -42,6 +43,8 @@ export class CreateCardRefundUseCase implements UseCaseWithParams<
     if (!card || !hasOwnerAccess(input.accessibleOwners, card)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, card);
     if (card.status === AccountStatus.ARCHIVED) {
       throw new UnprocessableEntityException('Credit card is archived');
     }
