@@ -116,3 +116,32 @@ it.each([
 ])('SHOULD throw ValidationError for %s', async (_label, patch) => {
   await expect(setup.execute({ ...mocks.input, ...patch })).rejects.toThrow(ValidationError);
 });
+
+it('SHOULD throw Unprocessable (422) WHEN the paying account is in another currency than the card', async () => {
+  mocks.accountRepository.findAccountById.mockResolvedValueOnce({
+    ...mocks.account,
+    currency: 'USD',
+  });
+
+  await expect(setup.execute(mocks.input)).rejects.toThrow(
+    new UnprocessableEntityException('Account currency must match the credit card currency'),
+  );
+  expect(mocks.invoicePaymentRepository.payInvoice).not.toHaveBeenCalled();
+});
+
+it('SHOULD write the payment row in the currency of the card', async () => {
+  mocks.creditCardRepository.findCreditCardById.mockResolvedValueOnce({
+    ...mocks.card,
+    currency: 'USD',
+  });
+  mocks.accountRepository.findAccountById.mockResolvedValueOnce({
+    ...mocks.account,
+    currency: 'USD',
+  });
+
+  await setup.execute(mocks.input);
+
+  expect(mocks.invoicePaymentRepository.payInvoice).toHaveBeenCalledWith(
+    expect.objectContaining({ currency: 'USD' }),
+  );
+});

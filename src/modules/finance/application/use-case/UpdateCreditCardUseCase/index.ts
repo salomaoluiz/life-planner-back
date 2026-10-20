@@ -52,6 +52,7 @@ export class UpdateCreditCardUseCase implements UseCaseWithParams<
         this.accountRepository,
         input.accessibleOwners,
         input.paymentAccountId,
+        card.currency,
       );
     }
 

@@ -16,6 +16,7 @@ it('SHOULD send the prepayment to the datasource with snake_case columns', async
   const result = await setup.prepay({
     categoryId: 'cat-3',
     creditCardId: 'card-1',
+    currency: 'BRL' as const,
     date: '2026-10-16',
     discount: 12000,
     discountDescription: 'Prepayment discount · Notebook',

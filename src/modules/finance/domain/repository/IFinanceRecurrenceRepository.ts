@@ -2,6 +2,7 @@ import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { RecurrenceFrequency, RecurrenceStatus, TransactionType } from '@finance/domain/enum';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export type IFinanceRecurrenceRepository = {
@@ -61,6 +62,7 @@ interface CreateRecurrenceRepositoryParams {
   accountId?: string;
   categoryId: string;
   creditCardId?: string;
+  currency: CurrencyCode;
   description: string;
   endDate?: null | string;
   frequency: RecurrenceFrequency;
@@ -96,6 +98,7 @@ interface NewSeriesRepositoryParams {
   accountId?: string;
   categoryId: string;
   creditCardId?: string;
+  currency: CurrencyCode;
   description: string;
   endDate: null | string;
   firstNumber: number;

@@ -4,6 +4,7 @@ import {
   SystemCategoryKey,
   TransactionType,
 } from '@finance/domain/enum';
+import { CurrencyCode, DEFAULT_CURRENCY } from '@finance/domain/enum/Currency';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export interface TransactionAccountSummary {
@@ -43,6 +44,7 @@ interface ITransactionEntity {
   createdAt: Date;
   creditCard: null | TransactionCardSummary;
   creditCardId: null | string;
+  currency?: CurrencyCode;
   date: string;
   description: string;
   earlyPayment?: null | TransactionEarlyPaymentSummary;
@@ -84,6 +86,7 @@ class TransactionEntity {
   createdAt: Date;
   creditCard: null | TransactionCardSummary;
   creditCardId: null | string;
+  currency: CurrencyCode;
   // Calendar date `YYYY-MM-DD` (no time, no timezone).
   date: string;
   description: string;
@@ -129,6 +132,7 @@ class TransactionEntity {
     this.createdAt = params.createdAt;
     this.creditCard = params.creditCard;
     this.creditCardId = params.creditCardId;
+    this.currency = params.currency ?? DEFAULT_CURRENCY;
     this.date = params.date;
     this.description = params.description;
     this.earlyPayment = params.earlyPayment ?? null;

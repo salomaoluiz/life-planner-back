@@ -66,3 +66,20 @@ it('SHOULD let the archived card / paid invoice errors through', async () => {
   await expect(setup.execute(mocks.input)).rejects.toThrow(UnprocessableEntityException);
   expect(mocks.getPlan.execute).not.toHaveBeenCalled();
 });
+
+describe('currency (spec 040)', () => {
+  it('SHOULD create the plan in the currency of the card AND check a sent currency against it', async () => {
+    mocks.ensureConsistency.execute.mockResolvedValueOnce({
+      card: { ...mocks.card, currency: 'USD' },
+    });
+
+    await setup.execute({ ...mocks.input, currency: 'USD' });
+
+    expect(mocks.ensureConsistency.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ currency: 'USD' }),
+    );
+    expect(mocks.planRepository.createPlan).toHaveBeenCalledWith(
+      expect.objectContaining({ currency: 'USD' }),
+    );
+  });
+});

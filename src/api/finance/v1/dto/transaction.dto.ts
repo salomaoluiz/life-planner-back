@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import {
   CalendarDateApiSchema,
+  CurrencyApiSchema,
   DescriptionApiSchema,
   hasAtLeastOneField,
   IconColorApiSchema,
@@ -32,9 +33,11 @@ export const CreateTransactionApiSchema = TransactionFieldsSchema.partial({
   accountId: true,
   creditCardId: true,
   paid: true,
-}).refine((value) => (value.accountId === undefined) !== (value.creditCardId === undefined), {
-  message: 'Send either accountId or creditCardId',
-});
+})
+  .extend({ currency: CurrencyApiSchema.optional() })
+  .refine((value) => (value.accountId === undefined) !== (value.creditCardId === undefined), {
+    message: 'Send either accountId or creditCardId',
+  });
 
 export const UpdateTransactionApiSchema = TransactionFieldsSchema.partial()
   .extend({ scope: z.enum(InstallmentEditScope).optional() })
@@ -66,6 +69,7 @@ export const TransactionApiSchema = z.object({
     })
     .nullable(),
   creditCardId: z.uuid().nullable(),
+  currency: CurrencyApiSchema,
   date: z.string(),
   description: z.string(),
   earlyPayment: z

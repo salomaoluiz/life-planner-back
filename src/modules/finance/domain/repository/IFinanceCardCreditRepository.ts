@@ -1,5 +1,6 @@
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { InvoicePaymentMethod } from '@finance/domain/enum';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 // Refunds and early payments: INCOME rows on a card (spec 032). Every write is ONE database transaction under the card lock.
@@ -28,6 +29,7 @@ interface CreateEarlyPaymentRepositoryParams {
   accountDescription: string;
   categoryId: string;
   creditCardId: string;
+  currency: CurrencyCode;
   date: string;
   description: string;
   // The invoice net the caller saw; compared again inside the lock.
@@ -41,6 +43,7 @@ interface CreateEarlyPaymentRepositoryParams {
 interface CreateRefundRepositoryParams {
   categoryId: string;
   creditCardId: string;
+  currency: CurrencyCode;
   date: string;
   description: string;
   invoiceMonth: string;

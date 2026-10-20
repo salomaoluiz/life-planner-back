@@ -9,6 +9,7 @@ it('SHOULD create a refund with snake_case columns AND map the row', async () =>
   const result = await setup.createRefund({
     categoryId: 'cat',
     creditCardId: 'card-1',
+    currency: 'BRL' as const,
     date: '2026-10-16',
     description: 'Refund',
     invoiceMonth: '2026-10',
@@ -52,6 +53,7 @@ it('SHOULD create and update an early payment with the account of the debit row'
     accountDescription: 'Early payment · Card (2026-10)',
     categoryId: 'early',
     creditCardId: 'card-1',
+    currency: 'BRL' as const,
     date: '2026-10-16',
     description: 'Early payment',
     expectedNet: 100000,

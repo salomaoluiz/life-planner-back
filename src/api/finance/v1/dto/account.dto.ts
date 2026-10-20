@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import {
   BalanceApiSchema,
+  CurrencyApiSchema,
   hasAtLeastOneField,
   IconApiSchema,
   NameApiSchema,
@@ -10,11 +11,13 @@ import {
   OwnerTypeApiSchema,
 } from '@api/finance/v1/dto/finance-fields';
 import { AccountStatus } from '@finance/domain/enum';
+import { DEFAULT_CURRENCY } from '@finance/domain/enum/Currency';
 
 const AccountStatusApiSchema = z.enum(AccountStatus);
 
 export const CreateAccountApiSchema = z
   .object({
+    currency: CurrencyApiSchema.default(DEFAULT_CURRENCY),
     icon: IconApiSchema,
     initialBalance: BalanceApiSchema.default(0),
     name: NameApiSchema,
@@ -40,6 +43,7 @@ export const AccountApiSchema = z.object({
   // Current balance: initial + transactions dated up to today.
   balance: z.number().int(),
   createdAt: z.iso.datetime(),
+  currency: CurrencyApiSchema,
   icon: z.string(),
   id: z.uuid(),
   initialBalance: z.number().int(),

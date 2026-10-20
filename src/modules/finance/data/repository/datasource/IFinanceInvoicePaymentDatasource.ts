@@ -4,6 +4,7 @@ import {
   InvoicePaymentMethod,
   OwnerType,
 } from '@db/client';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 
 export type FinancialInvoicePaymentWithAccount = {
   account: null | Pick<FinancialAccount, 'name'>;
@@ -25,6 +26,7 @@ export interface PayInvoiceDatasourceParams {
   amount: number;
   category_id: string;
   credit_card_id: string;
+  currency: CurrencyCode;
   description: string;
   invoice_month: string;
   method: InvoicePaymentMethod;

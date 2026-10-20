@@ -21,6 +21,7 @@ const rawMock: FinancialTransactionWithRelations = {
   created_at: new Date('2026-10-16T12:00:00.000Z'),
   credit_card: { color: '#2B3A8C', id: 'card-1', last_digits: null, title: 'Card' },
   credit_card_id: 'card-1',
+  currency: 'BRL' as const,
   date: new Date('2026-10-16T00:00:00.000Z'),
   description: 'Refund',
   early_payment: null,

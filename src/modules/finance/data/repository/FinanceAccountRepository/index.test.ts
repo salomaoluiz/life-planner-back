@@ -6,6 +6,7 @@ import { mocks, setup, spies } from './index.mocks';
 describe('createAccount', () => {
   it('SHOULD translate to snake_case columns AND map the result', async () => {
     const result = await setup.createAccount({
+      currency: 'BRL' as const,
       icon: 'bank',
       initialBalance: 10,
       name: 'Checking',
@@ -15,6 +16,7 @@ describe('createAccount', () => {
     });
 
     expect(mocks.accountDatasource.create).toHaveBeenCalledWith({
+      currency: 'BRL' as const,
       icon: 'bank',
       initial_balance: 10,
       ledger_balance: 10,

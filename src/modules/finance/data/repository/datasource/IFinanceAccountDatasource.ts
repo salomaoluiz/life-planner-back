@@ -1,7 +1,9 @@
 import { AccountStatus, FinancialAccount, OwnerType } from '@db/client';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 
 export interface CreateAccountDatasourceParams {
+  currency: CurrencyCode;
   icon: string;
   initial_balance: number;
   ledger_balance: number;

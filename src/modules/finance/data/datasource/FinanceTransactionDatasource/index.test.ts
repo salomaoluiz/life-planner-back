@@ -31,6 +31,7 @@ describe('Method create', () => {
   const params = {
     account_id: mocks.transaction.account_id,
     category_id: mocks.transaction.category_id,
+    currency: 'BRL' as const,
     date: new Date('2026-10-03T00:00:00.000Z'),
     description: 'Weekly groceries',
     owner: 'USER' as const,
@@ -274,6 +275,7 @@ describe('Card purchases', () => {
     account_id: null,
     category_id: mocks.transaction.category_id,
     credit_card_id: 'card-1',
+    currency: 'BRL' as const,
     date: new Date('2026-10-03T00:00:00.000Z'),
     description: 'Market',
     invoice_month: '2026-10',

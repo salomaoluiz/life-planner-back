@@ -48,6 +48,7 @@ function toTransactionOutput(
         }
       : null,
     creditCardId: transaction.creditCardId,
+    currency: transaction.currency,
     date: transaction.date,
     description: transaction.description,
     earlyPayment: transaction.earlyPayment,

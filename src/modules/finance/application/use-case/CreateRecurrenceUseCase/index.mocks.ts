@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
+import AccountEntityFixture from '@finance/domain/entity/mocks/AccountEntity.fixture';
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
 import RecurrenceEntityFixture from '@finance/domain/entity/mocks/RecurrenceEntity.fixture';
 import TransactionEntityFixture from '@finance/domain/entity/mocks/TransactionEntity.fixture';
@@ -46,7 +47,7 @@ let setup: CreateRecurrenceUseCase;
 beforeEach(async () => {
   jest.clearAllMocks();
   computeCardInvoicesMock.execute.mockResolvedValue([{ invoices: { used: cardMock.limit + 1 } }]);
-  ensureConsistencyMock.execute.mockResolvedValue({});
+  ensureConsistencyMock.execute.mockResolvedValue({ account: new AccountEntityFixture().build() });
   recurrenceRepositoryMock.create.mockResolvedValue('recurrence-1');
   recurrenceRepositoryMock.findById.mockResolvedValue(recurrenceMock);
   recurrenceRepositoryMock.findOccurrences.mockResolvedValue(occurrencesMock);

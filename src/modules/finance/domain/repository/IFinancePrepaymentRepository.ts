@@ -1,4 +1,5 @@
 import PrepaymentEntity from '@finance/domain/entity/PrepaymentEntity';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export type IFinancePrepaymentRepository = {
@@ -15,6 +16,7 @@ export type IFinancePrepaymentRepository = {
 interface PrepayRepositoryParams {
   categoryId: string;
   creditCardId: string;
+  currency: CurrencyCode;
   date: string;
   discount: number;
   discountDescription: string;

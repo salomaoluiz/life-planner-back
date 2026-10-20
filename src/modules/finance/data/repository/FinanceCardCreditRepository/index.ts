@@ -35,6 +35,7 @@ export class FinanceCardCreditRepository implements IFinanceCardCreditRepository
       account_description: params.accountDescription,
       category_id: params.categoryId,
       credit_card_id: params.creditCardId,
+      currency: params.currency,
       date: fromCalendarDate(params.date),
       description: params.description,
       expected_net: params.expectedNet,
@@ -52,6 +53,7 @@ export class FinanceCardCreditRepository implements IFinanceCardCreditRepository
     const result = await this.cardCreditDatasource.createRefund({
       category_id: params.categoryId,
       credit_card_id: params.creditCardId,
+      currency: params.currency,
       date: fromCalendarDate(params.date),
       description: params.description,
       invoice_month: params.invoiceMonth,

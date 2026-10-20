@@ -9,6 +9,7 @@ const rawCardMock: FinancialCreditCard = {
   closing_day: 31,
   color: '#3B5BDB',
   created_at: faker.date.past(),
+  currency: 'BRL' as const,
   due_day: 10,
   id: faker.string.uuid(),
   last_digits: '9876',

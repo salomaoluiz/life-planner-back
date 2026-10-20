@@ -11,6 +11,7 @@ import { FinanceAccountDatasource } from './index';
 
 const accountMock: FinancialAccount = {
   created_at: faker.date.past(),
+  currency: 'BRL' as const,
   icon: 'bank',
   id: faker.string.uuid(),
   initial_balance: 100000,

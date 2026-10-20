@@ -9,6 +9,7 @@ import { FinancePrepaymentDatasource } from './index';
 const prepayParams = {
   category_id: 'cat-3',
   credit_card_id: 'card-1',
+  currency: 'BRL' as const,
   date: new Date('2026-10-16T00:00:00.000Z'),
   discount: 12000,
   discount_description: 'Prepayment discount · Notebook',

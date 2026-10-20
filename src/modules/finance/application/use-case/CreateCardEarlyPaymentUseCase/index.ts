@@ -9,6 +9,7 @@ import {
   CreateCardEarlyPaymentInput,
   CreateCardEarlyPaymentSchema,
 } from '@finance/application/dto/CreateCardEarlyPayment';
+import { ACCOUNT_CARD_CURRENCY_MISMATCH } from '@finance/application/service/PaymentAccount';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
@@ -88,6 +89,10 @@ export class CreateCardEarlyPaymentUseCase implements UseCaseWithParams<
         throw new UnprocessableEntityException('Account is archived');
       }
 
+      if (found.currency !== card.currency) {
+        throw new UnprocessableEntityException(ACCOUNT_CARD_CURRENCY_MISMATCH);
+      }
+
       account = { id: found.id, owner: found.owner, ownerId: found.ownerId };
     }
 
@@ -97,6 +102,7 @@ export class CreateCardEarlyPaymentUseCase implements UseCaseWithParams<
       accountDescription: `Early payment · ${card.title} (${input.invoiceMonth})`,
       categoryId: SYSTEM_CATEGORY_IDS[SystemCategoryKey.CARD_EARLY_PAYMENT],
       creditCardId: card.id,
+      currency: card.currency,
       date: input.date,
       description: input.description,
       expectedNet: invoice.net,

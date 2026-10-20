@@ -1,6 +1,7 @@
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { TransactionSource, TransactionType } from '@finance/domain/enum';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export type IFinanceTransactionRepository = {
@@ -37,6 +38,7 @@ interface CreateTransactionRepositoryParams {
   accountId?: string;
   categoryId: string;
   creditCardId?: string;
+  currency: CurrencyCode;
   date: string;
   description: string;
   invoiceMonth?: string;

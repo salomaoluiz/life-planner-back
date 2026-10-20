@@ -17,6 +17,7 @@ it('SHOULD create the early payment from an account with the account row descrip
     accountDescription: `Early payment · ${mocks.card.title} (2026-10)`,
     categoryId: '00000000-0000-4000-8000-000000000005',
     creditCardId: mocks.card.id,
+    currency: 'BRL' as const,
     date: '2026-10-16',
     description: 'Early payment',
     expectedNet: 100000,
@@ -94,4 +95,16 @@ it('SHOULD answer 404 WHEN the card or the account is missing or not accessible'
     ownerId: 'stranger',
   });
   await expect(setup.execute(mocks.input)).rejects.toThrow('Account not found');
+});
+
+it('SHOULD throw Unprocessable (422) WHEN the paying account is in another currency than the card', async () => {
+  mocks.accountRepository.findAccountById.mockResolvedValueOnce({
+    ...mocks.account,
+    currency: 'USD',
+  });
+
+  await expect(setup.execute(mocks.input)).rejects.toThrow(
+    new UnprocessableEntityException('Account currency must match the credit card currency'),
+  );
+  expect(mocks.cardCreditRepository.createEarlyPayment).not.toHaveBeenCalled();
 });

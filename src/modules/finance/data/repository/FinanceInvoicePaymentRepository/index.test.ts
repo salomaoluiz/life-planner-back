@@ -54,6 +54,7 @@ describe('FinanceInvoicePaymentRepository', () => {
       amount: 100,
       categoryId: 'cat',
       creditCardId: 'card-1',
+      currency: 'BRL' as const,
       description: 'Invoice payment',
       invoiceMonth: '2026-10',
       method: 'ACCOUNT' as never,

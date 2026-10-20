@@ -98,6 +98,7 @@ class TransactionEntityFixture {
       createdAt: faker.date.past(),
       creditCard: null,
       creditCardId: null,
+      currency: 'BRL',
       date: '2026-10-03',
       description: faker.commerce.productDescription().slice(0, 100),
       earlyPayment: null,

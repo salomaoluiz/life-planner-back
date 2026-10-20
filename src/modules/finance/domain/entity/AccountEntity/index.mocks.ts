@@ -7,6 +7,7 @@ import AccountEntity from './index';
 
 const paramsMock: AccountEntity = {
   createdAt: new Date('2026-10-04T12:00:00.000Z'),
+  currency: 'BRL' as const,
   icon: 'bank',
   id: 'account-uuid-123',
   initialBalance: 100000,

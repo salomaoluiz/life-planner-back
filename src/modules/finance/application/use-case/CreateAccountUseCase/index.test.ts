@@ -11,6 +11,7 @@ it('SHOULD create the account with its initial balance for an accessible owner A
   const result = await setup.execute(mocks.input);
 
   expect(mocks.accountRepository.createAccount).toHaveBeenCalledWith({
+    currency: 'BRL' as const,
     icon: 'bank',
     initialBalance: 152075,
     name: 'Checking',
@@ -80,4 +81,15 @@ it.each([
     ValidationError,
   );
   expect(mocks.accountRepository.createAccount).not.toHaveBeenCalled();
+});
+
+describe('currency (spec 040)', () => {
+  it('SHOULD forward the sent currency AND reject an unsupported one', async () => {
+    await setup.execute({ ...mocks.input, currency: 'EUR' });
+
+    expect(mocks.accountRepository.createAccount).toHaveBeenCalledWith(
+      expect.objectContaining({ currency: 'EUR' }),
+    );
+    await expect(setup.execute({ ...mocks.input, currency: 'XYZ' as never })).rejects.toThrow();
+  });
 });

@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import {
   CalendarDateApiSchema,
+  CurrencyApiSchema,
   DescriptionApiSchema,
   hasAtLeastOneField,
   OwnerIdApiSchema,
@@ -22,6 +23,7 @@ export const CreateRecurrenceApiSchema = z
     accountId: z.uuid().optional(),
     categoryId: z.uuid(),
     creditCardId: z.uuid().optional(),
+    currency: CurrencyApiSchema.optional(),
     date: CalendarDateApiSchema,
     description: DescriptionApiSchema,
     endDate: CalendarDateApiSchema.optional(),
@@ -116,6 +118,7 @@ export const RecurrenceApiSchema = z.object({
   categoryId: z.uuid(),
   creditCard: TransactionApiSchema.shape.creditCard,
   creditCardId: z.uuid().nullable(),
+  currency: CurrencyApiSchema,
   description: z.string(),
   endDate: z.string().nullable(),
   firstNumber: z.number().int(),
@@ -134,6 +137,7 @@ export const ProjectedOccurrenceApiSchema = z.object({
   account: TransactionApiSchema.shape.account,
   category: TransactionApiSchema.shape.category,
   creditCard: TransactionApiSchema.shape.creditCard,
+  currency: CurrencyApiSchema,
   date: z.string(),
   description: z.string(),
   frequency: FrequencyApiSchema,

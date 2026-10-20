@@ -20,6 +20,7 @@ const paramsMock: RecurrenceEntity = {
   createdAt: new Date('2026-10-04T12:00:00.000Z'),
   creditCard: null,
   creditCardId: null,
+  currency: 'BRL' as const,
   description: 'Rent',
   endDate: '2027-09-05',
   firstNumber: 1,

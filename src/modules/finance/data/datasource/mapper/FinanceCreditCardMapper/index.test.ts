@@ -9,6 +9,7 @@ describe('FinanceCreditCardMapper', () => {
         closingDay: 31,
         color: '#3B5BDB',
         createdAt: mocks.raw.created_at,
+        currency: 'BRL' as const,
         dueDay: 10,
         id: mocks.raw.id,
         lastDigits: '9876',

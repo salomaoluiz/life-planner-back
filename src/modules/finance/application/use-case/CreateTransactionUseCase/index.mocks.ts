@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
+import AccountEntityFixture from '@finance/domain/entity/mocks/AccountEntity.fixture';
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
 import TransactionEntityFixture from '@finance/domain/entity/mocks/TransactionEntity.fixture';
 import { TransactionType } from '@finance/domain/enum';
@@ -30,7 +31,8 @@ const cardMock = new CreditCardEntityFixture()
   .build();
 const computeMock = { execute: jest.fn() };
 
-const ensureConsistencyMock = { execute: jest.fn().mockResolvedValue({}) };
+const accountMock = new AccountEntityFixture().build();
+const ensureConsistencyMock = { execute: jest.fn().mockResolvedValue({ account: accountMock }) };
 const transactionRepositoryMock = {
   createTransaction: jest.fn().mockResolvedValue(transactionMock),
 };
@@ -41,7 +43,7 @@ let setup: CreateTransactionUseCase;
 
 beforeEach(async () => {
   jest.clearAllMocks();
-  ensureConsistencyMock.execute.mockResolvedValue({});
+  ensureConsistencyMock.execute.mockResolvedValue({ account: accountMock });
   computeMock.execute.mockResolvedValue([{ invoices: { used: 5000 } }]);
 
   const module = await Test.createTestingModule({
@@ -57,6 +59,7 @@ beforeEach(async () => {
 });
 
 const mocks = {
+  account: accountMock,
   card: cardMock,
   compute: computeMock,
   ensureConsistency: ensureConsistencyMock,

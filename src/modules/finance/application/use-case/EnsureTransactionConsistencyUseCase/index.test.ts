@@ -12,7 +12,10 @@ import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { mocks, setup } from './index.mocks';
 
 it('SHOULD resolve WHEN account and category exist, are accessible, share the owner and the type matches', async () => {
-  await expect(setup.execute(mocks.input)).resolves.toEqual({ card: undefined });
+  await expect(setup.execute(mocks.input)).resolves.toEqual({
+    account: mocks.account,
+    card: undefined,
+  });
 
   expect(mocks.accountRepository.findAccountById).toHaveBeenCalledWith(mocks.account.id);
   expect(mocks.categoryRepository.findCategoryById).toHaveBeenCalledWith(mocks.category.id);
@@ -80,7 +83,10 @@ describe('archived accounts and system categories (spec 028)', () => {
   it('SHOULD still accept an archived account WHEN the transaction stays on it (flag not set)', async () => {
     mocks.accountRepository.findAccountById.mockResolvedValueOnce(archived);
 
-    await expect(setup.execute(mocks.input)).resolves.toEqual({ card: undefined });
+    await expect(setup.execute(mocks.input)).resolves.toEqual({
+      account: archived,
+      card: undefined,
+    });
   });
 
   it('SHOULD check the account is accessible BEFORE it reveals it is archived (404 first)', async () => {
@@ -185,5 +191,41 @@ describe('ALL category', () => {
     });
 
     await expect(setup.execute(mocks.input)).rejects.toThrow(BadRequestException);
+  });
+});
+
+describe('currency (spec 040)', () => {
+  const usdAccount = { ...mocks.account, currency: 'USD' as const };
+
+  it('SHOULD answer 422 WHEN the transaction currency differs from the account currency', async () => {
+    mocks.accountRepository.findAccountById.mockResolvedValueOnce(usdAccount);
+
+    await expect(setup.execute({ ...mocks.input, currency: 'BRL' })).rejects.toThrow(
+      new UnprocessableEntityException('Transaction currency must match the account currency'),
+    );
+  });
+
+  it('SHOULD answer 422 WHEN the transaction currency differs from the credit card currency', async () => {
+    mocks.creditCardRepository.findCreditCardById.mockResolvedValueOnce({
+      ...mocks.card,
+      currency: 'USD',
+    });
+
+    await expect(setup.execute({ ...mocks.cardInput, currency: 'BRL' })).rejects.toThrow(
+      new UnprocessableEntityException('Transaction currency must match the credit card currency'),
+    );
+  });
+
+  it('SHOULD accept the same currency AND skip the check WHEN none is sent', async () => {
+    mocks.accountRepository.findAccountById.mockResolvedValue(usdAccount);
+
+    await expect(setup.execute({ ...mocks.input, currency: 'USD' })).resolves.toEqual({
+      account: usdAccount,
+      card: undefined,
+    });
+    await expect(setup.execute(mocks.input)).resolves.toEqual({
+      account: usdAccount,
+      card: undefined,
+    });
   });
 });

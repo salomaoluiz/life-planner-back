@@ -7,6 +7,7 @@ describe('Method create', () => {
       brand: 'VISA' as const,
       closing_day: 31,
       color: '#3B5BDB',
+      currency: 'BRL' as const,
       due_day: 10,
       last_digits: '1234',
       limit: 500000,

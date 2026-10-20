@@ -23,6 +23,7 @@ export class FinanceCreditCardRepository implements IFinanceCreditCardRepository
       brand: params.brand,
       closing_day: params.closingDay,
       color: params.color,
+      currency: params.currency,
       due_day: params.dueDay,
       last_digits: params.lastDigits,
       limit: params.limit,

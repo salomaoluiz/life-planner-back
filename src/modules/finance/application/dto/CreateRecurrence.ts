@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   AccessibleOwnersSchema,
   CalendarDateSchema,
+  CurrencySchema,
   DescriptionSchema,
   OwnerIdSchema,
   OwnerTypeSchema,
@@ -17,6 +18,7 @@ export const CreateRecurrenceSchema = z
     accountId: z.string().min(1).optional(),
     categoryId: z.string().min(1),
     creditCardId: z.string().min(1).optional(),
+    currency: CurrencySchema.optional(),
     // Date of occurrence 1.
     date: CalendarDateSchema,
     description: DescriptionSchema,

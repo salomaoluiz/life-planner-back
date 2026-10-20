@@ -8,6 +8,7 @@ describe('FinanceAccountMapper', () => {
 
       expect(result).toEqual({
         createdAt: mocks.raw.created_at,
+        currency: 'BRL' as const,
         icon: mocks.raw.icon,
         id: mocks.raw.id,
         initialBalance: 100000,

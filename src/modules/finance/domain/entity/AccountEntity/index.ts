@@ -1,8 +1,10 @@
 import { AccountStatus } from '@finance/domain/enum';
+import { CurrencyCode, DEFAULT_CURRENCY } from '@finance/domain/enum/Currency';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 interface IAccountEntity {
   createdAt: Date;
+  currency?: CurrencyCode;
   icon: string;
   id: string;
   initialBalance: number;
@@ -16,6 +18,7 @@ interface IAccountEntity {
 
 class AccountEntity {
   createdAt: Date;
+  currency: CurrencyCode;
   icon: string;
   id: string;
   // Cents, set at creation and never edited.
@@ -30,6 +33,7 @@ class AccountEntity {
 
   constructor(params: IAccountEntity) {
     this.createdAt = params.createdAt;
+    this.currency = params.currency ?? DEFAULT_CURRENCY;
     this.icon = params.icon;
     this.id = params.id;
     this.initialBalance = params.initialBalance;

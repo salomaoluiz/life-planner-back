@@ -44,6 +44,7 @@ class RecurrenceEntityFixture {
       createdAt: faker.date.past(),
       creditCard: null,
       creditCardId: null,
+      currency: 'BRL' as const,
       description: faker.commerce.productName().slice(0, 100),
       endDate: null,
       firstNumber: 1,

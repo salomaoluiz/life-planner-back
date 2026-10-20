@@ -71,6 +71,7 @@ export class AdjustAccountBalanceUseCase implements UseCaseWithParams<
     await this.transactionRepository.createTransaction({
       accountId: account.id,
       categoryId: SYSTEM_CATEGORY_IDS[SystemCategoryKey.BALANCE_ADJUSTMENT],
+      currency: account.currency,
       date: input.today,
       description: BALANCE_ADJUSTMENT_DESCRIPTION,
       owner: account.owner,

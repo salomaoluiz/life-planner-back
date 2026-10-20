@@ -6,6 +6,7 @@ import {
 } from '@finance/application/dto/CreateRecurrence';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
+import AccountEntity from '@finance/domain/entity/AccountEntity';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
@@ -48,12 +49,13 @@ export class CreateRecurrenceUseCase implements UseCaseWithParams<
       throw new UnprocessableEntityException('Card purchases follow their invoice');
     }
 
-    const { card } = await this.ensureTransactionConsistencyUseCase.execute({
+    const { account, card } = await this.ensureTransactionConsistencyUseCase.execute({
       accessibleOwners: input.accessibleOwners,
       accountId: input.accountId,
       blockArchivedAccount: true,
       categoryId: input.categoryId,
       creditCardId: input.creditCardId,
+      currency: input.currency,
       owner: input.owner,
       ownerId: input.ownerId,
       type: input.type,
@@ -79,6 +81,7 @@ export class CreateRecurrenceUseCase implements UseCaseWithParams<
       accountId: input.accountId,
       categoryId: input.categoryId,
       creditCardId: input.creditCardId,
+      currency: (card ?? (account as AccountEntity)).currency,
       description: input.description,
       endDate: input.endDate,
       frequency: input.frequency,

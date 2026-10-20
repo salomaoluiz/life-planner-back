@@ -9,11 +9,13 @@ import {
   EnsureTransactionConsistencyInput,
   EnsureTransactionConsistencySchema,
 } from '@finance/application/dto/EnsureTransactionConsistency';
+import AccountEntity from '@finance/domain/entity/AccountEntity';
 import { belongsToOwner, isVisibleTo } from '@finance/domain/entity/CategoryScope';
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { hasOwnerAccess, OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { isSystemCategoryId } from '@finance/domain/entity/SystemCategory';
 import { AccountStatus, TransactionType } from '@finance/domain/enum';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 import {
   IFinanceAccountRepository,
   IFinanceCategoryRepository,
@@ -28,6 +30,8 @@ import { validate } from '@shared/infra/validation';
 // The category must not be a system category, and a transaction may not be put on an archived
 // account when the caller asks (create / move).
 export interface ConsistencyResult {
+  // Set when the transaction is an account row.
+  account?: AccountEntity;
   // Set when the transaction is a card purchase.
   card?: CreditCardEntity;
 }
@@ -50,10 +54,11 @@ export class EnsureTransactionConsistencyUseCase implements UseCaseWithParams<
     input: {
       accessibleOwners: OwnerAccess[];
       blockArchivedAccount: boolean;
+      currency?: CurrencyCode;
       owner: OwnerType;
       ownerId: string;
     },
-  ): Promise<undefined> {
+  ): Promise<AccountEntity> {
     const account = await this.accountRepository.findAccountById(accountId);
 
     if (!account || !hasOwnerAccess(input.accessibleOwners, account)) {
@@ -68,7 +73,13 @@ export class EnsureTransactionConsistencyUseCase implements UseCaseWithParams<
       throw new BadRequestException('Account belongs to another owner');
     }
 
-    return undefined;
+    if (input.currency !== undefined && input.currency !== account.currency) {
+      throw new UnprocessableEntityException(
+        'Transaction currency must match the account currency',
+      );
+    }
+
+    return account;
   }
 
   async execute(params: EnsureTransactionConsistencyInput): Promise<ConsistencyResult> {
@@ -79,9 +90,8 @@ export class EnsureTransactionConsistencyUseCase implements UseCaseWithParams<
       throw new UnprocessableEntityException('System category is reserved');
     }
 
-    const card = input.creditCardId
-      ? await this.ensureCard(input.creditCardId, input)
-      : await this.ensureAccount(input.accountId as string, input);
+    const card = input.creditCardId ? await this.ensureCard(input.creditCardId, input) : undefined;
+    const account = card ? undefined : await this.ensureAccount(input.accountId as string, input);
 
     // The category check below runs for both sources.
 
@@ -100,7 +110,7 @@ export class EnsureTransactionConsistencyUseCase implements UseCaseWithParams<
       throw new BadRequestException('Category type does not match the transaction type');
     }
 
-    return { card };
+    return { account, card };
   }
 
   // A card purchase takes the owner of its card and is always an expense (spec 029 FR 1-4).
@@ -109,6 +119,7 @@ export class EnsureTransactionConsistencyUseCase implements UseCaseWithParams<
     input: {
       accessibleOwners: OwnerAccess[];
       blockArchivedAccount: boolean;
+      currency?: CurrencyCode;
       owner: OwnerType;
       ownerId: string;
       type: TransactionType;
@@ -130,6 +141,12 @@ export class EnsureTransactionConsistencyUseCase implements UseCaseWithParams<
 
     if (card.owner !== input.owner || card.ownerId !== input.ownerId) {
       throw new BadRequestException('Credit card belongs to another owner');
+    }
+
+    if (input.currency !== undefined && input.currency !== card.currency) {
+      throw new UnprocessableEntityException(
+        'Transaction currency must match the credit card currency',
+      );
     }
 
     return card;

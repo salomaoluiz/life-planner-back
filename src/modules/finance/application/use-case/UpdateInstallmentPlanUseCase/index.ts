@@ -72,6 +72,7 @@ export class UpdateInstallmentPlanUseCase implements UseCaseWithParams<
       blockArchivedAccount: structural,
       categoryId: input.categoryId ?? plan.categoryId,
       creditCardId: cardId,
+      currency: plan.currency,
       owner: plan.owner,
       ownerId: plan.ownerId,
       type: TransactionType.EXPENSE,

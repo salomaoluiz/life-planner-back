@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { TransactionType } from '@finance/domain/enum';
+import { SUPPORTED_CURRENCIES } from '@finance/domain/enum/Currency';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export const INT4_MAX = 2147483647;
@@ -19,6 +20,7 @@ export const AccessibleOwnersSchema = z.array(
 // Category scope `ALL` (spec 038): the creator's Personal scope plus every family they are in.
 export const ALL_SCOPES = 'ALL';
 export const BalanceSchema = z.number().int().min(INT4_MIN).max(INT4_MAX);
+export const CurrencySchema = z.enum(SUPPORTED_CURRENCIES);
 export const IconSchema = z.string().trim().min(1).max(50);
 export const NameSchema = z.string().trim().min(1).max(60);
 export const OwnerIdSchema = z.string().min(1);

@@ -10,6 +10,7 @@ const date = new Date('2026-10-16T00:00:00.000Z');
 const refundParams = {
   category_id: '00000000-0000-4000-8000-000000000004',
   credit_card_id: 'card-1',
+  currency: 'BRL' as const,
   date,
   description: 'Refund · Notebook',
   invoice_month: '2026-10',
@@ -25,6 +26,7 @@ const earlyParams = {
   account_description: 'Early payment · Card (2026-10)',
   category_id: '00000000-0000-4000-8000-000000000005',
   credit_card_id: 'card-1',
+  currency: 'BRL' as const,
   date,
   description: 'Early payment',
   expected_net: 100000,

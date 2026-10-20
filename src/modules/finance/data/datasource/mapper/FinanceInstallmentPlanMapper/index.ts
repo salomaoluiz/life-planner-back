@@ -2,6 +2,7 @@ import { toCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
 import { FinanceTransactionMapper } from '@finance/data/datasource/mapper/FinanceTransactionMapper';
 import { FinancialInstallmentPlanWithRows } from '@finance/data/repository/datasource/IFinanceInstallmentPlanDatasource';
 import InstallmentPlanEntity from '@finance/domain/entity/InstallmentPlanEntity';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export class FinanceInstallmentPlanMapper {
@@ -10,6 +11,7 @@ export class FinanceInstallmentPlanMapper {
       categoryId: raw.category_id,
       createdAt: raw.created_at,
       creditCardId: raw.credit_card_id,
+      currency: raw.currency as CurrencyCode,
       date: toCalendarDate(raw.date),
       description: raw.description,
       id: raw.id,

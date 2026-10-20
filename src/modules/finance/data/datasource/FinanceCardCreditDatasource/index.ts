@@ -53,6 +53,7 @@ export class FinanceCardCreditDatasource implements IFinanceCardCreditDatasource
     params: {
       account?: CardCreditAccountDatasourceParams;
       category_id: string;
+      currency: string;
       date: Date;
       description: string;
       value: number;
@@ -66,6 +67,7 @@ export class FinanceCardCreditDatasource implements IFinanceCardCreditDatasource
       data: {
         account_id: params.account.id,
         category_id: params.category_id,
+        currency: params.currency,
         date: params.date,
         description: params.description,
         owner: params.account.owner,
@@ -99,6 +101,7 @@ export class FinanceCardCreditDatasource implements IFinanceCardCreditDatasource
           ? await this.createDebit(tx, {
               account: params.account,
               category_id: params.account_category_id,
+              currency: params.currency,
               date: params.date,
               description: params.account_description,
               value: params.value,
@@ -109,6 +112,7 @@ export class FinanceCardCreditDatasource implements IFinanceCardCreditDatasource
         data: {
           category_id: params.category_id,
           credit_card_id: params.credit_card_id,
+          currency: params.currency,
           date: params.date,
           description: params.description,
           invoice_month: params.invoice_month,
@@ -141,6 +145,7 @@ export class FinanceCardCreditDatasource implements IFinanceCardCreditDatasource
         data: {
           category_id: params.category_id,
           credit_card_id: params.credit_card_id,
+          currency: params.currency,
           date: params.date,
           description: params.description,
           invoice_month: params.invoice_month,
@@ -246,6 +251,7 @@ export class FinanceCardCreditDatasource implements IFinanceCardCreditDatasource
           debitId = await this.createDebit(tx, {
             account: params.account,
             category_id: SYSTEM_CATEGORY_IDS[SystemCategoryKey.INVOICE_PAYMENT],
+            currency: stored.currency,
             date: params.date ?? stored.date,
             description: params.account_description ?? 'Early payment',
             value: params.value ?? stored.value,

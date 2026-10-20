@@ -16,6 +16,7 @@ describe('CreateCreditCardUseCase', () => {
       brand: 'VISA',
       closingDay: 31,
       color: '#3B5BDB',
+      currency: 'BRL' as const,
       dueDay: 10,
       lastDigits: undefined,
       limit: 500000,
@@ -114,5 +115,38 @@ describe('CreateCreditCardUseCase', () => {
         UnprocessableEntityException,
       );
     });
+  });
+});
+
+describe('currency (spec 040)', () => {
+  it('SHOULD forward the sent currency AND default it to BRL', async () => {
+    await setup.execute({ ...mocks.input, currency: 'USD' });
+    await setup.execute(mocks.input);
+
+    expect(mocks.creditCardRepository.createCreditCard).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ currency: 'USD' }),
+    );
+    expect(mocks.creditCardRepository.createCreditCard).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ currency: 'BRL' }),
+    );
+  });
+
+  it('SHOULD answer 422 WHEN the payment account is in another currency than the card', async () => {
+    mocks.accountRepository.findAccountsByIds.mockResolvedValueOnce([
+      { ...mocks.account, currency: 'USD' },
+    ]);
+
+    await expect(
+      setup.execute({ ...mocks.input, paymentAccountId: mocks.account.id }),
+    ).rejects.toThrow(
+      new UnprocessableEntityException('Account currency must match the credit card currency'),
+    );
+    expect(mocks.creditCardRepository.createCreditCard).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD answer 400 WHEN the currency is not supported', async () => {
+    await expect(setup.execute({ ...mocks.input, currency: 'XYZ' as never })).rejects.toThrow();
   });
 });

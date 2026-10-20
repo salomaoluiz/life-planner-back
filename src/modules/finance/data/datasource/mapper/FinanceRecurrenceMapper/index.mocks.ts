@@ -19,6 +19,7 @@ const rawRecurrenceMock: FinancialRecurrenceWithRelations = {
   created_at: faker.date.past(),
   credit_card: null,
   credit_card_id: null,
+  currency: 'BRL' as const,
   description: 'Rent',
   end_date: new Date('2027-09-05T00:00:00.000Z'),
   first_number: 1,

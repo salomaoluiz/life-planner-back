@@ -1,6 +1,7 @@
 import InvoicePaymentEntity from '@finance/domain/entity/InvoicePaymentEntity';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { InvoicePaymentMethod } from '@finance/domain/enum';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export type IFinanceInvoicePaymentRepository = {
@@ -24,6 +25,7 @@ interface PayInvoiceRepositoryParams {
   amount: number;
   categoryId: string;
   creditCardId: string;
+  currency: CurrencyCode;
   description: string;
   invoiceMonth: string;
   method: InvoicePaymentMethod;

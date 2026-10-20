@@ -7,6 +7,7 @@ describe('createPlan / recreatePlan', () => {
     const id = await setup.createPlan({
       categoryId: 'cat-1',
       creditCardId: 'card-1',
+      currency: 'BRL' as const,
       date: '2026-10-20',
       description: 'Notebook',
       months: ['2026-10', '2026-11'],
@@ -19,6 +20,7 @@ describe('createPlan / recreatePlan', () => {
     expect(mocks.planDatasource.create).toHaveBeenCalledWith({
       category_id: 'cat-1',
       credit_card_id: 'card-1',
+      currency: 'BRL' as const,
       date: new Date('2026-10-20T00:00:00.000Z'),
       description: 'Notebook',
       owner: 'USER',

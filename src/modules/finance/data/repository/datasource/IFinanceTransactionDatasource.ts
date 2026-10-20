@@ -10,6 +10,7 @@ import {
 } from '@db/client';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { TransactionSource } from '@finance/domain/enum';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 
 export interface CardInvoiceKey {
   credit_card_id: string;
@@ -24,6 +25,7 @@ export interface CreateTransactionDatasourceParams {
   account_id?: null | string;
   category_id: string;
   credit_card_id?: null | string;
+  currency: CurrencyCode;
   date: Date;
   description: string;
   invoice_month?: null | string;

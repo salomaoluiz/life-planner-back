@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { PayInvoiceInput, PayInvoiceSchema } from '@finance/application/dto/PayInvoice';
+import { ACCOUNT_CARD_CURRENCY_MISMATCH } from '@finance/application/service/PaymentAccount';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import InvoicePaymentEntity from '@finance/domain/entity/InvoicePaymentEntity';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
@@ -82,6 +83,10 @@ export class PayInvoiceUseCase implements UseCaseWithParams<PayInvoiceInput, Inv
         throw new UnprocessableEntityException('Account is archived');
       }
 
+      if (account.currency !== card.currency) {
+        throw new UnprocessableEntityException(ACCOUNT_CARD_CURRENCY_MISMATCH);
+      }
+
       accountOwner = { owner: account.owner, ownerId: account.ownerId };
     }
 
@@ -91,6 +96,7 @@ export class PayInvoiceUseCase implements UseCaseWithParams<PayInvoiceInput, Inv
       amount: invoice.amount,
       categoryId: SYSTEM_CATEGORY_IDS[SystemCategoryKey.INVOICE_PAYMENT],
       creditCardId: card.id,
+      currency: card.currency,
       description: INVOICE_PAYMENT_DESCRIPTION,
       invoiceMonth: input.invoiceMonth,
       method: input.method,

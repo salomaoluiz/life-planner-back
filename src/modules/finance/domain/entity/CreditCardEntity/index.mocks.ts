@@ -10,6 +10,7 @@ const paramsMock: CreditCardEntity = {
   closingDay: 31,
   color: '#3B5BDB',
   createdAt: new Date('2026-10-14T12:00:00.000Z'),
+  currency: 'BRL' as const,
   dueDay: 10,
   id: 'card-uuid-123',
   lastDigits: '1234',

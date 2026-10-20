@@ -9,6 +9,7 @@ import {
   UpdateCardEarlyPaymentInput,
   UpdateCardEarlyPaymentSchema,
 } from '@finance/application/dto/UpdateCardEarlyPayment';
+import { ACCOUNT_CARD_CURRENCY_MISMATCH } from '@finance/application/service/PaymentAccount';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { hasOwnerAccess, OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
@@ -151,6 +152,9 @@ export class UpdateCardEarlyPaymentUseCase implements UseCaseWithParams<
     }
     if (account.status === AccountStatus.ARCHIVED) {
       throw new UnprocessableEntityException('Account is archived');
+    }
+    if (account.currency !== payment.currency) {
+      throw new UnprocessableEntityException(ACCOUNT_CARD_CURRENCY_MISMATCH);
     }
 
     return { id: account.id, owner: account.owner, ownerId: account.ownerId };

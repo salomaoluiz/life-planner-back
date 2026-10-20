@@ -10,6 +10,7 @@ it('SHOULD prepay with the discount row described after the plan AND return the 
   expect(mocks.prepaymentRepository.prepay).toHaveBeenCalledWith({
     categoryId: '00000000-0000-4000-8000-000000000003',
     creditCardId: mocks.card.id,
+    currency: 'BRL' as const,
     date: '2026-10-16',
     discount: 120,
     discountDescription: `Prepayment discount · ${mocks.plan.description}`,

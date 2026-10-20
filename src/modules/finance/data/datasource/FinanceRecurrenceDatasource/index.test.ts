@@ -705,3 +705,11 @@ describe('Method removeFrom - rows left on another card', () => {
     ]);
   });
 });
+
+describe('currency (spec 040)', () => {
+  it('SHOULD store the series currency on the series AND on every generated row', async () => {
+    await setup.create({ ...mocks.accountParams, currency: 'USD' });
+
+    expect(spies.rowCreateMany.mock.calls[0][0].data[0].currency).toBe('USD');
+  });
+});

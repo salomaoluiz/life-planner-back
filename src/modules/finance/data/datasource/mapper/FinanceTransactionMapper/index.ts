@@ -7,6 +7,7 @@ import {
   SystemCategoryKey,
   TransactionType,
 } from '@finance/domain/enum';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { totalOccurrences } from '@finance/domain/service/RecurrenceSchedule';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
@@ -36,6 +37,7 @@ export class FinanceTransactionMapper {
           }
         : null,
       creditCardId: raw.credit_card_id,
+      currency: raw.currency as CurrencyCode,
       date: toCalendarDate(raw.date),
       description: raw.description,
       earlyPayment: raw.early_payment

@@ -17,6 +17,7 @@ describe('createTransaction', () => {
     const result = await setup.createTransaction({
       accountId: 'acc',
       categoryId: 'cat',
+      currency: 'BRL' as const,
       date: '2026-10-03',
       description: 'Lunch',
       owner: OwnerType.USER,
@@ -28,6 +29,7 @@ describe('createTransaction', () => {
     expect(mocks.transactionDatasource.create).toHaveBeenCalledWith({
       account_id: 'acc',
       category_id: 'cat',
+      currency: 'BRL' as const,
       date: new Date('2026-10-03T00:00:00.000Z'),
       description: 'Lunch',
       owner: 'USER',

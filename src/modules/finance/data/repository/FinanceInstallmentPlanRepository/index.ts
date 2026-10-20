@@ -23,6 +23,7 @@ export class FinanceInstallmentPlanRepository implements IFinanceInstallmentPlan
     return this.planDatasource.create({
       category_id: params.categoryId,
       credit_card_id: params.creditCardId,
+      currency: params.currency,
       date: fromCalendarDate(params.date),
       description: params.description,
       owner: params.owner,

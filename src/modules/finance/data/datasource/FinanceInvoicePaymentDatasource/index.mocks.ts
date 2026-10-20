@@ -30,6 +30,7 @@ const payParams = {
   amount: 45000,
   category_id: 'cat-1',
   credit_card_id: 'card-1',
+  currency: 'BRL' as const,
   description: 'Invoice payment',
   invoice_month: '2026-10',
   method: 'ACCOUNT' as const,

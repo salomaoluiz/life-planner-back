@@ -26,6 +26,7 @@ class InstallmentPlanEntityFixture {
       categoryId: faker.string.uuid(),
       createdAt: faker.date.past(),
       creditCardId,
+      currency: 'BRL' as const,
       date: '2026-10-20',
       description: 'Notebook',
       id,
