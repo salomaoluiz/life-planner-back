@@ -16,6 +16,9 @@ const planDatasourceMock = {
   findManyByCategoryIds: jest
     .fn()
     .mockResolvedValue([{ credit_card: { closing_day: 9 }, id: 'plan-1' }]),
+  findManyByOwners: jest
+    .fn()
+    .mockResolvedValue([{ credit_card: { closing_day: 9 }, id: 'plan-1' }]),
   recreate: jest.fn().mockResolvedValue(undefined),
   updateFromNumber: jest.fn().mockResolvedValue(undefined),
   updateText: jest.fn().mockResolvedValue(undefined),

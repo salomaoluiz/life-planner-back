@@ -1,5 +1,6 @@
 import { ConflictException, ForbiddenException, Inject, NotFoundException } from '@nestjs/common';
 
+import { ensureFamilyWritable } from '@family/application/service/FamilyWritable';
 import { GetFamilyByIdUseCase } from '@family/application/use-case/GetFamilyByIdUseCase';
 import { IFamilyMemberRepository } from '@family/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -48,6 +49,11 @@ export class DeleteFamilyMemberUseCase implements UseCaseWithParams<
     // The owner may remove/cancel any other row; a member may only leave (own row).
     if (!isOwner && !isOwnRow) {
       throw new ForbiddenException();
+    }
+
+    // A member may still leave an archived family; the owner cannot remove others from it (spec 042).
+    if (!isOwnRow) {
+      ensureFamilyWritable(family);
     }
 
     await this.familyMemberRepository.deleteById(member.id);

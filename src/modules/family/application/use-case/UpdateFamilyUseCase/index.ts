@@ -5,6 +5,7 @@ import {
   toFamilyUseCaseOutput,
 } from '@family/application/dto/FamilyUseCaseOutput';
 import { UpdateFamilyInput, UpdateFamilySchema } from '@family/application/dto/UpdateFamily';
+import { ensureFamilyWritable } from '@family/application/service/FamilyWritable';
 import { EnsureFamilyOwnerUseCase } from '@family/application/use-case/EnsureFamilyOwnerUseCase';
 import { IFamilyRepository } from '@family/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -23,14 +24,20 @@ export class UpdateFamilyUseCase implements UseCaseWithParams<
   async execute(params: UpdateFamilyInput): Promise<FamilyUseCaseOutput> {
     const input = validate(UpdateFamilySchema, params);
 
-    await this.ensureFamilyOwnerUseCase.execute({
+    const current = await this.ensureFamilyOwnerUseCase.execute({
       familyId: input.familyId,
       userId: input.userId,
     });
 
+    // Only a status change is allowed on an archived family (reactivate).
+    if (input.name !== undefined) {
+      ensureFamilyWritable(current);
+    }
+
     const family = await this.familyRepository.updateFamily({
       id: input.familyId,
       name: input.name,
+      status: input.status,
     });
 
     return toFamilyUseCaseOutput(family);

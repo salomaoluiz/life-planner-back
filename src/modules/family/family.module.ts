@@ -9,6 +9,7 @@ import { EnsureFamilyOwnerUseCase } from '@family/application/use-case/EnsureFam
 import { GetFamilyByIdUseCase } from '@family/application/use-case/GetFamilyByIdUseCase';
 import { GetFamilyInvitePreviewUseCase } from '@family/application/use-case/GetFamilyInvitePreviewUseCase';
 import { GetFamilyMembersUseCase } from '@family/application/use-case/GetFamilyMembersUseCase';
+import { GetFamilyPendingInvitesUseCase } from '@family/application/use-case/GetFamilyPendingInvitesUseCase';
 import { GetOwnedFamilyIdsUseCase } from '@family/application/use-case/GetOwnedFamilyIdsUseCase';
 import { GetUserFamiliesUseCase } from '@family/application/use-case/GetUserFamiliesUseCase';
 import { GetUserFamilyAccessUseCase } from '@family/application/use-case/GetUserFamilyAccessUseCase';
@@ -31,6 +32,7 @@ const useCases = [
   GetFamilyByIdUseCase,
   GetFamilyInvitePreviewUseCase,
   GetFamilyMembersUseCase,
+  GetFamilyPendingInvitesUseCase,
   GetOwnedFamilyIdsUseCase,
   GetUserFamiliesUseCase,
   GetUserFamilyAccessUseCase,

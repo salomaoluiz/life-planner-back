@@ -7,6 +7,7 @@ import {
   assertNoPaidInstallment,
   lockCards,
 } from '@finance/data/datasource/ledger';
+import { toOwnerWhere } from '@finance/data/datasource/mapper/OwnerWhere';
 import {
   CreateInstallmentPlanDatasourceParams,
   FinancialInstallmentPlanWithCard,
@@ -17,6 +18,7 @@ import {
   UpdateInstallmentPlanTextDatasourceParams,
   UpdateInstallmentsFromDatasourceParams,
 } from '@finance/data/repository/datasource/IFinanceInstallmentPlanDatasource';
+import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { Database } from '@shared/infra/db/Database';
 
 // Every write locks the card row first (like invoice payments and purchases), so a payment can't land
@@ -110,6 +112,20 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
         },
       },
       where: { category_id: { in: categoryIds } },
+    });
+  }
+
+  async findManyByOwners(owners: OwnerAccess[]): Promise<FinancialInstallmentPlanWithCard[]> {
+    return this.db.client.financialInstallmentPlan.findMany({
+      include: {
+        credit_card: { select: { closing_day: true } },
+        prepayment: { include: { discount_transaction: { select: { value: true } } } },
+        transactions: {
+          include: TRANSACTION_RELATIONS,
+          orderBy: { installment_number: 'asc' },
+        },
+      },
+      where: toOwnerWhere(owners),
     });
   }
 

@@ -1,5 +1,6 @@
 import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 
+import { FamilyStatus } from '@family/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { mocks, setup } from './family.service.mocks';
@@ -78,9 +79,94 @@ describe('update', () => {
     expect(mocks.updateFamilyUseCase.execute).toHaveBeenCalledWith({
       familyId: mocks.familyId,
       name: 'Renamed',
+      status: undefined,
       userId: mocks.userId,
     });
     expect(result).toEqual(mocks.familyApi);
+  });
+
+  describe('archive (spec 042)', () => {
+    const archive = { status: FamilyStatus.ARCHIVED };
+
+    it('SHOULD archive WHEN nothing is pending, without asking for blockers on reactivate', async () => {
+      await setup.update(mocks.userId, mocks.familyId, archive);
+
+      expect(mocks.updateFamilyUseCase.execute).toHaveBeenCalledWith({
+        familyId: mocks.familyId,
+        name: undefined,
+        status: FamilyStatus.ARCHIVED,
+        userId: mocks.userId,
+      });
+
+      mocks.getFamilyArchiveBlockersUseCase.execute.mockClear();
+      await setup.update(mocks.userId, mocks.familyId, { status: FamilyStatus.ACTIVE });
+
+      expect(mocks.getFamilyArchiveBlockersUseCase.execute).not.toHaveBeenCalled();
+    });
+
+    it('SHOULD answer 409 with the blockers, the counts AND the pending invites, writing nothing', async () => {
+      mocks.getFamilyArchiveBlockersUseCase.execute.mockResolvedValueOnce({
+        ...mocks.noBlockers,
+        counts: { ...mocks.noBlockers.counts, recurrences: 1 },
+        recurrences: [{ description: 'Rent', id: 'rec-1', nextOccurrenceDate: '2026-11-05' }],
+      });
+      mocks.getFamilyPendingInvitesUseCase.execute.mockResolvedValueOnce([
+        { email: 'test@example.com', id: 'invite-1' },
+      ]);
+
+      const error = await setup.update(mocks.userId, mocks.familyId, archive).catch((e) => e);
+
+      expect(error).toBeInstanceOf(ConflictException);
+      expect(error.getResponse()).toEqual({
+        blockers: {
+          installmentPlans: [],
+          invoices: [],
+          pendingInvites: [{ email: 'test@example.com', id: 'invite-1' }],
+          recurrences: [{ description: 'Rent', id: 'rec-1', nextOccurrenceDate: '2026-11-05' }],
+          unpaidTransactions: [],
+        },
+        counts: {
+          installmentPlans: 0,
+          invoices: 0,
+          pendingInvites: 1,
+          recurrences: 1,
+          unpaidTransactions: 0,
+        },
+        message: 'Family has pending items',
+      });
+      expect(mocks.updateFamilyUseCase.execute).not.toHaveBeenCalled();
+    });
+
+    it('SHOULD answer 409 WHEN only a pending invite blocks', async () => {
+      mocks.getFamilyPendingInvitesUseCase.execute.mockResolvedValueOnce([
+        { email: 'test@example.com', id: 'invite-1' },
+      ]);
+
+      await expect(setup.update(mocks.userId, mocks.familyId, archive)).rejects.toThrow(
+        'Family has pending items',
+      );
+    });
+
+    it('SHOULD be idempotent WHEN the family is already archived (no blockers check)', async () => {
+      mocks.ensureFamilyOwnerUseCase.execute.mockResolvedValueOnce({
+        ...mocks.familyResult,
+        status: FamilyStatus.ARCHIVED,
+      });
+
+      await setup.update(mocks.userId, mocks.familyId, archive);
+
+      expect(mocks.getFamilyArchiveBlockersUseCase.execute).not.toHaveBeenCalled();
+      expect(mocks.updateFamilyUseCase.execute).toHaveBeenCalled();
+    });
+
+    it('SHOULD propagate the non-owner error BEFORE computing blockers', async () => {
+      mocks.ensureFamilyOwnerUseCase.execute.mockRejectedValueOnce(new ForbiddenException());
+
+      await expect(setup.update(mocks.userId, mocks.familyId, archive)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(mocks.getFamilyArchiveBlockersUseCase.execute).not.toHaveBeenCalled();
+    });
   });
 });
 

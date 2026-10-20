@@ -1,5 +1,7 @@
 import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 
+import { FamilyStatus } from '@family/domain/enum';
+
 import { mocks, setup } from './index.mocks';
 
 function given(row: { id: string }) {
@@ -87,5 +89,31 @@ describe('GIVEN a stranger or an unknown id', () => {
       userId: 'stranger',
     });
     expect(mocks.familyMemberRepository.deleteById).not.toHaveBeenCalled();
+  });
+});
+
+describe('archived family (spec 042)', () => {
+  const archived = { ...mocks.family, status: FamilyStatus.ARCHIVED };
+
+  it('SHOULD refuse (422) the owner removing another member', async () => {
+    mocks.getFamilyByIdUseCase.execute.mockResolvedValueOnce(archived);
+    mocks.familyMemberRepository.findById.mockResolvedValueOnce(mocks.rows.member);
+
+    await expect(
+      setup.execute({ memberId: mocks.rows.member.id, userId: mocks.ids.owner }),
+    ).rejects.toMatchObject({ message: 'Family is archived', status: 422 });
+    expect(mocks.familyMemberRepository.deleteById).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD let a member leave the archived family', async () => {
+    mocks.getFamilyByIdUseCase.execute.mockResolvedValueOnce(archived);
+    mocks.familyMemberRepository.findById.mockResolvedValueOnce(mocks.rows.member);
+
+    await setup.execute({
+      memberId: mocks.rows.member.id,
+      userId: mocks.rows.member.userId as string,
+    });
+
+    expect(mocks.familyMemberRepository.deleteById).toHaveBeenCalledWith(mocks.rows.member.id);
   });
 });

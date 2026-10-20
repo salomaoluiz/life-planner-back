@@ -35,6 +35,7 @@ beforeEach(async () => {
 
 const mocks = {
   ensureFamilyOwnerUseCase: ensureFamilyOwnerUseCaseMock,
+  family: familyMock,
   familyRepository: familyRepositoryMock,
   input: inputMock,
   renamed: renamedMock,

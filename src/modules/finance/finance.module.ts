@@ -33,6 +33,7 @@ import { GetCreditCardByIdUseCase } from '@finance/application/use-case/GetCredi
 import { GetCreditCardsOverviewUseCase } from '@finance/application/use-case/GetCreditCardsOverviewUseCase';
 import { GetCreditCardsUseCase } from '@finance/application/use-case/GetCreditCardsUseCase';
 import { GetDailyBalancesUseCase } from '@finance/application/use-case/GetDailyBalancesUseCase';
+import { GetFamilyArchiveBlockersUseCase } from '@finance/application/use-case/GetFamilyArchiveBlockersUseCase';
 import { GetInstallmentPlanUseCase } from '@finance/application/use-case/GetInstallmentPlanUseCase';
 import { GetInvoicesForListUseCase } from '@finance/application/use-case/GetInvoicesForListUseCase';
 import { GetInvoiceUseCase } from '@finance/application/use-case/GetInvoiceUseCase';
@@ -122,6 +123,7 @@ const useCases = [
   GetAccountsUseCase,
   GetCategoriesUseCase,
   GetCategoryArchiveBlockersUseCase,
+  GetFamilyArchiveBlockersUseCase,
   GetAccountsByIdsUseCase,
   GetCreditCardByIdUseCase,
   GetDailyBalancesUseCase,

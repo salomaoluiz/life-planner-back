@@ -5,6 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { FamilyStatus } from '@family/domain/enum';
+
 import { mocks, setup, spies } from './index.mocks';
 
 it('SHOULD join the caller with SERVER time AND return the JOINED MEMBER view', async () => {
@@ -98,4 +100,17 @@ it('SHOULD throw 404 INVITE_NOT_FOUND WHEN the family disappeared', async () => 
   await expect(setup.execute(mocks.input)).rejects.toThrow(
     new NotFoundException('INVITE_NOT_FOUND'),
   );
+});
+
+it('SHOULD throw 422 "Family is archived" AND not join WHEN the family is archived (spec 042)', async () => {
+  mocks.familyRepository.getFamilyById.mockResolvedValueOnce({
+    ...mocks.family,
+    status: FamilyStatus.ARCHIVED,
+  });
+
+  await expect(setup.execute(mocks.input)).rejects.toMatchObject({
+    message: 'Family is archived',
+    status: 422,
+  });
+  expect(mocks.familyMemberRepository.join).not.toHaveBeenCalled();
 });

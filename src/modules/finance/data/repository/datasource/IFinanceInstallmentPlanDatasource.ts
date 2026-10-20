@@ -1,5 +1,6 @@
 import { FinancialInstallmentPlan, FinancialInstallmentPrepayment, OwnerType } from '@db/client';
 import { FinancialTransactionWithRelations } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
+import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { CurrencyCode } from '@finance/domain/enum/Currency';
 
 export interface CreateInstallmentPlanDatasourceParams {
@@ -28,6 +29,8 @@ export interface IFinanceInstallmentPlanDatasource {
   findById(id: string): Promise<FinancialInstallmentPlanWithRows | null>;
   // One query: the plans of these categories with their rows and the closing day of their card.
   findManyByCategoryIds(categoryIds: string[]): Promise<FinancialInstallmentPlanWithCard[]>;
+  // One query: the plans of these owners with their rows and the closing day of their card.
+  findManyByOwners(owners: OwnerAccess[]): Promise<FinancialInstallmentPlanWithCard[]>;
   recreate(params: RecreateInstallmentPlanDatasourceParams): Promise<void>;
   updateFromNumber(params: UpdateInstallmentsFromDatasourceParams): Promise<void>;
   updateText(params: UpdateInstallmentPlanTextDatasourceParams): Promise<void>;

@@ -1,5 +1,6 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 
+import { FamilyStatus } from '@family/domain/enum';
 import { ValidationError } from '@shared/domain/error/ValidationError';
 
 import { mocks, setup } from './index.mocks';
@@ -44,4 +45,38 @@ it.each([
 
   await expect(setup.execute(mocks.input)).rejects.toThrow(error);
   expect(mocks.familyRepository.updateFamily).not.toHaveBeenCalled();
+});
+
+describe('archived family (spec 042)', () => {
+  it('SHOULD refuse (422) a rename', async () => {
+    mocks.ensureFamilyOwnerUseCase.execute.mockResolvedValueOnce({
+      ...mocks.family,
+      status: FamilyStatus.ARCHIVED,
+    });
+
+    await expect(setup.execute(mocks.input)).rejects.toMatchObject({
+      message: 'Family is archived',
+      status: 422,
+    });
+    expect(mocks.familyRepository.updateFamily).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD allow reactivating (status only) AND pass the status to the repository', async () => {
+    mocks.ensureFamilyOwnerUseCase.execute.mockResolvedValueOnce({
+      ...mocks.family,
+      status: FamilyStatus.ARCHIVED,
+    });
+
+    await setup.execute({
+      familyId: mocks.input.familyId,
+      status: FamilyStatus.ACTIVE,
+      userId: mocks.input.userId,
+    });
+
+    expect(mocks.familyRepository.updateFamily).toHaveBeenCalledWith({
+      id: mocks.input.familyId,
+      name: undefined,
+      status: FamilyStatus.ACTIVE,
+    });
+  });
 });

@@ -9,6 +9,7 @@ import {
   InviteFamilyMemberOutput,
   InviteFamilyMemberSchema,
 } from '@family/application/dto/InviteFamilyMember';
+import { ensureFamilyWritable } from '@family/application/service/FamilyWritable';
 import { EnsureFamilyOwnerUseCase } from '@family/application/use-case/EnsureFamilyOwnerUseCase';
 import { IFamilyMemberRepository } from '@family/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -34,6 +35,8 @@ export class InviteFamilyMemberUseCase implements UseCaseWithParams<
       familyId: input.familyId,
       userId: input.userId,
     });
+
+    ensureFamilyWritable(family);
 
     const existing = await this.familyMemberRepository.findByEmail({
       email: input.email,
