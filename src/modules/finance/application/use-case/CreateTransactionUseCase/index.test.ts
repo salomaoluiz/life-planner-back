@@ -19,6 +19,7 @@ it('SHOULD check consistency, then create the transaction with integer cents AND
     accessibleOwners: mocks.input.accessibleOwners,
     accountId: mocks.input.accountId,
     blockArchivedAccount: true,
+    blockArchivedCategory: true,
     categoryId: mocks.input.categoryId,
     creditCardId: undefined,
     owner: mocks.input.owner,

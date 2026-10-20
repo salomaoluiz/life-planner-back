@@ -47,6 +47,7 @@ export class CreateInstallmentPlanUseCase implements UseCaseWithParams<
     const consistency = await this.ensureTransactionConsistencyUseCase.execute({
       accessibleOwners: input.accessibleOwners,
       blockArchivedAccount: true,
+      blockArchivedCategory: true,
       categoryId: input.categoryId,
       creditCardId: input.creditCardId,
       currency: input.currency,

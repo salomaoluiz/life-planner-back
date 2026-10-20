@@ -70,6 +70,7 @@ export class UpdateInstallmentPlanUseCase implements UseCaseWithParams<
       accessibleOwners: input.accessibleOwners,
       // Only a change of card or a recreate may not use an archived card.
       blockArchivedAccount: structural,
+      blockArchivedCategory: input.categoryId !== undefined && input.categoryId !== plan.categoryId,
       categoryId: input.categoryId ?? plan.categoryId,
       creditCardId: cardId,
       currency: plan.currency,

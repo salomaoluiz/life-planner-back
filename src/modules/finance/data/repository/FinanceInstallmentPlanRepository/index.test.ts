@@ -68,6 +68,15 @@ describe('deletePlan / findPlanById', () => {
   });
 });
 
+describe('findPlansByCategoryIds', () => {
+  it('SHOULD map each plan with the closing day of its card', async () => {
+    expect(await setup.findPlansByCategoryIds(['cat-1'])).toEqual([
+      { closingDay: 9, plan: { id: 'plan-1' } },
+    ]);
+    expect(mocks.planDatasource.findManyByCategoryIds).toHaveBeenCalledWith(['cat-1']);
+  });
+});
+
 describe('updates', () => {
   it('SHOULD translate updateFromNumber', async () => {
     await setup.updateFromNumber({ fromNumber: 4, planId: 'plan-1', value: 7 });

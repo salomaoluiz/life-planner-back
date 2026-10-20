@@ -1,4 +1,4 @@
-import { OwnerType, TransactionType } from '@db/client';
+import { AccountStatus, OwnerType, TransactionType } from '@db/client';
 import { FinancialCategoryWithScopes } from '@finance/data/datasource/mapper/FinanceCategoryMapper';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 
@@ -51,6 +51,9 @@ export interface UpdateCategoryDatasourceParams {
   parent_id?: null | string;
   // Switch to ALL: the category AND `subtree_ids` get the flag, the creator, their Personal scope as owner and `scopes`.
   scope?: { creator_id: string; scopes: CategoryScopeDatasourceParams[]; subtree_ids: string[] };
+  status?: AccountStatus;
   subtree_depths?: { depth_level: number; id: string }[];
+  // With `status`: these categories change status together with `id`.
+  subtree_ids?: string[];
   type?: TransactionType;
 }

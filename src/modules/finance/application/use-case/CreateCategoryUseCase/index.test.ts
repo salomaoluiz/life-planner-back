@@ -7,7 +7,7 @@ import {
 
 import CategoryEntityFixture from '@finance/domain/entity/mocks/CategoryEntity.fixture';
 import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
-import { SystemCategoryKey, TransactionType } from '@finance/domain/enum';
+import { AccountStatus, SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { ValidationError } from '@shared/domain/error/ValidationError';
 
@@ -202,4 +202,16 @@ describe('ALL scope', () => {
       ValidationError,
     );
   });
+});
+
+it('SHOULD refuse (422) a subcategory under an archived parent', async () => {
+  mocks.categoryRepository.findCategoryById.mockResolvedValueOnce({
+    ...mocks.parent,
+    status: AccountStatus.ARCHIVED,
+  });
+
+  await expect(setup.execute({ ...mocks.input, parentId: mocks.parent.id })).rejects.toThrow(
+    new UnprocessableEntityException('Parent category is archived'),
+  );
+  expect(mocks.categoryRepository.createCategory).not.toHaveBeenCalled();
 });

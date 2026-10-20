@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { todayInSaoPaulo } from '@api/finance/v1/credit-card-today';
 import {
   CategoryOutput,
   CreateCategoryApiInput,
@@ -38,6 +39,7 @@ function toCategoryOutput(
     parentId: category.parentId ?? null,
     scope: categoryScopeKind(category),
     scopes,
+    status: category.status,
     type: category.type,
     updatedAt: category.updatedAt.toISOString(),
   };
@@ -100,6 +102,7 @@ export class CategoryService {
       accessibleOwners,
       callerId: userId,
       id,
+      today: todayInSaoPaulo(),
     });
 
     return toCategoryOutput(category, accessibleOwners);

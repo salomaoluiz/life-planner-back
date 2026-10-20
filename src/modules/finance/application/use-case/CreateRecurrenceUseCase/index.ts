@@ -53,6 +53,7 @@ export class CreateRecurrenceUseCase implements UseCaseWithParams<
       accessibleOwners: input.accessibleOwners,
       accountId: input.accountId,
       blockArchivedAccount: true,
+      blockArchivedCategory: true,
       categoryId: input.categoryId,
       creditCardId: input.creditCardId,
       currency: input.currency,

@@ -28,6 +28,7 @@ import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-ca
 import { GetAccountsByIdsUseCase } from '@finance/application/use-case/GetAccountsByIdsUseCase';
 import { GetAccountsUseCase } from '@finance/application/use-case/GetAccountsUseCase';
 import { GetCategoriesUseCase } from '@finance/application/use-case/GetCategoriesUseCase';
+import { GetCategoryArchiveBlockersUseCase } from '@finance/application/use-case/GetCategoryArchiveBlockersUseCase';
 import { GetCreditCardByIdUseCase } from '@finance/application/use-case/GetCreditCardByIdUseCase';
 import { GetCreditCardsOverviewUseCase } from '@finance/application/use-case/GetCreditCardsOverviewUseCase';
 import { GetCreditCardsUseCase } from '@finance/application/use-case/GetCreditCardsUseCase';
@@ -120,6 +121,7 @@ const useCases = [
   EnsureTransactionConsistencyUseCase,
   GetAccountsUseCase,
   GetCategoriesUseCase,
+  GetCategoryArchiveBlockersUseCase,
   GetAccountsByIdsUseCase,
   GetCreditCardByIdUseCase,
   GetDailyBalancesUseCase,

@@ -1,6 +1,6 @@
 import { FinancialCategory, FinancialCategoryScope } from '@db/client';
 import CategoryEntity from '@finance/domain/entity/CategoryEntity';
-import { TransactionType } from '@finance/domain/enum';
+import { AccountStatus, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export type FinancialCategoryWithScopes = {
@@ -31,6 +31,7 @@ export class FinanceCategoryMapper {
       scopes: raw.all_scopes
         ? raw.scopes.map((scope) => ({ owner: OwnerType[scope.owner], ownerId: scope.owner_id }))
         : [{ owner, ownerId: raw.owner_id }],
+      status: AccountStatus[raw.status],
       type: TransactionType[raw.type],
       updatedAt: raw.updated_at,
     });

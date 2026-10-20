@@ -18,6 +18,7 @@ const rawChildMock: FinancialCategoryWithScopes = {
   owner_id: faker.string.uuid(),
   parent_id: faker.string.uuid(),
   scopes: [],
+  status: 'ACTIVE',
   system_key: null,
   type: 'INCOME',
   updated_at: faker.date.recent(),

@@ -7,7 +7,7 @@ import { CreateCategoryUseCase } from '@finance/application/use-case/CreateCateg
 import { DeleteCategoryUseCase } from '@finance/application/use-case/DeleteCategoryUseCase';
 import { GetCategoriesUseCase } from '@finance/application/use-case/GetCategoriesUseCase';
 import { UpdateCategoryUseCase } from '@finance/application/use-case/UpdateCategoryUseCase';
-import { TransactionType } from '@finance/domain/enum';
+import { AccountStatus, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 // region Mocks
@@ -26,6 +26,7 @@ const rootResultMock = {
   ownerId: userId,
   parentId: undefined,
   scopes: [{ owner: OwnerType.USER, ownerId: userId }],
+  status: AccountStatus.ACTIVE,
   type: TransactionType.EXPENSE,
   updatedAt: new Date('2026-10-04T13:00:00.000Z'),
 };
@@ -47,6 +48,7 @@ const rootApiMock = {
   parentId: null,
   scope: 'PERSONAL',
   scopes: [{ owner: 'USER', ownerId: userId }],
+  status: 'ACTIVE',
   type: 'EXPENSE',
   updatedAt: '2026-10-04T13:00:00.000Z',
 };

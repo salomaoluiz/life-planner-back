@@ -95,10 +95,12 @@ export class FinanceCategoryRepository implements IFinanceCategoryRepository {
         scopes: params.scope.scopes.map(toScopeRow),
         subtree_ids: params.scope.subtreeIds,
       },
+      status: params.status,
       subtree_depths: params.subtreeDepths?.map((subtree) => ({
         depth_level: subtree.depthLevel,
         id: subtree.id,
       })),
+      subtree_ids: params.subtreeIds,
       type: params.type,
     });
 

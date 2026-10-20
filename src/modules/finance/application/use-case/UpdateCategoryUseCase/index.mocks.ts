@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 
+import { GetCategoryArchiveBlockersUseCase } from '@finance/application/use-case/GetCategoryArchiveBlockersUseCase';
 import CategoryEntity from '@finance/domain/entity/CategoryEntity';
 import CategoryEntityFixture from '@finance/domain/entity/mocks/CategoryEntity.fixture';
 import { TransactionType } from '@finance/domain/enum';
@@ -60,6 +61,7 @@ const categoryRepositoryMock = {
 // endregion Mocks
 
 const transactionRepositoryMock = { countByCategoryIds: jest.fn() };
+const blockersUseCaseMock = { execute: jest.fn() };
 
 let setup: UpdateCategoryUseCase;
 
@@ -71,10 +73,16 @@ beforeEach(async () => {
   categoryRepositoryMock.findCategories.mockResolvedValue(tree);
   categoryRepositoryMock.updateCategory.mockResolvedValue(updatedMock);
   transactionRepositoryMock.countByCategoryIds.mockResolvedValue(0);
+  blockersUseCaseMock.execute.mockResolvedValue({
+    hiddenCount: 0,
+    installmentPlans: [],
+    recurrences: [],
+  });
 
   const module = await Test.createTestingModule({
     providers: [
       UpdateCategoryUseCase,
+      { provide: GetCategoryArchiveBlockersUseCase, useValue: blockersUseCaseMock },
       { provide: 'IFinanceCategoryRepository', useValue: categoryRepositoryMock },
       { provide: 'IFinanceTransactionRepository', useValue: transactionRepositoryMock },
     ],
@@ -85,6 +93,7 @@ beforeEach(async () => {
 
 const mocks = {
   accessibleOwners,
+  blockersUseCase: blockersUseCaseMock,
   categoryRepository: categoryRepositoryMock,
   nodes: { a, b, c, d, e, f, i, x },
   transactionRepository: transactionRepositoryMock,

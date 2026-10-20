@@ -151,6 +151,7 @@ export class FinanceCategoryDatasource implements IFinanceCategoryDatasource {
           icon_color: params.icon_color,
           name: params.name,
           parent_id: params.parent_id,
+          status: params.status,
           type: params.type,
         },
         include: WITH_SCOPES,
@@ -163,6 +164,15 @@ export class FinanceCategoryDatasource implements IFinanceCategoryDatasource {
         this.db.client.financialCategory.update({
           data: { depth_level: subtree.depth_level },
           where: { id: subtree.id },
+        }),
+      );
+    }
+
+    if (params.status && params.subtree_ids?.length) {
+      operations.push(
+        this.db.client.financialCategory.updateMany({
+          data: { status: params.status },
+          where: { id: { in: params.subtree_ids } },
         }),
       );
     }

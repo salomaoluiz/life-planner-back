@@ -24,6 +24,7 @@ const categoryMock: FinancialCategoryWithScopes = {
   owner_id: ownerIdMock,
   parent_id: null,
   scopes: [],
+  status: 'ACTIVE',
   system_key: null,
   type: 'EXPENSE',
   updated_at: faker.date.recent(),

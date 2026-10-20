@@ -1,4 +1,4 @@
-import { TransactionType } from '@finance/domain/enum';
+import { AccountStatus, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import CategoryEntity from './index';
@@ -17,6 +17,7 @@ const paramsMock: CategoryEntity = {
   ownerId: 'owner-uuid-456',
   parentId: 'parent-uuid-789',
   scopes: [{ owner: OwnerType.FAMILY, ownerId: 'owner-uuid-456' }],
+  status: AccountStatus.ACTIVE,
   type: TransactionType.EXPENSE,
   updatedAt: new Date('2026-10-04T13:00:00.000Z'),
 };

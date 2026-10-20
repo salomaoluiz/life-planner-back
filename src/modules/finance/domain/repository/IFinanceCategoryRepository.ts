@@ -1,6 +1,6 @@
 import CategoryEntity from '@finance/domain/entity/CategoryEntity';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
-import { TransactionType } from '@finance/domain/enum';
+import { AccountStatus, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export type IFinanceCategoryRepository = {
@@ -51,7 +51,10 @@ interface UpdateCategoryRepositoryParams {
   parentId?: null | string;
   // Switch to ALL (the category and `subtreeIds`); `scopes` includes the creator's Personal scope.
   scope?: { creatorId: string; scopes: OwnerAccess[]; subtreeIds: string[] };
+  // Spec 041: the category and `subtreeIds` change status in the same database transaction.
+  status?: AccountStatus;
   subtreeDepths?: SubtreeDepth[];
+  subtreeIds?: string[];
   type?: TransactionType;
 }
 

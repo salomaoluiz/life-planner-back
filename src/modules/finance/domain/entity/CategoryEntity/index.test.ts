@@ -14,4 +14,8 @@ describe('CategoryEntity', () => {
 
     expect(result.parentId).toBeUndefined();
   });
+
+  it('SHOULD default the status to ACTIVE', () => {
+    expect(setup({ ...mocks.params, status: undefined } as never).status).toBe('ACTIVE');
+  });
 });

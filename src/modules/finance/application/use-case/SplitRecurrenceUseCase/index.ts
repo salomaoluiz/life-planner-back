@@ -96,6 +96,7 @@ export class SplitRecurrenceUseCase implements UseCaseWithParams<
       accessibleOwners: input.accessibleOwners,
       accountId: target.accountId,
       blockArchivedAccount: sourceChanged,
+      blockArchivedCategory: target.categoryId !== series.categoryId,
       categoryId: target.categoryId,
       creditCardId: target.creditCardId,
       currency: series.currency,

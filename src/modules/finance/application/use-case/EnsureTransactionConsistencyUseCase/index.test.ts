@@ -229,3 +229,27 @@ describe('currency (spec 040)', () => {
     });
   });
 });
+
+describe('archived categories (spec 041)', () => {
+  const archived = { ...mocks.category, status: AccountStatus.ARCHIVED };
+
+  it('SHOULD throw Unprocessable (422) WHEN blockArchivedCategory is set AND the category is archived', async () => {
+    mocks.categoryRepository.findCategoryById.mockResolvedValueOnce(archived);
+
+    await expect(setup.execute({ ...mocks.input, blockArchivedCategory: true })).rejects.toThrow(
+      new UnprocessableEntityException('Category is archived'),
+    );
+  });
+
+  it('SHOULD accept an archived category WHEN the record keeps it (flag not set)', async () => {
+    mocks.categoryRepository.findCategoryById.mockResolvedValueOnce(archived);
+
+    await expect(setup.execute(mocks.input)).resolves.toEqual(expect.anything());
+  });
+
+  it('SHOULD accept an active category WHEN blocking is requested', async () => {
+    await expect(setup.execute({ ...mocks.input, blockArchivedCategory: true })).resolves.toEqual(
+      expect.anything(),
+    );
+  });
+});

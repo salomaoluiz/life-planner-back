@@ -1,5 +1,5 @@
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
-import { TransactionType } from '@finance/domain/enum';
+import { AccountStatus, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 interface ICategoryEntity {
@@ -15,6 +15,7 @@ interface ICategoryEntity {
   ownerId: string;
   parentId?: string;
   scopes: OwnerAccess[];
+  status?: AccountStatus;
   type: TransactionType;
   updatedAt: Date;
 }
@@ -34,6 +35,8 @@ class CategoryEntity {
   parentId?: string;
   // Every scope the category belongs to (a single-scope category has exactly one: its owner).
   scopes: OwnerAccess[];
+  // ARCHIVED categories leave the pickers that create or change records but keep their history (spec 041).
+  status: AccountStatus;
   type: TransactionType;
   updatedAt: Date;
 
@@ -50,6 +53,7 @@ class CategoryEntity {
     this.ownerId = params.ownerId;
     this.parentId = params.parentId;
     this.scopes = params.scopes;
+    this.status = params.status ?? AccountStatus.ACTIVE;
     this.type = params.type;
     this.updatedAt = params.updatedAt;
   }

@@ -169,6 +169,34 @@ describe('Method update', () => {
   });
 });
 
+describe('Method update › status (spec 041)', () => {
+  it('SHOULD change the status of the category AND its subtree in ONE $transaction', async () => {
+    spies.update.mockReturnValueOnce('self-op');
+    spies.updateMany.mockReturnValueOnce('status-op');
+    spies.transaction.mockResolvedValue([mocks.category, {}]);
+
+    await setup.update({ id: 'root', status: 'ARCHIVED', subtree_ids: ['child', 'grandchild'] });
+
+    expect(spies.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: 'ARCHIVED' }) }),
+    );
+    expect(spies.updateMany).toHaveBeenCalledWith({
+      data: { status: 'ARCHIVED' },
+      where: { id: { in: ['child', 'grandchild'] } },
+    });
+    expect(spies.transaction).toHaveBeenCalledWith(['self-op', 'status-op']);
+  });
+
+  it('SHOULD NOT update other categories WHEN the subtree is empty', async () => {
+    spies.update.mockReturnValueOnce('self-op');
+    spies.transaction.mockResolvedValue([mocks.category]);
+
+    await setup.update({ id: 'leaf', status: 'ARCHIVED', subtree_ids: [] });
+
+    expect(spies.updateMany).not.toHaveBeenCalled();
+  });
+});
+
 describe('Method update › switch to ALL', () => {
   it('SHOULD flag the category and its subtree, replace their scope rows AND read the result back', async () => {
     spies.update.mockReturnValueOnce('self-op');

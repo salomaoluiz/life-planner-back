@@ -101,6 +101,10 @@ export class EnsureTransactionConsistencyUseCase implements UseCaseWithParams<
       throw new NotFoundException('Category not found');
     }
 
+    if (input.blockArchivedCategory && category.status === AccountStatus.ARCHIVED) {
+      throw new UnprocessableEntityException('Category is archived');
+    }
+
     // An ALL category serves every scope it belongs to (spec 038 FR 4).
     if (!belongsToOwner(category, { owner: input.owner, ownerId: input.ownerId })) {
       throw new BadRequestException('Category belongs to another owner');

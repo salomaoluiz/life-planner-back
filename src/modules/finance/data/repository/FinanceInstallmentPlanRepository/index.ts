@@ -7,6 +7,7 @@ import InstallmentPlanEntity from '@finance/domain/entity/InstallmentPlanEntity'
 import {
   CreateInstallmentPlanRepositoryParams,
   IFinanceInstallmentPlanRepository,
+  PlanWithClosingDay,
   RecreateInstallmentPlanRepositoryParams,
   UpdateInstallmentPlanTextRepositoryParams,
   UpdateInstallmentsFromRepositoryParams,
@@ -40,6 +41,15 @@ export class FinanceInstallmentPlanRepository implements IFinanceInstallmentPlan
     const result = await this.planDatasource.findById(id);
 
     return result ? FinanceInstallmentPlanMapper.toDomain(result) : undefined;
+  }
+
+  async findPlansByCategoryIds(categoryIds: string[]): Promise<PlanWithClosingDay[]> {
+    const results = await this.planDatasource.findManyByCategoryIds(categoryIds);
+
+    return results.map((result) => ({
+      closingDay: result.credit_card.closing_day,
+      plan: FinanceInstallmentPlanMapper.toDomain(result),
+    }));
   }
 
   async recreatePlan(params: RecreateInstallmentPlanRepositoryParams): Promise<void> {
