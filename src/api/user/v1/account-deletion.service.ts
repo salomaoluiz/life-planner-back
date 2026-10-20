@@ -3,7 +3,9 @@ import { Inject, Injectable } from '@nestjs/common';
 import { DeleteAccountInput } from '@api/user/v1/dto/delete-account.dto';
 import { OWNED_RECORDS_PURGES, OwnedRecordsPurgeEntry } from '@api/user/v1/owned-records-purges';
 import { GetOwnedFamilyIdsUseCase } from '@family/application/use-case/GetOwnedFamilyIdsUseCase';
+import { GetUserFamilyIdsUseCase } from '@family/application/use-case/GetUserFamilyIdsUseCase';
 import { RemoveUserFromFamiliesUseCase } from '@family/application/use-case/RemoveUserFromFamiliesUseCase';
+import { DetachCategoryCreatorFromFamilyUseCase } from '@finance/application/use-case/DetachCategoryCreatorFromFamilyUseCase';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { ILogger, LogLevel } from '@shared/infra/logger/types';
 import { ConfirmUserEmailUseCase } from '@user/application/use-case/ConfirmUserEmailUseCase';
@@ -14,7 +16,9 @@ export class AccountDeletionService {
   constructor(
     private readonly confirmUserEmailUseCase: ConfirmUserEmailUseCase,
     private readonly deleteUserUseCase: DeleteUserUseCase,
+    private readonly detachCategoryCreatorFromFamilyUseCase: DetachCategoryCreatorFromFamilyUseCase,
     private readonly getOwnedFamilyIdsUseCase: GetOwnedFamilyIdsUseCase,
+    private readonly getUserFamilyIdsUseCase: GetUserFamilyIdsUseCase,
     @Inject('ILogger') private readonly logger: ILogger,
     @Inject(OWNED_RECORDS_PURGES) private readonly purges: OwnedRecordsPurgeEntry[],
     private readonly removeUserFromFamiliesUseCase: RemoveUserFromFamiliesUseCase,
@@ -29,6 +33,13 @@ export class AccountDeletionService {
       { owner: OwnerType.USER, ownerId: userId },
       ...familyIds.map((ownerId) => ({ owner: OwnerType.FAMILY, ownerId })),
     ];
+
+    // Spec 038 FR 14: every family the user belongs to keeps its own copy of their All categories BEFORE the purge,
+    // otherwise deleting the Personal categories would hit the records those families still hold.
+    const memberFamilyIds = await this.getUserFamilyIdsUseCase.execute(userId);
+    for (const familyId of memberFamilyIds) {
+      await this.detachCategoryCreatorFromFamilyUseCase.execute({ familyId, userId });
+    }
 
     const purged: Record<string, number> = {};
     for (const { module } of this.purges) {

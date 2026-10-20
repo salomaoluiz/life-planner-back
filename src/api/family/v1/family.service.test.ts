@@ -27,6 +27,15 @@ describe('create', () => {
     );
   });
 
+  it('SHOULD add the new family to the scopes of the creator All categories', async () => {
+    await setup.create(mocks.userId, { name: 'Example Family' });
+
+    expect(mocks.addFamilyToCategoryScopes.execute).toHaveBeenCalledWith({
+      familyId: mocks.familyId,
+      userId: mocks.userId,
+    });
+  });
+
   it('SHOULD propagate NotFoundException WHEN the JWT user no longer exists AND create nothing', async () => {
     mocks.findUserByIdUseCase.execute.mockRejectedValueOnce(new NotFoundException());
 
@@ -87,6 +96,24 @@ describe('delete', () => {
       ownerId: mocks.familyId,
     });
     expect(mocks.deleteFamilyUseCase.execute).toHaveBeenCalledWith(ownerParams);
+  });
+
+  it('SHOULD remove the family from the All category scopes AFTER deleting it', async () => {
+    await setup.delete(mocks.userId, mocks.familyId);
+
+    expect(mocks.removeFamilyFromCategoryScopes.execute).toHaveBeenCalledWith({
+      familyId: mocks.familyId,
+    });
+    expect(
+      mocks.removeFamilyFromCategoryScopes.execute.mock.invocationCallOrder[0],
+    ).toBeGreaterThan(mocks.deleteFamilyUseCase.execute.mock.invocationCallOrder[0]);
+  });
+
+  it('SHOULD NOT touch the scopes WHEN the family is not deleted', async () => {
+    mocks.recordsCheck.execute.mockResolvedValueOnce(true);
+
+    await expect(setup.delete(mocks.userId, mocks.familyId)).rejects.toThrow();
+    expect(mocks.removeFamilyFromCategoryScopes.execute).not.toHaveBeenCalled();
   });
 
   it('SHOULD throw ConflictException "Family still owns records" AND delete nothing WHEN a check returns true', async () => {

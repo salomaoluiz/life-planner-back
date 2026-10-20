@@ -18,6 +18,20 @@ describe('GIVEN the family owner', () => {
     expect(mocks.familyMemberRepository.deleteById).toHaveBeenCalledWith(mocks.rows[key].id);
   });
 
+  it('SHOULD return the family and the user of the removed row (none for an invite)', async () => {
+    given(mocks.rows.member);
+
+    const result = await setup.execute({
+      memberId: mocks.rows.member.id,
+      userId: mocks.ids.owner,
+    });
+
+    expect(result).toEqual({
+      familyId: mocks.rows.member.familyId,
+      userId: mocks.rows.member.userId,
+    });
+  });
+
   it('SHOULD refuse (409 FAMILY_OWNER_CANNOT_BE_REMOVED) to delete their own row', async () => {
     given(mocks.rows.owner);
 

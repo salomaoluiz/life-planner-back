@@ -9,14 +9,20 @@ export type DeleteFamilyMemberInput = {
   userId: string;
 };
 
-export class DeleteFamilyMemberUseCase implements UseCaseWithParams<DeleteFamilyMemberInput, void> {
+// Returns the removed row's family and user (`userId` is undefined for a pending invite).
+export type DeleteFamilyMemberOutput = { familyId: string; userId?: string };
+
+export class DeleteFamilyMemberUseCase implements UseCaseWithParams<
+  DeleteFamilyMemberInput,
+  DeleteFamilyMemberOutput
+> {
   constructor(
     @Inject(GetFamilyByIdUseCase) private readonly getFamilyByIdUseCase: GetFamilyByIdUseCase,
     @Inject('IFamilyMemberRepository')
     private readonly familyMemberRepository: IFamilyMemberRepository,
   ) {}
 
-  async execute(params: DeleteFamilyMemberInput): Promise<void> {
+  async execute(params: DeleteFamilyMemberInput): Promise<DeleteFamilyMemberOutput> {
     const member = await this.familyMemberRepository.findById(params.memberId);
 
     if (!member) {
@@ -45,5 +51,7 @@ export class DeleteFamilyMemberUseCase implements UseCaseWithParams<DeleteFamily
     }
 
     await this.familyMemberRepository.deleteById(member.id);
+
+    return { familyId: member.familyId, userId: member.userId };
   }
 }

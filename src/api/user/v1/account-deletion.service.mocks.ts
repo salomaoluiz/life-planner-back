@@ -2,7 +2,9 @@ import { Test } from '@nestjs/testing';
 
 import { OWNED_RECORDS_PURGES } from '@api/user/v1/owned-records-purges';
 import { GetOwnedFamilyIdsUseCase } from '@family/application/use-case/GetOwnedFamilyIdsUseCase';
+import { GetUserFamilyIdsUseCase } from '@family/application/use-case/GetUserFamilyIdsUseCase';
 import { RemoveUserFromFamiliesUseCase } from '@family/application/use-case/RemoveUserFromFamiliesUseCase';
+import { DetachCategoryCreatorFromFamilyUseCase } from '@finance/application/use-case/DetachCategoryCreatorFromFamilyUseCase';
 import { ConfirmUserEmailUseCase } from '@user/application/use-case/ConfirmUserEmailUseCase';
 import { DeleteUserUseCase } from '@user/application/use-case/DeleteUserUseCase';
 
@@ -13,7 +15,9 @@ import { AccountDeletionService } from './account-deletion.service';
 const userIdMock = 'user-id-123';
 const confirmUserEmailMock = { execute: jest.fn() };
 const deleteUserMock = { execute: jest.fn() };
+const detachCategoryCreatorMock = { execute: jest.fn() };
 const getOwnedFamilyIdsMock = { execute: jest.fn() };
+const getUserFamilyIdsMock = { execute: jest.fn() };
 const removeUserFromFamiliesMock = { execute: jest.fn() };
 const loggerMock = { log: jest.fn() };
 const purgesMock = {
@@ -29,6 +33,8 @@ beforeEach(async () => {
   jest.clearAllMocks();
   confirmUserEmailMock.execute.mockResolvedValue({ email: 'test@example.com' });
   deleteUserMock.execute.mockResolvedValue(undefined);
+  detachCategoryCreatorMock.execute.mockResolvedValue(0);
+  getUserFamilyIdsMock.execute.mockResolvedValue(['family-1', 'family-3']);
   getOwnedFamilyIdsMock.execute.mockResolvedValue(['family-1', 'family-2']);
   removeUserFromFamiliesMock.execute.mockResolvedValue({ families: 2, memberships: 1 });
   purgesMock.finance.execute.mockResolvedValue(5);
@@ -39,7 +45,9 @@ beforeEach(async () => {
       AccountDeletionService,
       { provide: ConfirmUserEmailUseCase, useValue: confirmUserEmailMock },
       { provide: DeleteUserUseCase, useValue: deleteUserMock },
+      { provide: DetachCategoryCreatorFromFamilyUseCase, useValue: detachCategoryCreatorMock },
       { provide: GetOwnedFamilyIdsUseCase, useValue: getOwnedFamilyIdsMock },
+      { provide: GetUserFamilyIdsUseCase, useValue: getUserFamilyIdsMock },
       { provide: RemoveUserFromFamiliesUseCase, useValue: removeUserFromFamiliesMock },
       { provide: 'ILogger', useValue: loggerMock },
       {
@@ -58,7 +66,9 @@ beforeEach(async () => {
 const mocks = {
   confirmUserEmail: confirmUserEmailMock,
   deleteUser: deleteUserMock,
+  detachCategoryCreator: detachCategoryCreatorMock,
   getOwnedFamilyIds: getOwnedFamilyIdsMock,
+  getUserFamilyIds: getUserFamilyIdsMock,
   logger: loggerMock,
   purges: purgesMock,
   removeUserFromFamilies: removeUserFromFamiliesMock,

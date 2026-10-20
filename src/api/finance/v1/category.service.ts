@@ -11,9 +11,21 @@ import { DeleteCategoryUseCase } from '@finance/application/use-case/DeleteCateg
 import { GetCategoriesUseCase } from '@finance/application/use-case/GetCategoriesUseCase';
 import { UpdateCategoryUseCase } from '@finance/application/use-case/UpdateCategoryUseCase';
 import CategoryEntity from '@finance/domain/entity/CategoryEntity';
+import { categoryScopeKind, visibleScopes } from '@finance/domain/entity/CategoryScope';
+import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { TransactionType } from '@finance/domain/enum';
+import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
-function toCategoryOutput(category: CategoryEntity): CategoryOutput {
+// Personal first, so the owner of an ALL category reads as the caller's own scope when they have it.
+function toCategoryOutput(
+  category: CategoryEntity,
+  accessibleOwners: OwnerAccess[],
+): CategoryOutput {
+  const scopes = visibleScopesOf(category, accessibleOwners);
+  const [firstScope] = scopes;
+  // An ALL category never exposes a creator's Personal scope the caller cannot reach.
+  const owner = category.allScopes && firstScope ? firstScope : category;
+
   return {
     createdAt: category.createdAt.toISOString(),
     depthLevel: category.depthLevel,
@@ -21,12 +33,19 @@ function toCategoryOutput(category: CategoryEntity): CategoryOutput {
     iconColor: category.iconColor,
     id: category.id,
     name: category.name,
-    owner: category.owner,
-    ownerId: category.ownerId,
+    owner: owner.owner,
+    ownerId: owner.ownerId,
     parentId: category.parentId ?? null,
+    scope: categoryScopeKind(category),
+    scopes,
     type: category.type,
     updatedAt: category.updatedAt.toISOString(),
   };
+}
+function visibleScopesOf(category: CategoryEntity, accessibleOwners: OwnerAccess[]) {
+  return [...visibleScopes(category, accessibleOwners)].sort(
+    (a, b) => Number(b.owner === OwnerType.USER) - Number(a.owner === OwnerType.USER),
+  );
 }
 
 @Injectable()
@@ -42,9 +61,13 @@ export class CategoryService {
   async create(userId: string, input: CreateCategoryApiInput): Promise<CategoryOutput> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
-    const category = await this.createCategoryUseCase.execute({ ...input, accessibleOwners });
+    const category = await this.createCategoryUseCase.execute({
+      ...input,
+      accessibleOwners,
+      callerId: userId,
+    });
 
-    return toCategoryOutput(category);
+    return toCategoryOutput(category, accessibleOwners);
   }
 
   async delete(userId: string, id: string): Promise<void> {
@@ -66,14 +89,19 @@ export class CategoryService {
       type,
     });
 
-    return categories.map((category) => toCategoryOutput(category));
+    return categories.map((category) => toCategoryOutput(category, accessibleOwners));
   }
 
   async update(userId: string, id: string, input: UpdateCategoryApiInput): Promise<CategoryOutput> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
-    const category = await this.updateCategoryUseCase.execute({ ...input, accessibleOwners, id });
+    const category = await this.updateCategoryUseCase.execute({
+      ...input,
+      accessibleOwners,
+      callerId: userId,
+      id,
+    });
 
-    return toCategoryOutput(category);
+    return toCategoryOutput(category, accessibleOwners);
   }
 }

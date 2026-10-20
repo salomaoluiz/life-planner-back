@@ -54,6 +54,26 @@ describe('create', () => {
     expect(result).toEqual(mocks.category);
   });
 
+  it('SHOULD accept owner ALL WITHOUT ownerId', async () => {
+    const body = { icon: 'cart', name: 'Groceries', owner: 'ALL', type: 'EXPENSE' };
+
+    await setup.create(mocks.request, body as never);
+
+    expect(mocks.categoryService.create).toHaveBeenCalledWith(mocks.request.user.id, {
+      ...body,
+      iconColor: '#000000',
+    });
+  });
+
+  it.each([
+    ['owner ALL with an ownerId', { owner: 'ALL', ownerId }],
+    ['owner FAMILY without ownerId', { owner: 'FAMILY', ownerId: undefined }],
+  ])('SHOULD throw ValidationError (400) WHEN the body has %s', async (_label, patch) => {
+    await expect(setup.create(mocks.request, { ...validBody, ...patch } as never)).rejects.toThrow(
+      ValidationError,
+    );
+  });
+
   it('SHOULD throw ValidationError (400) WHEN the body is invalid', async () => {
     await expect(
       setup.create(mocks.request, { ...validBody, iconColor: 'red' } as never),

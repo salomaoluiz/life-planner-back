@@ -15,6 +15,7 @@ import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 const userId = faker.string.uuid();
 const accessibleOwners = [{ owner: OwnerType.USER, ownerId: userId }];
 const rootResultMock = {
+  allScopes: false,
   createdAt: new Date('2026-10-04T12:00:00.000Z'),
   depthLevel: 0,
   icon: 'cart',
@@ -24,6 +25,7 @@ const rootResultMock = {
   owner: OwnerType.USER,
   ownerId: userId,
   parentId: undefined,
+  scopes: [{ owner: OwnerType.USER, ownerId: userId }],
   type: TransactionType.EXPENSE,
   updatedAt: new Date('2026-10-04T13:00:00.000Z'),
 };
@@ -43,6 +45,8 @@ const rootApiMock = {
   owner: 'USER',
   ownerId: userId,
   parentId: null,
+  scope: 'PERSONAL',
+  scopes: [{ owner: 'USER', ownerId: userId }],
   type: 'EXPENSE',
   updatedAt: '2026-10-04T13:00:00.000Z',
 };
@@ -79,6 +83,7 @@ const mocks = {
   childResult: childResultMock,
   createCategoryUseCase: createCategoryUseCaseMock,
   deleteCategoryUseCase: deleteCategoryUseCaseMock,
+  financeAccessService: financeAccessServiceMock,
   getCategoriesUseCase: getCategoriesUseCaseMock,
   rootApi: rootApiMock,
   updateCategoryUseCase: updateCategoryUseCaseMock,

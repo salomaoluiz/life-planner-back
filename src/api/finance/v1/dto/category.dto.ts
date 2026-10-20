@@ -11,15 +11,22 @@ import {
   TransactionTypeApiSchema,
 } from '@api/finance/v1/dto/finance-fields';
 
-export const CreateCategoryApiSchema = z.object({
-  icon: IconApiSchema,
-  iconColor: IconColorApiSchema.default('#000000'),
-  name: NameApiSchema,
-  owner: OwnerTypeApiSchema,
-  ownerId: OwnerIdApiSchema,
-  parentId: z.uuid().optional(),
-  type: TransactionTypeApiSchema,
-});
+export const CATEGORY_SCOPES = ['PERSONAL', 'FAMILY', 'ALL'] as const;
+
+// `owner: ALL` (spec 038): the creator's Personal scope plus every family they are in; `ownerId` is then omitted.
+export const CreateCategoryApiSchema = z
+  .object({
+    icon: IconApiSchema,
+    iconColor: IconColorApiSchema.default('#000000'),
+    name: NameApiSchema,
+    owner: OwnerTypeApiSchema.or(z.literal('ALL')),
+    ownerId: OwnerIdApiSchema.optional(),
+    parentId: z.uuid().optional(),
+    type: TransactionTypeApiSchema,
+  })
+  .refine((input) => (input.owner === 'ALL') === (input.ownerId === undefined), {
+    message: 'ownerId is required, except for owner ALL where it must be omitted',
+  });
 
 export const UpdateCategoryApiSchema = z
   .object({
@@ -27,6 +34,8 @@ export const UpdateCategoryApiSchema = z
     iconColor: IconColorApiSchema,
     name: NameApiSchema,
     parentId: z.uuid().nullable(),
+    // Turns a single-scope main category into an All category; there is no way back.
+    scope: z.literal('ALL'),
     type: TransactionTypeApiSchema,
   })
   .partial()
@@ -43,6 +52,9 @@ export const CategoryApiSchema = z.object({
   owner: OwnerTypeApiSchema,
   ownerId: z.uuid(),
   parentId: z.uuid().nullable(),
+  scope: z.enum(CATEGORY_SCOPES),
+  // The scopes the caller can access (for ALL, `owner/ownerId` is the first of them).
+  scopes: z.array(z.object({ owner: OwnerTypeApiSchema, ownerId: z.uuid() })),
   type: TransactionTypeApiSchema,
   updatedAt: z.iso.datetime(),
 });
