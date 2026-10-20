@@ -1,3 +1,5 @@
+import { FamilyStatus } from '@family/domain/enum';
+
 import FamilyEntity from './index';
 
 // region Mocks
@@ -7,6 +9,7 @@ const paramsMock: FamilyEntity = {
   id: 'family-uuid-123',
   name: 'The Smiths',
   ownerId: 'owner-uuid-456',
+  status: FamilyStatus.ACTIVE,
   updatedAt: new Date('2026-10-04T13:00:00.000Z'),
 };
 

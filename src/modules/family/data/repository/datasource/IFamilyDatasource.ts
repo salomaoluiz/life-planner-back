@@ -1,4 +1,4 @@
-import { Family } from '@db/client';
+import { AccountStatus, Family } from '@db/client';
 
 export interface CreateFamilyDatasourceParams {
   email: string;
@@ -26,7 +26,8 @@ export interface IsMemberDatasourceParams {
 }
 export interface UpdateFamilyDatasourceParams {
   id: string;
-  name: string;
+  name?: string;
+  status?: AccountStatus;
 }
 export interface UserDataDeletion {
   families: number;

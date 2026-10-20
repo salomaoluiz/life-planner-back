@@ -9,6 +9,7 @@ const rawFamilyMock: Family = {
   id: faker.string.uuid(),
   name: `Family ${faker.person.lastName()}`,
   owner_id: faker.string.uuid(),
+  status: 'ACTIVE',
   updated_at: faker.date.recent(),
 };
 

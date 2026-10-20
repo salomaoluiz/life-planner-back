@@ -23,6 +23,7 @@ function toApiOutput(family: FamilyUseCaseOutput): FamilyOutput {
     id: family.id,
     name: family.name,
     ownerId: family.ownerId,
+    status: family.status,
     updatedAt: family.updatedAt.toISOString(),
   };
 }

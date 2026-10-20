@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 
+import { AccountStatus } from '@db/client';
 import { FamilyMapper } from '@family/data/datasource/mapper/FamilyMapper';
 import { IFamilyDatasource } from '@family/data/repository/datasource/IFamilyDatasource';
 import FamilyEntity from '@family/domain/entity/FamilyEntity';
@@ -55,7 +56,11 @@ export class FamilyRepository implements IFamilyRepository {
   }
 
   async updateFamily(params: UpdateFamilyRepositoryParams): Promise<FamilyEntity> {
-    const result = await this.familyDatasource.update({ id: params.id, name: params.name });
+    const result = await this.familyDatasource.update({
+      id: params.id,
+      name: params.name,
+      status: params.status && AccountStatus[params.status],
+    });
 
     return FamilyMapper.toDomain(result);
   }
