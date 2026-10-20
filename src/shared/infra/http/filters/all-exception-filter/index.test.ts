@@ -144,3 +144,31 @@ describe('GIVEN an error on an invite URL', () => {
     expect(JSON.stringify(mocks.logger.log.mock.calls)).not.toContain(token);
   });
 });
+
+describe('GIVEN a Conflict (409) that carries details', () => {
+  it('SHOULD reply with the details next to the message', () => {
+    setup.catch(mocks.exceptions.conflict, mocks.argumentsHost);
+
+    expect(mocks.httpAdapterHost.httpAdapter.reply).toHaveBeenCalledWith(
+      mocks.getResponse,
+      {
+        blockers: { recurrences: [] },
+        message: 'Category has pending items',
+        path: '/test-url',
+        statusCode: 409,
+        timestamp: '2025-11-30T12:00:00.000Z',
+      },
+      409,
+    );
+  });
+
+  it('SHOULD NOT spread the response body of other statuses', () => {
+    setup.catch(mocks.exceptions.badRequest, mocks.argumentsHost);
+
+    expect(mocks.httpAdapterHost.httpAdapter.reply).toHaveBeenLastCalledWith(
+      mocks.getResponse,
+      expect.not.objectContaining({ blockers: expect.anything() }),
+      400,
+    );
+  });
+});

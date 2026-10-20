@@ -46,6 +46,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     const responseBody = {
+      // A 409 may carry what blocks the action (counts, lists): the client needs them to explain it.
+      ...this.getConflictDetails(exception, httpStatus),
       message,
       path: redactSensitivePath(httpAdapter.getRequestUrl(ctx.getRequest())),
       statusCode: httpStatus,
@@ -53,6 +55,26 @@ export class AllExceptionsFilter implements ExceptionFilter {
     };
 
     httpAdapter.reply(ctx.getResponse(), responseBody, httpStatus);
+  }
+
+  private getConflictDetails(exception: unknown, httpStatus: number): Record<string, unknown> {
+    if (httpStatus !== HttpStatus.CONFLICT || !(exception instanceof HttpException)) {
+      return {};
+    }
+
+    const response = exception.getResponse();
+
+    if (typeof response !== 'object' || response === null) {
+      return {};
+    }
+
+    const details: Record<string, unknown> = { ...(response as Record<string, unknown>) };
+
+    delete details.error;
+    delete details.message;
+    delete details.statusCode;
+
+    return details;
   }
 
   private getMessageFromException(exception: unknown): string {

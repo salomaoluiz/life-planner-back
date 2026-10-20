@@ -31,6 +31,10 @@ const loggerMock = {
   log: jest.fn(),
 };
 
+const httpConflictMock = new HttpException(
+  { blockers: { recurrences: [] }, message: 'Category has pending items', statusCode: 409 },
+  409,
+);
 const httpBadRequestMock = new HttpException('Bad Request', 400);
 const httpInternalServerErrorMock = new HttpException('Internal Server Error', 500);
 const validationErrorMock = new ValidationError([
@@ -74,6 +78,7 @@ const mocks = {
   argumentsHost: argumentsHostMock,
   exceptions: {
     badRequest: httpBadRequestMock,
+    conflict: httpConflictMock,
     generic: genericExceptionMock,
     internalServerError: httpInternalServerErrorMock,
     validationError: validationErrorMock,
