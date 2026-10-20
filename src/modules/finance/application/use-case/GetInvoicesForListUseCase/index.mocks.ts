@@ -1,6 +1,8 @@
 import { Test } from '@nestjs/testing';
 
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
+import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
+import { FindInvoicesInRangeUseCase } from '@finance/application/use-case/FindInvoicesInRangeUseCase';
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
 import TransactionEntityFixture from '@finance/domain/entity/mocks/TransactionEntity.fixture';
 import { InvoicePaymentMethod } from '@finance/domain/enum';
@@ -23,6 +25,7 @@ const totalsMock = [
   { amount: 0, invoiceMonth: '2026-09' },
 ];
 const computeMock = { execute: jest.fn() };
+const expandMock = { execute: jest.fn() };
 const creditCardRepositoryMock = { findCreditCards: jest.fn() };
 const transactionRepositoryMock = { findCardPurchases: jest.fn() };
 
@@ -37,10 +40,13 @@ beforeEach(async () => {
   ]);
   creditCardRepositoryMock.findCreditCards.mockResolvedValue([cardMock]);
   transactionRepositoryMock.findCardPurchases.mockResolvedValue([purchaseMock]);
+  expandMock.execute.mockImplementation(async ({ categoryIds }) => categoryIds);
 
   const module = await Test.createTestingModule({
     providers: [
       GetInvoicesForListUseCase,
+      FindInvoicesInRangeUseCase,
+      { provide: ExpandCategoryIdsUseCase, useValue: expandMock },
       { provide: ComputeCardInvoicesUseCase, useValue: computeMock },
       { provide: 'IFinanceCreditCardRepository', useValue: creditCardRepositoryMock },
       { provide: 'IFinanceTransactionRepository', useValue: transactionRepositoryMock },
@@ -62,6 +68,7 @@ const mocks = {
   card: cardMock,
   compute: computeMock,
   creditCardRepository: creditCardRepositoryMock,
+  expand: expandMock,
   input: inputMock,
   payment,
   purchase: purchaseMock,

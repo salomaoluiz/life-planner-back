@@ -23,14 +23,30 @@ import {
   PayInvoiceApiSchema,
   PayInvoiceBody,
 } from '@api/finance/v1/dto/invoice.dto';
-import { OwnerIdQuerySchema, TodayQuerySchema, toOwnerIds } from '@api/finance/v1/finance-query';
+import {
+  OwnerIdQuerySchema,
+  TodayQuerySchema,
+  toOwnerIds,
+  toTransactionFilter,
+  TransactionFilterQueryFields,
+  withPeriodRules,
+} from '@api/finance/v1/finance-query';
 import { InvoiceService } from '@api/finance/v1/invoice.service';
 import { JwtPayload } from '@shared/infra/jwt/types';
 import { validate } from '@shared/infra/validation';
 
-const ListInvoicesQuerySchema = z
-  .object({ month: InvoiceMonthParamSchema, ownerId: OwnerIdQuerySchema })
-  .extend(TodayQuerySchema.shape);
+// Exactly one of `month` or `from`+`to` (spec 045); `accountId` is accepted but means nothing to card rows.
+const ListInvoicesQuerySchema = withPeriodRules(
+  z
+    .object({
+      ...TransactionFilterQueryFields,
+      month: InvoiceMonthParamSchema.optional(),
+      ownerId: OwnerIdQuerySchema,
+    })
+    .extend(TodayQuerySchema.shape),
+).refine((value) => (value.month === undefined) !== (value.from === undefined), {
+  message: 'Send either month or from and to',
+});
 
 // Registered BEFORE CreditCardController (see FinanceAPIModule): `invoices` must not match its `:id` route.
 @ApiBearerAuth('JWT')
@@ -58,9 +74,15 @@ export class InvoiceController {
     @Request() req: JwtPayload & Request,
     @Query() query: Record<string, unknown>,
   ) {
-    const { month, ownerId, today } = validate(ListInvoicesQuerySchema, query);
+    const { month, ownerId, today, ...filterQuery } = validate(ListInvoicesQuerySchema, query);
 
-    return this.invoiceService.findForList(req.user.id, month, toOwnerIds(ownerId), today);
+    return this.invoiceService.findForList(
+      req.user.id,
+      month,
+      toOwnerIds(ownerId),
+      today,
+      toTransactionFilter(filterQuery),
+    );
   }
 
   @Get(':id/invoices/:month')
