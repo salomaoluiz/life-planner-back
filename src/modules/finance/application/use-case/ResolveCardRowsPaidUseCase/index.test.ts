@@ -63,3 +63,19 @@ it('SHOULD read each card once AND skip the lookups WHEN there are only account 
   await setup.execute({ today: mocks.today, transactions: [mocks.accountRow] });
   expect(mocks.compute.execute).not.toHaveBeenCalled();
 });
+
+it('SHOULD drop the card rows whose resolved status differs from the paid filter (spec 045)', async () => {
+  const unpaid = await setup.execute({
+    paid: false,
+    today: mocks.today,
+    transactions: [mocks.accountRow, mocks.openRow],
+  });
+  const paid = await setup.execute({
+    paid: true,
+    today: mocks.today,
+    transactions: [mocks.accountRow, mocks.openRow],
+  });
+
+  expect(unpaid.map((row) => row.id)).toEqual([mocks.accountRow.id, mocks.openRow.id]);
+  expect(paid.map((row) => row.id)).toEqual([mocks.accountRow.id]);
+});

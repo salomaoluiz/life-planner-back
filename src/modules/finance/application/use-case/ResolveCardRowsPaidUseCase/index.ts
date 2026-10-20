@@ -42,7 +42,7 @@ export class ResolveCardRowsPaidUseCase implements UseCaseWithParams<
     const data = await this.computeCardInvoicesUseCase.execute({ cards, today: input.today });
     const byCard = new Map(data.map((item) => [item.card.id, item]));
 
-    return input.transactions.map((row) => {
+    const resolved = input.transactions.map((row) => {
       const item = row.creditCardId ? byCard.get(row.creditCardId) : undefined;
 
       if (!item || !row.invoiceMonth) {
@@ -59,5 +59,9 @@ export class ResolveCardRowsPaidUseCase implements UseCaseWithParams<
 
       return { ...row, paid: invoice.status === InvoiceStatus.PAID };
     });
+
+    return input.paid === undefined
+      ? resolved
+      : resolved.filter((row) => !row.creditCardId || row.paid === input.paid);
   }
 }

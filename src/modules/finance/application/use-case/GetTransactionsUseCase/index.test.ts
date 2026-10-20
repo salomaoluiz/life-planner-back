@@ -47,6 +47,83 @@ it('SHOULD pass the CARD source and its filters through', async () => {
   expect(mocks.transactionRepository.findTransactions).toHaveBeenCalledWith(
     mocks.accessibleOwners,
     'CARD',
-    { creditCardId: 'card-1', invoiceMonth: '2026-10' },
+    { creditCardIds: ['card-1'], invoiceMonth: '2026-10' },
   );
+});
+
+describe('filters (spec 045)', () => {
+  it('SHOULD pass the expanded categories, tags, accounts, paid and period to the repository', async () => {
+    mocks.expand.execute.mockResolvedValue(['market', 'greens']);
+
+    await setup.execute({
+      accessibleOwners: mocks.accessibleOwners,
+      filter: {
+        accountIds: ['acc-1'],
+        categoryIds: ['market'],
+        from: '2025-01-01',
+        paid: false,
+        tagIds: ['tag-1', 'tag-2'],
+        to: '2025-12-31',
+      },
+    });
+
+    expect(mocks.transactionRepository.findTransactions).toHaveBeenCalledWith(
+      mocks.accessibleOwners,
+      'ACCOUNT',
+      {
+        accountIds: ['acc-1'],
+        categoryIds: ['market', 'greens'],
+        from: '2025-01-01',
+        paid: false,
+        tagIds: ['tag-1', 'tag-2'],
+        to: '2025-12-31',
+      },
+    );
+  });
+
+  it('SHOULD keep the rows whose description contains the text, ignoring case and accents', async () => {
+    mocks.transactionRepository.findTransactions.mockResolvedValue([
+      { description: 'MERCADÃO' },
+      { description: 'Farmácia' },
+    ]);
+
+    const result = await setup.execute({
+      accessibleOwners: mocks.accessibleOwners,
+      filter: { q: 'mercadao' },
+    });
+
+    expect(result).toEqual([{ description: 'MERCADÃO' }]);
+  });
+
+  it('SHOULD place CARD rows in the period by the invoices listed in it', async () => {
+    mocks.findInvoices.execute.mockResolvedValue([
+      { card: { id: 'card-1' }, invoice: { referenceMonth: '2026-10' } },
+    ]);
+
+    await setup.execute({
+      accessibleOwners: mocks.accessibleOwners,
+      filter: { from: '2026-11-01', to: '2026-11-30' },
+      source: 'CARD' as never,
+      today: '2026-10-15',
+    });
+
+    expect(mocks.transactionRepository.findTransactions).toHaveBeenCalledWith(
+      mocks.accessibleOwners,
+      'CARD',
+      expect.objectContaining({
+        invoiceRefs: [{ creditCardId: 'card-1', invoiceMonth: '2026-10' }],
+      }),
+    );
+  });
+
+  it('SHOULD return [] WHEN no invoice is listed in the period', async () => {
+    expect(
+      await setup.execute({
+        accessibleOwners: mocks.accessibleOwners,
+        filter: { from: '2026-11-01', to: '2026-11-30' },
+        source: 'CARD' as never,
+      }),
+    ).toEqual([]);
+    expect(mocks.transactionRepository.findTransactions).not.toHaveBeenCalled();
+  });
 });

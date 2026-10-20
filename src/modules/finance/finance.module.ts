@@ -30,6 +30,7 @@ import { DetachTagCreatorFromFamilyUseCase } from '@finance/application/use-case
 import { EndRecurrencesBySourceUseCase } from '@finance/application/use-case/EndRecurrencesBySourceUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
+import { FindInvoicesInRangeUseCase } from '@finance/application/use-case/FindInvoicesInRangeUseCase';
 import { GetAccountsByIdsUseCase } from '@finance/application/use-case/GetAccountsByIdsUseCase';
 import { GetAccountsUseCase } from '@finance/application/use-case/GetAccountsUseCase';
 import { GetCategoriesUseCase } from '@finance/application/use-case/GetCategoriesUseCase';
@@ -133,6 +134,7 @@ const useCases = [
   GetAccountsUseCase,
   GetCategoriesUseCase,
   ExpandCategoryIdsUseCase,
+  FindInvoicesInRangeUseCase,
   GetCategoryArchiveBlockersUseCase,
   GetFamilyArchiveBlockersUseCase,
   GetAccountsByIdsUseCase,

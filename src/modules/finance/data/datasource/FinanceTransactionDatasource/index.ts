@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
+import { Prisma } from '@db/client';
 import {
   applyLedgerDeltas,
   assertInvoiceNotPaid,
@@ -7,6 +8,7 @@ import {
   lockTransactionRow,
   toLedgerEntry,
 } from '@finance/data/datasource/ledger';
+import { fromCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
 import { toOwnerWhere } from '@finance/data/datasource/mapper/OwnerWhere';
 import { applyTagNames, TAG_INCLUDE, tagNamesOfRow } from '@finance/data/datasource/tags';
 import {
@@ -67,14 +69,12 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
       }),
       this.db.client.financialRecurrence.count({ where: { category_id: { in: categoryIds } } }),
     ]);
-
     return transactions + plans + series;
   }
 
   async countByCreditCardId(creditCardId: string): Promise<number> {
     return this.db.client.financialTransaction.count({ where: { credit_card_id: creditCardId } });
   }
-
   // The row and the ledger of its account change in ONE database transaction (spec 028).
   async create(
     params: CreateTransactionDatasourceParams,
@@ -82,26 +82,21 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
     return this.db.client.$transaction(async (tx) => {
       await lockCards(tx, params.credit_card_id ? [params.credit_card_id] : []);
       await assertInvoiceNotPaid(tx, params.credit_card_id, params.invoice_month);
-
       const { tag_names: tagNames, ...data } = params;
       const created = await tx.financialTransaction.create({
         data,
         include: TRANSACTION_RELATIONS,
       });
-
       await applyLedgerDeltas(tx, ledgerDeltas(undefined, toLedgerEntry(created)));
-
       if (tagNames === undefined || tagNames.length === 0) {
         return created;
       }
-
       await applyTagNames(tx, {
         names: tagNames,
         owner: created.owner,
         ownerId: created.owner_id,
         where: { id: created.id },
       });
-
       return tx.financialTransaction.findUniqueOrThrow({
         include: TRANSACTION_RELATIONS,
         where: { id: created.id },
@@ -112,15 +107,11 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
   async delete(id: string): Promise<void> {
     await this.db.client.$transaction(async (tx) => {
       await lockCards(tx, await this.cardsOf(tx, id));
-
       const stored = await lockTransactionRow(tx, id);
-
       if (!stored) {
         return;
       }
-
       await assertInvoiceNotPaid(tx, stored.creditCardId, stored.invoiceMonth);
-
       await tx.financialTransaction.deleteMany({ where: { id } });
       await applyLedgerDeltas(tx, ledgerDeltas(stored, undefined));
     });
@@ -131,7 +122,6 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
       select: { id: true },
       where: { owner: params.owner, owner_id: params.owner_id },
     });
-
     return found !== null;
   }
 
@@ -141,7 +131,6 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
       where: { id },
     });
   }
-
   // Default source ACCOUNT: account rows without the invoice payment transactions (the paid invoice line stands for them).
   async findByOwners(
     owners: OwnerAccess[],
@@ -151,7 +140,9 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
     const sourceWhere =
       source === TransactionSource.CARD
         ? {
-            credit_card_id: filter.creditCardId ?? { not: null },
+            credit_card_id: filter.creditCardIds?.length
+              ? { in: filter.creditCardIds }
+              : { not: null },
             invoice_month: filter.invoiceMonth,
           }
         : {
@@ -163,11 +154,10 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
               { early_payment: { isNot: null } },
             ],
           };
-
     return this.db.client.financialTransaction.findMany({
       include: TRANSACTION_RELATIONS,
       orderBy: [{ date: 'desc' }, { created_at: 'desc' }],
-      where: { AND: [toOwnerWhere(owners), sourceWhere] },
+      where: { AND: [toOwnerWhere(owners), sourceWhere, ...filterWhere(source, filter)] },
     });
   }
 
@@ -175,27 +165,23 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
     if (keys.length === 0) {
       return [];
     }
-
     return this.db.client.financialTransaction.findMany({
       include: TRANSACTION_RELATIONS,
       orderBy: [{ date: 'asc' }, { created_at: 'asc' }],
       where: { OR: keys.map((key) => ({ ...key })) },
     });
   }
-
   // One grouped query for every card: the sum of each (card, invoice month).
   async sumCardInvoices(creditCardIds: string[]): Promise<CardInvoiceSum[]> {
     if (creditCardIds.length === 0) {
       return [];
     }
-
     const rows = await this.db.client.financialTransaction.groupBy({
       _sum: { value: true },
       by: ['credit_card_id', 'invoice_month', 'type', 'category_id'],
       where: { credit_card_id: { in: creditCardIds } },
     });
     const sums = new Map<string, CardInvoiceSum>();
-
     // Net = purchases (EXPENSE) minus every credit (INCOME); early payments are also counted apart.
     for (const row of rows) {
       const key = `${row.credit_card_id}|${row.invoice_month}`;
@@ -206,24 +192,20 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
         invoice_month: row.invoice_month as string,
       };
       const value = row._sum.value ?? 0;
-
       sum.amount += row.type === TransactionType.INCOME ? -value : value;
       if (row.category_id === SYSTEM_CATEGORY_IDS[SystemCategoryKey.CARD_EARLY_PAYMENT]) {
         sum.early_paid += value;
       }
       sums.set(key, sum);
     }
-
     return [...sums.values()];
   }
-
   // The old values come from the row locked INSIDE this transaction, never from an earlier read.
   private async cardsOf(tx: Parameters<typeof lockCards>[0], id: string): Promise<string[]> {
     const row = await tx.financialTransaction.findUnique({
       select: { credit_card_id: true },
       where: { id },
     });
-
     return row?.credit_card_id ? [row.credit_card_id] : [];
   }
 
@@ -236,13 +218,10 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
         ...(await this.cardsOf(tx, params.id)),
         ...(params.credit_card_id ? [params.credit_card_id] : []),
       ]);
-
       const stored = await lockTransactionRow(tx, params.id);
-
       if (!stored) {
         throw new NotFoundException();
       }
-
       // In a paid invoice only the description and the category can change (spec 030 FR 16).
       if (!isTextOnly(params)) {
         await assertInvoiceNotPaid(tx, stored.creditCardId, stored.invoiceMonth);
@@ -252,7 +231,6 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
           params.invoice_month === undefined ? stored.invoiceMonth : params.invoice_month,
         );
       }
-
       const previousOwner =
         params.owner === undefined && params.owner_id === undefined
           ? undefined
@@ -277,27 +255,22 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
         include: TRANSACTION_RELATIONS,
         where: { id: params.id },
       });
-
       await applyLedgerDeltas(tx, ledgerDeltas(stored, toLedgerEntry(updated)));
-
       // Spec 043 FR 9/12: names replace the set; a new owner re-resolves the current names in that owner.
       const ownerChanged =
         Boolean(previousOwner) &&
         (updated.owner !== previousOwner?.owner || updated.owner_id !== previousOwner?.owner_id);
       const names =
         params.tag_names ?? (ownerChanged ? await tagNamesOfRow(tx, updated.id) : undefined);
-
       if (names === undefined) {
         return updated;
       }
-
       await applyTagNames(tx, {
         names,
         owner: updated.owner,
         ownerId: updated.owner_id,
         where: { id: updated.id },
       });
-
       return tx.financialTransaction.findUniqueOrThrow({
         include: TRANSACTION_RELATIONS,
         where: { id: updated.id },
@@ -305,7 +278,45 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
     });
   }
 }
+// Spec 045: the optional filters as extra AND conditions (none → the same query as before).
+function filterWhere(source: TransactionSource, filter: FindTransactionsFilter) {
+  const where: Prisma.FinancialTransactionWhereInput[] = [];
 
+  if (filter.categoryIds?.length) {
+    where.push({ category_id: { in: filter.categoryIds } });
+  }
+
+  if (filter.tagIds?.length) {
+    where.push({ tags: { some: { tag_id: { in: filter.tagIds } } } });
+  }
+
+  if (source === TransactionSource.CARD) {
+    if (filter.invoiceRefs) {
+      where.push({
+        OR: filter.invoiceRefs.map((ref) => ({
+          credit_card_id: ref.credit_card_id,
+          invoice_month: ref.invoice_month,
+        })),
+      });
+    }
+
+    return where;
+  }
+
+  if (filter.accountIds?.length) {
+    where.push({ account_id: { in: filter.accountIds } });
+  }
+
+  if (filter.paid !== undefined) {
+    where.push({ paid: filter.paid });
+  }
+
+  if (filter.from && filter.to) {
+    where.push({ date: { gte: fromCalendarDate(filter.from), lte: fromCalendarDate(filter.to) } });
+  }
+
+  return where;
+}
 function isTextOnly(params: UpdateTransactionDatasourceParams): boolean {
   return (
     params.account_id === undefined &&

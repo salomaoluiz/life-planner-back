@@ -11,6 +11,7 @@ import {
   CardInvoiceTotal,
   CreateTransactionRepositoryParams,
   IFinanceTransactionRepository,
+  TransactionQuery,
   UpdateTransactionRepositoryParams,
 } from '@finance/domain/repository';
 
@@ -78,9 +79,15 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
   async findTransactions(
     owners: OwnerAccess[],
     source: TransactionSource = TransactionSource.ACCOUNT,
-    filter?: { creditCardId?: string; invoiceMonth?: string },
+    filter?: TransactionQuery,
   ): Promise<TransactionEntity[]> {
-    const result = await this.transactionDatasource.findByOwners(owners, source, filter);
+    const result = await this.transactionDatasource.findByOwners(owners, source, {
+      ...filter,
+      invoiceRefs: filter?.invoiceRefs?.map((ref) => ({
+        credit_card_id: ref.creditCardId,
+        invoice_month: ref.invoiceMonth,
+      })),
+    });
 
     return result.map((row) => FinanceTransactionMapper.toDomain(row));
   }

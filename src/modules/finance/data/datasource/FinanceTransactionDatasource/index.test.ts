@@ -174,6 +174,48 @@ describe('Method findByOwners', () => {
   });
 });
 
+describe('Method findByOwners filters (spec 045)', () => {
+  it('SHOULD add one AND condition per filter on account rows', async () => {
+    spies.findMany.mockResolvedValue([]);
+
+    await setup.findByOwners(mocks.owners, TransactionSource.ACCOUNT, {
+      accountIds: ['acc-1'],
+      categoryIds: ['cat-1'],
+      from: '2025-01-01',
+      paid: false,
+      tagIds: ['tag-1'],
+      to: '2025-12-31',
+    });
+
+    expect(spies.findMany.mock.calls[0][0].where.AND.slice(2)).toEqual([
+      { category_id: { in: ['cat-1'] } },
+      { tags: { some: { tag_id: { in: ['tag-1'] } } } },
+      { account_id: { in: ['acc-1'] } },
+      { paid: false },
+      {
+        date: {
+          gte: new Date('2025-01-01T00:00:00.000Z'),
+          lte: new Date('2025-12-31T00:00:00.000Z'),
+        },
+      },
+    ]);
+  });
+
+  it('SHOULD bound CARD rows by invoice refs and chosen cards', async () => {
+    spies.findMany.mockResolvedValue([]);
+
+    await setup.findByOwners(mocks.owners, TransactionSource.CARD, {
+      creditCardIds: ['card-1'],
+      invoiceRefs: [{ credit_card_id: 'card-1', invoice_month: '2026-10' }],
+    });
+
+    const { AND } = spies.findMany.mock.calls[0][0].where;
+
+    expect(AND[1].credit_card_id).toEqual({ in: ['card-1'] });
+    expect(AND[2]).toEqual({ OR: [{ credit_card_id: 'card-1', invoice_month: '2026-10' }] });
+  });
+});
+
 describe('Method update', () => {
   const lockedRow = [{ account_id: 'acc-1', paid: true, type: 'EXPENSE', value: 1000 }];
 

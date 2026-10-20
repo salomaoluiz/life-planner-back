@@ -18,7 +18,7 @@ export type IFinanceTransactionRepository = {
   findTransactions(
     owners: OwnerAccess[],
     source?: TransactionSource,
-    filter?: { creditCardId?: string; invoiceMonth?: string },
+    filter?: TransactionQuery,
   ): Promise<TransactionEntity[]>;
   // One grouped query: the sum of every (card, invoice month).
   sumCardInvoices(creditCardIds: string[]): Promise<CardInvoiceTotal[]>;
@@ -34,6 +34,7 @@ interface CardInvoiceTotal extends CardInvoiceRef {
   amount: number;
   earlyPaid: number;
 }
+// Spec 045: `from`/`to` bound the date of ACCOUNT rows; CARD rows are bounded by `invoiceRefs` (list-date rule).
 interface CreateTransactionRepositoryParams {
   accountId?: string;
   categoryId: string;
@@ -50,6 +51,18 @@ interface CreateTransactionRepositoryParams {
   tags?: string[];
   type: TransactionType;
   value: number;
+}
+interface TransactionQuery {
+  accountIds?: string[];
+  categoryIds?: string[];
+  creditCardIds?: string[];
+  from?: string;
+  invoiceMonth?: string;
+  invoiceRefs?: CardInvoiceRef[];
+  // Account rows only: card rows derive it from their invoice.
+  paid?: boolean;
+  tagIds?: string[];
+  to?: string;
 }
 interface UpdateTransactionRepositoryParams {
   accountId?: null | string;
@@ -73,5 +86,6 @@ export {
   CardInvoiceRef,
   CardInvoiceTotal,
   CreateTransactionRepositoryParams,
+  TransactionQuery,
   UpdateTransactionRepositoryParams,
 };

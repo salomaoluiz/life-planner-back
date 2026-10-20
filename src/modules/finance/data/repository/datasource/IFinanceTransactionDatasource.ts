@@ -64,8 +64,15 @@ export type FinancialTransactionWithRelations = {
   tags?: { tag: { id: string; name: string } }[];
 } & FinancialTransaction;
 export interface FindTransactionsFilter {
-  creditCardId?: string;
+  accountIds?: string[];
+  categoryIds?: string[];
+  creditCardIds?: string[];
+  from?: string;
   invoiceMonth?: string;
+  invoiceRefs?: CardInvoiceKey[];
+  paid?: boolean;
+  tagIds?: string[];
+  to?: string;
 }
 export interface IFinanceTransactionDatasource {
   countByAccountId(accountId: string): Promise<number>;
