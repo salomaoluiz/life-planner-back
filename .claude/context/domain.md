@@ -59,3 +59,5 @@ Stock uses `IStockRepository` with owner-scoped methods (`findByOwners`, `exists
 ## Category scopes (spec 038)
 
 `CategoryEntity` has `allScopes`, `creatorId?` and `scopes: OwnerAccess[]` (a single-scope category has exactly its owner). An ALL category keeps `owner/ownerId` = the creator's Personal scope. Never compare `owner/ownerId` of a category directly: use `isVisibleTo`, `belongsToOwner`, `sameScopes`, `visibleScopes` and `categoryScopeKind` from `@finance/domain/entity/CategoryScope`.
+
+Spec 041: `CategoryEntity.status` (`AccountStatus`, default `ACTIVE`). Archiving applies to the whole subtree; `EnsureTransactionConsistencyUseCase` takes `blockArchivedCategory` (true on create, and on updates that change the category) and `GetCategoryArchiveBlockersUseCase` lists the recurrences and running installment plans that block an archive.
