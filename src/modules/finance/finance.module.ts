@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { AddFamilyToCategoryScopesUseCase } from '@finance/application/use-case/AddFamilyToCategoryScopesUseCase';
 import { AdjustAccountBalanceUseCase } from '@finance/application/use-case/AdjustAccountBalanceUseCase';
 import { AttachAccountBalancesUseCase } from '@finance/application/use-case/AttachAccountBalancesUseCase';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
@@ -21,6 +22,7 @@ import { DeleteInstallmentPlanUseCase } from '@finance/application/use-case/Dele
 import { DeleteOccurrenceUseCase } from '@finance/application/use-case/DeleteOccurrenceUseCase';
 import { DeleteRecurrenceUseCase } from '@finance/application/use-case/DeleteRecurrenceUseCase';
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
+import { DetachCategoryCreatorFromFamilyUseCase } from '@finance/application/use-case/DetachCategoryCreatorFromFamilyUseCase';
 import { EndRecurrencesBySourceUseCase } from '@finance/application/use-case/EndRecurrencesBySourceUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import { GetAccountsByIdsUseCase } from '@finance/application/use-case/GetAccountsByIdsUseCase';
@@ -43,6 +45,7 @@ import { MaterializeOccurrenceUseCase } from '@finance/application/use-case/Mate
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { PayInvoiceUseCase } from '@finance/application/use-case/PayInvoiceUseCase';
 import { PrepayInstallmentPlanUseCase } from '@finance/application/use-case/PrepayInstallmentPlanUseCase';
+import { RemoveFamilyFromCategoryScopesUseCase } from '@finance/application/use-case/RemoveFamilyFromCategoryScopesUseCase';
 import { ResolveCardRowsPaidUseCase } from '@finance/application/use-case/ResolveCardRowsPaidUseCase';
 import { ResolveRefundLinkUseCase } from '@finance/application/use-case/ResolveRefundLinkUseCase';
 import { SplitRecurrenceUseCase } from '@finance/application/use-case/SplitRecurrenceUseCase';
@@ -100,6 +103,7 @@ const useCases = [
   DeleteInstallmentPlanUseCase,
   GetInstallmentPlanUseCase,
   UpdateInstallmentPlanUseCase,
+  AddFamilyToCategoryScopesUseCase,
   AdjustAccountBalanceUseCase,
   AttachAccountBalancesUseCase,
   ComputeCardInvoicesUseCase,
@@ -112,6 +116,7 @@ const useCases = [
   DeleteCreditCardUseCase,
   DeleteFinanceDataByOwnerUseCase,
   DeleteTransactionUseCase,
+  DetachCategoryCreatorFromFamilyUseCase,
   EnsureTransactionConsistencyUseCase,
   GetAccountsUseCase,
   GetCategoriesUseCase,
@@ -127,6 +132,7 @@ const useCases = [
   HasFinanceDataByOwnerUseCase,
   PayInvoiceUseCase,
   PrepayInstallmentPlanUseCase,
+  RemoveFamilyFromCategoryScopesUseCase,
   ResolveCardRowsPaidUseCase,
   UndoInstallmentPrepaymentUseCase,
   UndoInvoicePaymentUseCase,
