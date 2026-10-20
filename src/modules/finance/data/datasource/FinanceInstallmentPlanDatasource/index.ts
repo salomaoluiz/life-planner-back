@@ -9,6 +9,7 @@ import {
 } from '@finance/data/datasource/ledger';
 import {
   CreateInstallmentPlanDatasourceParams,
+  FinancialInstallmentPlanWithCard,
   FinancialInstallmentPlanWithRows,
   IFinanceInstallmentPlanDatasource,
   InstallmentRowDatasourceParams,
@@ -95,6 +96,20 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
         },
       },
       where: { id },
+    });
+  }
+
+  async findManyByCategoryIds(categoryIds: string[]): Promise<FinancialInstallmentPlanWithCard[]> {
+    return this.db.client.financialInstallmentPlan.findMany({
+      include: {
+        credit_card: { select: { closing_day: true } },
+        prepayment: { include: { discount_transaction: { select: { value: true } } } },
+        transactions: {
+          include: TRANSACTION_RELATIONS,
+          orderBy: { installment_number: 'asc' },
+        },
+      },
+      where: { category_id: { in: categoryIds } },
     });
   }
 

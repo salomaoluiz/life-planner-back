@@ -24,6 +24,11 @@ export const UpdateCategorySchema = z
     scope: z.literal(ALL_SCOPES).optional(),
     // ARCHIVED / ACTIVE applies to the whole subtree (spec 041).
     status: z.enum(AccountStatus).optional(),
+    // Server date (`YYYY-MM-DD`) used to tell which installment plans are still running when archiving.
+    today: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
     type: TransactionTypeSchema.optional(),
   })
   .refine(

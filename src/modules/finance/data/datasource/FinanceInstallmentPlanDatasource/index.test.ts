@@ -89,6 +89,20 @@ describe('Method delete', () => {
   });
 });
 
+describe('Method findManyByCategoryIds', () => {
+  it('SHOULD query the plans of the categories with their card closing day', async () => {
+    spies.planFindMany.mockResolvedValue([{ id: 'plan-1' }]);
+
+    expect(await setup.findManyByCategoryIds(['cat-1', 'cat-2'])).toEqual([{ id: 'plan-1' }]);
+    expect(spies.planFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({ credit_card: { select: { closing_day: true } } }),
+        where: { category_id: { in: ['cat-1', 'cat-2'] } },
+      }),
+    );
+  });
+});
+
 describe('Method findById', () => {
   it('SHOULD load the plan with its rows ordered by number', async () => {
     spies.planFindUnique.mockResolvedValue({ id: 'plan-1' });

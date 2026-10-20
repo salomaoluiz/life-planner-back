@@ -6,7 +6,9 @@ export type IFinanceInstallmentPlanRepository = {
   // One database transaction: the plan and its rows. Row k is `values[k]` on `months[k]`. Returns the plan id.
   createPlan(params: CreateInstallmentPlanRepositoryParams): Promise<string>;
   deletePlan(id: string): Promise<void>;
+  // Plans of these categories (any status) with the closing day of their card, in one query (spec 041).
   findPlanById(id: string): Promise<InstallmentPlanEntity | undefined>;
+  findPlansByCategoryIds(categoryIds: string[]): Promise<PlanWithClosingDay[]>;
   // Deletes the rows and creates them again (per-installment adjustments are lost).
   recreatePlan(params: RecreateInstallmentPlanRepositoryParams): Promise<void>;
   // Rows with `installmentNumber >= fromNumber`; `value` is refused when one of them is paid.
@@ -25,6 +27,10 @@ interface CreateInstallmentPlanRepositoryParams {
   owner: OwnerType;
   ownerId: string;
   values: number[];
+}
+interface PlanWithClosingDay {
+  closingDay: number;
+  plan: InstallmentPlanEntity;
 }
 interface RecreateInstallmentPlanRepositoryParams {
   categoryId: string;
@@ -50,6 +56,7 @@ interface UpdateInstallmentsFromRepositoryParams {
 
 export {
   CreateInstallmentPlanRepositoryParams,
+  PlanWithClosingDay,
   RecreateInstallmentPlanRepositoryParams,
   UpdateInstallmentPlanTextRepositoryParams,
   UpdateInstallmentsFromRepositoryParams,

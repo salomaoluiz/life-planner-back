@@ -9,9 +9,10 @@ import {
 
 import { ALL_SCOPES } from '@finance/application/dto/FinanceCommon';
 import { UpdateCategoryInput, UpdateCategorySchema } from '@finance/application/dto/UpdateCategory';
+import { GetCategoryArchiveBlockersUseCase } from '@finance/application/use-case/GetCategoryArchiveBlockersUseCase';
 import CategoryEntity from '@finance/domain/entity/CategoryEntity';
 import { isVisibleTo, sameScopes } from '@finance/domain/entity/CategoryScope';
-import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
+import { hasOwnerAccess, OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { isSystemCategoryId } from '@finance/domain/entity/SystemCategory';
 import { AccountStatus } from '@finance/domain/enum';
 import {
@@ -34,6 +35,7 @@ export class UpdateCategoryUseCase implements UseCaseWithParams<
     private readonly categoryRepository: IFinanceCategoryRepository,
     @Inject('IFinanceTransactionRepository')
     private readonly transactionRepository: IFinanceTransactionRepository,
+    private readonly blockersUseCase: GetCategoryArchiveBlockersUseCase,
   ) {}
 
   async execute(params: UpdateCategoryInput): Promise<CategoryEntity> {
@@ -73,6 +75,10 @@ export class UpdateCategoryUseCase implements UseCaseWithParams<
       if (parent?.status === AccountStatus.ARCHIVED) {
         throw new UnprocessableEntityException('Parent category is archived');
       }
+    }
+
+    if (status === AccountStatus.ARCHIVED) {
+      await this.assertNoPendingItems(category, descendants, input);
     }
 
     // Spec 038 FR 3: a single-scope root becomes ALL (with its subtree); there is no way back.
@@ -169,6 +175,37 @@ export class UpdateCategoryUseCase implements UseCaseWithParams<
       subtreeDepths,
       subtreeIds: status && descendants.map((child) => child.id),
       type: input.type,
+    });
+  }
+
+  // Spec 041 FR 7-8: recurrences and running installment plans of the subtree block the archive.
+  private async assertNoPendingItems(
+    category: CategoryEntity,
+    descendants: CategoryEntity[],
+    input: { accessibleOwners: OwnerAccess[]; today?: string },
+  ): Promise<void> {
+    const blockers = await this.blockersUseCase.execute({
+      accessibleOwners: input.accessibleOwners,
+      categoryIds: [category.id, ...descendants.map((child) => child.id)],
+      scopes: category.scopes,
+      today: input.today ?? new Date().toISOString().slice(0, 10),
+    });
+
+    if (blockers.recurrences.length === 0 && blockers.installmentPlans.length === 0) {
+      // Only hidden items: they still block, the caller just cannot see them.
+      if (blockers.hiddenCount === 0) {
+        return;
+      }
+    }
+
+    throw new ConflictException({
+      blockers: {
+        installmentPlans: blockers.installmentPlans,
+        recurrences: blockers.recurrences,
+      },
+      ...(blockers.hiddenCount > 0 && { hiddenCount: blockers.hiddenCount }),
+      message: 'Category has pending items',
+      statusCode: 409,
     });
   }
 }

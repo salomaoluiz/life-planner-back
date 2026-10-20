@@ -340,3 +340,60 @@ describe('archiving (spec 041)', () => {
     );
   });
 });
+
+describe('pending items block the archive (spec 041)', () => {
+  const recurrence = {
+    categoryId: 'c',
+    description: 'Gym',
+    id: 'rec-1',
+    nextOccurrenceDate: '2026-11-05',
+  };
+
+  it('SHOULD answer 409 with the blockers (whole subtree ids checked) AND write nothing', async () => {
+    mocks.blockersUseCase.execute.mockResolvedValue({
+      hiddenCount: 0,
+      installmentPlans: [],
+      recurrences: [recurrence],
+    });
+
+    const error = await run('a', { status: AccountStatus.ARCHIVED, today: '2026-10-20' }).catch(
+      (caught) => caught,
+    );
+
+    expect(error).toBeInstanceOf(ConflictException);
+    expect(error.getResponse()).toEqual({
+      blockers: { installmentPlans: [], recurrences: [recurrence] },
+      message: 'Category has pending items',
+      statusCode: 409,
+    });
+    expect(mocks.blockersUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ categoryIds: ['a', 'b', 'c'], today: '2026-10-20' }),
+    );
+    expect(mocks.categoryRepository.updateCategory).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD include hiddenCount (and still block) WHEN only invisible items exist', async () => {
+    mocks.blockersUseCase.execute.mockResolvedValue({
+      hiddenCount: 2,
+      installmentPlans: [],
+      recurrences: [],
+    });
+
+    const error = await run('a', { status: AccountStatus.ARCHIVED }).catch((caught) => caught);
+
+    expect(error.getResponse()).toEqual(expect.objectContaining({ hiddenCount: 2 }));
+  });
+
+  it('SHOULD NOT check blockers WHEN reactivating', async () => {
+    mocks.categoryRepository.findCategoryById.mockImplementation(async (id: string) => ({
+      ...mocks.nodes.a,
+      id,
+      parentId: undefined,
+      status: AccountStatus.ARCHIVED,
+    }));
+
+    await run('a', { status: AccountStatus.ACTIVE });
+
+    expect(mocks.blockersUseCase.execute).not.toHaveBeenCalled();
+  });
+});

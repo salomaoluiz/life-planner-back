@@ -52,6 +52,7 @@ describe('update', () => {
       callerId: mocks.userId,
       id: 'cat-1',
       parentId: null,
+      today: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
     });
   });
 });

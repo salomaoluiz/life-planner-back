@@ -12,6 +12,9 @@ export interface CreateInstallmentPlanDatasourceParams {
   owner_id: string;
   rows: InstallmentRowDatasourceParams[];
 }
+export type FinancialInstallmentPlanWithCard = {
+  credit_card: { closing_day: number };
+} & FinancialInstallmentPlanWithRows;
 export type FinancialInstallmentPlanWithRows = {
   prepayment:
     | ({ discount_transaction: { value: number } | null } & FinancialInstallmentPrepayment)
@@ -23,6 +26,8 @@ export interface IFinanceInstallmentPlanDatasource {
   create(params: CreateInstallmentPlanDatasourceParams): Promise<string>;
   delete(id: string): Promise<void>;
   findById(id: string): Promise<FinancialInstallmentPlanWithRows | null>;
+  // One query: the plans of these categories with their rows and the closing day of their card.
+  findManyByCategoryIds(categoryIds: string[]): Promise<FinancialInstallmentPlanWithCard[]>;
   recreate(params: RecreateInstallmentPlanDatasourceParams): Promise<void>;
   updateFromNumber(params: UpdateInstallmentsFromDatasourceParams): Promise<void>;
   updateText(params: UpdateInstallmentPlanTextDatasourceParams): Promise<void>;

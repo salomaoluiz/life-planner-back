@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { todayInSaoPaulo } from '@api/finance/v1/credit-card-today';
 import {
   CategoryOutput,
   CreateCategoryApiInput,
@@ -101,6 +102,7 @@ export class CategoryService {
       accessibleOwners,
       callerId: userId,
       id,
+      today: todayInSaoPaulo(),
     });
 
     return toCategoryOutput(category, accessibleOwners);

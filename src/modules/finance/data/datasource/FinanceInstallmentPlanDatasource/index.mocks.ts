@@ -9,6 +9,7 @@ import { FinanceInstallmentPlanDatasource } from './index';
 const paymentFindFirstSpy = jest.fn();
 const planCreateSpy = jest.fn();
 const planDeleteSpy = jest.fn();
+const planFindManySpy = jest.fn();
 const planFindUniqueSpy = jest.fn();
 const planUpdateSpy = jest.fn();
 const prepaymentDeleteSpy = jest.fn();
@@ -29,6 +30,7 @@ const clientMock = {
   financialInstallmentPlan: {
     create: planCreateSpy,
     delete: planDeleteSpy,
+    findMany: planFindManySpy,
     findUnique: planFindUniqueSpy,
     update: planUpdateSpy,
   },
@@ -79,6 +81,7 @@ const spies = {
   paymentFindFirst: paymentFindFirstSpy,
   planCreate: planCreateSpy,
   planDelete: planDeleteSpy,
+  planFindMany: planFindManySpy,
   planFindUnique: planFindUniqueSpy,
   planUpdate: planUpdateSpy,
   prepaymentDelete: prepaymentDeleteSpy,
