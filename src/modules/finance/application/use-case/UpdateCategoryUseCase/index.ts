@@ -1,22 +1,27 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Inject,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 
+import { ALL_SCOPES } from '@finance/application/dto/FinanceCommon';
 import { UpdateCategoryInput, UpdateCategorySchema } from '@finance/application/dto/UpdateCategory';
 import CategoryEntity from '@finance/domain/entity/CategoryEntity';
+import { isVisibleTo, sameScopes } from '@finance/domain/entity/CategoryScope';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { isSystemCategoryId } from '@finance/domain/entity/SystemCategory';
 import {
   IFinanceCategoryRepository,
   IFinanceTransactionRepository,
   SubtreeDepth,
+  UpdateCategoryRepositoryParams,
 } from '@finance/domain/repository';
 import { collectDescendants } from '@finance/domain/service/CategoryTree';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
+import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { validate } from '@shared/infra/validation';
 
 export class UpdateCategoryUseCase implements UseCaseWithParams<
@@ -39,7 +44,7 @@ export class UpdateCategoryUseCase implements UseCaseWithParams<
 
     const category = await this.categoryRepository.findCategoryById(input.id);
 
-    if (!category || !hasOwnerAccess(input.accessibleOwners, category)) {
+    if (!category || !isVisibleTo(category, input.accessibleOwners)) {
       throw new NotFoundException();
     }
 
@@ -49,10 +54,32 @@ export class UpdateCategoryUseCase implements UseCaseWithParams<
     const parentChanges = nextParentId !== category.parentId;
     const typeChanges = nextType !== category.type;
 
-    const sameOwnerCategories = await this.categoryRepository.findCategories({
-      owners: [{ owner: category.owner, ownerId: category.ownerId }],
+    const scopeCategories = await this.categoryRepository.findCategories({
+      owners: category.scopes,
     });
-    const descendants = collectDescendants(sameOwnerCategories, category.id);
+    const descendants = collectDescendants(scopeCategories, category.id);
+
+    // Spec 038 FR 3: a single-scope root becomes ALL (with its subtree); there is no way back.
+    const switchesToAll = input.scope === ALL_SCOPES && !category.allScopes;
+    let scope: UpdateCategoryRepositoryParams['scope'];
+
+    if (switchesToAll) {
+      const caller = { owner: OwnerType.USER, ownerId: input.callerId as string };
+
+      if (!input.callerId || !hasOwnerAccess(input.accessibleOwners, caller)) {
+        throw new ForbiddenException('Owner not accessible');
+      }
+
+      if (category.parentId !== undefined || (parentChanges && nextParentId !== undefined)) {
+        throw new BadRequestException('Only a main category can be turned into an All category');
+      }
+
+      scope = {
+        creatorId: input.callerId,
+        scopes: input.accessibleOwners,
+        subtreeIds: descendants.map((child) => child.id),
+      };
+    }
 
     // A type change is only safe on a childless category that stays (or becomes) a root:
     // otherwise the tree would mix EXPENSE and INCOME.
@@ -76,11 +103,12 @@ export class UpdateCategoryUseCase implements UseCaseWithParams<
       if (nextParentId !== undefined) {
         const parent = await this.categoryRepository.findCategoryById(nextParentId);
 
-        if (!parent || !hasOwnerAccess(input.accessibleOwners, parent)) {
+        if (!parent || !isVisibleTo(parent, input.accessibleOwners)) {
           throw new NotFoundException('Parent category not found');
         }
 
-        if (parent.owner !== category.owner || parent.ownerId !== category.ownerId) {
+        // Same scopes as the category: ALL under ALL (same creator scopes), a single scope under the same scope.
+        if (parent.allScopes !== category.allScopes || !sameScopes(parent, category)) {
           throw new BadRequestException('Parent category belongs to another owner');
         }
 
@@ -116,6 +144,7 @@ export class UpdateCategoryUseCase implements UseCaseWithParams<
       id: input.id,
       name: input.name,
       parentId: parentChanges ? (nextParentId ?? null) : undefined,
+      scope,
       subtreeDepths,
       type: input.type,
     });

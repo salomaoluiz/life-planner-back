@@ -76,6 +76,7 @@ const mocks = {
   creditCardRepository: creditCardRepositoryMock,
   familyId,
   input: inputMock,
+  userId,
 };
 const spies = {};
 

@@ -9,6 +9,8 @@ import { EnsureFamilyOwnerUseCase } from '@family/application/use-case/EnsureFam
 import { GetFamilyByIdUseCase } from '@family/application/use-case/GetFamilyByIdUseCase';
 import { GetUserFamiliesUseCase } from '@family/application/use-case/GetUserFamiliesUseCase';
 import { UpdateFamilyUseCase } from '@family/application/use-case/UpdateFamilyUseCase';
+import { AddFamilyToCategoryScopesUseCase } from '@finance/application/use-case/AddFamilyToCategoryScopesUseCase';
+import { RemoveFamilyFromCategoryScopesUseCase } from '@finance/application/use-case/RemoveFamilyFromCategoryScopesUseCase';
 import { FindUserByIdUseCase } from '@user/application/use-case/FindUserByIdUseCase';
 
 // region Mocks
@@ -29,6 +31,8 @@ const familyApiMock = {
   updatedAt: '2026-10-04T13:00:00.000Z',
 };
 
+const addFamilyToCategoryScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
+const removeFamilyFromCategoryScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const createFamilyUseCaseMock = { execute: jest.fn().mockResolvedValue(familyResultMock) };
 const deleteFamilyUseCaseMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const ensureFamilyOwnerUseCaseMock = { execute: jest.fn().mockResolvedValue(familyResultMock) };
@@ -53,6 +57,11 @@ beforeEach(async () => {
   const module = await Test.createTestingModule({
     providers: [
       FamilyService,
+      { provide: AddFamilyToCategoryScopesUseCase, useValue: addFamilyToCategoryScopesMock },
+      {
+        provide: RemoveFamilyFromCategoryScopesUseCase,
+        useValue: removeFamilyFromCategoryScopesMock,
+      },
       { provide: CreateFamilyUseCase, useValue: createFamilyUseCaseMock },
       { provide: DeleteFamilyUseCase, useValue: deleteFamilyUseCaseMock },
       { provide: EnsureFamilyOwnerUseCase, useValue: ensureFamilyOwnerUseCaseMock },
@@ -68,6 +77,7 @@ beforeEach(async () => {
 });
 
 const mocks = {
+  addFamilyToCategoryScopes: addFamilyToCategoryScopesMock,
   createFamilyUseCase: createFamilyUseCaseMock,
   deleteFamilyUseCase: deleteFamilyUseCaseMock,
   ensureFamilyOwnerUseCase: ensureFamilyOwnerUseCaseMock,
@@ -77,6 +87,7 @@ const mocks = {
   getFamilyByIdUseCase: getFamilyByIdUseCaseMock,
   getUserFamiliesUseCase: getUserFamiliesUseCaseMock,
   recordsCheck: recordsCheckMock,
+  removeFamilyFromCategoryScopes: removeFamilyFromCategoryScopesMock,
   updateFamilyUseCase: updateFamilyUseCaseMock,
   userId,
 };

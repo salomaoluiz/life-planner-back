@@ -4,6 +4,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 
+import CategoryEntityFixture from '@finance/domain/entity/mocks/CategoryEntity.fixture';
 import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
 import { AccountStatus, SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -28,7 +29,14 @@ it.each([
 
 it.each([
   ['missing', undefined],
-  ['owned by a stranger', { ...mocks.category, ownerId: 'stranger' }],
+  [
+    'owned by a stranger',
+    {
+      ...mocks.category,
+      ownerId: 'stranger',
+      scopes: [{ owner: OwnerType.USER, ownerId: 'stranger' }],
+    },
+  ],
 ])('SHOULD throw NotFound (404) WHEN the category is %s', async (_label, found) => {
   mocks.categoryRepository.findCategoryById.mockResolvedValueOnce(found);
 
@@ -46,6 +54,7 @@ it('SHOULD throw BadRequest (400) WHEN the account matches but the category belo
     ...mocks.category,
     owner: OwnerType.FAMILY,
     ownerId: mocks.familyId,
+    scopes: [{ owner: OwnerType.FAMILY, ownerId: mocks.familyId }],
   });
 
   await expect(setup.execute(mocks.input)).rejects.toThrow(BadRequestException);
@@ -145,5 +154,36 @@ describe('credit card purchases (spec 029)', () => {
       setup.execute({ ...mocks.cardInput, accountId: mocks.account.id }),
     ).rejects.toThrow();
     await expect(setup.execute({ ...mocks.cardInput, creditCardId: undefined })).rejects.toThrow();
+  });
+});
+
+describe('ALL category', () => {
+  const allCategory = new CategoryEntityFixture()
+    .withAllScopes(
+      [
+        { owner: OwnerType.USER, ownerId: mocks.userId },
+        { owner: OwnerType.FAMILY, ownerId: mocks.familyId },
+      ],
+      mocks.userId,
+    )
+    .build();
+
+  it('SHOULD accept a category whose scopes include the transaction owner', async () => {
+    mocks.categoryRepository.findCategoryById.mockResolvedValueOnce({
+      ...allCategory,
+      type: mocks.input.type,
+    });
+
+    await expect(setup.execute(mocks.input)).resolves.toBeDefined();
+  });
+
+  it('SHOULD reject WHEN the scopes exclude the transaction owner', async () => {
+    mocks.categoryRepository.findCategoryById.mockResolvedValueOnce({
+      ...allCategory,
+      scopes: [{ owner: OwnerType.FAMILY, ownerId: mocks.familyId }],
+      type: mocks.input.type,
+    });
+
+    await expect(setup.execute(mocks.input)).rejects.toThrow(BadRequestException);
   });
 });

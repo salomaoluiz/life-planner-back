@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { DeleteCategoryInput, DeleteCategorySchema } from '@finance/application/dto/DeleteCategory';
-import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
+import { isVisibleTo } from '@finance/domain/entity/CategoryScope';
 import { isSystemCategoryId } from '@finance/domain/entity/SystemCategory';
 import {
   IFinanceCategoryRepository,
@@ -33,17 +33,17 @@ export class DeleteCategoryUseCase implements UseCaseWithParams<DeleteCategoryIn
 
     const category = await this.categoryRepository.findCategoryById(input.id);
 
-    if (!category || !hasOwnerAccess(input.accessibleOwners, category)) {
+    if (!category || !isVisibleTo(category, input.accessibleOwners)) {
       throw new NotFoundException();
     }
 
-    // Deleting a category also deletes its subtree (FK cascade): refuse if ANY category in it is used.
-    const sameOwnerCategories = await this.categoryRepository.findCategories({
-      owners: [{ owner: category.owner, ownerId: category.ownerId }],
+    // Deleting a category also deletes its subtree (FK cascade): refuse if ANY category in it is used, in ANY scope.
+    const scopeCategories = await this.categoryRepository.findCategories({
+      owners: category.scopes,
     });
     const subtreeIds = [
       category.id,
-      ...collectDescendants(sameOwnerCategories, category.id).map((child) => child.id),
+      ...collectDescendants(scopeCategories, category.id).map((child) => child.id),
     ];
 
     if ((await this.transactionRepository.countByCategoryIds(subtreeIds)) > 0) {

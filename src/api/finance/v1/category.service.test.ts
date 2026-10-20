@@ -1,3 +1,5 @@
+import { faker } from '@faker-js/faker';
+
 import { TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
@@ -19,6 +21,7 @@ describe('create', () => {
     expect(mocks.createCategoryUseCase.execute).toHaveBeenCalledWith({
       ...body,
       accessibleOwners: mocks.accessibleOwners,
+      callerId: mocks.userId,
     });
     expect(result).toEqual(mocks.rootApi);
   });
@@ -46,6 +49,7 @@ describe('update', () => {
 
     expect(mocks.updateCategoryUseCase.execute).toHaveBeenCalledWith({
       accessibleOwners: mocks.accessibleOwners,
+      callerId: mocks.userId,
       id: 'cat-1',
       parentId: null,
     });
@@ -60,5 +64,55 @@ describe('delete', () => {
       accessibleOwners: mocks.accessibleOwners,
       id: 'cat-1',
     });
+  });
+});
+
+describe('ALL category output', () => {
+  const familyA = faker.string.uuid();
+  const familyB = faker.string.uuid();
+  const creatorId = faker.string.uuid();
+  const allResult = {
+    ...mocks.childResult,
+    allScopes: true,
+    creatorId,
+    owner: OwnerType.USER,
+    ownerId: creatorId,
+    parentId: undefined,
+    scopes: [
+      { owner: OwnerType.FAMILY, ownerId: familyA },
+      { owner: OwnerType.USER, ownerId: creatorId },
+      { owner: OwnerType.FAMILY, ownerId: familyB },
+    ],
+  };
+
+  it('SHOULD show the creator every scope, Personal first, as scope ALL', async () => {
+    mocks.financeAccessService.resolve.mockResolvedValueOnce([
+      { owner: OwnerType.USER, ownerId: creatorId },
+      { owner: OwnerType.FAMILY, ownerId: familyA },
+      { owner: OwnerType.FAMILY, ownerId: familyB },
+    ]);
+    mocks.getCategoriesUseCase.execute.mockResolvedValueOnce([allResult]);
+
+    const [result] = await setup.findAll(creatorId);
+
+    expect(result.scope).toBe('ALL');
+    expect(result.owner).toBe(OwnerType.USER);
+    expect(result.ownerId).toBe(creatorId);
+    expect(result.scopes.map((scope) => scope.ownerId)).toEqual([creatorId, familyA, familyB]);
+  });
+
+  it('SHOULD show another member only the scopes they reach AND never the creator Personal scope', async () => {
+    mocks.financeAccessService.resolve.mockResolvedValueOnce([
+      { owner: OwnerType.USER, ownerId: faker.string.uuid() },
+      { owner: OwnerType.FAMILY, ownerId: familyB },
+    ]);
+    mocks.getCategoriesUseCase.execute.mockResolvedValueOnce([allResult]);
+
+    const [result] = await setup.findAll(faker.string.uuid());
+
+    expect(result.scope).toBe('ALL');
+    expect(result.scopes).toEqual([{ owner: OwnerType.FAMILY, ownerId: familyB }]);
+    expect(result.owner).toBe(OwnerType.FAMILY);
+    expect(result.ownerId).toBe(familyB);
   });
 });

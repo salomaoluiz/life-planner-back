@@ -4,6 +4,7 @@ import { mocks } from './index.mocks';
 describe('FinanceCategoryMapper.toDomain', () => {
   it('SHOULD map every column of a child category', () => {
     expect(FinanceCategoryMapper.toDomain(mocks.rawChild)).toEqual({
+      allScopes: false,
       createdAt: mocks.rawChild.created_at,
       depthLevel: 1,
       icon: 'store',
@@ -13,9 +14,20 @@ describe('FinanceCategoryMapper.toDomain', () => {
       owner: 'FAMILY',
       ownerId: mocks.rawChild.owner_id,
       parentId: mocks.rawChild.parent_id,
+      scopes: [{ owner: 'FAMILY', ownerId: mocks.rawChild.owner_id }],
       type: 'INCOME',
       updatedAt: mocks.rawChild.updated_at,
     });
+  });
+
+  it('SHOULD map an ALL category to its creator and every scope row', () => {
+    const entity = FinanceCategoryMapper.toDomain(mocks.rawAll);
+
+    expect(entity.allScopes).toBe(true);
+    expect(entity.creatorId).toBe(mocks.rawAll.creator_id);
+    expect(entity.scopes).toEqual(
+      mocks.rawAll.scopes.map((scope) => ({ owner: scope.owner, ownerId: scope.owner_id })),
+    );
   });
 
   it('SHOULD map a NULL parent_id to an undefined parentId', () => {

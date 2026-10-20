@@ -11,6 +11,10 @@ import {
   UpdateCategoryRepositoryParams,
 } from '@finance/domain/repository';
 
+function toScopeRow(access: OwnerAccess) {
+  return { owner: access.owner, owner_id: access.ownerId };
+}
+
 @Injectable()
 export class FinanceCategoryRepository implements IFinanceCategoryRepository {
   constructor(
@@ -18,8 +22,18 @@ export class FinanceCategoryRepository implements IFinanceCategoryRepository {
     private readonly categoryDatasource: IFinanceCategoryDatasource,
   ) {}
 
+  async addScope(params: { creatorId: string; owner: OwnerAccess }): Promise<void> {
+    await this.categoryDatasource.addScope({
+      creator_id: params.creatorId,
+      owner: params.owner.owner,
+      owner_id: params.owner.ownerId,
+    });
+  }
+
   async createCategory(params: CreateCategoryRepositoryParams): Promise<CategoryEntity> {
     const result = await this.categoryDatasource.create({
+      all_scopes: params.allScopes,
+      creator_id: params.creatorId,
       depth_level: params.depthLevel,
       icon: params.icon,
       icon_color: params.iconColor,
@@ -27,6 +41,7 @@ export class FinanceCategoryRepository implements IFinanceCategoryRepository {
       owner: params.owner,
       owner_id: params.ownerId,
       parent_id: params.parentId,
+      scopes: params.scopes?.map(toScopeRow),
       type: params.type,
     });
 
@@ -35,6 +50,13 @@ export class FinanceCategoryRepository implements IFinanceCategoryRepository {
 
   async deleteCategory(id: string): Promise<void> {
     await this.categoryDatasource.delete(id);
+  }
+
+  async detachFamilyScope(params: { creatorId: string; familyId: string }): Promise<number> {
+    return this.categoryDatasource.detachFamilyScope({
+      creator_id: params.creatorId,
+      family_id: params.familyId,
+    });
   }
 
   async existsByOwner(access: OwnerAccess): Promise<boolean> {
@@ -56,6 +78,10 @@ export class FinanceCategoryRepository implements IFinanceCategoryRepository {
     return result ? FinanceCategoryMapper.toDomain(result) : undefined;
   }
 
+  async removeScope(owner: OwnerAccess): Promise<void> {
+    await this.categoryDatasource.removeScope(toScopeRow(owner));
+  }
+
   async updateCategory(params: UpdateCategoryRepositoryParams): Promise<CategoryEntity> {
     const result = await this.categoryDatasource.update({
       depth_level: params.depthLevel,
@@ -64,6 +90,11 @@ export class FinanceCategoryRepository implements IFinanceCategoryRepository {
       id: params.id,
       name: params.name,
       parent_id: params.parentId,
+      scope: params.scope && {
+        creator_id: params.scope.creatorId,
+        scopes: params.scope.scopes.map(toScopeRow),
+        subtree_ids: params.scope.subtreeIds,
+      },
       subtree_depths: params.subtreeDepths?.map((subtree) => ({
         depth_level: subtree.depthLevel,
         id: subtree.id,

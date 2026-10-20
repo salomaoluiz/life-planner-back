@@ -17,6 +17,11 @@ it('SHOULD run the steps in order: confirm email, owned families, purges, family
     order.push('owned');
     return ['family-1'];
   });
+  mocks.getUserFamilyIds.execute.mockResolvedValue(['family-1']);
+  mocks.detachCategoryCreator.execute.mockImplementation(async () => {
+    order.push('detach');
+    return 1;
+  });
   mocks.purges.finance.execute.mockImplementation(async () => {
     order.push('finance');
     return 1;
@@ -38,6 +43,7 @@ it('SHOULD run the steps in order: confirm email, owned families, purges, family
   expect(order).toEqual([
     'confirm',
     'owned',
+    'detach',
     'finance',
     'stock',
     'finance',
@@ -122,4 +128,26 @@ it('SHOULD NOT log success WHEN a step fails', async () => {
 
   await expect(setup.deleteAccount(mocks.userId, input)).rejects.toThrow('db down');
   expect(mocks.logger.log).not.toHaveBeenCalled();
+});
+
+it('SHOULD give EVERY family the user belongs to (owned or joined) its own copy of their All categories', async () => {
+  await setup.deleteAccount(mocks.userId, input);
+
+  expect(mocks.detachCategoryCreator.execute).toHaveBeenCalledTimes(2);
+  expect(mocks.detachCategoryCreator.execute).toHaveBeenCalledWith({
+    familyId: 'family-1',
+    userId: mocks.userId,
+  });
+  expect(mocks.detachCategoryCreator.execute).toHaveBeenCalledWith({
+    familyId: 'family-3',
+    userId: mocks.userId,
+  });
+});
+
+it('SHOULD NOT purge anything WHEN the detach step fails (retry finishes the job)', async () => {
+  mocks.detachCategoryCreator.execute.mockRejectedValueOnce(new Error('db down'));
+
+  await expect(setup.deleteAccount(mocks.userId, input)).rejects.toThrow('db down');
+  expect(mocks.purges.finance.execute).not.toHaveBeenCalled();
+  expect(mocks.deleteUser.execute).not.toHaveBeenCalled();
 });

@@ -164,9 +164,14 @@ model FinancialCategory {
   owner_id            String?
   system_key          SystemCategoryKey? @unique
   exclude_from_totals Boolean            @default(false)
+  // Spec 038: an ALL category follows every scope of `creator_id` (Personal + families); `owner/owner_id` stays the
+  // creator's Personal scope and `scopes` lists them all. Single-scope rows keep `all_scopes = false`.
+  all_scopes          Boolean            @default(false)
+  creator_id          String?
   created_at          DateTime           @default(now()) @db.Timestamptz(6)
   updated_at          DateTime           @updatedAt @db.Timestamptz(6)
 
+  scopes            FinancialCategoryScope[]
   parent            FinancialCategory?         @relation("CategoryTree", fields: [parent_id], references: [id], onDelete: Cascade)
   children          FinancialCategory[]        @relation("CategoryTree")
   transactions      FinancialTransaction[]
@@ -176,6 +181,19 @@ model FinancialCategory {
   @@index([owner, owner_id])
   @@index([parent_id])
   @@map("financial_categories")
+}
+
+model FinancialCategoryScope {
+  id          String    @id @default(uuid())
+  category_id String
+  owner       OwnerType
+  owner_id    String
+
+  category FinancialCategory @relation(fields: [category_id], references: [id], onDelete: Cascade)
+
+  @@unique([category_id, owner, owner_id])
+  @@index([owner, owner_id])
+  @@map("financial_category_scopes")
 }
 
 // Money is integer cents (BRL implied). `date` is a calendar date (no time, no timezone).

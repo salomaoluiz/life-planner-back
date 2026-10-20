@@ -39,8 +39,13 @@ const f = {
   ...node('f', 0),
   owner: OwnerType.FAMILY,
   ownerId: familyId,
+  scopes: [{ owner: OwnerType.FAMILY, ownerId: familyId }],
 };
-const x = { ...node('x', 0), ownerId: 'stranger' };
+const x = {
+  ...node('x', 0),
+  ownerId: 'stranger',
+  scopes: [{ owner: OwnerType.USER, ownerId: 'stranger' }],
+};
 const tree: CategoryEntity[] = [a, b, c, d, e, i];
 const everything: CategoryEntity[] = [...tree, f, x];
 

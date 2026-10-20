@@ -12,6 +12,8 @@ import { EnsureFamilyOwnerUseCase } from '@family/application/use-case/EnsureFam
 import { GetFamilyByIdUseCase } from '@family/application/use-case/GetFamilyByIdUseCase';
 import { GetUserFamiliesUseCase } from '@family/application/use-case/GetUserFamiliesUseCase';
 import { UpdateFamilyUseCase } from '@family/application/use-case/UpdateFamilyUseCase';
+import { AddFamilyToCategoryScopesUseCase } from '@finance/application/use-case/AddFamilyToCategoryScopesUseCase';
+import { RemoveFamilyFromCategoryScopesUseCase } from '@finance/application/use-case/RemoveFamilyFromCategoryScopesUseCase';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { FindUserByIdUseCase } from '@user/application/use-case/FindUserByIdUseCase';
 
@@ -28,12 +30,14 @@ function toApiOutput(family: FamilyUseCaseOutput): FamilyOutput {
 @Injectable()
 export class FamilyService {
   constructor(
+    private readonly addFamilyToCategoryScopesUseCase: AddFamilyToCategoryScopesUseCase,
     private readonly createFamilyUseCase: CreateFamilyUseCase,
     private readonly deleteFamilyUseCase: DeleteFamilyUseCase,
     private readonly ensureFamilyOwnerUseCase: EnsureFamilyOwnerUseCase,
     private readonly findUserByIdUseCase: FindUserByIdUseCase,
     private readonly getFamilyByIdUseCase: GetFamilyByIdUseCase,
     private readonly getUserFamiliesUseCase: GetUserFamiliesUseCase,
+    private readonly removeFamilyFromCategoryScopesUseCase: RemoveFamilyFromCategoryScopesUseCase,
     private readonly updateFamilyUseCase: UpdateFamilyUseCase,
     @Inject(FAMILY_OWNED_RECORDS_CHECKS)
     private readonly ownedRecordsChecks: IOwnedRecordsCheck[],
@@ -48,6 +52,9 @@ export class FamilyService {
       ownerEmail: user.email,
       ownerId: userId,
     });
+
+    // Spec 038 FR 11: the creator's All categories reach the new family. Idempotent, no cross-module transaction.
+    await this.addFamilyToCategoryScopesUseCase.execute({ familyId: family.id, userId });
 
     return toApiOutput(family);
   }
@@ -67,6 +74,8 @@ export class FamilyService {
     }
 
     await this.deleteFamilyUseCase.execute({ familyId, userId });
+    // Spec 038 FR 13: the family leaves the scopes of every All category.
+    await this.removeFamilyFromCategoryScopesUseCase.execute({ familyId });
   }
 
   async findAll(userId: string): Promise<FamilyOutput[]> {

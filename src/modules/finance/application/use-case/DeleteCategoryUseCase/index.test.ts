@@ -3,6 +3,7 @@ import { ConflictException, NotFoundException, UnprocessableEntityException } fr
 import CategoryEntityFixture from '@finance/domain/entity/mocks/CategoryEntity.fixture';
 import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
 import { SystemCategoryKey } from '@finance/domain/enum';
+import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { mocks, setup } from './index.mocks';
 
@@ -14,7 +15,14 @@ it('SHOULD delete an accessible category (the subtree goes with it through the F
 
 it.each([
   ['missing', undefined],
-  ['owned by someone the caller cannot access', { ...mocks.category, ownerId: 'stranger' }],
+  [
+    'owned by someone the caller cannot access',
+    {
+      ...mocks.category,
+      ownerId: 'stranger',
+      scopes: [{ owner: OwnerType.USER, ownerId: 'stranger' }],
+    },
+  ],
 ])(
   'SHOULD throw NotFound (404) AND delete nothing WHEN the category is %s',
   async (_label, found) => {
@@ -73,4 +81,33 @@ it('SHOULD throw Unprocessable (422) AND delete nothing WHEN the category is a s
   ).rejects.toThrow(new UnprocessableEntityException('System categories cannot be changed'));
   expect(mocks.categoryRepository.findCategoryById).not.toHaveBeenCalled();
   expect(mocks.categoryRepository.deleteCategory).not.toHaveBeenCalled();
+});
+
+describe('ALL scope', () => {
+  const scopes = [
+    { owner: OwnerType.USER, ownerId: 'creator' },
+    { owner: OwnerType.FAMILY, ownerId: 'family-a' },
+  ];
+  const all = new CategoryEntityFixture().withAllScopes(scopes, 'creator').build();
+
+  it('SHOULD refuse WHEN the category is used by a record of ANY scope, looking at all its scopes', async () => {
+    mocks.categoryRepository.findCategoryById.mockResolvedValue(all);
+    mocks.categoryRepository.findCategories.mockResolvedValue([all]);
+    mocks.transactionRepository.countByCategoryIds.mockResolvedValue(1);
+
+    await expect(setup.execute({ accessibleOwners: scopes, id: all.id })).rejects.toThrow(
+      ConflictException,
+    );
+    expect(mocks.categoryRepository.findCategories).toHaveBeenCalledWith({ owners: scopes });
+    expect(mocks.categoryRepository.deleteCategory).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD delete it for a caller who only reaches ONE of its scopes WHEN nothing uses it', async () => {
+    mocks.categoryRepository.findCategoryById.mockResolvedValue(all);
+    mocks.categoryRepository.findCategories.mockResolvedValue([all]);
+
+    await setup.execute({ accessibleOwners: [scopes[1]], id: all.id });
+
+    expect(mocks.categoryRepository.deleteCategory).toHaveBeenCalledWith(all.id);
+  });
 });
