@@ -27,9 +27,9 @@ export function resolveToday(today?: string): string {
 }
 
 // Spec 045: `?categoryId=a&categoryId=b` arrives as an array, `?categoryId=a` as a string.
-const IdListQuerySchema = z.union([z.uuid(), z.array(z.uuid())]).optional();
+export const IdListQuerySchema = z.union([z.uuid(), z.array(z.uuid())]).optional();
 // Whitespace-only text is no filter; more than 100 characters is a 400.
-const SearchQuerySchema = z
+export const SearchQuerySchema = z
   .string()
   .max(300)
   .transform((value) => value.trim())

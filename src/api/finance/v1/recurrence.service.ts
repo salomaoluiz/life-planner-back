@@ -23,6 +23,7 @@ import { UpdateRecurrenceUseCase } from '@finance/application/use-case/UpdateRec
 import { ProjectedOccurrence } from '@finance/domain/entity/ProjectedOccurrence';
 import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
+import { TransactionFilter } from '@finance/domain/entity/TransactionFilter';
 import { InstallmentEditScope, RecurrenceStatus } from '@finance/domain/enum';
 
 function toProjectedOutput(item: ProjectedOccurrence) {
@@ -167,6 +168,7 @@ export class RecurrenceService {
     range: { from: string; to: string },
     ownerIds?: string[],
     today?: string,
+    filter?: TransactionFilter,
   ) {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
     const resolved = resolveToday(today);
@@ -180,6 +182,7 @@ export class RecurrenceService {
 
     const projected = await this.getProjectionsUseCase.execute({
       accessibleOwners,
+      filter,
       ...range,
       ownerIds,
       today: resolved,

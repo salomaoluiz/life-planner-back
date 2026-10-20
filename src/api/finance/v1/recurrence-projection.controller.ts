@@ -6,7 +6,7 @@ import {
   ProjectedOccurrenceOutput,
   ProjectionsQuerySchema,
 } from '@api/finance/v1/dto/recurrence.dto';
-import { toOwnerIds } from '@api/finance/v1/finance-query';
+import { toOwnerIds, toTransactionFilter } from '@api/finance/v1/finance-query';
 import { RecurrenceService } from '@api/finance/v1/recurrence.service';
 import { JwtPayload } from '@shared/infra/jwt/types';
 import { validate } from '@shared/infra/validation';
@@ -24,13 +24,14 @@ export class RecurrenceProjectionController {
   @Get()
   @ZodResponse({ status: 200, type: [ProjectedOccurrenceOutput] })
   async findAll(@Request() req: JwtPayload & Request, @Query() query: Record<string, unknown>) {
-    const { from, ownerId, to, today } = validate(ProjectionsQuerySchema, query);
+    const { from, ownerId, to, today, ...filterQuery } = validate(ProjectionsQuerySchema, query);
 
     return this.recurrenceService.findProjections(
       req.user.id,
       { from, to },
       toOwnerIds(ownerId),
       today,
+      toTransactionFilter(filterQuery),
     );
   }
 }

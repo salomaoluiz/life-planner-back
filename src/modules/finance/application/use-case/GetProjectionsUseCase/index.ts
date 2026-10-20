@@ -1,9 +1,11 @@
 import { BadRequestException, Inject } from '@nestjs/common';
 
 import { GetProjectionsInput, GetProjectionsSchema } from '@finance/application/dto/GetRecurrences';
+import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
 import { narrowOwners } from '@finance/domain/entity/OwnerAccess';
 import { ProjectedOccurrence } from '@finance/domain/entity/ProjectedOccurrence';
 import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
+import { TransactionFilter } from '@finance/domain/entity/TransactionFilter';
 import { RecurrenceStatus } from '@finance/domain/enum';
 import {
   IFinanceCreditCardRepository,
@@ -16,6 +18,7 @@ import {
   occurrencesBetween,
   ScheduledOccurrence,
 } from '@finance/domain/service/RecurrenceSchedule';
+import { matchesText } from '@finance/domain/service/TextMatch';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -26,6 +29,8 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
   ProjectedOccurrence[]
 > {
   constructor(
+    @Inject(ExpandCategoryIdsUseCase)
+    private readonly expandCategoryIdsUseCase: ExpandCategoryIdsUseCase,
     @Inject('IFinanceCreditCardRepository')
     private readonly creditCardRepository: IFinanceCreditCardRepository,
     @Inject('IFinanceRecurrenceRepository')
@@ -49,9 +54,18 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
     const horizon = lastDayOfMonth(input.today);
     const from = max(`${input.from}-01`, addDays(horizon, 1));
     const to = lastDayOfMonth(`${input.to}-01`);
-    const series = await this.recurrenceRepository.findByOwners(owners, {
-      status: RecurrenceStatus.ACTIVE,
-    });
+    const filter = input.filter ?? {};
+    const categoryIds = filter.categoryIds?.length
+      ? new Set(
+          await this.expandCategoryIdsUseCase.execute({
+            accessibleOwners: input.accessibleOwners,
+            categoryIds: filter.categoryIds,
+          }),
+        )
+      : undefined;
+    const series = (
+      await this.recurrenceRepository.findByOwners(owners, { status: RecurrenceStatus.ACTIVE })
+    ).filter((item) => matchesSeries(item, filter, categoryIds));
 
     if (series.length === 0 || from > to) {
       return [];
@@ -121,6 +135,25 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
   }
 }
 
+// Spec 045 FR 9: projected rows follow the list filters (the paid filter is the app's: they are never paid).
+function matchesSeries(
+  item: RecurrenceEntity,
+  filter: TransactionFilter,
+  categoryIds?: ReadonlySet<string>,
+): boolean {
+  const tagIds = filter.tagIds?.length ? new Set(filter.tagIds) : undefined;
+  const hasSources = !!filter.accountIds?.length || !!filter.creditCardIds?.length;
+  const inSources =
+    (!!item.accountId && !!filter.accountIds?.includes(item.accountId)) ||
+    (!!item.creditCardId && !!filter.creditCardIds?.includes(item.creditCardId));
+
+  return (
+    (!categoryIds || categoryIds.has(item.categoryId)) &&
+    (!tagIds || (item.tags ?? []).some((tag) => tagIds.has(tag.id))) &&
+    (!hasSources || inSources) &&
+    (!filter.q || matchesText(item.description, filter.q))
+  );
+}
 function max(a: string, b: string): string {
   return a > b ? a : b;
 }
