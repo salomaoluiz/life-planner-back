@@ -24,6 +24,14 @@ const rowFindFirstSpy = jest.fn();
 const rowFindManySpy = jest.fn();
 const rowUpdateManySpy = jest.fn();
 const rowUpdateSpy = jest.fn();
+const rowFindUniqueOrThrowSpy = jest.fn();
+const recTagCreateManySpy = jest.fn();
+const recTagDeleteManySpy = jest.fn();
+const recTagFindManySpy = jest.fn();
+const tagCreateSpy = jest.fn();
+const tagFindManySpy = jest.fn();
+const trTagCreateManySpy = jest.fn();
+const trTagDeleteManySpy = jest.fn();
 const transactionSpy = jest.fn();
 
 // endregion Spies
@@ -42,15 +50,23 @@ const clientMock = {
     findUnique: recurrenceFindUniqueSpy,
     update: recurrenceUpdateSpy,
   },
+  financialRecurrenceTag: {
+    createMany: recTagCreateManySpy,
+    deleteMany: recTagDeleteManySpy,
+    findMany: recTagFindManySpy,
+  },
+  financialTag: { create: tagCreateSpy, findMany: tagFindManySpy },
   financialTransaction: {
     create: rowCreateSpy,
     createMany: rowCreateManySpy,
     deleteMany: rowDeleteManySpy,
     findFirst: rowFindFirstSpy,
     findMany: rowFindManySpy,
+    findUniqueOrThrow: rowFindUniqueOrThrowSpy,
     update: rowUpdateSpy,
     updateMany: rowUpdateManySpy,
   },
+  financialTransactionTag: { createMany: trTagCreateManySpy, deleteMany: trTagDeleteManySpy },
 };
 
 let setup: FinanceRecurrenceDatasource;
@@ -63,6 +79,9 @@ beforeEach(async () => {
   paymentFindFirstSpy.mockResolvedValue(null);
   recurrenceCreateSpy.mockResolvedValue({ id: 'recurrence-1' });
   paymentFindManySpy.mockResolvedValue([]);
+  rowFindManySpy.mockResolvedValue([]);
+  recTagFindManySpy.mockResolvedValue([]);
+  tagFindManySpy.mockResolvedValue([]);
 
   const module = await Test.createTestingModule({
     providers: [
@@ -111,6 +130,9 @@ const spies = {
   paymentFindFirst: paymentFindFirstSpy,
   paymentFindMany: paymentFindManySpy,
   queryRaw: queryRawSpy,
+  recTagCreateMany: recTagCreateManySpy,
+  recTagDeleteMany: recTagDeleteManySpy,
+  recTagFindMany: recTagFindManySpy,
   recurrenceCount: recurrenceCountSpy,
   recurrenceCreate: recurrenceCreateSpy,
   recurrenceDelete: recurrenceDeleteSpy,
@@ -123,9 +145,14 @@ const spies = {
   rowDeleteMany: rowDeleteManySpy,
   rowFindFirst: rowFindFirstSpy,
   rowFindMany: rowFindManySpy,
+  rowFindUniqueOrThrow: rowFindUniqueOrThrowSpy,
   rowUpdate: rowUpdateSpy,
   rowUpdateMany: rowUpdateManySpy,
+  tagCreate: tagCreateSpy,
+  tagFindMany: tagFindManySpy,
   transaction: transactionSpy,
+  trTagCreateMany: trTagCreateManySpy,
+  trTagDeleteMany: trTagDeleteManySpy,
 };
 
 export { mocks, setup, spies };

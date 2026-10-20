@@ -83,6 +83,7 @@ export class MaterializeOccurrenceUseCase implements UseCaseWithParams<
       // A materialized occurrence is a future, unpaid row; it is paid later like any other (spec 034 FR 21).
       paid: card ? undefined : false,
       recurrenceId: series.id,
+      tags: input.tags,
       value: input.value,
     });
 

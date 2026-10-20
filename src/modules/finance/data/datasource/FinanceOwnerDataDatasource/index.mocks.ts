@@ -14,6 +14,7 @@ const planDeleteManySpy = jest.fn();
 const recurrenceDeleteManySpy = jest.fn();
 const prepaymentDeleteManySpy = jest.fn();
 const prepaymentUpdateManySpy = jest.fn();
+const tagDeleteManySpy = jest.fn();
 const transactionDeleteManySpy = jest.fn();
 const transactionSpy = jest.fn();
 
@@ -31,6 +32,7 @@ const clientMock = {
   },
   financialInvoicePayment: { deleteMany: paymentDeleteManySpy },
   financialRecurrence: { deleteMany: recurrenceDeleteManySpy },
+  financialTag: { deleteMany: tagDeleteManySpy },
   financialTransaction: { deleteMany: transactionDeleteManySpy },
 };
 const databaseMock = { client: clientMock } as unknown as Database;
@@ -51,6 +53,7 @@ beforeEach(async () => {
     prepaymentDeleteManySpy,
     prepaymentUpdateManySpy,
     recurrenceDeleteManySpy,
+    tagDeleteManySpy,
     transactionDeleteManySpy,
   ].forEach((spy) => {
     spy.mockReset();
@@ -74,6 +77,7 @@ const spies = {
   prepaymentDeleteMany: prepaymentDeleteManySpy,
   prepaymentUpdateMany: prepaymentUpdateManySpy,
   recurrenceDeleteMany: recurrenceDeleteManySpy,
+  tagDeleteMany: tagDeleteManySpy,
   transaction: transactionSpy,
   transactionDeleteMany: transactionDeleteManySpy,
 };

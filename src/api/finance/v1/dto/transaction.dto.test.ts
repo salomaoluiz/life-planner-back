@@ -105,6 +105,7 @@ it('SHOULD require systemKey (nullable) AND excludeFromTotals on the category su
     paid: true,
     recurrenceFrequency: null,
     recurrenceId: null,
+    tags: [],
     type: 'INCOME',
     updatedAt: '2026-10-15T12:00:00.000Z',
     value: 5000,

@@ -390,3 +390,99 @@ describe('Method update on a paid invoice (spec 030 FR 16)', () => {
     expect(spies.update).not.toHaveBeenCalled();
   });
 });
+
+describe('tags (spec 043)', () => {
+  const createParams = {
+    account_id: mocks.transaction.account_id,
+    category_id: mocks.transaction.category_id,
+    currency: 'BRL' as const,
+    date: new Date('2026-10-03T00:00:00.000Z'),
+    description: 'Weekly groceries',
+    owner: 'USER' as const,
+    owner_id: mocks.transaction.owner_id,
+    type: 'EXPENSE' as const,
+    value: 23490,
+  };
+  const withTags = { ...mocks.transaction, tags: [{ tag: { id: 'tag-1', name: 'fixo' } }] };
+
+  it('SHOULD resolve the names in the owner, link them AND return the row with its tags on create', async () => {
+    spies.create.mockResolvedValue(mocks.transaction);
+    spies.findMany.mockResolvedValue([mocks.transaction.id].map((id) => ({ id })));
+    spies.tagFindMany.mockResolvedValue([{ all_scopes: false, id: 'tag-1', name: 'Fixo' }]);
+    spies.tagCreate.mockResolvedValue({ id: 'tag-2' });
+    spies.findUniqueOrThrow.mockResolvedValue(withTags);
+
+    const result = await setup.create({ ...createParams, tag_names: ['fixo', 'novo'] });
+
+    expect(spies.create).toHaveBeenCalledWith({ data: createParams, include: mocks.include });
+    expect(spies.tagLinkCreateMany).toHaveBeenCalledWith({
+      data: [
+        { position: 0, tag_id: 'tag-1', transaction_id: mocks.transaction.id },
+        { position: 1, tag_id: 'tag-2', transaction_id: mocks.transaction.id },
+      ],
+    });
+    expect(result).toBe(withTags);
+  });
+
+  it('SHOULD skip the tag work WHEN no names are sent on create', async () => {
+    spies.create.mockResolvedValue(mocks.transaction);
+
+    expect(await setup.create({ ...createParams, tag_names: [] })).toBe(mocks.transaction);
+    expect(spies.tagLinkCreateMany).not.toHaveBeenCalled();
+  });
+
+  describe('update', () => {
+    const lockedRow = [{ account_id: 'acc-1', paid: true, type: 'EXPENSE', value: 1000 }];
+
+    beforeEach(() => {
+      spies.queryRaw.mockResolvedValue(lockedRow);
+      spies.update.mockResolvedValue({ ...mocks.transaction, account_id: 'acc-1' });
+      spies.findMany.mockResolvedValue([{ id: mocks.transaction.id }]);
+      spies.findUniqueOrThrow.mockResolvedValue(withTags);
+    });
+
+    it('SHOULD replace the tags WHEN names are sent (and remove all for [])', async () => {
+      spies.tagFindMany.mockResolvedValue([{ all_scopes: false, id: 'tag-1', name: 'fixo' }]);
+
+      expect(await setup.update({ id: mocks.transaction.id, tag_names: ['fixo'] })).toBe(withTags);
+      expect(spies.tagLinkCreateMany).toHaveBeenCalledWith({
+        data: [{ position: 0, tag_id: 'tag-1', transaction_id: mocks.transaction.id }],
+      });
+
+      await setup.update({ id: mocks.transaction.id, tag_names: [] });
+
+      expect(spies.tagLinkDeleteMany).toHaveBeenLastCalledWith({
+        where: { transaction_id: { in: [mocks.transaction.id] } },
+      });
+    });
+
+    it('SHOULD leave the tags alone WHEN no names are sent and the owner is the same', async () => {
+      const result = await setup.update({ id: mocks.transaction.id, value: 5 });
+
+      expect(result).toEqual({ ...mocks.transaction, account_id: 'acc-1' });
+      expect(spies.tagLinkCreateMany).not.toHaveBeenCalled();
+    });
+
+    it('SHOULD re-resolve the current tag names in the NEW owner WHEN the owner changes', async () => {
+      spies.findUnique.mockResolvedValue({ owner: 'USER', owner_id: 'owner-a' });
+      spies.update.mockResolvedValue({
+        ...mocks.transaction,
+        account_id: 'acc-1',
+        owner: 'FAMILY',
+        owner_id: 'family-1',
+      });
+      spies.tagLinkFindMany.mockResolvedValue([{ tag: { name: 'viagem' } }]);
+      spies.tagCreate.mockResolvedValue({ id: 'tag-family' });
+
+      await setup.update({ id: mocks.transaction.id, owner: 'FAMILY', owner_id: 'family-1' });
+
+      expect(spies.tagCreate).toHaveBeenCalledWith({
+        data: { creator_id: 'family-1', name: 'viagem', owner: 'FAMILY', owner_id: 'family-1' },
+        select: { id: true },
+      });
+      expect(spies.tagLinkCreateMany).toHaveBeenCalledWith({
+        data: [{ position: 0, tag_id: 'tag-family', transaction_id: mocks.transaction.id }],
+      });
+    });
+  });
+});

@@ -103,3 +103,13 @@ it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)'
     status: 422,
   });
 });
+
+describe('tags (spec 043)', () => {
+  it('SHOULD pass the names of the edited occurrence', async () => {
+    await setup.execute({ ...base, tags: ['unica'] });
+
+    expect(mocks.recurrenceRepository.createOccurrence).toHaveBeenCalledWith(
+      expect.objectContaining({ tags: ['unica'] }),
+    );
+  });
+});

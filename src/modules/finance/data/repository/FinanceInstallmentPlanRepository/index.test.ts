@@ -111,3 +111,45 @@ describe('updates', () => {
     });
   });
 });
+
+describe('tags (spec 043)', () => {
+  it('SHOULD send the names as tag_names on create, recreate, updateFromNumber and updateText', async () => {
+    await setup.createPlan({
+      categoryId: 'cat-1',
+      creditCardId: 'card-1',
+      currency: 'BRL' as const,
+      date: '2026-10-20',
+      description: 'Notebook',
+      months: ['2026-10'],
+      owner: OwnerType.USER,
+      ownerId: 'owner-1',
+      tags: ['a'],
+      values: [5],
+    });
+    await setup.recreatePlan({
+      categoryId: 'cat-1',
+      creditCardId: 'card-1',
+      date: '2026-10-20',
+      description: 'Notebook',
+      id: 'plan-1',
+      months: ['2026-10'],
+      tags: ['b'],
+      values: [5],
+    });
+    await setup.updateFromNumber({ fromNumber: 2, planId: 'plan-1', tags: ['c'] });
+    await setup.updatePlanText({ id: 'plan-1', tags: ['d'] });
+
+    expect(mocks.planDatasource.create).toHaveBeenCalledWith(
+      expect.objectContaining({ tag_names: ['a'] }),
+    );
+    expect(mocks.planDatasource.recreate).toHaveBeenCalledWith(
+      expect.objectContaining({ tag_names: ['b'] }),
+    );
+    expect(mocks.planDatasource.updateFromNumber).toHaveBeenCalledWith(
+      expect.objectContaining({ tag_names: ['c'] }),
+    );
+    expect(mocks.planDatasource.updateText).toHaveBeenCalledWith(
+      expect.objectContaining({ tag_names: ['d'] }),
+    );
+  });
+});

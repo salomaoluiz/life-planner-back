@@ -49,6 +49,8 @@ export class FinanceOwnerDataDatasource implements IFinanceOwnerDataDatasource {
         await tx.financialInstallmentPlan.deleteMany({ where }),
         await tx.financialCreditCard.deleteMany({ where }),
         await tx.financialCategory.deleteMany({ where }),
+        // Spec 043: the links cascade; an ALL tag is owned by its creator's Personal scope, so it goes with the user.
+        await tx.financialTag.deleteMany({ where }),
         await tx.financialAccount.deleteMany({ where }),
       ];
 

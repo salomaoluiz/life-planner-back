@@ -9,6 +9,12 @@ import {
 } from '@finance/data/datasource/ledger';
 import { toOwnerWhere } from '@finance/data/datasource/mapper/OwnerWhere';
 import {
+  applyTagNames,
+  resolveTagIds,
+  setTransactionTags,
+  tagIdsOfRow,
+} from '@finance/data/datasource/tags';
+import {
   CreateInstallmentPlanDatasourceParams,
   FinancialInstallmentPlanWithCard,
   FinancialInstallmentPlanWithRows,
@@ -52,6 +58,16 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
       await tx.financialTransaction.createMany({
         data: toRows(params.rows, { ...params, plan_id: plan.id }),
       });
+
+      if (params.tag_names && params.tag_names.length > 0) {
+        await applyTagNames(tx, {
+          names: params.tag_names,
+          owner: params.owner,
+          ownerId: params.owner_id,
+          where: { installment_plan_id: plan.id },
+        });
+      }
+
       return plan.id;
     });
   }
@@ -150,6 +166,9 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
         },
         where: { id: params.id },
       });
+      // Spec 043: the recreated rows keep the tags of the first installment unless names are given.
+      const kept = await tagIdsOfRow(tx, { installment_plan_id: params.id });
+
       await tx.financialTransaction.deleteMany({ where: { installment_plan_id: params.id } });
       await tx.financialTransaction.createMany({
         data: toRows(params.rows, {
@@ -163,6 +182,27 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
           plan_id: params.id,
         }),
       });
+
+      const created = await tx.financialTransaction.findMany({
+        select: { id: true },
+        where: { installment_plan_id: params.id },
+      });
+      const tagIds =
+        params.tag_names === undefined
+          ? kept
+          : await resolveTagIds(tx, {
+              names: params.tag_names,
+              owner: plan.owner,
+              ownerId: plan.owner_id,
+            });
+
+      if (tagIds.length > 0) {
+        await setTransactionTags(
+          tx,
+          created.map((row) => row.id),
+          tagIds,
+        );
+      }
     });
   }
   // Paid installments can still be renamed and recategorized (spec 030 FR 16): no paid check.
@@ -204,6 +244,20 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
         },
         where,
       });
+
+      if (params.tag_names !== undefined) {
+        const plan = await tx.financialInstallmentPlan.findUniqueOrThrow({
+          select: { owner: true, owner_id: true },
+          where: { id: params.plan_id },
+        });
+
+        await applyTagNames(tx, {
+          names: params.tag_names,
+          owner: plan.owner,
+          ownerId: plan.owner_id,
+          where,
+        });
+      }
     });
   }
 
@@ -216,6 +270,20 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
         data,
         where: { installment_plan_id: params.id },
       });
+
+      if (params.tag_names !== undefined) {
+        const plan = await tx.financialInstallmentPlan.findUniqueOrThrow({
+          select: { owner: true, owner_id: true },
+          where: { id: params.id },
+        });
+
+        await applyTagNames(tx, {
+          names: params.tag_names,
+          owner: plan.owner,
+          ownerId: plan.owner_id,
+          where: { installment_plan_id: params.id },
+        });
+      }
     });
   }
   // Read after the card lock, so a payment that committed before it is seen.

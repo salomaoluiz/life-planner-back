@@ -16,6 +16,8 @@ import { InvoiceService } from '@api/finance/v1/invoice.service';
 import { RecurrenceProjectionController } from '@api/finance/v1/recurrence-projection.controller';
 import { RecurrenceController } from '@api/finance/v1/recurrence.controller';
 import { RecurrenceService } from '@api/finance/v1/recurrence.service';
+import { TagController } from '@api/finance/v1/tag.controller';
+import { TagService } from '@api/finance/v1/tag.service';
 import { TransactionController } from '@api/finance/v1/transaction.controller';
 import { TransactionService } from '@api/finance/v1/transaction.service';
 import { FamilyModule } from '@family/family.module';
@@ -33,6 +35,7 @@ import { FinanceModule } from '@finance/finance.module';
     InstallmentPlanController,
     RecurrenceProjectionController,
     RecurrenceController,
+    TagController,
     TransactionController,
   ],
   imports: [FamilyModule, FinanceModule],
@@ -45,6 +48,7 @@ import { FinanceModule } from '@finance/finance.module';
     InstallmentPlanService,
     InvoiceService,
     RecurrenceService,
+    TagService,
     TransactionService,
   ],
 })

@@ -7,6 +7,7 @@ import {
   DescriptionSchema,
   OwnerIdSchema,
   OwnerTypeSchema,
+  TagNamesSchema,
   TransactionTypeSchema,
   ValueSchema,
 } from '@finance/application/dto/FinanceCommon';
@@ -29,6 +30,8 @@ export const CreateRecurrenceSchema = z
     ownerId: OwnerIdSchema,
     // Occurrence 1 of an account series only; omitted → paid when dated up to `today` (spec 033 FR 4).
     paid: z.boolean().optional(),
+    // Spec 043 FR 11: stored on the series and copied to every occurrence.
+    tags: TagNamesSchema.optional(),
     today: CalendarDateSchema,
     type: TransactionTypeSchema,
     value: ValueSchema,

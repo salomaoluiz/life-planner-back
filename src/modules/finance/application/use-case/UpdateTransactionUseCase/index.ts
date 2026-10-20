@@ -140,6 +140,7 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
       owner: input.owner,
       ownerId: input.ownerId,
       paid: paidFor(input, transaction, card !== undefined),
+      tags: input.tags,
       type: input.type,
       value: input.value,
     });
@@ -200,6 +201,7 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
         categoryId: input.categoryId,
         description: input.description,
         id: input.id,
+        tags: input.tags,
         value: input.value,
       });
     } else {
@@ -208,6 +210,7 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
         description: input.description,
         fromNumber: transaction.installmentNumber as number,
         planId: transaction.installmentPlanId as string,
+        tags: input.tags,
         value: input.value,
       });
       updated = (await this.transactionRepository.findTransactionById(

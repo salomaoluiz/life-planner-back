@@ -1,3 +1,4 @@
+import { TagRef } from '@finance/domain/entity/TagEntity';
 import {
   TransactionAccountSummary,
   TransactionCardSummary,
@@ -29,6 +30,7 @@ interface IRecurrenceEntity {
   skippedNumbers: number[];
   startDate: string;
   status: RecurrenceStatus;
+  tags?: TagRef[];
   type: TransactionType;
   updatedAt: Date;
   value: number;
@@ -63,6 +65,8 @@ class RecurrenceEntity {
   skippedNumbers: number[];
   startDate: string;
   status: RecurrenceStatus;
+  // Spec 043: the tags the occurrences of the series get, in the stored order.
+  tags: TagRef[];
   type: TransactionType;
   updatedAt: Date;
   // Integer cents, always > 0.
@@ -90,6 +94,7 @@ class RecurrenceEntity {
     this.skippedNumbers = params.skippedNumbers;
     this.startDate = params.startDate;
     this.status = params.status;
+    this.tags = params.tags ?? [];
     this.type = params.type;
     this.updatedAt = params.updatedAt;
     this.value = params.value;

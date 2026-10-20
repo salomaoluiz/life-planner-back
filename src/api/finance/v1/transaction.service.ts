@@ -65,6 +65,7 @@ function toTransactionOutput(
     paid: transaction.paid,
     recurrenceFrequency: transaction.recurrenceFrequency,
     recurrenceId: transaction.recurrenceId,
+    tags: transaction.tags,
     type: transaction.type,
     updatedAt: transaction.updatedAt.toISOString(),
     value: transaction.value,

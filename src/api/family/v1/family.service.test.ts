@@ -37,6 +37,23 @@ describe('create', () => {
     });
   });
 
+  it('SHOULD add the new family to the scopes of the creator All tags', async () => {
+    await setup.create(mocks.userId, { name: 'Example Family' });
+
+    expect(mocks.addFamilyToTagScopes.execute).toHaveBeenCalledWith({
+      familyId: mocks.familyId,
+      userId: mocks.userId,
+    });
+  });
+
+  it('SHOULD remove the deleted family from the All tag scopes', async () => {
+    await setup.delete(mocks.userId, mocks.familyId);
+
+    expect(mocks.removeFamilyFromTagScopes.execute).toHaveBeenCalledWith({
+      familyId: mocks.familyId,
+    });
+  });
+
   it('SHOULD propagate NotFoundException WHEN the JWT user no longer exists AND create nothing', async () => {
     mocks.findUserByIdUseCase.execute.mockRejectedValueOnce(new NotFoundException());
 

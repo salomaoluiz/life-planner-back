@@ -1,3 +1,4 @@
+import { TagRef } from '@finance/domain/entity/TagEntity';
 import {
   TransactionAccountSummary,
   TransactionCardSummary,
@@ -25,6 +26,7 @@ export interface ProjectedOccurrence {
   owner: OwnerType;
   ownerId: string;
   recurrenceId: string;
+  tags: TagRef[];
   type: TransactionType;
   value: number;
 }

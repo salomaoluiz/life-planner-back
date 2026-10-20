@@ -117,3 +117,28 @@ describe('card helpers', () => {
     expect(await setup.countByCreditCardId('card-1')).toBe(0);
   });
 });
+
+describe('tags (spec 043)', () => {
+  it('SHOULD send the names as tag_names on create AND update', async () => {
+    await setup.createTransaction({
+      accountId: 'a',
+      categoryId: 'c',
+      currency: 'BRL',
+      date: '2026-10-03',
+      description: 'x',
+      owner: OwnerType.USER,
+      ownerId: 'o',
+      tags: ['fixo'],
+      type: TransactionType.EXPENSE,
+      value: 1,
+    });
+    await setup.updateTransaction({ id: 'id', tags: [] });
+
+    expect(mocks.transactionDatasource.create).toHaveBeenCalledWith(
+      expect.objectContaining({ tag_names: ['fixo'] }),
+    );
+    expect(mocks.transactionDatasource.update).toHaveBeenCalledWith(
+      expect.objectContaining({ tag_names: [] }),
+    );
+  });
+});

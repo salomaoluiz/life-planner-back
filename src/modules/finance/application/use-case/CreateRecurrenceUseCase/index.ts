@@ -96,6 +96,7 @@ export class CreateRecurrenceUseCase implements UseCaseWithParams<
       rows,
       startDate: input.date,
       status: plan.status,
+      tags: input.tags,
       type: input.type,
       value: input.value,
     });

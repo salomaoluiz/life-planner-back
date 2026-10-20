@@ -13,7 +13,9 @@ import { GetFamilyInvitePreviewUseCase } from '@family/application/use-case/GetF
 import { GetFamilyMembersUseCase } from '@family/application/use-case/GetFamilyMembersUseCase';
 import { InviteFamilyMemberUseCase } from '@family/application/use-case/InviteFamilyMemberUseCase';
 import { AddFamilyToCategoryScopesUseCase } from '@finance/application/use-case/AddFamilyToCategoryScopesUseCase';
+import { AddFamilyToTagScopesUseCase } from '@finance/application/use-case/AddFamilyToTagScopesUseCase';
 import { DetachCategoryCreatorFromFamilyUseCase } from '@finance/application/use-case/DetachCategoryCreatorFromFamilyUseCase';
+import { DetachTagCreatorFromFamilyUseCase } from '@finance/application/use-case/DetachTagCreatorFromFamilyUseCase';
 import { ILogger, LogLevel } from '@shared/infra/logger/types';
 import { FindUserByIdUseCase } from '@user/application/use-case/FindUserByIdUseCase';
 import { FindUsersByIdsUseCase } from '@user/application/use-case/FindUsersByIdsUseCase';
@@ -43,8 +45,10 @@ export class FamilyMemberService {
   constructor(
     private readonly acceptFamilyInviteUseCase: AcceptFamilyInviteUseCase,
     private readonly addFamilyToCategoryScopesUseCase: AddFamilyToCategoryScopesUseCase,
+    private readonly addFamilyToTagScopesUseCase: AddFamilyToTagScopesUseCase,
     private readonly deleteFamilyMemberUseCase: DeleteFamilyMemberUseCase,
     private readonly detachCategoryCreatorFromFamilyUseCase: DetachCategoryCreatorFromFamilyUseCase,
+    private readonly detachTagCreatorFromFamilyUseCase: DetachTagCreatorFromFamilyUseCase,
     private readonly findUserByIdUseCase: FindUserByIdUseCase,
     private readonly findUsersByIdsUseCase: FindUsersByIdsUseCase,
     private readonly getFamilyInvitePreviewUseCase: GetFamilyInvitePreviewUseCase,
@@ -65,6 +69,7 @@ export class FamilyMemberService {
 
     // Spec 038 FR 11: the joiner's All categories reach this family. Idempotent, no cross-module transaction.
     await this.addFamilyToCategoryScopesUseCase.execute({ familyId: member.familyId, userId });
+    await this.addFamilyToTagScopesUseCase.execute({ familyId: member.familyId, userId });
 
     return toApiMember(member, { name: user.name, photoUrl: user.photoUrl });
   }
@@ -75,6 +80,10 @@ export class FamilyMemberService {
     // Spec 038 FR 12: the family keeps its own copy of the leaver's All categories. A pending invite has no user.
     if (removed.userId) {
       await this.detachCategoryCreatorFromFamilyUseCase.execute({
+        familyId: removed.familyId,
+        userId: removed.userId,
+      });
+      await this.detachTagCreatorFromFamilyUseCase.execute({
         familyId: removed.familyId,
         userId: removed.userId,
       });

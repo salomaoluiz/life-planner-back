@@ -7,6 +7,7 @@ import {
   DescriptionSchema,
   OwnerIdSchema,
   OwnerTypeSchema,
+  TagNamesSchema,
   TransactionTypeSchema,
   ValueSchema,
 } from '@finance/application/dto/FinanceCommon';
@@ -24,6 +25,8 @@ export const CreateTransactionSchema = z
     ownerId: OwnerIdSchema,
     // Account rows only; omitted → paid when dated up to `today` (spec 033 FR 4).
     paid: z.boolean().optional(),
+    // Spec 043: tag names (max 10, 30 characters each).
+    tags: TagNamesSchema.optional(),
     // Local calendar day of the caller: only used to read the card's invoices after a purchase.
     today: CalendarDateSchema,
     type: TransactionTypeSchema,

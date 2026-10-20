@@ -32,6 +32,7 @@ describe('FinanceRecurrenceMapper.toDomain', () => {
       skippedNumbers: [3],
       startDate: '2026-10-05',
       status: 'ACTIVE',
+      tags: [],
       type: 'EXPENSE',
       updatedAt: mocks.raw.updated_at,
       value: 200000,

@@ -206,6 +206,7 @@ export class SplitRecurrenceUseCase implements UseCaseWithParams<
       },
       seriesPatch,
       sourceId,
+      tags: input.tags,
     });
 
     const [recurrence, ended, occurrences] = await Promise.all([

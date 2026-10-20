@@ -16,8 +16,10 @@ import { GetUserFamiliesUseCase } from '@family/application/use-case/GetUserFami
 import { UpdateFamilyUseCase } from '@family/application/use-case/UpdateFamilyUseCase';
 import { FamilyStatus } from '@family/domain/enum';
 import { AddFamilyToCategoryScopesUseCase } from '@finance/application/use-case/AddFamilyToCategoryScopesUseCase';
+import { AddFamilyToTagScopesUseCase } from '@finance/application/use-case/AddFamilyToTagScopesUseCase';
 import { GetFamilyArchiveBlockersUseCase } from '@finance/application/use-case/GetFamilyArchiveBlockersUseCase';
 import { RemoveFamilyFromCategoryScopesUseCase } from '@finance/application/use-case/RemoveFamilyFromCategoryScopesUseCase';
+import { RemoveFamilyFromTagScopesUseCase } from '@finance/application/use-case/RemoveFamilyFromTagScopesUseCase';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { FindUserByIdUseCase } from '@user/application/use-case/FindUserByIdUseCase';
 
@@ -36,6 +38,7 @@ function toApiOutput(family: FamilyUseCaseOutput): FamilyOutput {
 export class FamilyService {
   constructor(
     private readonly addFamilyToCategoryScopesUseCase: AddFamilyToCategoryScopesUseCase,
+    private readonly addFamilyToTagScopesUseCase: AddFamilyToTagScopesUseCase,
     private readonly createFamilyUseCase: CreateFamilyUseCase,
     private readonly deleteFamilyUseCase: DeleteFamilyUseCase,
     private readonly ensureFamilyOwnerUseCase: EnsureFamilyOwnerUseCase,
@@ -45,6 +48,7 @@ export class FamilyService {
     private readonly getFamilyPendingInvitesUseCase: GetFamilyPendingInvitesUseCase,
     private readonly getUserFamiliesUseCase: GetUserFamiliesUseCase,
     private readonly removeFamilyFromCategoryScopesUseCase: RemoveFamilyFromCategoryScopesUseCase,
+    private readonly removeFamilyFromTagScopesUseCase: RemoveFamilyFromTagScopesUseCase,
     private readonly updateFamilyUseCase: UpdateFamilyUseCase,
     @Inject(FAMILY_OWNED_RECORDS_CHECKS)
     private readonly ownedRecordsChecks: IOwnedRecordsCheck[],
@@ -87,6 +91,8 @@ export class FamilyService {
 
     // Spec 038 FR 11: the creator's All categories reach the new family. Idempotent, no cross-module transaction.
     await this.addFamilyToCategoryScopesUseCase.execute({ familyId: family.id, userId });
+    // Spec 043 §4: same for their All tags.
+    await this.addFamilyToTagScopesUseCase.execute({ familyId: family.id, userId });
 
     return toApiOutput(family);
   }
@@ -108,6 +114,7 @@ export class FamilyService {
     await this.deleteFamilyUseCase.execute({ familyId, userId });
     // Spec 038 FR 13: the family leaves the scopes of every All category.
     await this.removeFamilyFromCategoryScopesUseCase.execute({ familyId });
+    await this.removeFamilyFromTagScopesUseCase.execute({ familyId });
   }
 
   async findAll(userId: string): Promise<FamilyOutput[]> {

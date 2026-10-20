@@ -30,6 +30,9 @@ export const NameSchema = z.string().trim().min(1).max(60);
 export const OwnerIdSchema = z.string().min(1);
 export const OwnerTypeSchema = z.enum(OwnerType);
 export const IconColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
+// Spec 043 FR 1/4: 1-30 characters after trimming, at most 10 per record.
+export const TagNameSchema = z.string().trim().min(1).max(30);
+export const TagNamesSchema = z.array(TagNameSchema).max(10);
 export const TransactionTypeSchema = z.enum(TransactionType);
 export const CalendarDateSchema = z
   .string()

@@ -72,6 +72,7 @@ export class CreateTransactionUseCase implements UseCaseWithParams<
       ownerId: input.ownerId,
       // Account rows start paid when dated up to today (ISO dates compare as strings).
       paid: input.accountId === undefined ? undefined : (input.paid ?? input.date <= input.today),
+      tags: input.tags,
       type: input.type,
       value: input.value,
     });

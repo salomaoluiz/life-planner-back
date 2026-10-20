@@ -20,6 +20,9 @@ export interface ApplyRecurrenceChangeDatasourceParams {
   row_patch: RowPatchDatasourceParams;
   series_patch: SeriesPatchDatasourceParams;
   source_id: string;
+  // Spec 043 FR 11: the series that holds the rows from `from_number` on (the new one after a split) and those
+  // rows take these tags; omitted keeps them (a split copies the old series' tags to the new series).
+  tag_names?: string[];
 }
 export interface CreateOccurrenceDatasourceParams {
   category_id?: string;
@@ -29,6 +32,8 @@ export interface CreateOccurrenceDatasourceParams {
   number: number;
   paid?: boolean;
   recurrence_id: string;
+  // Replaces the tags the occurrence would get from the series.
+  tag_names?: string[];
   value?: number;
 }
 export interface CreateRecurrenceDatasourceParams {
@@ -46,6 +51,7 @@ export interface CreateRecurrenceDatasourceParams {
   rows: OccurrenceRowDatasourceParams[];
   start_date: Date;
   status: RecurrenceStatus;
+  tag_names?: string[];
   type: TransactionType;
   value: number;
 }
@@ -56,6 +62,7 @@ export type FinancialRecurrenceWithRelations = {
     'exclude_from_totals' | 'icon_color' | 'icon' | 'id' | 'name' | 'system_key'
   >;
   credit_card: null | Pick<FinancialCreditCard, 'color' | 'id' | 'last_digits' | 'title'>;
+  tags?: { tag: { id: string; name: string } }[];
 } & FinancialRecurrence;
 export interface FindRecurrencesDatasourceFilter {
   account_id?: string;

@@ -1,4 +1,5 @@
 import { toCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
+import { toTagRefs } from '@finance/data/datasource/tags';
 import { FinancialTransactionWithRelations } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import {
@@ -76,6 +77,7 @@ export class FinanceTransactionMapper {
       refundedName: raw.refunded_transaction?.description ?? raw.refunded_plan?.description ?? null,
       refundedPlanId: raw.refunded_plan_id,
       refundedTransactionId: raw.refunded_transaction_id,
+      tags: toTagRefs(raw.tags),
       type: TransactionType[raw.type],
       updatedAt: raw.updated_at,
       value: raw.value,

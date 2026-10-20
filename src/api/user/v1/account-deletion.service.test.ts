@@ -142,6 +142,7 @@ it('SHOULD give EVERY family the user belongs to (owned or joined) its own copy 
     familyId: 'family-3',
     userId: mocks.userId,
   });
+  expect(mocks.detachTagCreator.execute).toHaveBeenCalledTimes(2);
 });
 
 it('SHOULD NOT purge anything WHEN the detach step fails (retry finishes the job)', async () => {

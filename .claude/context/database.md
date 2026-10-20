@@ -69,6 +69,8 @@ Migration `recurring_transactions`: enums `RecurrenceFrequency`, `RecurrenceStat
 
 ### Category scopes (spec 038)
 
+Migration `financial_tags` (spec 043): `financial_tags (name varchar(30), owner, owner_id, all_scopes, creator_id)` with a partial unique index `(owner, owner_id, lower(name)) WHERE all_scopes = false`, `financial_tag_scopes` (like the category scopes), and the link tables `financial_transaction_tags` / `financial_recurrence_tags` (`position`, composite PK, cascade on both sides, index on `tag_id`). Installment plans carry no tags: their rows do.
+
 Migration `category_all_scopes`: `financial_categories.all_scopes boolean default false`, `creator_id text?`, and `financial_category_scopes (category_id → financial_categories CASCADE, owner, owner_id)` unique `(category_id, owner, owner_id)`, index `(owner, owner_id)`. Single-scope rows have no scope rows; every row of an ALL tree has its own.
 
 ### Currency columns (spec 040)

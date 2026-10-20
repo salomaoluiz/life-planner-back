@@ -31,6 +31,7 @@ export class FinanceInstallmentPlanRepository implements IFinanceInstallmentPlan
       owner: params.owner,
       owner_id: params.ownerId,
       rows: toRows(params.months, params.values),
+      tag_names: params.tags,
     });
   }
 
@@ -70,6 +71,7 @@ export class FinanceInstallmentPlanRepository implements IFinanceInstallmentPlan
       description: params.description,
       id: params.id,
       rows: toRows(params.months, params.values),
+      tag_names: params.tags,
     });
   }
 
@@ -79,6 +81,7 @@ export class FinanceInstallmentPlanRepository implements IFinanceInstallmentPlan
       description: params.description,
       from_number: params.fromNumber,
       plan_id: params.planId,
+      tag_names: params.tags,
       value: params.value,
     });
   }
@@ -88,6 +91,7 @@ export class FinanceInstallmentPlanRepository implements IFinanceInstallmentPlan
       category_id: params.categoryId,
       description: params.description,
       id: params.id,
+      tag_names: params.tags,
     });
   }
 }

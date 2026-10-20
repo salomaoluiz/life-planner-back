@@ -1,4 +1,5 @@
 import { toCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
+import { toTagRefs } from '@finance/data/datasource/tags';
 import { FinancialRecurrenceWithRelations } from '@finance/data/repository/datasource/IFinanceRecurrenceDatasource';
 import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
 import {
@@ -57,6 +58,7 @@ export class FinanceRecurrenceMapper {
       skippedNumbers: raw.skipped_numbers,
       startDate,
       status: RecurrenceStatus[raw.status],
+      tags: toTagRefs(raw.tags),
       type: TransactionType[raw.type],
       updatedAt: raw.updated_at,
       value: raw.value,

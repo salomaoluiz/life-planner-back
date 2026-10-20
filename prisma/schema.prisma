@@ -246,6 +246,7 @@ model FinancialTransaction {
   paid_from_transaction FinancialTransaction?           @relation("EarlyPaymentDebit", fields: [paid_from_transaction_id], references: [id], onDelete: Restrict)
   early_payment         FinancialTransaction?           @relation("EarlyPaymentDebit")
   discount_of           FinancialInstallmentPrepayment? @relation("PrepaymentDiscount")
+  tags                  FinancialTransactionTag[]
 
   @@unique([installment_plan_id, installment_number])
   @@unique([recurrence_id, occurrence_number])
@@ -373,6 +374,7 @@ model FinancialRecurrence {
   account      FinancialAccount?      @relation(fields: [account_id], references: [id], onDelete: Restrict)
   credit_card  FinancialCreditCard?   @relation(fields: [credit_card_id], references: [id], onDelete: Restrict)
   transactions FinancialTransaction[]
+  tags         FinancialRecurrenceTag[]
 
   @@index([owner, owner_id, status, next_occurrence_date])
   @@index([account_id])
@@ -426,4 +428,64 @@ model FinancialInstallmentPrepayment {
 
   @@index([owner, owner_id])
   @@map("financial_installment_prepayments")
+}
+
+// Spec 043: tags mirror categories without hierarchy. An ALL tag follows every scope of `creator_id`;
+// `owner/owner_id` is the creator's Personal scope and `scopes` lists them all. A partial unique index in the
+// migration backs the single-scope name rule (case-insensitive).
+model FinancialTag {
+  id         String    @id @default(uuid())
+  name       String    @db.VarChar(30)
+  owner      OwnerType
+  owner_id   String
+  all_scopes Boolean   @default(false)
+  creator_id String
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @updatedAt @db.Timestamptz(6)
+
+  scopes       FinancialTagScope[]
+  transactions FinancialTransactionTag[]
+  recurrences  FinancialRecurrenceTag[]
+
+  @@index([owner, owner_id])
+  @@map("financial_tags")
+}
+
+model FinancialTagScope {
+  id       String    @id @default(uuid())
+  tag_id   String
+  owner    OwnerType
+  owner_id String
+
+  tag FinancialTag @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@unique([tag_id, owner, owner_id])
+  @@index([owner, owner_id])
+  @@map("financial_tag_scopes")
+}
+
+model FinancialTransactionTag {
+  transaction_id String
+  tag_id         String
+  position       Int    @db.SmallInt
+
+  transaction FinancialTransaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
+  tag         FinancialTag         @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@id([transaction_id, tag_id])
+  @@index([tag_id])
+  @@map("financial_transaction_tags")
+}
+
+model FinancialRecurrenceTag {
+  recurrence_id String
+  tag_id        String
+  position      Int    @db.SmallInt
+
+  recurrence FinancialRecurrence @relation(fields: [recurrence_id], references: [id], onDelete: Cascade)
+  tag        FinancialTag        @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@id([recurrence_id, tag_id])
+  @@index([tag_id])
+  @@map("financial_recurrence_tags")
 }

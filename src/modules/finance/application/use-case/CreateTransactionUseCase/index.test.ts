@@ -265,3 +265,17 @@ it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)'
     status: 422,
   });
 });
+
+it('SHOULD pass the tag names to the repository AND reject 11 tags or a 31-character tag', async () => {
+  await setup.execute({ ...mocks.input, tags: ['fixo', 'viagem'] });
+
+  expect(mocks.transactionRepository.createTransaction).toHaveBeenCalledWith(
+    expect.objectContaining({ tags: ['fixo', 'viagem'] }),
+  );
+  await expect(
+    setup.execute({ ...mocks.input, tags: Array.from({ length: 11 }, (_, i) => `t${i}`) }),
+  ).rejects.toThrow(ValidationError);
+  await expect(setup.execute({ ...mocks.input, tags: ['x'.repeat(31)] })).rejects.toThrow(
+    ValidationError,
+  );
+});

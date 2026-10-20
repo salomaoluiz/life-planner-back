@@ -397,7 +397,8 @@ describe('Method createOccurrence', () => {
   beforeEach(() => {
     spies.recurrenceFindUnique.mockResolvedValue(mocks.source);
     spies.rowFindFirst.mockResolvedValue(null);
-    spies.rowCreate.mockResolvedValue(created);
+    spies.rowCreate.mockResolvedValue({ ...created, id: 'row-7' });
+    spies.rowFindUniqueOrThrow.mockResolvedValue(created);
   });
 
   it('SHOULD create the numbered row with the edits over the template AND not advance the series', async () => {
@@ -711,5 +712,162 @@ describe('currency (spec 040)', () => {
     await setup.create({ ...mocks.accountParams, currency: 'USD' });
 
     expect(spies.rowCreateMany.mock.calls[0][0].data[0].currency).toBe('USD');
+  });
+});
+
+describe('tags (spec 043)', () => {
+  const tagLink = { position: 0, tag_id: 'tag-1' };
+
+  it('SHOULD store the tags on the series AND copy them to the generated rows', async () => {
+    spies.tagFindMany.mockResolvedValue([{ all_scopes: false, id: 'tag-1', name: 'fixo' }]);
+    spies.recTagFindMany.mockResolvedValue([tagLink]);
+    spies.rowFindMany.mockResolvedValue([{ id: 'row-1' }]);
+
+    await setup.create({ ...mocks.accountParams, tag_names: ['Fixo'] });
+
+    expect(spies.recTagCreateMany).toHaveBeenCalledWith({
+      data: [{ position: 0, recurrence_id: 'recurrence-1', tag_id: 'tag-1' }],
+    });
+    expect(spies.trTagCreateMany).toHaveBeenCalledWith({
+      data: [{ position: 0, tag_id: 'tag-1', transaction_id: 'row-1' }],
+      skipDuplicates: true,
+    });
+  });
+
+  it('SHOULD give the materialized rows the tags of the series, but not rows that already existed', async () => {
+    spies.queryRaw.mockResolvedValue([
+      {
+        account_id: 'account-1',
+        category_id: 'cat-1',
+        credit_card_id: null,
+        currency: 'BRL',
+        description: 'Rent',
+        last_generated_number: 1,
+        owner: 'USER',
+        owner_id: 'owner-1',
+        type: 'EXPENSE',
+        value: 200000,
+      },
+    ]);
+    spies.recTagFindMany.mockResolvedValue([tagLink]);
+    spies.rowFindMany
+      .mockResolvedValueOnce([{ occurrence_number: 3 }])
+      .mockResolvedValueOnce([{ id: 'row-2' }]);
+
+    await setup.materialize({
+      expected_last: 1,
+      id: 'recurrence-1',
+      last_generated_number: 3,
+      next_occurrence_date: null,
+      rows: [
+        { date: new Date('2026-11-05T00:00:00.000Z'), number: 2 },
+        { date: new Date('2026-12-05T00:00:00.000Z'), number: 3 },
+      ],
+      status: 'ACTIVE',
+    });
+
+    expect(spies.rowFindMany).toHaveBeenNthCalledWith(2, {
+      select: { id: true },
+      where: {
+        occurrence_number: { in: [2] },
+        recurrence_id: 'recurrence-1',
+        tags: { none: {} },
+      },
+    });
+    expect(spies.trTagCreateMany).toHaveBeenCalledWith({
+      data: [{ position: 0, tag_id: 'tag-1', transaction_id: 'row-2' }],
+      skipDuplicates: true,
+    });
+  });
+
+  it('SHOULD give a made-real occurrence the series tags, or the given names', async () => {
+    spies.recurrenceFindUnique.mockResolvedValue(mocks.source);
+    spies.rowFindFirst.mockResolvedValue(null);
+    spies.rowCreate.mockResolvedValue({
+      account_id: 'account-1',
+      id: 'row-7',
+      paid: false,
+      type: 'EXPENSE',
+      value: 1,
+    });
+    spies.rowFindUniqueOrThrow.mockResolvedValue({ id: 'row-7' });
+    spies.recTagFindMany.mockResolvedValue([tagLink]);
+    spies.rowFindMany.mockResolvedValue([{ id: 'row-7' }]);
+    const params = {
+      date: new Date('2027-03-05T00:00:00.000Z'),
+      number: 7,
+      recurrence_id: 'recurrence-1',
+    };
+
+    await setup.createOccurrence(params);
+
+    expect(spies.trTagCreateMany).toHaveBeenCalledWith({
+      data: [{ position: 0, tag_id: 'tag-1', transaction_id: 'row-7' }],
+      skipDuplicates: true,
+    });
+
+    spies.trTagCreateMany.mockClear();
+    spies.tagCreate.mockResolvedValue({ id: 'tag-new' });
+    await setup.createOccurrence({ ...params, number: 8, tag_names: ['novo'] });
+
+    expect(spies.trTagCreateMany).toHaveBeenCalledWith({
+      data: [{ position: 0, tag_id: 'tag-new', transaction_id: 'row-7' }],
+    });
+  });
+
+  describe('Method apply', () => {
+    const base = { from_number: 5, row_patch: {}, series_patch: {}, source_id: 'recurrence-1' };
+
+    beforeEach(() => {
+      spies.recurrenceFindUnique.mockResolvedValue(mocks.source);
+    });
+
+    it('SHOULD replace the tags of the series AND of its rows from the number on', async () => {
+      spies.tagCreate.mockResolvedValue({ id: 'tag-new' });
+      spies.rowFindMany.mockResolvedValue([{ credit_card_id: null, id: 'row-5', paid: false }]);
+
+      await setup.apply({ ...base, tag_names: ['novo'] });
+
+      expect(spies.recTagDeleteMany).toHaveBeenCalledWith({
+        where: { recurrence_id: 'recurrence-1' },
+      });
+      expect(spies.recTagCreateMany).toHaveBeenCalledWith({
+        data: [{ position: 0, recurrence_id: 'recurrence-1', tag_id: 'tag-new' }],
+      });
+      expect(spies.trTagCreateMany).toHaveBeenCalledWith({
+        data: [{ position: 0, tag_id: 'tag-new', transaction_id: 'row-5' }],
+      });
+    });
+
+    it('SHOULD give the new series the tags of the old one WHEN no names are sent', async () => {
+      spies.recurrenceCreate.mockResolvedValue({ id: 'recurrence-2' });
+      spies.recTagFindMany.mockResolvedValue([tagLink]);
+      spies.rowFindMany.mockResolvedValue([]);
+
+      await setup.apply({
+        ...base,
+        new_series: { ...mocks.accountParams, first_number: 5, skipped_numbers: [] },
+      });
+
+      expect(spies.recTagCreateMany).toHaveBeenCalledWith({
+        data: [{ position: 0, recurrence_id: 'recurrence-2', tag_id: 'tag-1' }],
+        skipDuplicates: true,
+      });
+    });
+
+    it('SHOULD tag the regenerated rows with the series tags', async () => {
+      spies.recTagFindMany.mockResolvedValue([tagLink]);
+      spies.rowFindMany.mockResolvedValueOnce([]).mockResolvedValueOnce([{ id: 'new-row' }]);
+
+      await setup.apply({
+        ...base,
+        replace_rows: [{ date: new Date('2026-12-05T00:00:00.000Z'), number: 5 }],
+      });
+
+      expect(spies.trTagCreateMany).toHaveBeenCalledWith({
+        data: [{ position: 0, tag_id: 'tag-1', transaction_id: 'new-row' }],
+        skipDuplicates: true,
+      });
+    });
   });
 });

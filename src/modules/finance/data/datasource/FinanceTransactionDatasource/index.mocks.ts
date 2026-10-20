@@ -73,6 +73,10 @@ const includeMock = {
   recurrence: { select: { end_date: true, first_number: true, frequency: true, start_date: true } },
   refunded_plan: { select: { description: true } },
   refunded_transaction: { select: { description: true } },
+  tags: {
+    orderBy: { position: 'asc' },
+    select: { tag: { select: { id: true, name: true } } },
+  },
 };
 
 // endregion Mocks
@@ -93,6 +97,12 @@ const recurrenceCountSpy = jest.fn();
 const queryRawSpy = jest.fn();
 const transactionSpy = jest.fn();
 const updateSpy = jest.fn();
+const findUniqueOrThrowSpy = jest.fn();
+const tagCreateSpy = jest.fn();
+const tagFindManySpy = jest.fn();
+const tagLinkCreateManySpy = jest.fn();
+const tagLinkDeleteManySpy = jest.fn();
+const tagLinkFindManySpy = jest.fn();
 
 // endregion Spies
 
@@ -104,6 +114,7 @@ const clientMock = {
   financialInstallmentPlan: { count: planCountSpy },
   financialInvoicePayment: { findFirst: paymentFindFirstSpy },
   financialRecurrence: { count: recurrenceCountSpy },
+  financialTag: { create: tagCreateSpy, findMany: tagFindManySpy },
   financialTransaction: {
     count: countSpy,
     create: createSpy,
@@ -111,8 +122,14 @@ const clientMock = {
     findFirst: findFirstSpy,
     findMany: findManySpy,
     findUnique: findUniqueSpy,
+    findUniqueOrThrow: findUniqueOrThrowSpy,
     groupBy: groupBySpy,
     update: updateSpy,
+  },
+  financialTransactionTag: {
+    createMany: tagLinkCreateManySpy,
+    deleteMany: tagLinkDeleteManySpy,
+    findMany: tagLinkFindManySpy,
   },
 };
 const databaseMock = { client: clientMock } as unknown as Database;
@@ -121,6 +138,8 @@ let setup: FinanceTransactionDatasource;
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  findManySpy.mockResolvedValue([]);
+  tagFindManySpy.mockResolvedValue([]);
   transactionSpy.mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) =>
     callback(clientMock),
   );
@@ -141,11 +160,17 @@ const spies = {
   findFirst: findFirstSpy,
   findMany: findManySpy,
   findUnique: findUniqueSpy,
+  findUniqueOrThrow: findUniqueOrThrowSpy,
   groupBy: groupBySpy,
   paymentFindFirst: paymentFindFirstSpy,
   planCount: planCountSpy,
   queryRaw: queryRawSpy,
   recurrenceCount: recurrenceCountSpy,
+  tagCreate: tagCreateSpy,
+  tagFindMany: tagFindManySpy,
+  tagLinkCreateMany: tagLinkCreateManySpy,
+  tagLinkDeleteMany: tagLinkDeleteManySpy,
+  tagLinkFindMany: tagLinkFindManySpy,
   transaction: transactionSpy,
   update: updateSpy,
 };

@@ -7,6 +7,7 @@ import {
   DescriptionSchema,
   OwnerIdSchema,
   OwnerTypeSchema,
+  TagNamesSchema,
   ValueSchema,
 } from '@finance/application/dto/FinanceCommon';
 import { MAX_INSTALLMENTS, MIN_INSTALLMENTS } from '@finance/domain/service/InstallmentPlan';
@@ -24,6 +25,8 @@ export const CreateInstallmentPlanSchema = z
     installments: InstallmentsSchema,
     owner: OwnerTypeSchema,
     ownerId: OwnerIdSchema,
+    // Spec 043 FR 10: attached to every installment row.
+    tags: TagNamesSchema.optional(),
     // Local calendar day of the caller: only used to read the card's invoices after the purchase.
     today: CalendarDateSchema,
     // The TOTAL in cents.

@@ -6,6 +6,7 @@ import {
   DescriptionSchema,
   OwnerIdSchema,
   OwnerTypeSchema,
+  TagNamesSchema,
   TransactionTypeSchema,
   ValueSchema,
 } from '@finance/application/dto/FinanceCommon';
@@ -25,6 +26,8 @@ export const UpdateTransactionSchema = z
     paid: z.boolean().optional(),
     // Required for installments: which rows the edit reaches (spec 030 FR 11).
     scope: z.enum(InstallmentEditScope).optional(),
+    // `[]` removes every tag; omitted leaves them (spec 043 FR 9).
+    tags: TagNamesSchema.optional(),
     today: CalendarDateSchema,
     type: TransactionTypeSchema.optional(),
     value: ValueSchema.optional(),
@@ -42,6 +45,7 @@ export const UpdateTransactionSchema = z
       input.owner !== undefined ||
       input.ownerId !== undefined ||
       input.paid !== undefined ||
+      input.tags !== undefined ||
       input.type !== undefined ||
       input.value !== undefined,
     { message: 'At least one field is required' },

@@ -113,6 +113,7 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
         owner: series.owner,
         ownerId: series.ownerId,
         recurrenceId: series.id,
+        tags: series.tags,
         type: series.type,
         value: series.value,
       };

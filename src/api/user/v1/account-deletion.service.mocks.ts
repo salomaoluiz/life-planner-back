@@ -5,6 +5,7 @@ import { GetOwnedFamilyIdsUseCase } from '@family/application/use-case/GetOwnedF
 import { GetUserFamilyIdsUseCase } from '@family/application/use-case/GetUserFamilyIdsUseCase';
 import { RemoveUserFromFamiliesUseCase } from '@family/application/use-case/RemoveUserFromFamiliesUseCase';
 import { DetachCategoryCreatorFromFamilyUseCase } from '@finance/application/use-case/DetachCategoryCreatorFromFamilyUseCase';
+import { DetachTagCreatorFromFamilyUseCase } from '@finance/application/use-case/DetachTagCreatorFromFamilyUseCase';
 import { ConfirmUserEmailUseCase } from '@user/application/use-case/ConfirmUserEmailUseCase';
 import { DeleteUserUseCase } from '@user/application/use-case/DeleteUserUseCase';
 
@@ -16,6 +17,7 @@ const userIdMock = 'user-id-123';
 const confirmUserEmailMock = { execute: jest.fn() };
 const deleteUserMock = { execute: jest.fn() };
 const detachCategoryCreatorMock = { execute: jest.fn() };
+const detachTagCreatorMock = { execute: jest.fn() };
 const getOwnedFamilyIdsMock = { execute: jest.fn() };
 const getUserFamilyIdsMock = { execute: jest.fn() };
 const removeUserFromFamiliesMock = { execute: jest.fn() };
@@ -34,6 +36,7 @@ beforeEach(async () => {
   confirmUserEmailMock.execute.mockResolvedValue({ email: 'test@example.com' });
   deleteUserMock.execute.mockResolvedValue(undefined);
   detachCategoryCreatorMock.execute.mockResolvedValue(0);
+  detachTagCreatorMock.execute.mockResolvedValue(0);
   getUserFamilyIdsMock.execute.mockResolvedValue(['family-1', 'family-3']);
   getOwnedFamilyIdsMock.execute.mockResolvedValue(['family-1', 'family-2']);
   removeUserFromFamiliesMock.execute.mockResolvedValue({ families: 2, memberships: 1 });
@@ -46,6 +49,7 @@ beforeEach(async () => {
       { provide: ConfirmUserEmailUseCase, useValue: confirmUserEmailMock },
       { provide: DeleteUserUseCase, useValue: deleteUserMock },
       { provide: DetachCategoryCreatorFromFamilyUseCase, useValue: detachCategoryCreatorMock },
+      { provide: DetachTagCreatorFromFamilyUseCase, useValue: detachTagCreatorMock },
       { provide: GetOwnedFamilyIdsUseCase, useValue: getOwnedFamilyIdsMock },
       { provide: GetUserFamilyIdsUseCase, useValue: getUserFamilyIdsMock },
       { provide: RemoveUserFromFamiliesUseCase, useValue: removeUserFromFamiliesMock },
@@ -67,6 +71,7 @@ const mocks = {
   confirmUserEmail: confirmUserEmailMock,
   deleteUser: deleteUserMock,
   detachCategoryCreator: detachCategoryCreatorMock,
+  detachTagCreator: detachTagCreatorMock,
   getOwnedFamilyIds: getOwnedFamilyIdsMock,
   getUserFamilyIds: getUserFamilyIdsMock,
   logger: loggerMock,

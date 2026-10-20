@@ -9,9 +9,11 @@ import {
   IconColorApiSchema,
   OwnerIdApiSchema,
   OwnerTypeApiSchema,
+  TagNamesApiSchema,
   TransactionTypeApiSchema,
   ValueApiSchema,
 } from '@api/finance/v1/dto/finance-fields';
+import { TagRefApiSchema } from '@api/finance/v1/dto/tag.dto';
 import { InstallmentEditScope, RecurrenceFrequency, SystemCategoryKey } from '@finance/domain/enum';
 
 const TransactionFieldsSchema = z.object({
@@ -24,6 +26,8 @@ const TransactionFieldsSchema = z.object({
   ownerId: OwnerIdApiSchema,
   // Account rows only: omitted on create → paid when dated up to `today` (spec 033).
   paid: z.boolean(),
+  // Spec 043: tag names, resolved (or created) in the owner. `[]` removes all; omitted leaves them.
+  tags: TagNamesApiSchema,
   type: TransactionTypeApiSchema,
   value: ValueApiSchema,
 });
@@ -33,6 +37,7 @@ export const CreateTransactionApiSchema = TransactionFieldsSchema.partial({
   accountId: true,
   creditCardId: true,
   paid: true,
+  tags: true,
 })
   .extend({ currency: CurrencyApiSchema.optional() })
   .refine((value) => (value.accountId === undefined) !== (value.creditCardId === undefined), {
@@ -91,6 +96,7 @@ export const TransactionApiSchema = z.object({
   paid: z.boolean(),
   recurrenceFrequency: z.enum(RecurrenceFrequency).nullable(),
   recurrenceId: z.uuid().nullable(),
+  tags: z.array(TagRefApiSchema),
   type: TransactionTypeApiSchema,
   updatedAt: z.iso.datetime(),
   value: z.number().int(),
