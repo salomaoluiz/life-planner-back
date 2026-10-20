@@ -248,3 +248,13 @@ describe('splitting from a projected occurrence ahead of what exists (review)', 
     );
   });
 });
+
+it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)', async () => {
+  const input = { ...base, value: 220000 };
+  const accessibleOwners = input.accessibleOwners.map((access) => ({ ...access, archived: true }));
+
+  await expect(setup.execute({ ...input, accessibleOwners })).rejects.toMatchObject({
+    message: 'Family is archived',
+    status: 422,
+  });
+});

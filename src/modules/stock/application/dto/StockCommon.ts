@@ -6,7 +6,11 @@ import { StockUnits } from '@stock/domain/entity/StockEntity';
 export const MAX_QUANTITY = 1_000_000;
 
 export const AccessibleOwnersSchema = z.array(
-  z.object({ owner: z.enum(OwnerType), ownerId: z.string().min(1) }),
+  z.object({
+    archived: z.boolean().optional(),
+    owner: z.enum(OwnerType),
+    ownerId: z.string().min(1),
+  }),
 );
 export const DescriptionSchema = z.string().trim().min(1).max(200);
 export const OwnerIdSchema = z.string().min(1);

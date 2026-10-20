@@ -1,5 +1,6 @@
 import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 
+import { FamilyStatus } from '@family/domain/enum';
 import { ValidationError } from '@shared/domain/error/ValidationError';
 
 import { mocks, setup, spies } from './index.mocks';
@@ -80,4 +81,17 @@ it.each([
 ])('SHOULD throw ValidationError (400) WHEN %s AND check nothing', async (_l, override) => {
   await expect(setup.execute({ ...mocks.input, ...override })).rejects.toThrow(ValidationError);
   expect(mocks.ensureFamilyOwnerUseCase.execute).not.toHaveBeenCalled();
+});
+
+it('SHOULD throw 422 "Family is archived" AND create no invite WHEN the family is archived (spec 042)', async () => {
+  mocks.ensureFamilyOwnerUseCase.execute.mockResolvedValueOnce({
+    ...mocks.family,
+    status: FamilyStatus.ARCHIVED,
+  });
+
+  await expect(setup.execute(mocks.input)).rejects.toMatchObject({
+    message: 'Family is archived',
+    status: 422,
+  });
+  expect(mocks.familyMemberRepository.createInvite).not.toHaveBeenCalled();
 });

@@ -64,3 +64,13 @@ it('SHOULD answer 422 WHEN the card is archived AND 404 WHEN it is missing or no
 it('SHOULD reject a value below 1 cent', async () => {
   await expect(setup.execute({ ...mocks.input, value: 0 })).rejects.toThrow();
 });
+
+it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)', async () => {
+  const input = mocks.input;
+  const accessibleOwners = input.accessibleOwners.map((access) => ({ ...access, archived: true }));
+
+  await expect(setup.execute({ ...input, accessibleOwners })).rejects.toMatchObject({
+    message: 'Family is archived',
+    status: 422,
+  });
+});

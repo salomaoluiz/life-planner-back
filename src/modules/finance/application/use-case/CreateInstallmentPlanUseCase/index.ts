@@ -4,6 +4,7 @@ import {
   CreateInstallmentPlanInput,
   CreateInstallmentPlanSchema,
 } from '@finance/application/dto/CreateInstallmentPlan';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import {
@@ -43,6 +44,8 @@ export class CreateInstallmentPlanUseCase implements UseCaseWithParams<
     if (!hasOwnerAccess(input.accessibleOwners, { owner: input.owner, ownerId: input.ownerId })) {
       throw new ForbiddenException('Owner not accessible');
     }
+
+    ensureOwnerWritable(input.accessibleOwners, { owner: input.owner, ownerId: input.ownerId });
 
     const consistency = await this.ensureTransactionConsistencyUseCase.execute({
       accessibleOwners: input.accessibleOwners,

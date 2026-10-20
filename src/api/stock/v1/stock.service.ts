@@ -5,7 +5,7 @@ import {
   StockItemOutput,
   UpdateStockItemApiInput,
 } from '@api/stock/v1/dto/stock.dto';
-import { GetUserFamilyIdsUseCase } from '@family/application/use-case/GetUserFamilyIdsUseCase';
+import { GetUserFamilyAccessUseCase } from '@family/application/use-case/GetUserFamilyAccessUseCase';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { CreateStockItemUseCase } from '@stock/application/use-case/CreateStockItemUseCase';
 import { DeleteStockItemUseCase } from '@stock/application/use-case/DeleteStockItemUseCase';
@@ -41,7 +41,7 @@ export class StockService {
     private readonly deleteStockItemUseCase: DeleteStockItemUseCase,
     private readonly getStockItemByIdUseCase: GetStockItemByIdUseCase,
     private readonly getStockItemsUseCase: GetStockItemsUseCase,
-    private readonly getUserFamilyIdsUseCase: GetUserFamilyIdsUseCase,
+    private readonly getUserFamilyAccessUseCase: GetUserFamilyAccessUseCase,
     private readonly updateStockItemUseCase: UpdateStockItemUseCase,
   ) {}
 
@@ -89,11 +89,15 @@ export class StockService {
 
   // Resolved on every request: the caller plus every family they own or joined (spec 005, C1).
   private async getAccessibleOwners(userId: string): Promise<OwnerAccess[]> {
-    const familyIds = await this.getUserFamilyIdsUseCase.execute(userId);
+    const families = await this.getUserFamilyAccessUseCase.execute(userId);
 
     return [
       { owner: OwnerType.USER, ownerId: userId },
-      ...familyIds.map((ownerId) => ({ owner: OwnerType.FAMILY, ownerId })),
+      ...families.map(({ archived, familyId }) => ({
+        archived,
+        owner: OwnerType.FAMILY,
+        ownerId: familyId,
+      })),
     ];
   }
 }

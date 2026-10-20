@@ -9,6 +9,7 @@ import {
   SplitRecurrenceInput,
   SplitRecurrenceSchema,
 } from '@finance/application/dto/UpdateRecurrence';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
@@ -60,6 +61,8 @@ export class SplitRecurrenceUseCase implements UseCaseWithParams<
     if (!series || !hasOwnerAccess(input.accessibleOwners, series)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, series);
 
     if (
       (input.accountId !== undefined && series.accountId === null) ||

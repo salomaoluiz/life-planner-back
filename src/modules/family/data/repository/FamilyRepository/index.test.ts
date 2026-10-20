@@ -1,3 +1,5 @@
+import { FamilyStatus } from '@family/domain/enum';
+
 import { mocks, setup, spies } from './index.mocks';
 
 describe('createFamily', () => {
@@ -72,6 +74,18 @@ describe('updateFamily', () => {
       name: 'Renamed',
     });
     expect(result).toEqual(mocks.familyEntity);
+  });
+});
+
+describe('updateFamily (status)', () => {
+  it('SHOULD forward the status to the datasource', async () => {
+    await setup.updateFamily({ id: mocks.familyEntity.id, status: FamilyStatus.ARCHIVED });
+
+    expect(spies.familyDatasource.update).toHaveBeenCalledWith({
+      id: mocks.familyEntity.id,
+      name: undefined,
+      status: 'ARCHIVED',
+    });
   });
 });
 

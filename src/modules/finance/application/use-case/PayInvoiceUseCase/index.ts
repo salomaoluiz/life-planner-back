@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { PayInvoiceInput, PayInvoiceSchema } from '@finance/application/dto/PayInvoice';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { ACCOUNT_CARD_CURRENCY_MISMATCH } from '@finance/application/service/PaymentAccount';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import InvoicePaymentEntity from '@finance/domain/entity/InvoicePaymentEntity';
@@ -51,6 +52,8 @@ export class PayInvoiceUseCase implements UseCaseWithParams<PayInvoiceInput, Inv
     if (!card || !hasOwnerAccess(input.accessibleOwners, card)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, card);
 
     const [data] = await this.computeCardInvoicesUseCase.execute({
       cards: [card],

@@ -4,6 +4,7 @@ import {
   UndoInvoicePaymentInput,
   UndoInvoicePaymentSchema,
 } from '@finance/application/dto/UndoInvoicePayment';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import {
   IFinanceCreditCardRepository,
@@ -29,6 +30,8 @@ export class UndoInvoicePaymentUseCase implements UseCaseWithParams<UndoInvoiceP
     if (!card || !hasOwnerAccess(input.accessibleOwners, card)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, card);
 
     const payment = await this.invoicePaymentRepository.findByCardAndMonth(
       card.id,

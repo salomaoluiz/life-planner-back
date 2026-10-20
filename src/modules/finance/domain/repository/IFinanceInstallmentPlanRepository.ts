@@ -1,4 +1,5 @@
 import InstallmentPlanEntity from '@finance/domain/entity/InstallmentPlanEntity';
+import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
@@ -9,6 +10,8 @@ export type IFinanceInstallmentPlanRepository = {
   // Plans of these categories (any status) with the closing day of their card, in one query (spec 041).
   findPlanById(id: string): Promise<InstallmentPlanEntity | undefined>;
   findPlansByCategoryIds(categoryIds: string[]): Promise<PlanWithClosingDay[]>;
+  // Plans of these owners (any status) with the closing day of their card, in one query (spec 042).
+  findPlansByOwners(owners: OwnerAccess[]): Promise<PlanWithClosingDay[]>;
   // Deletes the rows and creates them again (per-installment adjustments are lost).
   recreatePlan(params: RecreateInstallmentPlanRepositoryParams): Promise<void>;
   // Rows with `installmentNumber >= fromNumber`; `value` is refused when one of them is paid.

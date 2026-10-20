@@ -6,3 +6,7 @@ export enum FamilyMemberStatus {
   JOINED = 'JOINED',
   PENDING = 'PENDING',
 }
+export enum FamilyStatus {
+  ACTIVE = 'ACTIVE',
+  ARCHIVED = 'ARCHIVED',
+}

@@ -9,6 +9,7 @@ import {
 
 import { ALL_SCOPES } from '@finance/application/dto/FinanceCommon';
 import { UpdateCategoryInput, UpdateCategorySchema } from '@finance/application/dto/UpdateCategory';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { GetCategoryArchiveBlockersUseCase } from '@finance/application/use-case/GetCategoryArchiveBlockersUseCase';
 import CategoryEntity from '@finance/domain/entity/CategoryEntity';
 import { isVisibleTo, sameScopes } from '@finance/domain/entity/CategoryScope';
@@ -54,6 +55,9 @@ export class UpdateCategoryUseCase implements UseCaseWithParams<
     if (!category || !isVisibleTo(category, input.accessibleOwners)) {
       throw new NotFoundException();
     }
+
+    // An All category's owner is its creator's Personal scope, so only single-family categories are blocked.
+    ensureOwnerWritable(input.accessibleOwners, category);
 
     const nextType = input.type ?? category.type;
     const nextParentId =

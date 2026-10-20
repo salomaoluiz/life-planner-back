@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { GetUserFamilyIdsUseCase } from '@family/application/use-case/GetUserFamilyIdsUseCase';
+import { GetUserFamilyAccessUseCase } from '@family/application/use-case/GetUserFamilyAccessUseCase';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
@@ -8,14 +8,18 @@ import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 // the owners the caller can act on (themself + every family they own or joined).
 @Injectable()
 export class FinanceAccessService {
-  constructor(private readonly getUserFamilyIdsUseCase: GetUserFamilyIdsUseCase) {}
+  constructor(private readonly getUserFamilyAccessUseCase: GetUserFamilyAccessUseCase) {}
 
   async resolve(userId: string): Promise<OwnerAccess[]> {
-    const familyIds = await this.getUserFamilyIdsUseCase.execute(userId);
+    const families = await this.getUserFamilyAccessUseCase.execute(userId);
 
     return [
       { owner: OwnerType.USER, ownerId: userId },
-      ...familyIds.map((ownerId) => ({ owner: OwnerType.FAMILY, ownerId })),
+      ...families.map(({ archived, familyId }) => ({
+        archived,
+        owner: OwnerType.FAMILY,
+        ownerId: familyId,
+      })),
     ];
   }
 }

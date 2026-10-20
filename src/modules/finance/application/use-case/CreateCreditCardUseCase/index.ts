@@ -4,6 +4,7 @@ import {
   CreateCreditCardInput,
   CreateCreditCardSchema,
 } from '@finance/application/dto/CreateCreditCard';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { assertPaymentAccount } from '@finance/application/service/PaymentAccount';
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
@@ -31,6 +32,8 @@ export class CreateCreditCardUseCase implements UseCaseWithParams<
     if (!hasOwnerAccess(input.accessibleOwners, { owner: input.owner, ownerId: input.ownerId })) {
       throw new ForbiddenException('Owner not accessible');
     }
+
+    ensureOwnerWritable(input.accessibleOwners, { owner: input.owner, ownerId: input.ownerId });
 
     if (input.paymentAccountId !== undefined) {
       await assertPaymentAccount(

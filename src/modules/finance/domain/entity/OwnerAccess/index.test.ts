@@ -31,6 +31,20 @@ describe('narrowOwners', () => {
     expect(narrowOwners(mocks.accessibleOwners)).toEqual(mocks.accessibleOwners);
   });
 
+  it('SHOULD skip archived families WHEN no ownerIds are requested (All)', () => {
+    const archived = { archived: true, owner: OwnerType.FAMILY, ownerId: mocks.otherFamilyId };
+
+    expect(narrowOwners([...mocks.accessibleOwners, archived])).toEqual(mocks.accessibleOwners);
+  });
+
+  it('SHOULD still return an archived family WHEN its id is requested explicitly', () => {
+    const archived = { archived: true, owner: OwnerType.FAMILY, ownerId: mocks.otherFamilyId };
+
+    expect(narrowOwners([...mocks.accessibleOwners, archived], [mocks.otherFamilyId])).toEqual([
+      archived,
+    ]);
+  });
+
   it('SHOULD keep only the requested owners', () => {
     expect(narrowOwners(mocks.accessibleOwners, [mocks.familyId])).toEqual([
       { owner: OwnerType.FAMILY, ownerId: mocks.familyId },

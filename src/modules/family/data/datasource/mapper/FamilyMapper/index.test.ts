@@ -11,6 +11,7 @@ describe('FamilyMapper', () => {
         id: mocks.raw.id,
         name: mocks.raw.name,
         ownerId: mocks.raw.owner_id,
+        status: 'ACTIVE',
         updatedAt: mocks.raw.updated_at,
       });
     });

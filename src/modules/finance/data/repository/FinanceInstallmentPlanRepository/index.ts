@@ -4,6 +4,7 @@ import { fromCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
 import { FinanceInstallmentPlanMapper } from '@finance/data/datasource/mapper/FinanceInstallmentPlanMapper';
 import { IFinanceInstallmentPlanDatasource } from '@finance/data/repository/datasource/IFinanceInstallmentPlanDatasource';
 import InstallmentPlanEntity from '@finance/domain/entity/InstallmentPlanEntity';
+import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import {
   CreateInstallmentPlanRepositoryParams,
   IFinanceInstallmentPlanRepository,
@@ -45,6 +46,15 @@ export class FinanceInstallmentPlanRepository implements IFinanceInstallmentPlan
 
   async findPlansByCategoryIds(categoryIds: string[]): Promise<PlanWithClosingDay[]> {
     const results = await this.planDatasource.findManyByCategoryIds(categoryIds);
+
+    return results.map((result) => ({
+      closingDay: result.credit_card.closing_day,
+      plan: FinanceInstallmentPlanMapper.toDomain(result),
+    }));
+  }
+
+  async findPlansByOwners(owners: OwnerAccess[]): Promise<PlanWithClosingDay[]> {
+    const results = await this.planDatasource.findManyByOwners(owners);
 
     return results.map((result) => ({
       closingDay: result.credit_card.closing_day,

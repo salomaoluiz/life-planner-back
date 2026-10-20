@@ -12,6 +12,7 @@ import {
   isInviteExpired,
   toFamilyMemberUseCaseOutput,
 } from '@family/application/dto/FamilyMemberOutput';
+import { ensureFamilyWritable } from '@family/application/service/FamilyWritable';
 import { IFamilyMemberRepository, IFamilyRepository } from '@family/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { hashToken } from '@shared/infra/token';
@@ -55,6 +56,8 @@ export class AcceptFamilyInviteUseCase implements UseCaseWithParams<
     if (!family) {
       throw new NotFoundException('INVITE_NOT_FOUND');
     }
+
+    ensureFamilyWritable(family);
 
     // joinedAt is server time. The repository update only matches a still-pending row, so of two
     // concurrent accepts exactly one gets a result; the other sees `undefined`.

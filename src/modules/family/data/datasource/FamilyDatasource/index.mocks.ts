@@ -13,6 +13,7 @@ const familyMock: Family = {
   id: faker.string.uuid(),
   name: 'Example Family',
   owner_id: faker.string.uuid(),
+  status: 'ACTIVE',
   updated_at: faker.date.recent(),
 };
 

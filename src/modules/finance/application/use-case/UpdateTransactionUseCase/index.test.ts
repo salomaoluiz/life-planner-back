@@ -505,3 +505,18 @@ describe('currency (spec 040)', () => {
     expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
   });
 });
+
+it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)', async () => {
+  const input = {
+    accessibleOwners: mocks.accessibleOwners,
+    description: 'Updated',
+    id: mocks.transaction.id,
+    today: '2026-10-15',
+  };
+  const accessibleOwners = input.accessibleOwners.map((access) => ({ ...access, archived: true }));
+
+  await expect(setup.execute({ ...input, accessibleOwners })).rejects.toMatchObject({
+    message: 'Family is archived',
+    status: 422,
+  });
+});

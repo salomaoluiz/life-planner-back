@@ -77,6 +77,17 @@ describe('findPlansByCategoryIds', () => {
   });
 });
 
+describe('findPlansByOwners', () => {
+  it('SHOULD map each plan with the closing day of its card', async () => {
+    const owners = [{ owner: 'FAMILY' as never, ownerId: 'family-1' }];
+
+    expect(await setup.findPlansByOwners(owners)).toEqual([
+      { closingDay: 9, plan: { id: 'plan-1' } },
+    ]);
+    expect(mocks.planDatasource.findManyByOwners).toHaveBeenCalledWith(owners);
+  });
+});
+
 describe('updates', () => {
   it('SHOULD translate updateFromNumber', async () => {
     await setup.updateFromNumber({ fromNumber: 4, planId: 'plan-1', value: 7 });

@@ -103,6 +103,19 @@ describe('Method update', () => {
   });
 });
 
+describe('Method update (status)', () => {
+  it('SHOULD update the status ONLY WHEN a status is given', async () => {
+    spies.update.mockResolvedValue(mocks.family);
+
+    await setup.update({ id: mocks.family.id, status: 'ARCHIVED' });
+
+    expect(spies.update).toHaveBeenCalledWith({
+      data: { status: 'ARCHIVED' },
+      where: { id: mocks.family.id },
+    });
+  });
+});
+
 describe('Method findIdsByOwnerId', () => {
   it('SHOULD select only ids of families whose owner_id is the user (not mere memberships)', async () => {
     spies.findMany.mockResolvedValueOnce([{ id: 'family-1' }, { id: 'family-2' }]);

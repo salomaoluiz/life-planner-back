@@ -11,6 +11,7 @@ it('SHOULD create the family with the owner data AND return it', async () => {
     id: mocks.family.id,
     name: mocks.family.name,
     ownerId: mocks.family.ownerId,
+    status: mocks.family.status,
     updatedAt: mocks.family.updatedAt,
   });
 });

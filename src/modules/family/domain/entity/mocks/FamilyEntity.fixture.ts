@@ -1,6 +1,7 @@
 import { faker } from '@faker-js/faker';
 
 import FamilyEntity from '@family/domain/entity/FamilyEntity';
+import { FamilyStatus } from '@family/domain/enum';
 
 class FamilyEntityFixture {
   value = {} as FamilyEntity;
@@ -26,6 +27,7 @@ class FamilyEntityFixture {
       id: faker.string.uuid(),
       name: `Family ${faker.person.lastName()}`,
       ownerId: faker.string.uuid(),
+      status: FamilyStatus.ACTIVE,
       updatedAt: faker.date.recent(),
     };
     return this;
@@ -43,6 +45,11 @@ class FamilyEntityFixture {
 
   withOwnerId(ownerId: string) {
     this.value.ownerId = ownerId;
+    return this;
+  }
+
+  withStatus(status: FamilyStatus) {
+    this.value.status = status;
     return this;
   }
 

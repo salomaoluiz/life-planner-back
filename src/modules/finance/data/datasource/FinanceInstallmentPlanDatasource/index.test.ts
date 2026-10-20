@@ -103,6 +103,21 @@ describe('Method findManyByCategoryIds', () => {
   });
 });
 
+describe('Method findManyByOwners', () => {
+  it('SHOULD query the plans of the owners with their card closing day', async () => {
+    spies.planFindMany.mockResolvedValue([{ id: 'plan-1' }]);
+    const owners = [{ owner: 'FAMILY' as never, ownerId: 'family-1' }];
+
+    expect(await setup.findManyByOwners(owners)).toEqual([{ id: 'plan-1' }]);
+    expect(spies.planFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({ credit_card: { select: { closing_day: true } } }),
+        where: { OR: [{ owner: 'FAMILY', owner_id: 'family-1' }] },
+      }),
+    );
+  });
+});
+
 describe('Method findById', () => {
   it('SHOULD load the plan with its rows ordered by number', async () => {
     spies.planFindUnique.mockResolvedValue({ id: 'plan-1' });

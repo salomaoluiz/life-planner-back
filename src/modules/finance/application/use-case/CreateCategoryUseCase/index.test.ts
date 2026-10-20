@@ -172,6 +172,15 @@ describe('ALL scope', () => {
     });
   });
 
+  it('SHOULD still create an ALL category WHEN one of its scopes is an archived family (spec 042 FR 11)', async () => {
+    const scopes = allInput.accessibleOwners.map((access) => ({
+      ...access,
+      archived: access.owner === OwnerType.FAMILY,
+    }));
+
+    await expect(setup.execute({ ...allInput, accessibleOwners: scopes })).resolves.toBeDefined();
+  });
+
   it('SHOULD make a child of an ALL category ALL with the parent scopes AND creator', async () => {
     mocks.categoryRepository.findCategoryById.mockResolvedValueOnce(allParent);
 
@@ -214,4 +223,14 @@ it('SHOULD refuse (422) a subcategory under an archived parent', async () => {
     new UnprocessableEntityException('Parent category is archived'),
   );
   expect(mocks.categoryRepository.createCategory).not.toHaveBeenCalled();
+});
+
+it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)', async () => {
+  const input = mocks.input;
+  const accessibleOwners = input.accessibleOwners.map((access) => ({ ...access, archived: true }));
+
+  await expect(setup.execute({ ...input, accessibleOwners })).rejects.toMatchObject({
+    message: 'Family is archived',
+    status: 422,
+  });
 });

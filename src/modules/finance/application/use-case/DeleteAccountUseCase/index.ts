@@ -1,6 +1,7 @@
 import { ConflictException, Inject, NotFoundException } from '@nestjs/common';
 
 import { DeleteAccountInput, DeleteAccountSchema } from '@finance/application/dto/DeleteAccount';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import {
   IFinanceAccountRepository,
@@ -28,6 +29,8 @@ export class DeleteAccountUseCase implements UseCaseWithParams<DeleteAccountInpu
     if (!account || !hasOwnerAccess(input.accessibleOwners, account)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, account);
 
     // Transactions are never deleted by an account delete (the FK is RESTRICT as a safety net).
     if ((await this.transactionRepository.countByAccountId(input.id)) > 0) {

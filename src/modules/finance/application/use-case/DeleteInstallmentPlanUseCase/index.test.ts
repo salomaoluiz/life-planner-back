@@ -30,3 +30,13 @@ it('SHOULD answer 422 WHEN the plan has refunds AND delete nothing', async () =>
   await expect(setup.execute(mocks.input)).rejects.toThrow('Delete its refunds first');
   expect(mocks.planRepository.deletePlan).not.toHaveBeenCalled();
 });
+
+it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)', async () => {
+  const input = mocks.input;
+  const accessibleOwners = input.accessibleOwners.map((access) => ({ ...access, archived: true }));
+
+  await expect(setup.execute({ ...input, accessibleOwners })).rejects.toMatchObject({
+    message: 'Family is archived',
+    status: 422,
+  });
+});

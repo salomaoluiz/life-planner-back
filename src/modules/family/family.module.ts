@@ -9,8 +9,10 @@ import { EnsureFamilyOwnerUseCase } from '@family/application/use-case/EnsureFam
 import { GetFamilyByIdUseCase } from '@family/application/use-case/GetFamilyByIdUseCase';
 import { GetFamilyInvitePreviewUseCase } from '@family/application/use-case/GetFamilyInvitePreviewUseCase';
 import { GetFamilyMembersUseCase } from '@family/application/use-case/GetFamilyMembersUseCase';
+import { GetFamilyPendingInvitesUseCase } from '@family/application/use-case/GetFamilyPendingInvitesUseCase';
 import { GetOwnedFamilyIdsUseCase } from '@family/application/use-case/GetOwnedFamilyIdsUseCase';
 import { GetUserFamiliesUseCase } from '@family/application/use-case/GetUserFamiliesUseCase';
+import { GetUserFamilyAccessUseCase } from '@family/application/use-case/GetUserFamilyAccessUseCase';
 import { GetUserFamilyIdsUseCase } from '@family/application/use-case/GetUserFamilyIdsUseCase';
 import { InviteFamilyMemberUseCase } from '@family/application/use-case/InviteFamilyMemberUseCase';
 import { RemoveUserFromFamiliesUseCase } from '@family/application/use-case/RemoveUserFromFamiliesUseCase';
@@ -30,8 +32,10 @@ const useCases = [
   GetFamilyByIdUseCase,
   GetFamilyInvitePreviewUseCase,
   GetFamilyMembersUseCase,
+  GetFamilyPendingInvitesUseCase,
   GetOwnedFamilyIdsUseCase,
   GetUserFamiliesUseCase,
+  GetUserFamilyAccessUseCase,
   GetUserFamilyIdsUseCase,
   InviteFamilyMemberUseCase,
   RemoveUserFromFamiliesUseCase,

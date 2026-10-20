@@ -1,4 +1,5 @@
 import FamilyEntity from '@family/domain/entity/FamilyEntity';
+import { FamilyStatus } from '@family/domain/enum';
 
 export type IFamilyRepository = {
   createFamily(params: CreateFamilyRepositoryParams): Promise<FamilyEntity>;
@@ -32,7 +33,8 @@ interface RemoveUserRepositoryResult {
 }
 interface UpdateFamilyRepositoryParams {
   id: string;
-  name: string;
+  name?: string;
+  status?: FamilyStatus;
 }
 
 export {

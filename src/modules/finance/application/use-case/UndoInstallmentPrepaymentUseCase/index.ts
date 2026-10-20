@@ -4,6 +4,7 @@ import {
   UndoInstallmentPrepaymentInput,
   UndoInstallmentPrepaymentSchema,
 } from '@finance/application/dto/UndoInstallmentPrepayment';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import {
   IFinanceInstallmentPlanRepository,
@@ -32,6 +33,8 @@ export class UndoInstallmentPrepaymentUseCase implements UseCaseWithParams<
     if (!plan || !hasOwnerAccess(input.accessibleOwners, plan)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, plan);
 
     await this.prepaymentRepository.undoPrepayment(plan.id);
   }

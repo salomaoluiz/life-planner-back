@@ -17,3 +17,13 @@ it('SHOULD answer 404 WHEN the plan is missing or not accessible', async () => {
   );
   expect(mocks.prepaymentRepository.undoPrepayment).not.toHaveBeenCalled();
 });
+
+it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)', async () => {
+  const input = mocks.input;
+  const accessibleOwners = input.accessibleOwners.map((access) => ({ ...access, archived: true }));
+
+  await expect(setup.execute({ ...input, accessibleOwners })).rejects.toMatchObject({
+    message: 'Family is archived',
+    status: 422,
+  });
+});

@@ -81,7 +81,10 @@ export class FamilyDatasource implements IFamilyDatasource {
 
   async update(params: UpdateFamilyDatasourceParams): Promise<Family> {
     return this.db.client.family.update({
-      data: { name: params.name },
+      data: {
+        ...(params.name !== undefined && { name: params.name }),
+        ...(params.status !== undefined && { status: params.status }),
+      },
       where: { id: params.id },
     });
   }

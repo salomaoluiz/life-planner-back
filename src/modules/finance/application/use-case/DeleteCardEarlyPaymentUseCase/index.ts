@@ -4,6 +4,7 @@ import {
   DeleteCardEarlyPaymentInput,
   DeleteCardEarlyPaymentSchema,
 } from '@finance/application/dto/DeleteCardEarlyPayment';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { SystemCategoryKey } from '@finance/domain/enum';
 import {
@@ -36,6 +37,8 @@ export class DeleteCardEarlyPaymentUseCase implements UseCaseWithParams<
     if (!card || !hasOwnerAccess(input.accessibleOwners, card)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, card);
 
     const payment = await this.transactionRepository.findTransactionById(input.id);
 

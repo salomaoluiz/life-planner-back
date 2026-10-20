@@ -4,6 +4,7 @@ import {
   DeleteOccurrenceInput,
   DeleteOccurrenceSchema,
 } from '@finance/application/dto/DeleteRecurrence';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { DeleteRecurrenceUseCase } from '@finance/application/use-case/DeleteRecurrenceUseCase';
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
@@ -32,6 +33,8 @@ export class DeleteOccurrenceUseCase implements UseCaseWithParams<DeleteOccurren
     if (!series || !hasOwnerAccess(input.accessibleOwners, series)) {
       throw new NotFoundException();
     }
+
+    ensureOwnerWritable(input.accessibleOwners, series);
 
     const k = input.occurrenceNumber - series.firstNumber + 1;
     const date = k >= 1 ? occurrenceDate(series, k) : undefined;

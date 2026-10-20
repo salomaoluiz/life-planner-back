@@ -4,6 +4,7 @@ import {
   UpdateCreditCardInput,
   UpdateCreditCardSchema,
 } from '@finance/application/dto/UpdateCreditCard';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { assertPaymentAccount } from '@finance/application/service/PaymentAccount';
 import { EndRecurrencesBySourceUseCase } from '@finance/application/use-case/EndRecurrencesBySourceUseCase';
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
@@ -38,6 +39,8 @@ export class UpdateCreditCardUseCase implements UseCaseWithParams<
       throw new NotFoundException();
     }
 
+    ensureOwnerWritable(input.accessibleOwners, card);
+
     // Unlike accounts, the owner can change: the new owner must also be accessible to the caller.
     if (
       input.owner !== undefined &&
@@ -45,6 +48,10 @@ export class UpdateCreditCardUseCase implements UseCaseWithParams<
       !hasOwnerAccess(input.accessibleOwners, { owner: input.owner, ownerId: input.ownerId })
     ) {
       throw new ForbiddenException('Owner not accessible');
+    }
+
+    if (input.owner !== undefined && input.ownerId !== undefined) {
+      ensureOwnerWritable(input.accessibleOwners, { owner: input.owner, ownerId: input.ownerId });
     }
 
     if (input.paymentAccountId) {
