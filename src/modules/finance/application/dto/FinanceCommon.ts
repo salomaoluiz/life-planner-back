@@ -15,7 +15,11 @@ function isValidCalendarDate(value: string): boolean {
 }
 
 export const AccessibleOwnersSchema = z.array(
-  z.object({ owner: z.enum(OwnerType), ownerId: z.string().min(1) }),
+  z.object({
+    archived: z.boolean().optional(),
+    owner: z.enum(OwnerType),
+    ownerId: z.string().min(1),
+  }),
 );
 // Category scope `ALL` (spec 038): the creator's Personal scope plus every family they are in.
 export const ALL_SCOPES = 'ALL';

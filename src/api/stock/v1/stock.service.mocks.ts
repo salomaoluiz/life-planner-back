@@ -2,7 +2,7 @@ import { faker } from '@faker-js/faker';
 import { Test } from '@nestjs/testing';
 
 import { StockService } from '@api/stock/v1/stock.service';
-import { GetUserFamilyIdsUseCase } from '@family/application/use-case/GetUserFamilyIdsUseCase';
+import { GetUserFamilyAccessUseCase } from '@family/application/use-case/GetUserFamilyAccessUseCase';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { CreateStockItemUseCase } from '@stock/application/use-case/CreateStockItemUseCase';
 import { DeleteStockItemUseCase } from '@stock/application/use-case/DeleteStockItemUseCase';
@@ -17,7 +17,7 @@ const userId = faker.string.uuid();
 const familyId = faker.string.uuid();
 const accessibleOwners = [
   { owner: OwnerType.USER, ownerId: userId },
-  { owner: OwnerType.FAMILY, ownerId: familyId },
+  { archived: false, owner: OwnerType.FAMILY, ownerId: familyId },
 ];
 const itemResultMock = {
   barcode: '7890000000001',
@@ -56,7 +56,7 @@ const createUseCaseMock = { execute: jest.fn() };
 const deleteUseCaseMock = { execute: jest.fn() };
 const getByIdUseCaseMock = { execute: jest.fn() };
 const getListUseCaseMock = { execute: jest.fn() };
-const getUserFamilyIdsUseCaseMock = { execute: jest.fn() };
+const getUserFamilyAccessUseCaseMock = { execute: jest.fn() };
 const updateUseCaseMock = { execute: jest.fn() };
 
 // endregion Mocks
@@ -69,7 +69,7 @@ beforeEach(async () => {
   deleteUseCaseMock.execute.mockResolvedValue(undefined);
   getByIdUseCaseMock.execute.mockResolvedValue(itemResultMock);
   getListUseCaseMock.execute.mockResolvedValue([itemResultMock]);
-  getUserFamilyIdsUseCaseMock.execute.mockResolvedValue([familyId]);
+  getUserFamilyAccessUseCaseMock.execute.mockResolvedValue([{ archived: false, familyId }]);
   updateUseCaseMock.execute.mockResolvedValue(itemResultMock);
 
   const module = await Test.createTestingModule({
@@ -79,7 +79,7 @@ beforeEach(async () => {
       { provide: DeleteStockItemUseCase, useValue: deleteUseCaseMock },
       { provide: GetStockItemByIdUseCase, useValue: getByIdUseCaseMock },
       { provide: GetStockItemsUseCase, useValue: getListUseCaseMock },
-      { provide: GetUserFamilyIdsUseCase, useValue: getUserFamilyIdsUseCaseMock },
+      { provide: GetUserFamilyAccessUseCase, useValue: getUserFamilyAccessUseCaseMock },
       { provide: UpdateStockItemUseCase, useValue: updateUseCaseMock },
     ],
   }).compile();
@@ -94,7 +94,7 @@ const mocks = {
   familyId,
   getByIdUseCase: getByIdUseCaseMock,
   getListUseCase: getListUseCaseMock,
-  getUserFamilyIdsUseCase: getUserFamilyIdsUseCaseMock,
+  getUserFamilyAccessUseCase: getUserFamilyAccessUseCaseMock,
   itemApi: itemApiMock,
   updateUseCase: updateUseCaseMock,
   userId,

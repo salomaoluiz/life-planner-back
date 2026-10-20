@@ -11,6 +11,7 @@ import { GetFamilyInvitePreviewUseCase } from '@family/application/use-case/GetF
 import { GetFamilyMembersUseCase } from '@family/application/use-case/GetFamilyMembersUseCase';
 import { GetOwnedFamilyIdsUseCase } from '@family/application/use-case/GetOwnedFamilyIdsUseCase';
 import { GetUserFamiliesUseCase } from '@family/application/use-case/GetUserFamiliesUseCase';
+import { GetUserFamilyAccessUseCase } from '@family/application/use-case/GetUserFamilyAccessUseCase';
 import { GetUserFamilyIdsUseCase } from '@family/application/use-case/GetUserFamilyIdsUseCase';
 import { InviteFamilyMemberUseCase } from '@family/application/use-case/InviteFamilyMemberUseCase';
 import { RemoveUserFromFamiliesUseCase } from '@family/application/use-case/RemoveUserFromFamiliesUseCase';
@@ -32,6 +33,7 @@ const useCases = [
   GetFamilyMembersUseCase,
   GetOwnedFamilyIdsUseCase,
   GetUserFamiliesUseCase,
+  GetUserFamilyAccessUseCase,
   GetUserFamilyIdsUseCase,
   InviteFamilyMemberUseCase,
   RemoveUserFromFamiliesUseCase,

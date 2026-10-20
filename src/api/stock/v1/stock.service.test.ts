@@ -16,10 +16,10 @@ const body = {
 describe('owner resolution', () => {
   it('SHOULD build [USER self, ...FAMILY ids] on EVERY call (a removed member loses access at once)', async () => {
     await setup.findAll(mocks.userId);
-    mocks.getUserFamilyIdsUseCase.execute.mockResolvedValueOnce([]);
+    mocks.getUserFamilyAccessUseCase.execute.mockResolvedValueOnce([]);
     await setup.findAll(mocks.userId);
 
-    expect(mocks.getUserFamilyIdsUseCase.execute).toHaveBeenCalledTimes(2);
+    expect(mocks.getUserFamilyAccessUseCase.execute).toHaveBeenCalledTimes(2);
     expect(mocks.getListUseCase.execute).toHaveBeenNthCalledWith(1, {
       accessibleOwners: mocks.accessibleOwners,
       ownerId: undefined,
@@ -31,7 +31,7 @@ describe('owner resolution', () => {
   });
 
   it('SHOULD fail (no partial result) AND not call the stock use case WHEN the family lookup fails', async () => {
-    mocks.getUserFamilyIdsUseCase.execute.mockRejectedValueOnce(new Error('db down'));
+    mocks.getUserFamilyAccessUseCase.execute.mockRejectedValueOnce(new Error('db down'));
 
     await expect(setup.findAll(mocks.userId)).rejects.toThrow('db down');
     expect(mocks.getListUseCase.execute).not.toHaveBeenCalled();
