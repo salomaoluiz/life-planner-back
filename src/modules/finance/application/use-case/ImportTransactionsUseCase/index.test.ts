@@ -197,3 +197,60 @@ describe('owner', () => {
     ).rejects.toBeInstanceOf(ValidationError);
   });
 });
+
+describe('owner per row (spec 047)', () => {
+  const familyRow = { ...validRow, line: 3, owner: 'FAMILY' as never, ownerId: 'family-id' };
+
+  it('SHOULD import a row in the family it names and the others in the owner of the request', async () => {
+    const owners = [...base.accessibleOwners, { owner: 'FAMILY' as never, ownerId: 'family-id' }];
+
+    await setup.execute({
+      ...base,
+      accessibleOwners: owners,
+      dryRun: false,
+      rows: [validRow, familyRow],
+    });
+
+    const [first, second] = mocks.transactionRepository.createManyTransactions.mock.calls[0][0];
+
+    expect([first.owner, first.ownerId]).toEqual(['USER', 'user-id']);
+    expect([second.owner, second.ownerId]).toEqual(['FAMILY', 'family-id']);
+  });
+
+  it('SHOULD look the account up in the owner of each row, even with the same ids', async () => {
+    const owners = [...base.accessibleOwners, { owner: 'FAMILY' as never, ownerId: 'family-id' }];
+
+    await setup.execute({ ...base, accessibleOwners: owners, rows: [validRow, familyRow] });
+
+    expect(mocks.ensure.execute).toHaveBeenCalledTimes(2);
+    expect(mocks.ensure.execute.mock.calls.map(([call]) => call.ownerId)).toEqual([
+      'user-id',
+      'family-id',
+    ]);
+  });
+
+  it.each([
+    ['stranger', 'OWNER_NOT_ACCESSIBLE'],
+    ['archived-family', 'OWNER_ARCHIVED'],
+  ])('SHOULD report a row of the owner %s as %s, not fail the request', async (ownerId, code) => {
+    const result = await setup.execute({
+      ...base,
+      rows: [validRow, { ...familyRow, ownerId }],
+    });
+
+    expect(result.errors).toEqual([expect.objectContaining({ code, line: 3 })]);
+  });
+
+  it('SHOULD look for duplicates in the owner of each row', async () => {
+    const owners = [...base.accessibleOwners, { owner: 'FAMILY' as never, ownerId: 'family-id' }];
+
+    await setup.execute({ ...base, accessibleOwners: owners, rows: [validRow, familyRow] });
+
+    expect(
+      mocks.transactionRepository.findDuplicateCandidates.mock.calls.map(([call]) => call.owner),
+    ).toEqual([
+      { owner: 'USER', ownerId: 'user-id' },
+      { owner: 'FAMILY', ownerId: 'family-id' },
+    ]);
+  });
+});

@@ -70,12 +70,33 @@ export class ImportTransactionsUseCase implements UseCaseWithParams<
         continue;
       }
 
+      // Spec 047: a row can belong to another owner than the request (Personal and a family in one file).
+      const rowTarget = targetOf(row, input);
+      const access = input.accessibleOwners.find(
+        (item) => item.owner === rowTarget.owner && item.ownerId === rowTarget.ownerId,
+      );
+
+      if (!access || access.archived) {
+        errors.push({
+          code: access ? 'OWNER_ARCHIVED' : 'OWNER_NOT_ACCESSIBLE',
+          line: row.line,
+          message: access ? 'Family is archived' : 'Owner not accessible',
+        });
+        continue;
+      }
+
       wellFormed.push(row);
 
       // 2,000 rows share a handful of categories and accounts: each combination is looked up once.
-      const key = [row.categoryId, row.accountId, row.creditCardId, row.type, row.currency].join(
-        '|',
-      );
+      const key = [
+        rowTarget.owner,
+        rowTarget.ownerId,
+        row.categoryId,
+        row.accountId,
+        row.creditCardId,
+        row.type,
+        row.currency,
+      ].join('|');
       const lookup = lookups.get(key) ?? this.lookup(row, input, row.line);
 
       lookups.set(key, lookup);
@@ -103,33 +124,43 @@ export class ImportTransactionsUseCase implements UseCaseWithParams<
       return { created, duplicates: [], errors: [] };
     }
 
-    return { created: 0, duplicates: await this.findDuplicates(wellFormed, target), errors };
+    return { created: 0, duplicates: await this.findDuplicates(wellFormed, input), errors };
   }
 
+  // Duplicates are looked for in the owner of each row, and within the rows of that owner.
   private async findDuplicates(
     rows: ImportRow[],
-    owner: { owner: ImportTransactionsInput['owner']; ownerId: string },
+    defaults: { owner: ImportTransactionsInput['owner']; ownerId: string },
   ): Promise<number[]> {
-    if (rows.length === 0) {
-      return [];
-    }
-
-    const dates = rows.map((row) => row.date).sort();
-    const existing = await this.transactionRepository.findDuplicateCandidates({
-      from: dates[0],
-      owner,
-      to: dates[dates.length - 1],
-    });
-    const seen = new Set(existing.map((candidate) => duplicateKey(candidate)));
-    const duplicates: number[] = [];
+    const groups = new Map<string, ImportRow[]>();
 
     for (const row of rows) {
-      const key = duplicateKey(row);
+      const target = targetOf(row, defaults);
+      const key = `${target.owner}|${target.ownerId}`;
 
-      if (seen.has(key)) {
-        duplicates.push(row.line);
-      } else {
-        seen.add(key);
+      groups.set(key, [...(groups.get(key) ?? []), row]);
+    }
+
+    const duplicates: number[] = [];
+
+    for (const group of groups.values()) {
+      const owner = targetOf(group[0], defaults);
+      const dates = group.map((row) => row.date).sort();
+      const existing = await this.transactionRepository.findDuplicateCandidates({
+        from: dates[0],
+        owner,
+        to: dates[dates.length - 1],
+      });
+      const seen = new Set(existing.map((candidate) => duplicateKey(candidate)));
+
+      for (const row of group) {
+        const key = duplicateKey(row);
+
+        if (seen.has(key)) {
+          duplicates.push(row.line);
+        } else {
+          seen.add(key);
+        }
       }
     }
 
@@ -154,8 +185,8 @@ export class ImportTransactionsUseCase implements UseCaseWithParams<
         categoryId: row.categoryId,
         creditCardId: row.creditCardId ?? undefined,
         currency: (row.currency ?? undefined) as CurrencyCode | undefined,
-        owner: input.owner,
-        ownerId: input.ownerId,
+        owner: targetOf(row, input).owner,
+        ownerId: targetOf(row, input).ownerId,
         type: row.type,
       });
     } catch (error) {
@@ -170,6 +201,15 @@ export class ImportTransactionsUseCase implements UseCaseWithParams<
   }
 }
 
+function targetOf(
+  row: ImportRow,
+  defaults: { owner: ImportTransactionsInput['owner']; ownerId: string },
+) {
+  return {
+    owner: row.owner ?? defaults.owner,
+    ownerId: row.ownerId ?? defaults.ownerId,
+  };
+}
 function toCreateParams(
   row: ImportRow,
   { account, card }: ConsistencyResult,
@@ -185,8 +225,8 @@ function toCreateParams(
     date: row.date,
     description: row.description.trim(),
     invoiceMonth: card ? invoiceMonthOf(row.date, card.closingDay) : undefined,
-    owner: input.owner,
-    ownerId: input.ownerId,
+    owner: targetOf(row, input).owner,
+    ownerId: targetOf(row, input).ownerId,
     // Card rows derive it from their invoice; account rows are paid when dated up to today unless the file says so.
     paid: card ? undefined : (row.paid ?? row.date <= input.today),
     tags: tags.length > 0 ? tags : undefined,

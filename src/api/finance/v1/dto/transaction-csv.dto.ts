@@ -47,6 +47,9 @@ const ImportRowApiSchema = z.object({
   date: z.string(),
   description: z.string(),
   line: z.number().int().min(1),
+  // The owner of this row (spec 047); omitted rows take the owner of the request.
+  owner: OwnerTypeApiSchema.nullish(),
+  ownerId: OwnerIdApiSchema.nullish(),
   paid: z.boolean().nullish(),
   tags: z.array(z.string()).nullish(),
   type: TransactionTypeApiSchema,

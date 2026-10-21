@@ -172,11 +172,22 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([accountId, delta]) => ({ accountId, delta })),
         );
-        await tagCreatedRows(
-          tx,
-          rows[0],
-          entries.map((entry) => ({ id: entry.data.id, names: entry.names })),
-        );
+        // Tags belong to the owner of their rows: one resolution per owner (spec 047, owner per row).
+        const byOwner = new Map<string, typeof entries>();
+
+        for (const entry of entries) {
+          const key = `${entry.data.owner}|${entry.data.owner_id}`;
+
+          byOwner.set(key, [...(byOwner.get(key) ?? []), entry]);
+        }
+
+        for (const group of byOwner.values()) {
+          await tagCreatedRows(
+            tx,
+            group[0].data,
+            group.map((entry) => ({ id: entry.data.id, names: entry.names })),
+          );
+        }
 
         return created.length;
       },

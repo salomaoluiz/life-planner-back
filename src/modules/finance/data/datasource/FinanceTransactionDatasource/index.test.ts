@@ -740,6 +740,19 @@ describe('Method createMany (spec 047)', () => {
     expect(spies.createManyAndReturn).not.toHaveBeenCalled();
   });
 
+  it('SHOULD resolve the tags in the owner of each row', async () => {
+    spies.createManyAndReturn.mockImplementationOnce(async ({ data }) => data);
+    spies.tagCreate.mockResolvedValue({ id: 'tag-x' });
+
+    await setup.createMany([
+      row({ tag_names: ['a'] }),
+      row({ owner: 'FAMILY', owner_id: 'f1', tag_names: ['a'] }),
+    ]);
+
+    expect(spies.tagCreate).toHaveBeenCalledTimes(2);
+    expect(spies.tagCreate.mock.calls.map(([call]) => call.data.owner)).toEqual(['USER', 'FAMILY']);
+  });
+
   it('SHOULD resolve each tag name once and link them to their rows in order', async () => {
     spies.createManyAndReturn.mockImplementationOnce(async ({ data }) => data);
     spies.tagFindMany.mockResolvedValueOnce([{ all_scopes: false, id: 'tag-fixo', name: 'Fixo' }]);

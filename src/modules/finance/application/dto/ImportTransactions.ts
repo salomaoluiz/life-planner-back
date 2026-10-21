@@ -20,6 +20,9 @@ export const ImportRowSchema = z.object({
   date: z.string(),
   description: z.string(),
   line: z.number().int().min(1),
+  // Spec 047: the owner of this row; omitted rows take the owner of the request.
+  owner: OwnerTypeSchema.nullish(),
+  ownerId: z.string().min(1).nullish(),
   paid: z.boolean().nullish(),
   tags: z.array(z.string()).nullish(),
   type: TransactionTypeSchema,
