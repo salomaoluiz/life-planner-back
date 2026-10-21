@@ -33,13 +33,17 @@ import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCa
 import { FindInvoicesInRangeUseCase } from '@finance/application/use-case/FindInvoicesInRangeUseCase';
 import { GetAccountsByIdsUseCase } from '@finance/application/use-case/GetAccountsByIdsUseCase';
 import { GetAccountsUseCase } from '@finance/application/use-case/GetAccountsUseCase';
+import { GetBalanceSeriesUseCase } from '@finance/application/use-case/GetBalanceSeriesUseCase';
 import { GetCategoriesUseCase } from '@finance/application/use-case/GetCategoriesUseCase';
 import { GetCategoryArchiveBlockersUseCase } from '@finance/application/use-case/GetCategoryArchiveBlockersUseCase';
 import { GetCreditCardByIdUseCase } from '@finance/application/use-case/GetCreditCardByIdUseCase';
 import { GetCreditCardsOverviewUseCase } from '@finance/application/use-case/GetCreditCardsOverviewUseCase';
 import { GetCreditCardsUseCase } from '@finance/application/use-case/GetCreditCardsUseCase';
 import { GetDailyBalancesUseCase } from '@finance/application/use-case/GetDailyBalancesUseCase';
+import { GetDashboardRowsUseCase } from '@finance/application/use-case/GetDashboardRowsUseCase';
+import { GetDashboardSummaryUseCase } from '@finance/application/use-case/GetDashboardSummaryUseCase';
 import { GetFamilyArchiveBlockersUseCase } from '@finance/application/use-case/GetFamilyArchiveBlockersUseCase';
+import { GetFinanceTotalsUseCase } from '@finance/application/use-case/GetFinanceTotalsUseCase';
 import { GetInstallmentPlanUseCase } from '@finance/application/use-case/GetInstallmentPlanUseCase';
 import { GetInvoicesForListUseCase } from '@finance/application/use-case/GetInvoicesForListUseCase';
 import { GetInvoiceUseCase } from '@finance/application/use-case/GetInvoiceUseCase';
@@ -139,7 +143,11 @@ const useCases = [
   GetFamilyArchiveBlockersUseCase,
   GetAccountsByIdsUseCase,
   GetCreditCardByIdUseCase,
+  GetBalanceSeriesUseCase,
   GetDailyBalancesUseCase,
+  GetDashboardRowsUseCase,
+  GetDashboardSummaryUseCase,
+  GetFinanceTotalsUseCase,
   GetCreditCardsOverviewUseCase,
   GetCreditCardsUseCase,
   GetInvoicesForListUseCase,

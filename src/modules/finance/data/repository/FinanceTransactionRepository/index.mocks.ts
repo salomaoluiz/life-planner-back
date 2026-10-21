@@ -28,6 +28,19 @@ const transactionDatasourceMock = {
   sumCardInvoices: jest
     .fn()
     .mockResolvedValue([{ amount: 450, credit_card_id: 'card-1', invoice_month: '2026-10' }]),
+  sumDashboardRows: jest.fn().mockResolvedValue([
+    {
+      amount: 900,
+      category_id: 'cat-1',
+      count: 2,
+      credit_card_id: null,
+      date: '2026-10-03',
+      invoice_month: null,
+      paid: true,
+      tag_id: null,
+      type: 'EXPENSE',
+    },
+  ]),
   update: jest.fn().mockResolvedValue(transactionPersistenceMock),
 };
 

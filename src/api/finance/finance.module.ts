@@ -8,6 +8,8 @@ import { CategoryController } from '@api/finance/v1/category.controller';
 import { CategoryService } from '@api/finance/v1/category.service';
 import { CreditCardController } from '@api/finance/v1/credit-card.controller';
 import { CreditCardService } from '@api/finance/v1/credit-card.service';
+import { DashboardController } from '@api/finance/v1/dashboard.controller';
+import { DashboardService } from '@api/finance/v1/dashboard.service';
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { InstallmentPlanController } from '@api/finance/v1/installment-plan.controller';
 import { InstallmentPlanService } from '@api/finance/v1/installment-plan.service';
@@ -32,6 +34,7 @@ import { FinanceModule } from '@finance/finance.module';
     CategoryController,
     InvoiceController,
     CreditCardController,
+    DashboardController,
     InstallmentPlanController,
     RecurrenceProjectionController,
     RecurrenceController,
@@ -44,6 +47,7 @@ import { FinanceModule } from '@finance/finance.module';
     CardCreditService,
     CategoryService,
     CreditCardService,
+    DashboardService,
     FinanceAccessService,
     InstallmentPlanService,
     InvoiceService,
