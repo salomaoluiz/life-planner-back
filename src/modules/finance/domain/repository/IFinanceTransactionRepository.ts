@@ -8,10 +8,16 @@ export type IFinanceTransactionRepository = {
   countByAccountId(accountId: string): Promise<number>;
   countByCategoryIds(categoryIds: string[]): Promise<number>;
   countByCreditCardId(creditCardId: string): Promise<number>;
+  countTransactionsForExport(query: ExportQuery): Promise<number>;
+  // Spec 047: every row in ONE database transaction (all or none); returns how many were written.
+  createManyTransactions(rows: CreateTransactionRepositoryParams[]): Promise<number>;
   createTransaction(params: CreateTransactionRepositoryParams): Promise<TransactionEntity>;
   deleteTransaction(id: string): Promise<void>;
   existsByOwner(access: OwnerAccess): Promise<boolean>;
+  findDuplicateCandidates(query: DuplicateQuery): Promise<DuplicateCandidate[]>;
   findTransactionById(id: string): Promise<TransactionEntity | undefined>;
+  // Spec 047: every row of the period by its own date (system rows included), `date` then `createdAt` ascending.
+  findTransactionsForExport(query: ExportQuery): Promise<TransactionEntity[]>;
   // Sorted by `date` descending, then `createdAt` descending.
   findCardPurchases(keys: CardInvoiceRef[]): Promise<TransactionEntity[]>;
   // Default source ACCOUNT: account rows only, without the invoice payment transactions.
@@ -33,6 +39,21 @@ interface CardInvoiceRef {
   creditCardId: string;
   invoiceMonth: string;
 }
+interface DuplicateCandidate {
+  accountId: null | string;
+  creditCardId: null | string;
+  // `YYYY-MM-DD`
+  date: string;
+  description: string;
+  type: TransactionType;
+  value: number;
+}
+interface DuplicateQuery {
+  from: string;
+  owner: OwnerAccess;
+  to: string;
+}
+// A row matches when its account OR card is in the lists; with neither list every row of the owners matches.
 interface CardInvoiceTotal extends CardInvoiceRef {
   // NET: purchases minus credits.
   amount: number;
@@ -65,6 +86,13 @@ interface DashboardSumsQuery {
   q?: string;
   source?: TransactionSource;
   tagIds?: string[];
+  to: string;
+}
+interface ExportQuery {
+  accountIds?: string[];
+  creditCardIds?: string[];
+  from: string;
+  owners: OwnerAccess[];
   to: string;
 }
 // Spec 045: `from`/`to` bound the date of ACCOUNT rows; CARD rows are bounded by `invoiceRefs` (list-date rule).
@@ -121,6 +149,9 @@ export {
   CreateTransactionRepositoryParams,
   DashboardSum,
   DashboardSumsQuery,
+  DuplicateCandidate,
+  DuplicateQuery,
+  ExportQuery,
   TransactionQuery,
   UpdateTransactionRepositoryParams,
 };

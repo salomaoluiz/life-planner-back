@@ -100,3 +100,5 @@ Spec 042 (archive families): `FamilyOutput` gains `status: "ACTIVE" | "ARCHIVED"
 Transaction filters (spec 045, additive): the app filters the Transactions screen through new optional query params on `GET /finance/transactions`, `GET /finance/credit-cards/invoices` (also `from`/`to` instead of `month`, with `filteredTotal`/`matchedCount`/`purchaseCount` per invoice) and `GET /finance/recurrences/projections` (see `api.md`). An app without the spec keeps the same responses.
 
 Finance dashboard (spec 046, additive): the Overview screen reads `GET /finance/dashboard/summary`, `/balance-series` and `/totals` (see `api.md`). New endpoints only; nothing existing changes.
+
+Transactions CSV (spec 047, additive): `GET /finance/transactions/export` and `/export/count`, and `POST /finance/transactions/import` (dry run + all-or-nothing commit; a 422 answers `{ errors: [{ line, code, message }] }`). New endpoints only; nothing existing changes (see `api.md`).

@@ -12,6 +12,9 @@ import {
   CreateTransactionRepositoryParams,
   DashboardSum,
   DashboardSumsQuery,
+  DuplicateCandidate,
+  DuplicateQuery,
+  ExportQuery,
   IFinanceTransactionRepository,
   TransactionQuery,
   UpdateTransactionRepositoryParams,
@@ -36,22 +39,16 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
     return this.transactionDatasource.countByCreditCardId(creditCardId);
   }
 
+  async countTransactionsForExport(query: ExportQuery): Promise<number> {
+    return this.transactionDatasource.countForExport(toExportParams(query));
+  }
+
+  async createManyTransactions(rows: CreateTransactionRepositoryParams[]): Promise<number> {
+    return this.transactionDatasource.createMany(rows.map((row) => toCreateParams(row)));
+  }
+
   async createTransaction(params: CreateTransactionRepositoryParams): Promise<TransactionEntity> {
-    const result = await this.transactionDatasource.create({
-      account_id: params.accountId,
-      category_id: params.categoryId,
-      credit_card_id: params.creditCardId,
-      currency: params.currency,
-      date: fromCalendarDate(params.date),
-      description: params.description,
-      invoice_month: params.invoiceMonth,
-      owner: params.owner,
-      owner_id: params.ownerId,
-      paid: params.paid,
-      tag_names: params.tags,
-      type: params.type,
-      value: params.value,
-    });
+    const result = await this.transactionDatasource.create(toCreateParams(params));
 
     return FinanceTransactionMapper.toDomain(result);
   }
@@ -72,6 +69,24 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
     return result.map((row) => FinanceTransactionMapper.toDomain(row));
   }
 
+  async findDuplicateCandidates(query: DuplicateQuery): Promise<DuplicateCandidate[]> {
+    const rows = await this.transactionDatasource.findDuplicateCandidates({
+      from: query.from,
+      owner: query.owner.owner,
+      owner_id: query.owner.ownerId,
+      to: query.to,
+    });
+
+    return rows.map((row) => ({
+      accountId: row.account_id,
+      creditCardId: row.credit_card_id,
+      date: row.date.toISOString().slice(0, 10),
+      description: row.description,
+      type: TransactionType[row.type],
+      value: row.value,
+    }));
+  }
+
   async findTransactionById(id: string): Promise<TransactionEntity | undefined> {
     const result = await this.transactionDatasource.findById(id);
 
@@ -90,6 +105,12 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
         invoice_month: ref.invoiceMonth,
       })),
     });
+
+    return result.map((row) => FinanceTransactionMapper.toDomain(row));
+  }
+
+  async findTransactionsForExport(query: ExportQuery): Promise<TransactionEntity[]> {
+    const result = await this.transactionDatasource.findForExport(toExportParams(query));
 
     return result.map((row) => FinanceTransactionMapper.toDomain(row));
   }
@@ -156,4 +177,31 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
 
     return FinanceTransactionMapper.toDomain(result);
   }
+}
+
+function toCreateParams(params: CreateTransactionRepositoryParams) {
+  return {
+    account_id: params.accountId,
+    category_id: params.categoryId,
+    credit_card_id: params.creditCardId,
+    currency: params.currency,
+    date: fromCalendarDate(params.date),
+    description: params.description,
+    invoice_month: params.invoiceMonth,
+    owner: params.owner,
+    owner_id: params.ownerId,
+    paid: params.paid,
+    tag_names: params.tags,
+    type: params.type,
+    value: params.value,
+  };
+}
+function toExportParams(query: ExportQuery) {
+  return {
+    account_ids: query.accountIds,
+    credit_card_ids: query.creditCardIds,
+    from: query.from,
+    owners: query.owners,
+    to: query.to,
+  };
 }

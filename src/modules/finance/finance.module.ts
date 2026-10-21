@@ -5,6 +5,7 @@ import { AddFamilyToTagScopesUseCase } from '@finance/application/use-case/AddFa
 import { AdjustAccountBalanceUseCase } from '@finance/application/use-case/AdjustAccountBalanceUseCase';
 import { AttachAccountBalancesUseCase } from '@finance/application/use-case/AttachAccountBalancesUseCase';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
+import { CountExportTransactionsUseCase } from '@finance/application/use-case/CountExportTransactionsUseCase';
 import { CreateAccountUseCase } from '@finance/application/use-case/CreateAccountUseCase';
 import { CreateCardEarlyPaymentUseCase } from '@finance/application/use-case/CreateCardEarlyPaymentUseCase';
 import { CreateCardRefundUseCase } from '@finance/application/use-case/CreateCardRefundUseCase';
@@ -30,6 +31,7 @@ import { DetachTagCreatorFromFamilyUseCase } from '@finance/application/use-case
 import { EndRecurrencesBySourceUseCase } from '@finance/application/use-case/EndRecurrencesBySourceUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
+import { ExportTransactionsUseCase } from '@finance/application/use-case/ExportTransactionsUseCase';
 import { FindInvoicesInRangeUseCase } from '@finance/application/use-case/FindInvoicesInRangeUseCase';
 import { GetAccountsByIdsUseCase } from '@finance/application/use-case/GetAccountsByIdsUseCase';
 import { GetAccountsUseCase } from '@finance/application/use-case/GetAccountsUseCase';
@@ -54,6 +56,7 @@ import { GetRecurrenceUseCase } from '@finance/application/use-case/GetRecurrenc
 import { GetTagsUseCase } from '@finance/application/use-case/GetTagsUseCase';
 import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransactionsUseCase';
 import { HasFinanceDataByOwnerUseCase } from '@finance/application/use-case/HasFinanceDataByOwnerUseCase';
+import { ImportTransactionsUseCase } from '@finance/application/use-case/ImportTransactionsUseCase';
 import { MaterializeOccurrenceUseCase } from '@finance/application/use-case/MaterializeOccurrenceUseCase';
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { PayInvoiceUseCase } from '@finance/application/use-case/PayInvoiceUseCase';
@@ -153,7 +156,10 @@ const useCases = [
   GetInvoicesForListUseCase,
   GetInvoiceUseCase,
   GetPrepaymentPreviewUseCase,
+  CountExportTransactionsUseCase,
+  ExportTransactionsUseCase,
   GetTransactionsUseCase,
+  ImportTransactionsUseCase,
   HasFinanceDataByOwnerUseCase,
   PayInvoiceUseCase,
   PrepayInstallmentPlanUseCase,

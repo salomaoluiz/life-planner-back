@@ -58,7 +58,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
   }
 
   private getConflictDetails(exception: unknown, httpStatus: number): Record<string, unknown> {
-    if (httpStatus !== HttpStatus.CONFLICT || !(exception instanceof HttpException)) {
+    if (
+      (httpStatus !== HttpStatus.CONFLICT && httpStatus !== HttpStatus.UNPROCESSABLE_ENTITY) ||
+      !(exception instanceof HttpException)
+    ) {
       return {};
     }
 
@@ -66,6 +69,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (typeof response !== 'object' || response === null) {
       return {};
+    }
+
+    // A 422 only carries the per-row `errors` of an import (spec 047), nothing else.
+    if (httpStatus === HttpStatus.UNPROCESSABLE_ENTITY) {
+      const { errors } = response as Record<string, unknown>;
+
+      return errors === undefined ? {} : { errors };
     }
 
     const details: Record<string, unknown> = { ...(response as Record<string, unknown>) };

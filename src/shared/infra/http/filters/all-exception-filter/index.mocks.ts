@@ -35,6 +35,16 @@ const httpConflictMock = new HttpException(
   { blockers: { recurrences: [] }, message: 'Category has pending items', statusCode: 409 },
   409,
 );
+const httpUnprocessableMock = new HttpException(
+  {
+    errors: [{ code: 'INVALID_DATE', line: 3, message: 'Invalid date' }],
+    internal: 'not for the client',
+    message: 'The import has invalid rows',
+    statusCode: 422,
+  },
+  422,
+);
+const httpUnprocessablePlainMock = new HttpException('Account is archived', 422);
 const httpBadRequestMock = new HttpException('Bad Request', 400);
 const httpInternalServerErrorMock = new HttpException('Internal Server Error', 500);
 const validationErrorMock = new ValidationError([
@@ -81,6 +91,8 @@ const mocks = {
     conflict: httpConflictMock,
     generic: genericExceptionMock,
     internalServerError: httpInternalServerErrorMock,
+    unprocessable: httpUnprocessableMock,
+    unprocessablePlain: httpUnprocessablePlainMock,
     validationError: validationErrorMock,
   },
   getResponse: getResponseMock,
