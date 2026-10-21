@@ -41,6 +41,11 @@ export function importRowKind(row: KindRow): { error: ImportRowKindError } | Imp
       return { error: 'CARD_CREDIT_CATEGORY_MISUSED' };
     }
 
+    // Only the two payment kinds may name the account they are paid from.
+    if (row.accountId && creditKind !== 'EARLY_PAYMENT' && !isInvoicePayment) {
+      return { error: 'ACCOUNT_AND_CARD' };
+    }
+
     return creditKind ?? 'INVOICE_PAYMENT';
   }
 

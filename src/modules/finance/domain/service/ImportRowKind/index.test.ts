@@ -96,6 +96,15 @@ describe('importRowKind', () => {
     ],
     [
       'ACCOUNT_AND_CARD',
+      {
+        accountId: 'a',
+        categoryId: ID[SystemCategoryKey.CARD_REFUND],
+        creditCardId: 'c',
+        type: TransactionType.INCOME,
+      },
+    ],
+    [
+      'ACCOUNT_AND_CARD',
       { accountId: 'a', categoryId: regular, creditCardId: 'c', type: TransactionType.EXPENSE },
     ],
   ])('SHOULD report %s', (error, row) => {

@@ -46,11 +46,15 @@ const ImportRowApiSchema = z.object({
   currency: z.string().nullish(),
   date: z.string(),
   description: z.string(),
+  // Spec 048: the invoice month (`YYYY-MM`) of a card row; the use case checks it.
+  invoiceMonth: z.string().nullish(),
   line: z.number().int().min(1),
   // The owner of this row (spec 047); omitted rows take the owner of the request.
   owner: OwnerTypeApiSchema.nullish(),
   ownerId: OwnerIdApiSchema.nullish(),
   paid: z.boolean().nullish(),
+  // Spec 048: the account an early payment or an invoice payment is paid from.
+  paidFromAccountId: z.uuid().nullish(),
   tags: z.array(z.string()).nullish(),
   type: TransactionTypeApiSchema,
   value: z.number(),
@@ -67,11 +71,21 @@ export const ImportErrorApiSchema = z.object({
   code: z.string(),
   line: z.number().int(),
   message: z.string(),
+  params: z.record(z.string(), z.union([z.number(), z.string()])).optional(),
 });
 
 export const ImportDryRunOutputSchema = z.object({
   duplicates: z.array(z.number().int()),
   errors: z.array(ImportErrorApiSchema),
+  // Spec 048 FR 24: the invoices the file touches, with the amount due once every row is applied.
+  invoices: z.array(
+    z.object({
+      amountDue: z.number().int(),
+      creditCardId: z.string(),
+      invoiceMonth: z.string(),
+      paid: z.boolean(),
+    }),
+  ),
 });
 export const ImportCreatedOutputSchema = z.object({ created: z.number().int().min(0) });
 

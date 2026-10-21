@@ -47,6 +47,8 @@ export interface ImportRowError {
   code: ImportErrorCode;
   line: number;
   message: string;
+  // Numbers and months the app puts in its own message (cents for values).
+  params?: Record<string, number | string>;
 }
 
 const KIND_MESSAGES = {
