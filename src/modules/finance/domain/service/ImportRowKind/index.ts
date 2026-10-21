@@ -60,20 +60,6 @@ export function importRowKind(row: KindRow): { error: ImportRowKindError } | Imp
   return 'ACCOUNT_TRANSACTION';
 }
 
-// Spec 048 FR 4: rows the import leaves out (counted by the app, not errors).
-export function isSkippableSystemRow(row: {
-  accountId?: null | string;
-  categoryId: string;
-  creditCardId?: null | string;
-}): boolean {
-  return (
-    row.categoryId === SYSTEM_CATEGORY_IDS[SystemCategoryKey.BALANCE_ADJUSTMENT] ||
-    (row.categoryId === SYSTEM_CATEGORY_IDS[SystemCategoryKey.INVOICE_PAYMENT] &&
-      !!row.accountId &&
-      !row.creditCardId)
-  );
-}
-
 // `YYYY-MM`, `undefined` when absent, `'INVALID'` otherwise.
 export function parseInvoiceMonth(raw?: null | string): 'INVALID' | string | undefined {
   if (raw === undefined || raw === null || raw === '') {

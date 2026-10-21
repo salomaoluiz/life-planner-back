@@ -1,7 +1,7 @@
 import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
 import { SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 
-import { importRowKind, isSkippableSystemRow, parseInvoiceMonth } from './index';
+import { importRowKind, parseInvoiceMonth } from './index';
 
 const ID = SYSTEM_CATEGORY_IDS;
 const regular = 'cat-1';
@@ -109,27 +109,6 @@ describe('importRowKind', () => {
     ],
   ])('SHOULD report %s', (error, row) => {
     expect(importRowKind(row)).toEqual({ error });
-  });
-});
-
-describe('isSkippableSystemRow', () => {
-  it('SHOULD skip balance adjustments and a payment on an account without a card', () => {
-    expect(
-      isSkippableSystemRow({
-        accountId: 'a',
-        categoryId: ID[SystemCategoryKey.BALANCE_ADJUSTMENT],
-      }),
-    ).toBe(true);
-    expect(
-      isSkippableSystemRow({ accountId: 'a', categoryId: ID[SystemCategoryKey.INVOICE_PAYMENT] }),
-    ).toBe(true);
-    expect(
-      isSkippableSystemRow({
-        accountId: 'a',
-        categoryId: ID[SystemCategoryKey.INVOICE_PAYMENT],
-        creditCardId: 'c',
-      }),
-    ).toBe(false);
   });
 });
 
