@@ -172,3 +172,36 @@ describe('GIVEN a Conflict (409) that carries details', () => {
     );
   });
 });
+
+describe('GIVEN an Unprocessable Entity (422)', () => {
+  it('SHOULD reply with the row errors of an import, and nothing else of the body', () => {
+    setup.catch(mocks.exceptions.unprocessable, mocks.argumentsHost);
+
+    expect(mocks.httpAdapterHost.httpAdapter.reply).toHaveBeenLastCalledWith(
+      mocks.getResponse,
+      {
+        errors: [{ code: 'INVALID_DATE', line: 3, message: 'Invalid date' }],
+        message: 'The import has invalid rows',
+        path: '/test-url',
+        statusCode: 422,
+        timestamp: '2025-11-30T12:00:00.000Z',
+      },
+      422,
+    );
+  });
+
+  it('SHOULD keep the plain shape WHEN there are no row errors', () => {
+    setup.catch(mocks.exceptions.unprocessablePlain, mocks.argumentsHost);
+
+    expect(mocks.httpAdapterHost.httpAdapter.reply).toHaveBeenLastCalledWith(
+      mocks.getResponse,
+      {
+        message: 'Account is archived',
+        path: '/test-url',
+        statusCode: 422,
+        timestamp: '2025-11-30T12:00:00.000Z',
+      },
+      422,
+    );
+  });
+});

@@ -1,4 +1,4 @@
-import { Controller, Get, Header, Query, Request, Res } from '@nestjs/common';
+import { Body, Controller, Get, Header, Post, Query, Request, Res } from '@nestjs/common';
 import { ApiBearerAuth, ApiProduces } from '@nestjs/swagger';
 import { createZodDto, ZodResponse } from 'nestjs-zod';
 
@@ -6,7 +6,10 @@ import {
   ExportCountOutputSchema,
   ExportCountQuerySchema,
   ExportQuerySchema,
+  ImportTransactionsApiSchema,
+  ImportTransactionsBody,
 } from '@api/finance/v1/dto/transaction-csv.dto';
+import { TodayQuerySchema } from '@api/finance/v1/finance-query';
 import { TransactionCsvService } from '@api/finance/v1/transaction-csv.service';
 import { JwtPayload } from '@shared/infra/jwt/types';
 import { validate } from '@shared/infra/validation';
@@ -43,5 +46,27 @@ export class TransactionCsvController {
     const input = validate(ExportCountQuerySchema, query);
 
     return this.transactionCsvService.count(req.user.id, input);
+  }
+
+  // Dry run → 200 `{ errors, duplicates }`; for real → 201 `{ created }` (422 `{ errors }` writes nothing).
+  // The status depends on the body, so the response is written here (Nest would overwrite a passthrough status).
+  @Post('import')
+  async import(
+    @Request() req: JwtPayload & Request,
+    @Body() body: ImportTransactionsBody,
+    @Query() query: Record<string, unknown>,
+    @Res() res: { status(code: number): { json(payload: unknown): void } },
+  ): Promise<void> {
+    const input = validate(ImportTransactionsApiSchema, body);
+    const { today } = validate(TodayQuerySchema, query);
+    const result = await this.transactionCsvService.import(req.user.id, input, today);
+
+    if (input.dryRun) {
+      res.status(200).json({ duplicates: result.duplicates, errors: result.errors });
+
+      return;
+    }
+
+    res.status(201).json({ created: result.created });
   }
 }

@@ -1,6 +1,12 @@
+import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-import { CalendarDateApiSchema, OwnerIdApiSchema } from '@api/finance/v1/dto/finance-fields';
+import {
+  CalendarDateApiSchema,
+  OwnerIdApiSchema,
+  OwnerTypeApiSchema,
+  TransactionTypeApiSchema,
+} from '@api/finance/v1/dto/finance-fields';
 import { IdListQuerySchema, withPeriodRules } from '@api/finance/v1/finance-query';
 
 // Spec 047 §7: `from`/`to` are required here (and at most 2 years apart, as in spec 045).
@@ -30,3 +36,42 @@ export const ExportQuerySchema = withPeriodRules(
 });
 
 export const ExportCountOutputSchema = z.object({ count: z.number().int().min(0) });
+
+// Spec 047 §7: 1-2,000 rows, `value` in positive integer cents, exactly one of `accountId`/`creditCardId`.
+// Row-level problems are answered as error lines by the use case, so the row fields only get their types here.
+const ImportRowApiSchema = z.object({
+  accountId: z.uuid().nullish(),
+  categoryId: z.uuid(),
+  creditCardId: z.uuid().nullish(),
+  currency: z.string().nullish(),
+  date: z.string(),
+  description: z.string(),
+  line: z.number().int().min(1),
+  paid: z.boolean().nullish(),
+  tags: z.array(z.string()).nullish(),
+  type: TransactionTypeApiSchema,
+  value: z.number(),
+});
+
+export const ImportTransactionsApiSchema = z.object({
+  dryRun: z.boolean(),
+  owner: OwnerTypeApiSchema,
+  ownerId: OwnerIdApiSchema,
+  rows: z.array(ImportRowApiSchema).min(1).max(2000),
+});
+
+export const ImportErrorApiSchema = z.object({
+  code: z.string(),
+  line: z.number().int(),
+  message: z.string(),
+});
+
+export const ImportDryRunOutputSchema = z.object({
+  duplicates: z.array(z.number().int()),
+  errors: z.array(ImportErrorApiSchema),
+});
+export const ImportCreatedOutputSchema = z.object({ created: z.number().int().min(0) });
+
+export class ImportCreatedOutput extends createZodDto(ImportCreatedOutputSchema) {}
+export class ImportDryRunOutput extends createZodDto(ImportDryRunOutputSchema) {}
+export class ImportTransactionsBody extends createZodDto(ImportTransactionsApiSchema) {}

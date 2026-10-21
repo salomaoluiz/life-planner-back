@@ -8,6 +8,7 @@ import { ValidationError } from '@shared/domain/error/ValidationError';
 const serviceMock = {
   count: jest.fn().mockResolvedValue({ count: 12 }),
   export: jest.fn().mockResolvedValue({ csv: 'a;b', filename: 'transacoes-x.csv' }),
+  import: jest.fn(),
 };
 const request = { user: { id: 'user-1' } } as never;
 const query = { format: 'BR', from: '2026-01-01', lang: 'pt-BR', to: '2026-12-31' };
@@ -65,4 +66,72 @@ it('SHOULD return the count of the same period', async () => {
   await expect(setup.exportCount(request, { to: '2026-12-31' })).rejects.toBeInstanceOf(
     ValidationError,
   );
+});
+
+describe('import', () => {
+  const body = {
+    dryRun: true,
+    owner: 'USER',
+    ownerId: '6f1c2b9e-1d2a-4c55-9a7e-0b8e3c1f2a10',
+    rows: [
+      {
+        accountId: '6f1c2b9e-1d2a-4c55-9a7e-0b8e3c1f2a11',
+        categoryId: '6f1c2b9e-1d2a-4c55-9a7e-0b8e3c1f2a12',
+        date: '2026-10-02',
+        description: 'Supermercado',
+        line: 2,
+        type: 'EXPENSE',
+        value: 31240,
+      },
+    ],
+  };
+
+  function response() {
+    const json = jest.fn();
+
+    return { json, res: { status: jest.fn().mockReturnValue({ json }) } };
+  }
+
+  it('SHOULD answer the dry run with 200, errors and duplicates only', async () => {
+    const setup = await build();
+    const { json, res } = response();
+
+    serviceMock.import.mockResolvedValueOnce({ created: 0, duplicates: [2], errors: [] });
+
+    await setup.import(request, body as never, { today: '2026-10-21' }, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(json).toHaveBeenCalledWith({ duplicates: [2], errors: [] });
+    expect(serviceMock.import).toHaveBeenCalledWith('user-1', expect.anything(), '2026-10-21');
+  });
+
+  it('SHOULD answer the real run with 201 and the created count', async () => {
+    const setup = await build();
+    const { json, res } = response();
+
+    serviceMock.import.mockResolvedValueOnce({ created: 1, duplicates: [], errors: [] });
+
+    await setup.import(request, { ...body, dryRun: false } as never, {}, res);
+
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(json).toHaveBeenCalledWith({ created: 1 });
+  });
+
+  it('SHOULD refuse an empty rows list and more than 2,000 rows', async () => {
+    const setup = await build();
+    const { res } = response();
+    const [row] = body.rows;
+
+    await expect(
+      setup.import(request, { ...body, rows: [] } as never, {}, res),
+    ).rejects.toBeInstanceOf(ValidationError);
+    await expect(
+      setup.import(
+        request,
+        { ...body, rows: Array.from({ length: 2001 }, () => row) } as never,
+        {},
+        res,
+      ),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
 });

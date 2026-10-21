@@ -5,6 +5,7 @@ import { TransactionCsvService } from '@api/finance/v1/transaction-csv.service';
 import { GetUserFamiliesUseCase } from '@family/application/use-case/GetUserFamiliesUseCase';
 import { CountExportTransactionsUseCase } from '@finance/application/use-case/CountExportTransactionsUseCase';
 import { ExportTransactionsUseCase } from '@finance/application/use-case/ExportTransactionsUseCase';
+import { ImportTransactionsUseCase } from '@finance/application/use-case/ImportTransactionsUseCase';
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
@@ -14,6 +15,7 @@ const mocks = {
   count: { execute: jest.fn().mockResolvedValue({ count: 3 }) },
   export: { execute: jest.fn().mockResolvedValue({ csv: 'x', filename: 'f.csv' }) },
   families: { execute: jest.fn().mockResolvedValue([{ id: 'family-1', name: 'Família Exemplo' }]) },
+  importRows: { execute: jest.fn().mockResolvedValue({ created: 2, duplicates: [], errors: [] }) },
   materialize: { execute: jest.fn().mockResolvedValue(undefined) },
 };
 const request = {
@@ -31,6 +33,7 @@ async function build() {
       { provide: ExportTransactionsUseCase, useValue: mocks.export },
       { provide: FinanceAccessService, useValue: mocks.access },
       { provide: GetUserFamiliesUseCase, useValue: mocks.families },
+      { provide: ImportTransactionsUseCase, useValue: mocks.importRows },
       { provide: MaterializeRecurrencesUseCase, useValue: mocks.materialize },
     ],
   }).compile();
@@ -64,5 +67,19 @@ it('SHOULD export with the family names resolved here, not by the finance module
       ownerNames: { 'family-1': 'Família Exemplo' },
       today: '2026-10-21',
     }),
+  );
+});
+
+it('SHOULD import with the owners of the caller and the client day', async () => {
+  const setup = await build();
+  const input = { dryRun: false, owner: 'USER', ownerId: 'user-1', rows: [] } as never;
+
+  expect(await setup.import('user-1', input, '2026-10-21')).toEqual({
+    created: 2,
+    duplicates: [],
+    errors: [],
+  });
+  expect(mocks.importRows.execute).toHaveBeenCalledWith(
+    expect.objectContaining({ accessibleOwners: owners, today: '2026-10-21' }),
   );
 });

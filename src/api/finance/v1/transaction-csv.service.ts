@@ -3,8 +3,10 @@ import { Injectable } from '@nestjs/common';
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { resolveToday, toOwnerIds } from '@api/finance/v1/finance-query';
 import { GetUserFamiliesUseCase } from '@family/application/use-case/GetUserFamiliesUseCase';
+import { ImportTransactionsInput } from '@finance/application/dto/ImportTransactions';
 import { CountExportTransactionsUseCase } from '@finance/application/use-case/CountExportTransactionsUseCase';
 import { ExportTransactionsUseCase } from '@finance/application/use-case/ExportTransactionsUseCase';
+import { ImportTransactionsUseCase } from '@finance/application/use-case/ImportTransactionsUseCase';
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 
 export interface ExportRequest {
@@ -16,6 +18,7 @@ export interface ExportRequest {
   to: string;
   today?: string;
 }
+export type ImportRequest = Omit<ImportTransactionsInput, 'accessibleOwners' | 'today'>;
 
 @Injectable()
 export class TransactionCsvService {
@@ -24,6 +27,7 @@ export class TransactionCsvService {
     private readonly exportTransactionsUseCase: ExportTransactionsUseCase,
     private readonly financeAccessService: FinanceAccessService,
     private readonly getUserFamiliesUseCase: GetUserFamiliesUseCase,
+    private readonly importTransactionsUseCase: ImportTransactionsUseCase,
     private readonly materializeRecurrencesUseCase: MaterializeRecurrencesUseCase,
   ) {}
 
@@ -60,6 +64,16 @@ export class TransactionCsvService {
       ownerNames: Object.fromEntries(families.map((family) => [family.id, family.name])),
       to: request.to,
       today: resolveToday(request.today),
+    });
+  }
+
+  async import(userId: string, input: ImportRequest, today?: string) {
+    const accessibleOwners = await this.financeAccessService.resolve(userId);
+
+    return this.importTransactionsUseCase.execute({
+      ...input,
+      accessibleOwners,
+      today: resolveToday(today),
     });
   }
 
