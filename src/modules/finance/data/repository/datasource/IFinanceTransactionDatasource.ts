@@ -55,8 +55,7 @@ export interface DashboardSumsParams {
   credit_card_ids?: string[];
   currency: CurrencyCode;
   from: string;
-  invoice_month_from: string;
-  invoice_month_to: string;
+  invoice_refs: CardInvoiceKey[];
   owners: OwnerAccess[];
   q?: string;
   source?: TransactionSource;

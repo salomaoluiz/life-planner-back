@@ -159,14 +159,16 @@ describe('sumDashboardRows', () => {
       byTag: false,
       currency: 'BRL',
       from: '2026-10-01',
-      invoiceMonthFrom: '2026-09',
-      invoiceMonthTo: '2026-11',
+      invoiceRefs: [{ creditCardId: 'card-1', invoiceMonth: '2026-10' }],
       owners: [],
       to: '2026-10-31',
     });
 
     expect(mocks.transactionDatasource.sumDashboardRows).toHaveBeenCalledWith(
-      expect.objectContaining({ by_tag: false, invoice_month_from: '2026-09' }),
+      expect.objectContaining({
+        by_tag: false,
+        invoice_refs: [{ credit_card_id: 'card-1', invoice_month: '2026-10' }],
+      }),
     );
     expect(rows).toEqual([
       {

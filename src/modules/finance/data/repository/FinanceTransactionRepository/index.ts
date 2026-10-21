@@ -113,8 +113,10 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
       credit_card_ids: query.creditCardIds,
       currency: query.currency,
       from: query.from,
-      invoice_month_from: query.invoiceMonthFrom,
-      invoice_month_to: query.invoiceMonthTo,
+      invoice_refs: query.invoiceRefs.map((ref) => ({
+        credit_card_id: ref.creditCardId,
+        invoice_month: ref.invoiceMonth,
+      })),
       owners: query.owners,
       q: query.q,
       source: query.source,

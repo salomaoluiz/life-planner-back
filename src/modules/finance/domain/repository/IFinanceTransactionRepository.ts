@@ -27,8 +27,8 @@ export type IFinanceTransactionRepository = {
   updateTransaction(params: UpdateTransactionRepositoryParams): Promise<TransactionEntity>;
 };
 
-// Account rows are bounded by `from`/`to` (their date); card rows by the invoice months, which the use case
-// maps to a date. With `byTag` every row repeats once per tag (`tagId` null = no tag), else `tagId` is always null.
+// Account rows are bounded by `from`/`to` (their date); card rows by `invoiceRefs`, which the use case picks by
+// the date each invoice counts on. With `byTag` every row repeats once per tag (`tagId` null = no tag), else `tagId` is always null.
 interface CardInvoiceRef {
   creditCardId: string;
   invoiceMonth: string;
@@ -58,8 +58,8 @@ interface DashboardSumsQuery {
   creditCardIds?: string[];
   currency: CurrencyCode;
   from: string;
-  invoiceMonthFrom: string;
-  invoiceMonthTo: string;
+  // The invoices whose card rows count; none → no card rows.
+  invoiceRefs: CardInvoiceRef[];
   owners: OwnerAccess[];
   // Case and accent insensitive match on the description.
   q?: string;

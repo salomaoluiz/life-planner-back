@@ -320,7 +320,7 @@ const DASHBOARD_EXCLUDED_KEYS = [
 function dashboardSumsSql(params: DashboardSumsParams): Prisma.Sql {
   const isCard = params.source === TransactionSource.CARD;
   const isAccount = params.source === undefined || params.source === TransactionSource.ACCOUNT;
-  const withCard = params.source === undefined || isCard;
+  const withCard = (params.source === undefined || isCard) && params.invoice_refs.length > 0;
   const conditions: Prisma.Sql[] = [
     Prisma.sql`t."currency" = ${params.currency}`,
     Prisma.sql`(t."owner", t."owner_id") IN (${Prisma.join(
@@ -341,7 +341,9 @@ function dashboardSumsSql(params: DashboardSumsParams): Prisma.Sql {
   }
   if (withCard) {
     sources.push(
-      Prisma.sql`(t."credit_card_id" IS NOT NULL AND t."invoice_month" >= ${params.invoice_month_from} AND t."invoice_month" <= ${params.invoice_month_to}${
+      Prisma.sql`(t."credit_card_id" IS NOT NULL AND (t."credit_card_id", t."invoice_month") IN (${Prisma.join(
+        params.invoice_refs.map((ref) => Prisma.sql`(${ref.credit_card_id}, ${ref.invoice_month})`),
+      )})${
         params.credit_card_ids?.length
           ? Prisma.sql` AND t."credit_card_id" IN (${Prisma.join(params.credit_card_ids)})`
           : Prisma.empty
@@ -349,7 +351,9 @@ function dashboardSumsSql(params: DashboardSumsParams): Prisma.Sql {
     );
   }
 
-  conditions.push(Prisma.sql`(${Prisma.join(sources, ' OR ')})`);
+  conditions.push(
+    sources.length ? Prisma.sql`(${Prisma.join(sources, ' OR ')})` : Prisma.sql`FALSE`,
+  );
 
   if (params.category_ids?.length) {
     conditions.push(Prisma.sql`t."category_id" IN (${Prisma.join(params.category_ids)})`);

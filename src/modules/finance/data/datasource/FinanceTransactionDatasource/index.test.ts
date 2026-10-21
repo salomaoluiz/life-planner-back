@@ -535,8 +535,7 @@ describe('Method sumDashboardRows (spec 046)', () => {
     by_tag: false,
     currency: 'BRL' as const,
     from: '2026-10-01',
-    invoice_month_from: '2026-09',
-    invoice_month_to: '2026-11',
+    invoice_refs: [{ credit_card_id: 'card-1', invoice_month: '2026-10' }],
     owners: [{ owner: OwnerType.USER, ownerId: 'user-1' }],
     to: '2026-10-31',
   };
@@ -594,6 +593,14 @@ describe('Method sumDashboardRows (spec 046)', () => {
     expect(sql).toContain('"category_id" IN');
     expect(sql).toContain('EXISTS');
     expect(sql).toContain('ILIKE');
+  });
+
+  it('SHOULD skip the card rows when no invoice counts', async () => {
+    spies.queryRaw.mockResolvedValue([]);
+
+    await setup.sumDashboardRows({ ...params, invoice_refs: [] });
+
+    expect(sqlOf(0)).not.toContain('"credit_card_id" IS NOT NULL');
   });
 
   it('SHOULD read only card rows for the CARD source AND only account rows for ACCOUNT', async () => {
