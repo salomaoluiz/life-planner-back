@@ -39,11 +39,21 @@ describe('findAll', () => {
   it('SHOULD forward ownerIds AND map every transaction', async () => {
     const result = await setup.findAll(mocks.userId, ['o1']);
 
-    expect(mocks.getTransactionsUseCase.execute).toHaveBeenCalledWith({
-      accessibleOwners: mocks.accessibleOwners,
-      ownerIds: ['o1'],
-    });
+    expect(mocks.getTransactionsUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ accessibleOwners: mocks.accessibleOwners, ownerIds: ['o1'] }),
+    );
     expect(result).toEqual([mocks.transactionApi]);
+  });
+
+  it('SHOULD forward the filter AND the paid choice to the card resolver (spec 045)', async () => {
+    await setup.findAll(mocks.userId, undefined, { filter: { paid: false, q: 'a' } }, '2026-10-15');
+
+    expect(mocks.getTransactionsUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ filter: { paid: false, q: 'a' }, today: '2026-10-15' }),
+    );
+    expect(mocks.resolveCardRowsPaidUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ paid: false }),
+    );
   });
 });
 
@@ -129,12 +139,14 @@ describe('card purchases (spec 029)', () => {
       source: 'CARD' as never,
     });
 
-    expect(mocks.getTransactionsUseCase.execute).toHaveBeenCalledWith({
-      accessibleOwners: mocks.accessibleOwners,
-      invoiceMonth: '2026-10',
-      ownerIds: undefined,
-      source: 'CARD',
-    });
+    expect(mocks.getTransactionsUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accessibleOwners: mocks.accessibleOwners,
+        invoiceMonth: '2026-10',
+        ownerIds: undefined,
+        source: 'CARD',
+      }),
+    );
   });
 });
 

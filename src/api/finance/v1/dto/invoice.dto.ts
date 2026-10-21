@@ -67,7 +67,11 @@ export const PayInvoiceApiSchema = z
 export const InvoiceDetailApiSchema = z.object({
   card: InvoiceCardApiSchema,
   credits: z.array(InvoiceCreditApiSchema),
+  // Spec 045: only on a filtered list (cents, and how many rows matched out of the invoice's rows).
+  filteredTotal: z.number().int().optional(),
   invoice: InvoiceApiSchema,
+  matchedCount: z.number().int().optional(),
+  purchaseCount: z.number().int().optional(),
   purchases: z.array(PurchaseApiSchema),
 });
 export const InvoicePaymentOutputApiSchema = InvoicePaymentApiSchema.extend({

@@ -69,11 +69,21 @@ describe('findTransactionById / findTransactions', () => {
     const owners = [{ owner: OwnerType.USER, ownerId: 'u' }];
 
     expect(await setup.findTransactions(owners)).toEqual([mocks.transactionEntity]);
-    expect(mocks.transactionDatasource.findByOwners).toHaveBeenCalledWith(
-      owners,
-      'ACCOUNT',
-      undefined,
-    );
+    expect(mocks.transactionDatasource.findByOwners).toHaveBeenCalledWith(owners, 'ACCOUNT', {});
+  });
+
+  it('SHOULD convert the invoice refs to the datasource keys (spec 045)', async () => {
+    const owners = [{ owner: OwnerType.USER, ownerId: 'u' }];
+
+    await setup.findTransactions(owners, 'CARD' as never, {
+      invoiceRefs: [{ creditCardId: 'card-1', invoiceMonth: '2026-10' }],
+      paid: false,
+    });
+
+    expect(mocks.transactionDatasource.findByOwners).toHaveBeenCalledWith(owners, 'CARD', {
+      invoiceRefs: [{ credit_card_id: 'card-1', invoice_month: '2026-10' }],
+      paid: false,
+    });
   });
 });
 

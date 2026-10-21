@@ -18,6 +18,8 @@ export interface InvoiceDetail {
   card: CreditCardEntity;
   // Refunds, prepayment discounts and early payments of the invoice (spec 032).
   credits: TransactionEntity[];
+  // Spec 045: set when the list was filtered; `purchases` and `credits` then hold only the matching rows.
+  filtered?: { filteredTotal: number; matchedCount: number; purchaseCount: number };
   invoice: Invoice;
   purchases: TransactionEntity[];
 }

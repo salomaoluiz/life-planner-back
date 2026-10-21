@@ -14,6 +14,7 @@ import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/Mat
 import { ResolveCardRowsPaidUseCase } from '@finance/application/use-case/ResolveCardRowsPaidUseCase';
 import { UpdateTransactionUseCase } from '@finance/application/use-case/UpdateTransactionUseCase';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
+import { TransactionFilter } from '@finance/domain/entity/TransactionFilter';
 import { InstallmentEditScope, TransactionSource } from '@finance/domain/enum';
 
 function toTransactionOutput(
@@ -115,7 +116,11 @@ export class TransactionService {
   async findAll(
     userId: string,
     ownerIds?: string[],
-    filter: { creditCardId?: string; invoiceMonth?: string; source?: TransactionSource } = {},
+    filter: {
+      filter?: TransactionFilter;
+      invoiceMonth?: string;
+      source?: TransactionSource;
+    } = {},
     today?: string,
   ): Promise<TransactionOutput[]> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
@@ -131,9 +136,11 @@ export class TransactionService {
       accessibleOwners,
       ownerIds,
       ...filter,
+      today: resolveToday(today),
     });
 
     const resolved = await this.resolveCardRowsPaidUseCase.execute({
+      paid: filter.filter?.paid,
       today: resolveToday(today),
       transactions,
     });

@@ -68,3 +68,78 @@ it('SHOULD keep an invoice fully paid early (amount 0) AND drop a negative one w
 
   expect(await setup.execute(mocks.input)).toEqual([]);
 });
+
+describe('filters (spec 045)', () => {
+  const base = { accessibleOwners: mocks.input.accessibleOwners, today: mocks.input.today };
+  const matching = {
+    ...mocks.purchase,
+    categoryId: 'market',
+    description: 'MERCADÃO',
+    id: 'p-1',
+    value: 10000,
+  };
+  const other = {
+    ...mocks.purchase,
+    categoryId: 'home',
+    description: 'Rent',
+    id: 'p-2',
+    value: 35000,
+  };
+
+  beforeEach(() => {
+    mocks.transactionRepository.findCardPurchases.mockResolvedValue([matching, other]);
+  });
+
+  it('SHOULD select the invoices by period AND keep only the matching rows with their totals', async () => {
+    const result = await setup.execute({
+      ...base,
+      filter: { categoryIds: ['market'], from: '2026-11-01', to: '2026-11-30' },
+    });
+
+    expect(result).toHaveLength(1);
+    expect(result[0].purchases).toEqual([matching]);
+    expect(result[0].filtered).toEqual({ filteredTotal: 10000, matchedCount: 1, purchaseCount: 2 });
+    expect(result[0].invoice.amount).toBe(45000);
+  });
+
+  it('SHOULD omit an invoice with no matching row', async () => {
+    expect(
+      await setup.execute({
+        ...base,
+        filter: { from: '2026-11-01', q: 'nothing', to: '2026-11-30' },
+      }),
+    ).toEqual([]);
+  });
+
+  it('SHOULD match the text ignoring accents AND the tags by id', async () => {
+    const tagged = { ...other, tags: [{ id: 'tag-1', name: 'fixo' }] };
+
+    mocks.transactionRepository.findCardPurchases.mockResolvedValue([matching, tagged]);
+
+    const byText = await setup.execute({
+      ...base,
+      filter: { from: '2026-11-01', q: 'mercadao', to: '2026-11-30' },
+    });
+    const byTag = await setup.execute({
+      ...base,
+      filter: { from: '2026-11-01', tagIds: ['tag-1'], to: '2026-11-30' },
+    });
+
+    expect(byText[0].purchases).toEqual([matching]);
+    expect(byTag[0].purchases).toEqual([tagged]);
+  });
+
+  it('SHOULD apply paid to the invoice', async () => {
+    const filter = { from: '2026-11-01', paid: true, to: '2026-11-30' };
+
+    expect(await setup.execute({ ...base, filter })).toEqual([]);
+    expect(await setup.execute({ ...base, filter: { ...filter, paid: false } })).toHaveLength(1);
+  });
+
+  it('SHOULD reject month together with a period, or neither', async () => {
+    await expect(
+      setup.execute({ ...mocks.input, filter: { from: '2026-11-01', to: '2026-11-30' } }),
+    ).rejects.toThrow();
+    await expect(setup.execute(base)).rejects.toThrow();
+  });
+});

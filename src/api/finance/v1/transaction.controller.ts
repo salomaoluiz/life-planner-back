@@ -24,7 +24,14 @@ import {
   UpdateTransactionApiSchema,
   UpdateTransactionBody,
 } from '@api/finance/v1/dto/transaction.dto';
-import { OwnerIdQuerySchema, TodayQuerySchema, toOwnerIds } from '@api/finance/v1/finance-query';
+import {
+  OwnerIdQuerySchema,
+  TodayQuerySchema,
+  toOwnerIds,
+  toTransactionFilter,
+  TransactionFilterQueryFields,
+  withPeriodRules,
+} from '@api/finance/v1/finance-query';
 import { TransactionService } from '@api/finance/v1/transaction.service';
 import { InvoiceMonthSchema } from '@finance/application/dto/FinanceCommon';
 import { InstallmentEditScope, TransactionSource } from '@finance/domain/enum';
@@ -32,13 +39,15 @@ import { JwtPayload } from '@shared/infra/jwt/types';
 import { validate } from '@shared/infra/validation';
 
 // Default source ACCOUNT keeps old app versions working: they never see a row without an account.
-const ListTransactionsQuerySchema = z.object({
-  creditCardId: z.uuid().optional(),
-  invoiceMonth: InvoiceMonthSchema.optional(),
-  ownerId: OwnerIdQuerySchema,
-  source: z.enum(TransactionSource).optional(),
-  today: CalendarDateApiSchema.optional(),
-});
+const ListTransactionsQuerySchema = withPeriodRules(
+  z.object({
+    ...TransactionFilterQueryFields,
+    invoiceMonth: InvoiceMonthSchema.optional(),
+    ownerId: OwnerIdQuerySchema,
+    source: z.enum(TransactionSource).optional(),
+    today: CalendarDateApiSchema.optional(),
+  }),
+);
 
 // `scope` is required (ONLY_THIS) to delete one occurrence of a recurring series (spec 034 FR 29).
 const DeleteTransactionQuerySchema = z.object({ scope: z.enum(InstallmentEditScope).optional() });
@@ -80,9 +89,17 @@ export class TransactionController {
   @Get()
   @ZodResponse({ status: 200, type: [TransactionOutput] })
   async findAll(@Request() req: JwtPayload & Request, @Query() query: Record<string, unknown>) {
-    const { ownerId, today, ...filter } = validate(ListTransactionsQuerySchema, query);
+    const { invoiceMonth, ownerId, source, today, ...filterQuery } = validate(
+      ListTransactionsQuerySchema,
+      query,
+    );
 
-    return this.transactionService.findAll(req.user.id, toOwnerIds(ownerId), filter, today);
+    return this.transactionService.findAll(
+      req.user.id,
+      toOwnerIds(ownerId),
+      { filter: toTransactionFilter(filterQuery), invoiceMonth, source },
+      today,
+    );
   }
 
   @Patch(':id')

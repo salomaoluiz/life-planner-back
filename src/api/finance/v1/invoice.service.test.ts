@@ -9,6 +9,7 @@ describe('findForList', () => {
 
     expect(mocks.getInvoicesForList.execute).toHaveBeenCalledWith({
       accessibleOwners: mocks.accessibleOwners,
+      filter: undefined,
       month: '2026-11',
       ownerIds: ['o1'],
       today: '2026-10-15',
@@ -27,6 +28,25 @@ describe('findForList', () => {
       kind: 'REFUND',
       value: mocks.refund.value,
     });
+  });
+
+  it('SHOULD forward the filter AND expose the filtered totals (spec 045)', async () => {
+    mocks.getInvoicesForList.execute.mockResolvedValueOnce([
+      {
+        ...(await mocks.getInvoicesForList.execute({}))[0],
+        filtered: { filteredTotal: 41230, matchedCount: 3, purchaseCount: 14 },
+      },
+    ]);
+
+    const [result] = await setup.findForList(mocks.userId, undefined, undefined, undefined, {
+      from: '2025-01-01',
+      to: '2025-02-28',
+    });
+
+    expect(mocks.getInvoicesForList.execute).toHaveBeenLastCalledWith(
+      expect.objectContaining({ filter: { from: '2025-01-01', to: '2025-02-28' } }),
+    );
+    expect(result).toMatchObject({ filteredTotal: 41230, matchedCount: 3, purchaseCount: 14 });
   });
 
   it('SHOULD forward the client today', async () => {

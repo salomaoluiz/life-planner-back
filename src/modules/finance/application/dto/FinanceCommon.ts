@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { isPeriodValid } from '@finance/domain/entity/TransactionFilter';
 import { TransactionType } from '@finance/domain/enum';
 import { SUPPORTED_CURRENCIES } from '@finance/domain/enum/Currency';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -44,3 +45,22 @@ export const ValueSchema = z.number().int().min(1).max(INT4_MAX);
 
 // `YYYY-MM`
 export const InvoiceMonthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
+
+// Spec 045: the filters shared by the transactions, invoices and projections lists.
+export const TransactionFilterSchema = z
+  .object({
+    accountIds: z.array(z.string().min(1)).optional(),
+    categoryIds: z.array(z.string().min(1)).optional(),
+    creditCardIds: z.array(z.string().min(1)).optional(),
+    from: CalendarDateSchema.optional(),
+    paid: z.boolean().optional(),
+    q: z.string().trim().min(1).max(100).optional(),
+    tagIds: z.array(z.string().min(1)).optional(),
+    to: CalendarDateSchema.optional(),
+  })
+  .refine((value) => (value.from === undefined) === (value.to === undefined), {
+    message: 'from and to go together',
+  })
+  .refine((value) => !value.from || !value.to || isPeriodValid(value.from, value.to), {
+    message: 'The period can be at most 2 years',
+  });

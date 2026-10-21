@@ -4,11 +4,14 @@ import {
   AccessibleOwnersSchema,
   CalendarDateSchema,
   InvoiceMonthSchema,
+  TransactionFilterSchema,
 } from '@finance/application/dto/FinanceCommon';
 import { RecurrenceStatus } from '@finance/domain/enum';
 
 export const GetProjectionsSchema = z.object({
   accessibleOwners: AccessibleOwnersSchema,
+  // Spec 045: category, tag, account, card and text filters (the months stay in `from`/`to`).
+  filter: TransactionFilterSchema.optional(),
   from: InvoiceMonthSchema,
   ownerIds: z.array(z.string()).optional(),
   to: InvoiceMonthSchema,

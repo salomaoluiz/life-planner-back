@@ -14,6 +14,7 @@ import {
 } from '@api/finance/v1/dto/finance-fields';
 import { TagRefApiSchema } from '@api/finance/v1/dto/tag.dto';
 import { TransactionApiSchema } from '@api/finance/v1/dto/transaction.dto';
+import { IdListQuerySchema, SearchQuerySchema } from '@api/finance/v1/finance-query';
 import { InvoiceMonthSchema } from '@finance/application/dto/FinanceCommon';
 import { InstallmentEditScope, RecurrenceFrequency, RecurrenceStatus } from '@finance/domain/enum';
 
@@ -104,9 +105,15 @@ export const DeleteOccurrenceQuerySchema = z.object({
   today: CalendarDateApiSchema.optional(),
 });
 export const DeleteRecurrenceQuerySchema = z.object({ confirmPaid: ConfirmPaidQuerySchema });
+// `from`/`to` are months here, so the date-period and paid filters of spec 045 do not apply.
 export const ProjectionsQuerySchema = z.object({
+  accountId: IdListQuerySchema,
+  categoryId: IdListQuerySchema,
+  creditCardId: IdListQuerySchema,
   from: InvoiceMonthSchema,
   ownerId: z.union([z.uuid(), z.array(z.uuid())]).optional(),
+  q: SearchQuerySchema,
+  tagId: IdListQuerySchema,
   to: InvoiceMonthSchema,
   today: CalendarDateApiSchema.optional(),
 });

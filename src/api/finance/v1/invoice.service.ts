@@ -10,6 +10,7 @@ import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/Mat
 import { PayInvoiceUseCase } from '@finance/application/use-case/PayInvoiceUseCase';
 import { UndoInvoicePaymentUseCase } from '@finance/application/use-case/UndoInvoicePaymentUseCase';
 import InvoicePaymentEntity from '@finance/domain/entity/InvoicePaymentEntity';
+import { TransactionFilter } from '@finance/domain/entity/TransactionFilter';
 import { SystemCategoryKey } from '@finance/domain/enum';
 
 function toCreditKind(systemKey: null | SystemCategoryKey) {
@@ -21,8 +22,9 @@ function toCreditKind(systemKey: null | SystemCategoryKey) {
     ? ('EARLY_PAYMENT' as const)
     : ('PREPAYMENT_DISCOUNT' as const);
 }
-function toDetailOutput({ card, credits, invoice, purchases }: InvoiceDetail) {
+function toDetailOutput({ card, credits, filtered, invoice, purchases }: InvoiceDetail) {
   return {
+    ...filtered,
     card: {
       color: card.color,
       id: card.id,
@@ -84,7 +86,13 @@ export class InvoiceService {
     private readonly undoInvoicePaymentUseCase: UndoInvoicePaymentUseCase,
   ) {}
 
-  async findForList(userId: string, month: string, ownerIds?: string[], today?: string) {
+  async findForList(
+    userId: string,
+    month: string | undefined,
+    ownerIds?: string[],
+    today?: string,
+    filter?: TransactionFilter,
+  ) {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
     const resolved = today ?? todayInSaoPaulo();
@@ -97,6 +105,7 @@ export class InvoiceService {
 
     const details = await this.getInvoicesForListUseCase.execute({
       accessibleOwners,
+      filter,
       month,
       ownerIds,
       today: resolved,

@@ -98,3 +98,53 @@ describe('GetProjectionsUseCase', () => {
     expect(await setup.execute({ ...base, from: '2026-09', to: '2026-10' })).toEqual([]);
   });
 });
+
+describe('filters (spec 045)', () => {
+  const other = { ...mocks.series, categoryId: 'other-cat', description: 'Gym', id: 'series-2' };
+
+  beforeEach(() => {
+    mocks.recurrenceRepository.findByOwners.mockResolvedValue([
+      {
+        ...mocks.series,
+        categoryId: 'market',
+        description: 'MERCADÃO',
+        tags: [{ id: 't1', name: 'fixo' }],
+      },
+      other,
+    ]);
+  });
+
+  it('SHOULD keep only the series of the chosen categories (expanded)', async () => {
+    mocks.expand.execute.mockResolvedValue(['market', 'greens']);
+
+    const result = await setup.execute({ ...base, filter: { categoryIds: ['market'] } });
+
+    expect(new Set(result.map((item) => item.recurrenceId))).toEqual(new Set([mocks.series.id]));
+  });
+
+  it('SHOULD filter by tag and by text ignoring accents', async () => {
+    expect(
+      new Set(
+        (await setup.execute({ ...base, filter: { tagIds: ['t1'] } })).map((i) => i.recurrenceId),
+      ),
+    ).toEqual(new Set([mocks.series.id]));
+    expect(
+      new Set(
+        (await setup.execute({ ...base, filter: { q: 'mercadao' } })).map((i) => i.recurrenceId),
+      ),
+    ).toEqual(new Set([mocks.series.id]));
+  });
+
+  it('SHOULD keep only series of the chosen accounts or cards', async () => {
+    mocks.recurrenceRepository.findByOwners.mockResolvedValue([
+      { ...mocks.series, accountId: 'acc-1', creditCardId: null },
+      { ...other, accountId: null, creditCardId: 'card-9' },
+    ]);
+
+    const byAccount = await setup.execute({ ...base, filter: { accountIds: ['acc-1'] } });
+    const byCard = await setup.execute({ ...base, filter: { creditCardIds: ['card-9'] } });
+
+    expect(new Set(byAccount.map((i) => i.recurrenceId))).toEqual(new Set([mocks.series.id]));
+    expect(new Set(byCard.map((i) => i.recurrenceId))).toEqual(new Set(['series-2']));
+  });
+});

@@ -60,6 +60,67 @@ describe('findAll', () => {
   });
 });
 
+describe('findAll filters (spec 045)', () => {
+  const categoryId = '0b6a1e7c-3f4d-4b2a-8c9d-1e2f3a4b5c6d';
+  const tagId = '9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d';
+
+  it('SHOULD parse repeated ids, period, paid and search into one filter', async () => {
+    await setup.findAll(mocks.request, {
+      categoryId: [categoryId, tagId],
+      from: '2025-01-01',
+      paid: 'false',
+      q: ' mercado ',
+      tagId,
+      to: '2025-12-31',
+    });
+
+    expect(mocks.transactionService.findAll).toHaveBeenCalledWith(
+      mocks.request.user.id,
+      undefined,
+      {
+        filter: {
+          categoryIds: [categoryId, tagId],
+          from: '2025-01-01',
+          paid: false,
+          q: 'mercado',
+          tagIds: [tagId],
+          to: '2025-12-31',
+        },
+      },
+      undefined,
+    );
+  });
+
+  it('SHOULD treat a whitespace-only search as no filter', async () => {
+    await setup.findAll(mocks.request, { q: '   ' });
+
+    expect(mocks.transactionService.findAll).toHaveBeenCalledWith(
+      mocks.request.user.id,
+      undefined,
+      {},
+      undefined,
+    );
+  });
+
+  it.each([
+    ['only from', { from: '2025-01-01' }],
+    ['only to', { to: '2025-01-01' }],
+    ['to before from', { from: '2025-02-01', to: '2025-01-01' }],
+    ['more than two years', { from: '2024-01-01', to: '2026-01-01' }],
+    ['a search over 100 characters', { q: 'a'.repeat(101) }],
+    ['a non-uuid category', { categoryId: 'abc' }],
+    ['paid maybe', { paid: 'maybe' }],
+  ])('SHOULD throw ValidationError (400) WHEN the query has %s', async (_label, query) => {
+    await expect(setup.findAll(mocks.request, query)).rejects.toThrow(ValidationError);
+  });
+
+  it('SHOULD accept exactly two years', async () => {
+    await setup.findAll(mocks.request, { from: '2024-01-01', to: '2025-12-31' });
+
+    expect(mocks.transactionService.findAll).toHaveBeenCalled();
+  });
+});
+
 describe('create', () => {
   it('SHOULD validate the body AND call the service with the JWT user', async () => {
     const result = await setup.create(mocks.request, validBody as never, {
@@ -173,7 +234,7 @@ describe('card purchases (spec 029)', () => {
       mocks.request.user.id,
       undefined,
       {
-        creditCardId: cardId,
+        filter: { creditCardIds: [cardId] },
         invoiceMonth: '2026-10',
         source: 'CARD',
       },

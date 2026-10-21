@@ -40,6 +40,7 @@ it('SHOULD validate the range AND return the projections of the owners', async (
     { from: '2026-11', to: '2027-03' },
     [owner],
     '2026-10-17',
+    undefined,
   );
   expect(result).toEqual([{ recurrenceId: 'r-1' }]);
 });
@@ -48,4 +49,25 @@ it('SHOULD reject a missing range', async () => {
   const setup = await build();
 
   await expect(setup.findAll(request, { from: '2026-11' })).rejects.toThrow(ValidationError);
+});
+
+it('SHOULD forward the category, tag, account, card and text filters (spec 045)', async () => {
+  const setup = await build();
+  const id = '6f1c2b9e-1d2a-4c55-9a7e-0b8e3c1f2a10';
+
+  await setup.findAll(request, {
+    categoryId: [id],
+    from: '2026-11',
+    q: 'gym',
+    tagId: id,
+    to: '2026-12',
+  });
+
+  expect(serviceMock.findProjections).toHaveBeenLastCalledWith(
+    'user-1',
+    { from: '2026-11', to: '2026-12' },
+    undefined,
+    undefined,
+    { categoryIds: [id], q: 'gym', tagIds: [id] },
+  );
 });

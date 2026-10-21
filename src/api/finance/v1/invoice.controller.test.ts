@@ -25,11 +25,46 @@ describe('findAllForList', () => {
       '2026-11',
       [accountId],
       '2026-10-15',
+      undefined,
     );
     await expect(setup.findAllForList(mocks.request, {})).rejects.toThrow(ValidationError);
     await expect(setup.findAllForList(mocks.request, { month: '2026-13' })).rejects.toThrow(
       ValidationError,
     );
+  });
+});
+
+describe('findAllForList filters (spec 045)', () => {
+  it('SHOULD accept a period instead of a month AND forward the filter', async () => {
+    await setup.findAllForList(mocks.request, {
+      creditCardId: cardId,
+      from: '2025-01-01',
+      paid: 'true',
+      q: 'mercado',
+      to: '2025-02-28',
+    });
+
+    expect(mocks.invoiceService.findForList).toHaveBeenCalledWith(
+      mocks.userId,
+      undefined,
+      undefined,
+      undefined,
+      {
+        creditCardIds: [cardId],
+        from: '2025-01-01',
+        paid: true,
+        q: 'mercado',
+        to: '2025-02-28',
+      },
+    );
+  });
+
+  it.each([
+    ['month together with a period', { from: '2025-01-01', month: '2025-01', to: '2025-02-01' }],
+    ['a period of more than 2 years', { from: '2024-01-01', to: '2026-01-01' }],
+    ['only from', { from: '2025-01-01' }],
+  ])('SHOULD throw ValidationError (400) WHEN the query has %s', async (_label, query) => {
+    await expect(setup.findAllForList(mocks.request, query)).rejects.toThrow(ValidationError);
   });
 });
 

@@ -83,12 +83,29 @@ describe('reads', () => {
     expect(order).toEqual(['materialize', 'project']);
     expect(mocks.getProjections.execute).toHaveBeenCalledWith({
       accessibleOwners: mocks.accessibleOwners,
+      filter: undefined,
       from: '2026-11',
       ownerIds: ['o1'],
       to: '2027-03',
       today: '2026-10-17',
     });
     expect(result).toEqual([mocks.projected]);
+  });
+
+  it('SHOULD forward the filter to the projections (spec 045)', async () => {
+    await setup.findProjections(
+      mocks.userId,
+      { from: '2026-11', to: '2026-12' },
+      undefined,
+      '2026-10-17',
+      {
+        q: 'gym',
+      },
+    );
+
+    expect(mocks.getProjections.execute).toHaveBeenLastCalledWith(
+      expect.objectContaining({ filter: { q: 'gym' } }),
+    );
   });
 });
 
