@@ -15,6 +15,8 @@ import {
   CardInvoiceKey,
   CardInvoiceSum,
   CreateTransactionDatasourceParams,
+  DashboardSumRow,
+  DashboardSumsParams,
   ExistsTransactionDatasourceParams,
   FinancialTransactionWithRelations,
   FindTransactionsFilter,
@@ -200,6 +202,34 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
     }
     return [...sums.values()];
   }
+  // Spec 046: one grouped query for the dashboard, in the database (never the rows in memory).
+  async sumDashboardRows(params: DashboardSumsParams): Promise<DashboardSumRow[]> {
+    if (params.owners.length === 0) {
+      return [];
+    }
+
+    const sql = dashboardSumsSql(params);
+    const rows = await this.db.client.$queryRaw<
+      {
+        amount: bigint;
+        category_id: string;
+        count: bigint;
+        credit_card_id: null | string;
+        date: null | string;
+        invoice_month: null | string;
+        paid: boolean | null;
+        tag_id: null | string;
+        type: TransactionType;
+      }[]
+    >(sql);
+
+    return rows.map((row) => ({
+      ...row,
+      amount: Number(row.amount),
+      count: Number(row.count),
+    }));
+  }
+
   // The old values come from the row locked INSIDE this transaction, never from an earlier read.
   private async cardsOf(tx: Parameters<typeof lockCards>[0], id: string): Promise<string[]> {
     const row = await tx.financialTransaction.findUnique({
@@ -278,6 +308,81 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
     });
   }
 }
+const ACCENTS = 'áàâãäéèêëíìîïóòôõöúùûüçñ';
+const PLAIN = 'aaaaaeeeeiiiiooooouuuucn';
+// Money that only moves between the user's own places is not income or expense (spec 046 FR 7).
+const DASHBOARD_EXCLUDED_KEYS = [
+  SystemCategoryKey.BALANCE_ADJUSTMENT,
+  SystemCategoryKey.CARD_EARLY_PAYMENT,
+  SystemCategoryKey.INVOICE_PAYMENT,
+];
+
+function dashboardSumsSql(params: DashboardSumsParams): Prisma.Sql {
+  const isCard = params.source === TransactionSource.CARD;
+  const isAccount = params.source === undefined || params.source === TransactionSource.ACCOUNT;
+  const withCard = params.source === undefined || isCard;
+  const conditions: Prisma.Sql[] = [
+    Prisma.sql`t."currency" = ${params.currency}`,
+    Prisma.sql`(t."owner", t."owner_id") IN (${Prisma.join(
+      params.owners.map((access) => Prisma.sql`(${access.owner}::"OwnerType", ${access.ownerId})`),
+    )})`,
+    Prisma.sql`(c."system_key" IS NULL OR c."system_key"::text NOT IN (${Prisma.join(DASHBOARD_EXCLUDED_KEYS)}))`,
+  ];
+  const sources: Prisma.Sql[] = [];
+
+  if (isAccount) {
+    sources.push(
+      Prisma.sql`(t."credit_card_id" IS NULL AND t."date" >= ${params.from}::date AND t."date" <= ${params.to}::date${
+        params.account_ids?.length
+          ? Prisma.sql` AND t."account_id" IN (${Prisma.join(params.account_ids)})`
+          : Prisma.empty
+      })`,
+    );
+  }
+  if (withCard) {
+    sources.push(
+      Prisma.sql`(t."credit_card_id" IS NOT NULL AND t."invoice_month" >= ${params.invoice_month_from} AND t."invoice_month" <= ${params.invoice_month_to}${
+        params.credit_card_ids?.length
+          ? Prisma.sql` AND t."credit_card_id" IN (${Prisma.join(params.credit_card_ids)})`
+          : Prisma.empty
+      })`,
+    );
+  }
+
+  conditions.push(Prisma.sql`(${Prisma.join(sources, ' OR ')})`);
+
+  if (params.category_ids?.length) {
+    conditions.push(Prisma.sql`t."category_id" IN (${Prisma.join(params.category_ids)})`);
+  }
+  if (params.tag_ids?.length) {
+    conditions.push(
+      Prisma.sql`EXISTS (SELECT 1 FROM "financial_transaction_tags" f WHERE f."transaction_id" = t."id" AND f."tag_id" IN (${Prisma.join(params.tag_ids)}))`,
+    );
+  }
+  if (params.q) {
+    const pattern = `%${params.q.replace(/[\\%_]/g, '\\$&')}%`;
+
+    conditions.push(
+      Prisma.sql`translate(lower(t."description"), ${ACCENTS}, ${PLAIN}) ILIKE translate(lower(${pattern}), ${ACCENTS}, ${PLAIN})`,
+    );
+  }
+
+  const tagJoin = params.by_tag
+    ? Prisma.sql`LEFT JOIN "financial_transaction_tags" tt ON tt."transaction_id" = t."id"`
+    : Prisma.empty;
+  const tagColumn = params.by_tag ? Prisma.sql`tt."tag_id"` : Prisma.sql`NULL::text`;
+
+  return Prisma.sql`
+    SELECT to_char(CASE WHEN t."credit_card_id" IS NULL THEN t."date" END, 'YYYY-MM-DD') AS "date", t."credit_card_id", t."invoice_month", t."type"::text AS "type",
+      t."category_id", t."paid", ${tagColumn} AS "tag_id",
+      COALESCE(SUM(t."value"), 0) AS "amount", COUNT(*) AS "count"
+    FROM "financial_transactions" t
+    JOIN "financial_categories" c ON c."id" = t."category_id"
+    ${tagJoin}
+    WHERE ${Prisma.join(conditions, ' AND ')}
+    GROUP BY 1, 2, 3, 4, 5, 6, 7`;
+}
+
 // Spec 045: the optional filters as extra AND conditions (none → the same query as before).
 function filterWhere(source: TransactionSource, filter: FindTransactionsFilter) {
   const where: Prisma.FinancialTransactionWhereInput[] = [];

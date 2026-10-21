@@ -152,3 +152,34 @@ describe('tags (spec 043)', () => {
     );
   });
 });
+
+describe('sumDashboardRows', () => {
+  it('SHOULD map the query to the datasource AND the rows back', async () => {
+    const rows = await setup.sumDashboardRows({
+      byTag: false,
+      currency: 'BRL',
+      from: '2026-10-01',
+      invoiceMonthFrom: '2026-09',
+      invoiceMonthTo: '2026-11',
+      owners: [],
+      to: '2026-10-31',
+    });
+
+    expect(mocks.transactionDatasource.sumDashboardRows).toHaveBeenCalledWith(
+      expect.objectContaining({ by_tag: false, invoice_month_from: '2026-09' }),
+    );
+    expect(rows).toEqual([
+      {
+        amount: 900,
+        categoryId: 'cat-1',
+        count: 2,
+        creditCardId: null,
+        date: '2026-10-03',
+        invoiceMonth: null,
+        paid: true,
+        tagId: null,
+        type: 'EXPENSE',
+      },
+    ]);
+  });
+});

@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 
 import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
 import { SystemCategoryKey, TransactionSource } from '@finance/domain/enum';
+import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { mocks, setup, spies } from './index.mocks';
 
@@ -526,5 +527,82 @@ describe('tags (spec 043)', () => {
         data: [{ position: 0, tag_id: 'tag-family', transaction_id: mocks.transaction.id }],
       });
     });
+  });
+});
+
+describe('Method sumDashboardRows (spec 046)', () => {
+  const params = {
+    by_tag: false,
+    currency: 'BRL' as const,
+    from: '2026-10-01',
+    invoice_month_from: '2026-09',
+    invoice_month_to: '2026-11',
+    owners: [{ owner: OwnerType.USER, ownerId: 'user-1' }],
+    to: '2026-10-31',
+  };
+  function sqlOf(call: number): string {
+    return spies.queryRaw.mock.calls[call][0].sql as string;
+  }
+
+  it('SHOULD return nothing without owners AND not query', async () => {
+    expect(await setup.sumDashboardRows({ ...params, owners: [] })).toEqual([]);
+    expect(spies.queryRaw).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD group in SQL, leave the money-moving system categories out AND convert the sums', async () => {
+    spies.queryRaw.mockResolvedValue([
+      {
+        amount: BigInt(1500),
+        category_id: 'cat-1',
+        count: BigInt(2),
+        credit_card_id: null,
+        date: '2026-10-03',
+        invoice_month: null,
+        paid: true,
+        tag_id: null,
+        type: 'EXPENSE',
+      },
+    ]);
+
+    const rows = await setup.sumDashboardRows(params);
+
+    expect(rows).toEqual([expect.objectContaining({ amount: 1500, count: 2 })]);
+    expect(sqlOf(0)).toContain('GROUP BY');
+    expect(sqlOf(0)).toContain('"system_key"::text NOT IN');
+    expect(sqlOf(0)).toContain('"currency" =');
+    expect(sqlOf(0)).not.toContain('financial_transaction_tags');
+  });
+
+  it('SHOULD join the tags only by tag AND apply the filters', async () => {
+    spies.queryRaw.mockResolvedValue([]);
+
+    await setup.sumDashboardRows({
+      ...params,
+      account_ids: ['acc-1'],
+      by_tag: true,
+      category_ids: ['cat-1'],
+      credit_card_ids: ['card-1'],
+      q: '100%',
+      tag_ids: ['tag-1'],
+    });
+
+    const sql = sqlOf(0);
+
+    expect(sql).toContain('LEFT JOIN "financial_transaction_tags"');
+    expect(sql).toContain('"account_id" IN');
+    expect(sql).toContain('"credit_card_id" IN');
+    expect(sql).toContain('"category_id" IN');
+    expect(sql).toContain('EXISTS');
+    expect(sql).toContain('ILIKE');
+  });
+
+  it('SHOULD read only card rows for the CARD source AND only account rows for ACCOUNT', async () => {
+    spies.queryRaw.mockResolvedValue([]);
+
+    await setup.sumDashboardRows({ ...params, source: 'CARD' as never });
+    await setup.sumDashboardRows({ ...params, source: 'ACCOUNT' as never });
+
+    expect(sqlOf(0)).not.toContain('"credit_card_id" IS NULL AND');
+    expect(sqlOf(1)).not.toContain('"credit_card_id" IS NOT NULL');
   });
 });

@@ -37,6 +37,32 @@ export interface CreateTransactionDatasourceParams {
   type: TransactionType;
   value: number;
 }
+export interface DashboardSumRow {
+  amount: number;
+  category_id: string;
+  count: number;
+  credit_card_id: null | string;
+  date: null | string;
+  invoice_month: null | string;
+  paid: boolean | null;
+  tag_id: null | string;
+  type: TransactionType;
+}
+export interface DashboardSumsParams {
+  account_ids?: string[];
+  by_tag: boolean;
+  category_ids?: string[];
+  credit_card_ids?: string[];
+  currency: CurrencyCode;
+  from: string;
+  invoice_month_from: string;
+  invoice_month_to: string;
+  owners: OwnerAccess[];
+  q?: string;
+  source?: TransactionSource;
+  tag_ids?: string[];
+  to: string;
+}
 export interface ExistsTransactionDatasourceParams {
   owner: OwnerType;
   owner_id: string;
@@ -89,6 +115,7 @@ export interface IFinanceTransactionDatasource {
   ): Promise<FinancialTransactionWithRelations[]>;
   findCardPurchases(keys: CardInvoiceKey[]): Promise<FinancialTransactionWithRelations[]>;
   sumCardInvoices(creditCardIds: string[]): Promise<CardInvoiceSum[]>;
+  sumDashboardRows(params: DashboardSumsParams): Promise<DashboardSumRow[]>;
   update(params: UpdateTransactionDatasourceParams): Promise<FinancialTransactionWithRelations>;
 }
 export interface UpdateTransactionDatasourceParams {

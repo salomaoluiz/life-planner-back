@@ -20,11 +20,15 @@ export type IFinanceTransactionRepository = {
     source?: TransactionSource,
     filter?: TransactionQuery,
   ): Promise<TransactionEntity[]>;
+  // Spec 046: grouped sums for the dashboard (system categories that only move money are left out).
+  sumDashboardRows(query: DashboardSumsQuery): Promise<DashboardSum[]>;
   // One grouped query: the sum of every (card, invoice month).
   sumCardInvoices(creditCardIds: string[]): Promise<CardInvoiceTotal[]>;
   updateTransaction(params: UpdateTransactionRepositoryParams): Promise<TransactionEntity>;
 };
 
+// Account rows are bounded by `from`/`to` (their date); card rows by the invoice months, which the use case
+// maps to a date. With `byTag` every row repeats once per tag (`tagId` null = no tag), else `tagId` is always null.
 interface CardInvoiceRef {
   creditCardId: string;
   invoiceMonth: string;
@@ -33,6 +37,35 @@ interface CardInvoiceTotal extends CardInvoiceRef {
   // NET: purchases minus credits.
   amount: number;
   earlyPaid: number;
+}
+interface DashboardSum {
+  amount: number;
+  categoryId: string;
+  count: number;
+  creditCardId: null | string;
+  // `YYYY-MM-DD` of account rows, null for card rows.
+  date: null | string;
+  invoiceMonth: null | string;
+  // Account rows only.
+  paid: boolean | null;
+  tagId: null | string;
+  type: TransactionType;
+}
+interface DashboardSumsQuery {
+  accountIds?: string[];
+  byTag: boolean;
+  categoryIds?: string[];
+  creditCardIds?: string[];
+  currency: CurrencyCode;
+  from: string;
+  invoiceMonthFrom: string;
+  invoiceMonthTo: string;
+  owners: OwnerAccess[];
+  // Case and accent insensitive match on the description.
+  q?: string;
+  source?: TransactionSource;
+  tagIds?: string[];
+  to: string;
 }
 // Spec 045: `from`/`to` bound the date of ACCOUNT rows; CARD rows are bounded by `invoiceRefs` (list-date rule).
 interface CreateTransactionRepositoryParams {
@@ -86,6 +119,8 @@ export {
   CardInvoiceRef,
   CardInvoiceTotal,
   CreateTransactionRepositoryParams,
+  DashboardSum,
+  DashboardSumsQuery,
   TransactionQuery,
   UpdateTransactionRepositoryParams,
 };

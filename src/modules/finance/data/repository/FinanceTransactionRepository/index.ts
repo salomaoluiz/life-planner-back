@@ -5,11 +5,13 @@ import { FinanceTransactionMapper } from '@finance/data/datasource/mapper/Financ
 import { IFinanceTransactionDatasource } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
-import { TransactionSource } from '@finance/domain/enum';
+import { TransactionSource, TransactionType } from '@finance/domain/enum';
 import {
   CardInvoiceRef,
   CardInvoiceTotal,
   CreateTransactionRepositoryParams,
+  DashboardSum,
+  DashboardSumsQuery,
   IFinanceTransactionRepository,
   TransactionQuery,
   UpdateTransactionRepositoryParams,
@@ -100,6 +102,36 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
       creditCardId: row.credit_card_id,
       earlyPaid: row.early_paid,
       invoiceMonth: row.invoice_month,
+    }));
+  }
+
+  async sumDashboardRows(query: DashboardSumsQuery): Promise<DashboardSum[]> {
+    const rows = await this.transactionDatasource.sumDashboardRows({
+      account_ids: query.accountIds,
+      by_tag: query.byTag,
+      category_ids: query.categoryIds,
+      credit_card_ids: query.creditCardIds,
+      currency: query.currency,
+      from: query.from,
+      invoice_month_from: query.invoiceMonthFrom,
+      invoice_month_to: query.invoiceMonthTo,
+      owners: query.owners,
+      q: query.q,
+      source: query.source,
+      tag_ids: query.tagIds,
+      to: query.to,
+    });
+
+    return rows.map((row) => ({
+      amount: row.amount,
+      categoryId: row.category_id,
+      count: row.count,
+      creditCardId: row.credit_card_id,
+      date: row.date,
+      invoiceMonth: row.invoice_month,
+      paid: row.paid,
+      tagId: row.tag_id,
+      type: TransactionType[row.type],
     }));
   }
 
