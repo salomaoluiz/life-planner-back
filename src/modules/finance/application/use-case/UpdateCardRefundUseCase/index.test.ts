@@ -91,3 +91,29 @@ it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)'
     status: 422,
   });
 });
+
+it('SHOULD edit an imported discount WITHOUT a prepayment record (spec 048)', async () => {
+  mocks.transactionRepository.findTransactionById.mockResolvedValueOnce({
+    ...mocks.refund,
+    category: { ...mocks.refund.category, systemKey: 'INSTALLMENT_PREPAYMENT_DISCOUNT' },
+    prepaymentId: null,
+  });
+
+  await setup.execute({ ...mocks.input, description: 'Renamed' });
+
+  expect(mocks.cardCreditRepository.updateRefund).toHaveBeenCalledWith(
+    expect.objectContaining({ description: 'Renamed' }),
+  );
+});
+
+it('SHOULD refuse to edit a discount that belongs to a prepayment', async () => {
+  mocks.transactionRepository.findTransactionById.mockResolvedValueOnce({
+    ...mocks.refund,
+    category: { ...mocks.refund.category, systemKey: 'INSTALLMENT_PREPAYMENT_DISCOUNT' },
+    prepaymentId: 'prepayment-1',
+  });
+
+  await expect(setup.execute({ ...mocks.input, description: 'x' })).rejects.toThrow(
+    NotFoundException,
+  );
+});

@@ -35,6 +35,7 @@ import { ledgerDeltas } from '@finance/domain/service/LedgerBalance';
 import { Database } from '@shared/infra/db/Database';
 
 const REFUND_CATEGORY_ID = SYSTEM_CATEGORY_IDS[SystemCategoryKey.CARD_REFUND];
+const DISCOUNT_CATEGORY_ID = SYSTEM_CATEGORY_IDS[SystemCategoryKey.INSTALLMENT_PREPAYMENT_DISCOUNT];
 const EARLY_PAYMENT_CATEGORY_ID = SYSTEM_CATEGORY_IDS[SystemCategoryKey.CARD_EARLY_PAYMENT];
 
 // Refunds and early payments (spec 032 FR 21-40). Every write locks the card row first, then the rows,
@@ -319,9 +320,13 @@ export class FinanceCardCreditDatasource implements IFinanceCardCreditDatasource
   }
 }
 
-// Only refunds and early payments go through this datasource.
+// Only refunds, discounts (the use cases keep the prepayment ones out) and early payments go through this datasource.
 function assertCredit(categoryId: string): void {
-  if (categoryId !== REFUND_CATEGORY_ID && categoryId !== EARLY_PAYMENT_CATEGORY_ID) {
+  if (
+    categoryId !== REFUND_CATEGORY_ID &&
+    categoryId !== DISCOUNT_CATEGORY_ID &&
+    categoryId !== EARLY_PAYMENT_CATEGORY_ID
+  ) {
     throw new UnprocessableEntityException('Not a refund or an early payment');
   }
 }

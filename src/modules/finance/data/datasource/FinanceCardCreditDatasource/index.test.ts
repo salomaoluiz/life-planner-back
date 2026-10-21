@@ -423,3 +423,21 @@ describe('Method createImportRows (spec 048)', () => {
     expect(spies.create).not.toHaveBeenCalled();
   });
 });
+
+describe('standalone discounts (spec 048)', () => {
+  const DISCOUNT = '00000000-0000-4000-8000-000000000003';
+
+  it('SHOULD delete a discount row like a refund', async () => {
+    spies.findUniqueOrThrow.mockResolvedValue({
+      category_id: DISCOUNT,
+      credit_card_id: 'card-1',
+      invoice_month: '2026-10',
+      paid_from_transaction_id: null,
+    });
+    spies.queryRaw.mockResolvedValue([{ ...mocks.lockedRow, type: 'INCOME' }]);
+
+    await setup.deleteCredit('discount-1');
+
+    expect(spies.deleteMany).toHaveBeenCalledWith({ where: { id: 'discount-1' } });
+  });
+});
