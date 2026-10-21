@@ -28,8 +28,12 @@ describe('dry run', () => {
     ['UNSUPPORTED_CURRENCY', { currency: 'JPY' }],
     ['ACCOUNT_AND_CARD', { creditCardId: 'card-1' }],
     [
-      'CARD_CREDIT_NOT_SUPPORTED',
+      'CARD_INCOME_CATEGORY',
       { accountId: undefined, creditCardId: 'card-1', type: TransactionType.INCOME },
+    ],
+    [
+      'INVOICE_MONTH_INVALID',
+      { accountId: undefined, creditCardId: 'card-1', invoiceMonth: '2026-13' },
     ],
   ])('SHOULD report %s without a lookup', async (code, override) => {
     const result = await setup.execute({ ...base, rows: [{ ...validRow, ...override }] });
