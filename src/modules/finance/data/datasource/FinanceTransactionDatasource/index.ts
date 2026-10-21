@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { Prisma } from '@db/client';
+import { OwnerType, Prisma } from '@db/client';
 import {
   applyLedgerDeltas,
   assertInvoiceNotPaid,
@@ -10,14 +10,22 @@ import {
 } from '@finance/data/datasource/ledger';
 import { fromCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
 import { toOwnerWhere } from '@finance/data/datasource/mapper/OwnerWhere';
-import { applyTagNames, TAG_INCLUDE, tagNamesOfRow } from '@finance/data/datasource/tags';
+import {
+  applyTagNames,
+  resolveTagIds,
+  TAG_INCLUDE,
+  tagNamesOfRow,
+  uniqueNames,
+} from '@finance/data/datasource/tags';
 import {
   CardInvoiceKey,
   CardInvoiceSum,
   CreateTransactionDatasourceParams,
   DashboardSumRow,
   DashboardSumsParams,
+  DuplicateCandidate,
   ExistsTransactionDatasourceParams,
+  ExportTransactionsDatasourceParams,
   FinancialTransactionWithRelations,
   FindTransactionsFilter,
   IFinanceTransactionDatasource,
@@ -28,6 +36,7 @@ import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
 import { SystemCategoryKey, TransactionSource, TransactionType } from '@finance/domain/enum';
 import { ledgerDeltas } from '@finance/domain/service/LedgerBalance';
 import { Database } from '@shared/infra/db/Database';
+import { uuidV4 } from '@shared/infra/uuid';
 
 // Account and category summaries come back in the same query (no N+1).
 export const TRANSACTION_RELATIONS = {
@@ -77,6 +86,11 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
   async countByCreditCardId(creditCardId: string): Promise<number> {
     return this.db.client.financialTransaction.count({ where: { credit_card_id: creditCardId } });
   }
+
+  async countForExport(params: ExportTransactionsDatasourceParams): Promise<number> {
+    return this.db.client.financialTransaction.count({ where: exportWhere(params) });
+  }
+
   // The row and the ledger of its account change in ONE database transaction (spec 028).
   async create(
     params: CreateTransactionDatasourceParams,
@@ -106,6 +120,70 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
     });
   }
 
+  // Spec 047: every row, the ledger deltas (summed per account, ordered by id) and the tags in ONE database transaction.
+  async createMany(rows: CreateTransactionDatasourceParams[]): Promise<number> {
+    if (rows.length === 0) {
+      return 0;
+    }
+
+    return this.db.client.$transaction(
+      async (tx) => {
+        await lockCards(
+          tx,
+          rows.flatMap((row) => (row.credit_card_id ? [row.credit_card_id] : [])),
+        );
+
+        const invoices = new Map<string, { card: string; month: string }>();
+
+        for (const row of rows) {
+          if (row.credit_card_id && row.invoice_month) {
+            invoices.set(`${row.credit_card_id}|${row.invoice_month}`, {
+              card: row.credit_card_id,
+              month: row.invoice_month,
+            });
+          }
+        }
+
+        for (const { card, month } of invoices.values()) {
+          await assertInvoiceNotPaid(tx, card, month);
+        }
+
+        // Ids are generated here so each row is tied to its tags whatever order the database returns.
+        const entries = rows.map((row) => {
+          const { tag_names: names, ...data } = row;
+
+          return { data: { ...data, id: uuidV4() }, names: names ?? [] };
+        });
+        const created = await tx.financialTransaction.createManyAndReturn({
+          data: entries.map((entry) => entry.data),
+          select: { account_id: true, paid: true, type: true, value: true },
+        });
+        const deltas = new Map<string, number>();
+
+        for (const row of created) {
+          for (const { accountId, delta } of ledgerDeltas(undefined, toLedgerEntry(row))) {
+            deltas.set(accountId, (deltas.get(accountId) ?? 0) + delta);
+          }
+        }
+
+        await applyLedgerDeltas(
+          tx,
+          [...deltas.entries()]
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([accountId, delta]) => ({ accountId, delta })),
+        );
+        await tagCreatedRows(
+          tx,
+          rows[0],
+          entries.map((entry) => ({ id: entry.data.id, names: entry.names })),
+        );
+
+        return created.length;
+      },
+      { timeout: 30000 },
+    );
+  }
+
   async delete(id: string): Promise<void> {
     await this.db.client.$transaction(async (tx) => {
       await lockCards(tx, await this.cardsOf(tx, id));
@@ -127,10 +205,44 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
     return found !== null;
   }
 
+  // Spec 047 FR 29: the rows a file could repeat, by their date range.
   async findById(id: string): Promise<FinancialTransactionWithRelations | null> {
     return this.db.client.financialTransaction.findUnique({
       include: TRANSACTION_RELATIONS,
       where: { id },
+    });
+  }
+
+  async findDuplicateCandidates(params: {
+    from: string;
+    owner: OwnerType;
+    owner_id: string;
+    to: string;
+  }): Promise<DuplicateCandidate[]> {
+    return this.db.client.financialTransaction.findMany({
+      select: {
+        account_id: true,
+        credit_card_id: true,
+        date: true,
+        description: true,
+        type: true,
+        value: true,
+      },
+      where: {
+        date: { gte: fromCalendarDate(params.from), lte: fromCalendarDate(params.to) },
+        owner: params.owner,
+        owner_id: params.owner_id,
+      },
+    });
+  }
+
+  async findForExport(
+    params: ExportTransactionsDatasourceParams,
+  ): Promise<FinancialTransactionWithRelations[]> {
+    return this.db.client.financialTransaction.findMany({
+      include: TRANSACTION_RELATIONS,
+      orderBy: [{ date: 'asc' }, { created_at: 'asc' }],
+      where: exportWhere(params),
     });
   }
   // Default source ACCOUNT: account rows without the invoice payment transactions (the paid invoice line stands for them).
@@ -388,6 +500,28 @@ function dashboardSumsSql(params: DashboardSumsParams): Prisma.Sql {
 }
 
 // Spec 045: the optional filters as extra AND conditions (none → the same query as before).
+// Spec 047 FR 4: account rows by `date`, card purchases by their purchase `date`, system rows included.
+function exportWhere(
+  params: ExportTransactionsDatasourceParams,
+): Prisma.FinancialTransactionWhereInput {
+  const picked: Prisma.FinancialTransactionWhereInput[] = [];
+
+  if (params.account_ids?.length) {
+    picked.push({ account_id: { in: params.account_ids } });
+  }
+
+  if (params.credit_card_ids?.length) {
+    picked.push({ credit_card_id: { in: params.credit_card_ids } });
+  }
+
+  return {
+    AND: [
+      toOwnerWhere(params.owners),
+      { date: { gte: fromCalendarDate(params.from), lte: fromCalendarDate(params.to) } },
+      ...(picked.length > 0 ? [{ OR: picked }] : []),
+    ],
+  };
+}
 function filterWhere(source: TransactionSource, filter: FindTransactionsFilter) {
   const where: Prisma.FinancialTransactionWhereInput[] = [];
 
@@ -437,4 +571,29 @@ function isTextOnly(params: UpdateTransactionDatasourceParams): boolean {
     params.type === undefined &&
     params.value === undefined
   );
+}
+// Resolves every tag name once in the owner and links them to the new rows (position = index in the row).
+async function tagCreatedRows(
+  tx: Prisma.TransactionClient,
+  first: CreateTransactionDatasourceParams,
+  rows: { id: string; names: string[] }[],
+): Promise<void> {
+  const names = uniqueNames(rows.flatMap((row) => row.names));
+
+  if (names.length === 0) {
+    return;
+  }
+
+  const ids = await resolveTagIds(tx, { names, owner: first.owner, ownerId: first.owner_id });
+  const byName = new Map(names.map((name, index) => [name.toLowerCase(), ids[index]]));
+
+  await tx.financialTransactionTag.createMany({
+    data: rows.flatMap((row) =>
+      uniqueNames(row.names).map((name, position) => ({
+        position,
+        tag_id: byName.get(name.toLowerCase()) as string,
+        transaction_id: row.id,
+      })),
+    ),
+  });
 }

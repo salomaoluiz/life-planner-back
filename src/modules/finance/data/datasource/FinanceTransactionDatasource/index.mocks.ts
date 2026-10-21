@@ -88,6 +88,7 @@ const paymentFindFirstSpy = jest.fn();
 const countSpy = jest.fn();
 const planCountSpy = jest.fn();
 const createSpy = jest.fn();
+const createManyAndReturnSpy = jest.fn();
 const deleteManySpy = jest.fn();
 const findFirstSpy = jest.fn();
 const findManySpy = jest.fn();
@@ -118,6 +119,7 @@ const clientMock = {
   financialTransaction: {
     count: countSpy,
     create: createSpy,
+    createManyAndReturn: createManyAndReturnSpy,
     deleteMany: deleteManySpy,
     findFirst: findFirstSpy,
     findMany: findManySpy,
@@ -156,6 +158,7 @@ const spies = {
   accountUpdate: accountUpdateSpy,
   count: countSpy,
   create: createSpy,
+  createManyAndReturn: createManyAndReturnSpy,
   deleteMany: deleteManySpy,
   findFirst: findFirstSpy,
   findMany: findManySpy,

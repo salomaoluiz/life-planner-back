@@ -62,9 +62,25 @@ export interface DashboardSumsParams {
   tag_ids?: string[];
   to: string;
 }
+// Spec 047: every row (system rows included) of the owners dated within the period; a row of a chosen account or card.
+export interface DuplicateCandidate {
+  account_id: null | string;
+  credit_card_id: null | string;
+  date: Date;
+  description: string;
+  type: TransactionType;
+  value: number;
+}
 export interface ExistsTransactionDatasourceParams {
   owner: OwnerType;
   owner_id: string;
+}
+export interface ExportTransactionsDatasourceParams {
+  account_ids?: string[];
+  credit_card_ids?: string[];
+  from: string;
+  owners: OwnerAccess[];
+  to: string;
 }
 export type FinancialTransactionWithRelations = {
   account: null | Pick<FinancialAccount, 'icon' | 'id' | 'name'>;
@@ -103,7 +119,10 @@ export interface IFinanceTransactionDatasource {
   countByAccountId(accountId: string): Promise<number>;
   countByCategoryIds(categoryIds: string[]): Promise<number>;
   countByCreditCardId(creditCardId: string): Promise<number>;
+  countForExport(params: ExportTransactionsDatasourceParams): Promise<number>;
   create(params: CreateTransactionDatasourceParams): Promise<FinancialTransactionWithRelations>;
+  // Spec 047: all rows in ONE database transaction (ledger and tags included); returns how many were written.
+  createMany(rows: CreateTransactionDatasourceParams[]): Promise<number>;
   delete(id: string): Promise<void>;
   exists(params: ExistsTransactionDatasourceParams): Promise<boolean>;
   findById(id: string): Promise<FinancialTransactionWithRelations | null>;
@@ -113,6 +132,15 @@ export interface IFinanceTransactionDatasource {
     filter?: FindTransactionsFilter,
   ): Promise<FinancialTransactionWithRelations[]>;
   findCardPurchases(keys: CardInvoiceKey[]): Promise<FinancialTransactionWithRelations[]>;
+  findDuplicateCandidates(params: {
+    from: string;
+    owner: OwnerType;
+    owner_id: string;
+    to: string;
+  }): Promise<DuplicateCandidate[]>;
+  findForExport(
+    params: ExportTransactionsDatasourceParams,
+  ): Promise<FinancialTransactionWithRelations[]>;
   sumCardInvoices(creditCardIds: string[]): Promise<CardInvoiceSum[]>;
   sumDashboardRows(params: DashboardSumsParams): Promise<DashboardSumRow[]>;
   update(params: UpdateTransactionDatasourceParams): Promise<FinancialTransactionWithRelations>;

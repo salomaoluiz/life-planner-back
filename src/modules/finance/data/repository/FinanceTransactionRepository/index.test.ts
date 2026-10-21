@@ -185,3 +185,67 @@ describe('sumDashboardRows', () => {
     ]);
   });
 });
+
+describe('csv import and export (spec 047)', () => {
+  const owners = [{ owner: OwnerType.USER, ownerId: 'o1' }];
+
+  it('SHOULD map the export query to the datasource and map the rows back', async () => {
+    const query = {
+      accountIds: ['a1'],
+      creditCardIds: ['c1'],
+      from: '2026-01-01',
+      owners,
+      to: '2026-12-31',
+    };
+
+    expect(await setup.findTransactionsForExport(query)).toHaveLength(1);
+    expect(await setup.countTransactionsForExport(query)).toBe(9);
+    expect(mocks.transactionDatasource.findForExport).toHaveBeenCalledWith({
+      account_ids: ['a1'],
+      credit_card_ids: ['c1'],
+      from: '2026-01-01',
+      owners,
+      to: '2026-12-31',
+    });
+  });
+
+  it('SHOULD create many rows through the datasource in one call', async () => {
+    const row = {
+      accountId: 'a1',
+      categoryId: 'c',
+      currency: 'BRL' as const,
+      date: '2026-10-02',
+      description: 'x',
+      owner: OwnerType.USER,
+      ownerId: 'o1',
+      tags: ['fixo'],
+      type: TransactionType.EXPENSE,
+      value: 100,
+    };
+
+    expect(await setup.createManyTransactions([row, row])).toBe(2);
+    expect(mocks.transactionDatasource.createMany).toHaveBeenCalledWith([
+      expect.objectContaining({ account_id: 'a1', tag_names: ['fixo'], value: 100 }),
+      expect.objectContaining({ account_id: 'a1' }),
+    ]);
+  });
+
+  it('SHOULD return the duplicate candidates with ISO dates', async () => {
+    expect(
+      await setup.findDuplicateCandidates({
+        from: '2026-10-01',
+        owner: owners[0],
+        to: '2026-10-31',
+      }),
+    ).toEqual([
+      {
+        accountId: 'a1',
+        creditCardId: null,
+        date: '2026-10-02',
+        description: 'x',
+        type: TransactionType.EXPENSE,
+        value: 100,
+      },
+    ]);
+  });
+});

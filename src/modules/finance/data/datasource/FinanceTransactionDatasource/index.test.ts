@@ -613,3 +613,154 @@ describe('Method sumDashboardRows (spec 046)', () => {
     expect(sqlOf(1)).not.toContain('"credit_card_id" IS NOT NULL');
   });
 });
+
+describe('Method countForExport / findForExport (spec 047)', () => {
+  const params = {
+    from: '2026-01-01',
+    owners: mocks.owners,
+    to: '2026-12-31',
+  };
+
+  it('SHOULD bound every row by its own date and the owners, with no account or card list', async () => {
+    spies.count.mockResolvedValueOnce(4);
+
+    expect(await setup.countForExport(params)).toBe(4);
+    expect(spies.count).toHaveBeenCalledWith({
+      where: {
+        AND: [
+          { OR: [{ owner: 'USER', owner_id: mocks.owners[0].ownerId }] },
+          {
+            date: {
+              gte: new Date('2026-01-01T00:00:00.000Z'),
+              lte: new Date('2026-12-31T00:00:00.000Z'),
+            },
+          },
+        ],
+      },
+    });
+  });
+
+  it('SHOULD match a row of a chosen account OR card, ordered by date then creation', async () => {
+    await setup.findForExport({ ...params, account_ids: ['a1'], credit_card_ids: ['c1'] });
+
+    expect(spies.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: mocks.include,
+        orderBy: [{ date: 'asc' }, { created_at: 'asc' }],
+        where: {
+          AND: expect.arrayContaining([
+            { OR: [{ account_id: { in: ['a1'] } }, { credit_card_id: { in: ['c1'] } }] },
+          ]),
+        },
+      }),
+    );
+  });
+});
+
+describe('Method findDuplicateCandidates (spec 047)', () => {
+  it('SHOULD read the owner rows of the date range of the file', async () => {
+    await setup.findDuplicateCandidates({
+      from: '2026-10-01',
+      owner: 'USER',
+      owner_id: 'o1',
+      to: '2026-10-31',
+    });
+
+    expect(spies.findMany).toHaveBeenCalledWith({
+      select: {
+        account_id: true,
+        credit_card_id: true,
+        date: true,
+        description: true,
+        type: true,
+        value: true,
+      },
+      where: {
+        date: {
+          gte: new Date('2026-10-01T00:00:00.000Z'),
+          lte: new Date('2026-10-31T00:00:00.000Z'),
+        },
+        owner: 'USER',
+        owner_id: 'o1',
+      },
+    });
+  });
+});
+
+describe('Method createMany (spec 047)', () => {
+  function row(overrides: Record<string, unknown>) {
+    return {
+      account_id: 'acc-b',
+      category_id: 'cat',
+      credit_card_id: null,
+      currency: 'BRL' as const,
+      date: new Date('2026-10-02T00:00:00.000Z'),
+      description: 'x',
+      invoice_month: null,
+      owner: 'USER' as const,
+      owner_id: 'o1',
+      paid: true,
+      type: 'EXPENSE' as const,
+      value: 100,
+      ...overrides,
+    };
+  }
+
+  it('SHOULD return 0 without opening a transaction for no rows', async () => {
+    expect(await setup.createMany([])).toBe(0);
+    expect(spies.transaction).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD write all rows, sum the ledger per account in id order, and skip unpaid rows', async () => {
+    spies.createManyAndReturn.mockImplementationOnce(async ({ data }) => data);
+
+    const created = await setup.createMany([
+      row({ value: 100 }),
+      row({ type: 'INCOME', value: 50 }),
+      row({ account_id: 'acc-a', value: 30 }),
+      row({ account_id: 'acc-a', paid: false, value: 999 }),
+    ]);
+
+    expect(created).toBe(4);
+    expect(spies.createManyAndReturn).toHaveBeenCalledTimes(1);
+    expect(spies.accountUpdate.mock.calls).toEqual([
+      [{ data: { ledger_balance: { increment: -30 } }, where: { id: 'acc-a' } }],
+      [{ data: { ledger_balance: { increment: -50 } }, where: { id: 'acc-b' } }],
+    ]);
+  });
+
+  it('SHOULD lock the cards and refuse a paid invoice, writing nothing', async () => {
+    spies.paymentFindFirst.mockResolvedValueOnce({ id: 'payment' });
+
+    await expect(
+      setup.createMany([
+        row({ account_id: null, credit_card_id: 'card-1', invoice_month: '2026-11', paid: null }),
+      ]),
+    ).rejects.toThrow('Invoice is paid');
+    expect(spies.createManyAndReturn).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD resolve each tag name once and link them to their rows in order', async () => {
+    spies.createManyAndReturn.mockImplementationOnce(async ({ data }) => data);
+    spies.tagFindMany.mockResolvedValueOnce([{ all_scopes: false, id: 'tag-fixo', name: 'Fixo' }]);
+    spies.tagCreate.mockResolvedValueOnce({ id: 'tag-novo' });
+
+    await setup.createMany([
+      row({ tag_names: ['fixo', 'novo'] }),
+      row({ tag_names: ['NOVO'] }),
+      row({}),
+    ]);
+
+    expect(spies.tagCreate).toHaveBeenCalledTimes(1);
+    const links = spies.tagLinkCreateMany.mock.calls[0][0].data;
+
+    expect(links).toHaveLength(3);
+    expect(
+      links.map((link: { position: number; tag_id: string }) => [link.tag_id, link.position]),
+    ).toEqual([
+      ['tag-fixo', 0],
+      ['tag-novo', 1],
+      ['tag-novo', 0],
+    ]);
+  });
+});
