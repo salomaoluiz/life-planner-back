@@ -7,7 +7,11 @@ import {
 } from '@nestjs/common';
 
 import { InvoicePaymentMethod, Prisma, TransactionType } from '@db/client';
-import { TRANSACTION_RELATIONS } from '@finance/data/datasource/FinanceTransactionDatasource';
+import { insertInvoicePayment } from '@finance/data/datasource/FinanceInvoicePaymentDatasource';
+import {
+  insertRows,
+  TRANSACTION_RELATIONS,
+} from '@finance/data/datasource/FinanceTransactionDatasource';
 import {
   applyLedgerDeltas,
   assertInvoiceNotPaid,
@@ -18,6 +22,7 @@ import {
 import {
   CardCreditAccountDatasourceParams,
   CreateEarlyPaymentDatasourceParams,
+  CreateImportRowsDatasourceParams,
   CreateRefundDatasourceParams,
   IFinanceCardCreditDatasource,
   UpdateEarlyPaymentDatasourceParams,
@@ -48,41 +53,6 @@ export class FinanceCardCreditDatasource implements IFinanceCardCreditDatasource
     });
   }
 
-  private async createDebit(
-    tx: Prisma.TransactionClient,
-    params: {
-      account?: CardCreditAccountDatasourceParams;
-      category_id: string;
-      currency: string;
-      date: Date;
-      description: string;
-      value: number;
-    },
-  ): Promise<string> {
-    if (!params.account) {
-      throw new BadRequestException('An account is required to pay from an account');
-    }
-
-    const created = await tx.financialTransaction.create({
-      data: {
-        account_id: params.account.id,
-        category_id: params.category_id,
-        currency: params.currency,
-        date: params.date,
-        description: params.description,
-        owner: params.account.owner,
-        owner_id: params.account.owner_id,
-        paid: true,
-        type: TransactionType.EXPENSE,
-        value: params.value,
-      },
-    });
-
-    await applyLedgerDeltas(tx, ledgerDeltas(undefined, toLedgerEntry(created)));
-
-    return created.id;
-  }
-
   async createEarlyPayment(
     params: CreateEarlyPaymentDatasourceParams,
   ): Promise<FinancialTransactionWithRelations> {
@@ -96,36 +66,60 @@ export class FinanceCardCreditDatasource implements IFinanceCardCreditDatasource
         params.expected_net,
       );
 
-      const debitId =
-        params.method === InvoicePaymentMethod.ACCOUNT
-          ? await this.createDebit(tx, {
-              account: params.account,
-              category_id: params.account_category_id,
-              currency: params.currency,
-              date: params.date,
-              description: params.account_description,
-              value: params.value,
-            })
-          : null;
-
-      return tx.financialTransaction.create({
-        data: {
-          category_id: params.category_id,
-          credit_card_id: params.credit_card_id,
-          currency: params.currency,
-          date: params.date,
-          description: params.description,
-          invoice_month: params.invoice_month,
-          owner: params.owner,
-          owner_id: params.owner_id,
-          paid_from_transaction_id: debitId,
-          payment_method: params.method,
-          type: TransactionType.INCOME,
-          value: params.value,
-        },
-        include: TRANSACTION_RELATIONS,
-      });
+      return insertEarlyPayment(tx, params);
     });
+  }
+
+  // Spec 048 FR 19: one transaction, the cards locked in id order; the invoices of the file may not be paid in the
+  // database; purchases, then refunds, then early payments, then the invoice payments by card and month.
+  async createImportRows(params: CreateImportRowsDatasourceParams): Promise<number> {
+    const invoices = new Map<string, { card: string; month: string }>();
+
+    for (const row of [...params.purchases, ...params.refunds, ...params.earlyPayments]) {
+      const card = 'credit_card_id' in row ? row.credit_card_id : undefined;
+
+      if (card && row.invoice_month) {
+        invoices.set(`${card}|${row.invoice_month}`, { card, month: row.invoice_month });
+      }
+    }
+
+    return this.db.client.$transaction(
+      async (tx) => {
+        await lockCards(tx, [
+          ...params.purchases.flatMap((row) => (row.credit_card_id ? [row.credit_card_id] : [])),
+          ...params.refunds.map((row) => row.credit_card_id),
+          ...params.earlyPayments.map((row) => row.credit_card_id),
+          ...params.payments.map((row) => row.credit_card_id),
+        ]);
+
+        for (const { card, month } of invoices.values()) {
+          await assertInvoiceNotPaid(tx, card, month);
+        }
+
+        const plain = params.purchases.length > 0 ? await insertRows(tx, params.purchases) : 0;
+
+        for (const refund of params.refunds) {
+          await insertRefund(tx, refund);
+        }
+
+        for (const early of params.earlyPayments) {
+          await insertEarlyPayment(tx, early);
+        }
+
+        const payments = [...params.payments].sort(
+          (a, b) =>
+            a.credit_card_id.localeCompare(b.credit_card_id) ||
+            a.invoice_month.localeCompare(b.invoice_month),
+        );
+
+        for (const payment of payments) {
+          await insertInvoicePayment(tx, payment);
+        }
+
+        return plain + params.refunds.length + params.earlyPayments.length + payments.length;
+      },
+      { timeout: 30000 },
+    );
   }
 
   async createRefund(
@@ -141,23 +135,7 @@ export class FinanceCardCreditDatasource implements IFinanceCardCreditDatasource
         value: params.value,
       });
 
-      return tx.financialTransaction.create({
-        data: {
-          category_id: params.category_id,
-          credit_card_id: params.credit_card_id,
-          currency: params.currency,
-          date: params.date,
-          description: params.description,
-          invoice_month: params.invoice_month,
-          owner: params.owner,
-          owner_id: params.owner_id,
-          refunded_plan_id: params.refunded_plan_id,
-          refunded_transaction_id: params.refunded_transaction_id,
-          type: TransactionType.INCOME,
-          value: params.value,
-        },
-        include: TRANSACTION_RELATIONS,
-      });
+      return insertRefund(tx, params);
     });
   }
 
@@ -248,7 +226,7 @@ export class FinanceCardCreditDatasource implements IFinanceCardCreditDatasource
 
           await applyLedgerDeltas(tx, ledgerDeltas(debitBefore, toLedgerEntry(debit)));
         } else {
-          debitId = await this.createDebit(tx, {
+          debitId = await insertDebit(tx, {
             account: params.account,
             category_id: SYSTEM_CATEGORY_IDS[SystemCategoryKey.INVOICE_PAYMENT],
             currency: stored.currency,
@@ -396,6 +374,40 @@ async function assertRefundsWithinCap(
     throw new UnprocessableEntityException("Refunds can't exceed the purchase value");
   }
 }
+async function insertDebit(
+  tx: Prisma.TransactionClient,
+  params: {
+    account?: CardCreditAccountDatasourceParams;
+    category_id: string;
+    currency: string;
+    date: Date;
+    description: string;
+    value: number;
+  },
+): Promise<string> {
+  if (!params.account) {
+    throw new BadRequestException('An account is required to pay from an account');
+  }
+
+  const created = await tx.financialTransaction.create({
+    data: {
+      account_id: params.account.id,
+      category_id: params.category_id,
+      currency: params.currency,
+      date: params.date,
+      description: params.description,
+      owner: params.account.owner,
+      owner_id: params.account.owner_id,
+      paid: true,
+      type: TransactionType.EXPENSE,
+      value: params.value,
+    },
+  });
+
+  await applyLedgerDeltas(tx, ledgerDeltas(undefined, toLedgerEntry(created)));
+
+  return created.id;
+}
 function isDescriptionOnly(params: UpdateEarlyPaymentDatasourceParams): boolean {
   return (
     params.account === undefined &&
@@ -413,4 +425,64 @@ function isRefundDescriptionOnly(params: UpdateRefundDatasourceParams): boolean 
     params.refunded_transaction_id === undefined &&
     params.value === undefined
   );
+}
+
+// The early payment row and, for ACCOUNT, its paid debit row. The caller holds the card lock and did the checks.
+export async function insertEarlyPayment(
+  tx: Prisma.TransactionClient,
+  params: CreateEarlyPaymentDatasourceParams,
+): Promise<FinancialTransactionWithRelations> {
+  const debitId =
+    params.method === InvoicePaymentMethod.ACCOUNT
+      ? await insertDebit(tx, {
+          account: params.account,
+          category_id: params.account_category_id,
+          currency: params.currency,
+          date: params.date,
+          description: params.account_description,
+          value: params.value,
+        })
+      : null;
+
+  return tx.financialTransaction.create({
+    data: {
+      category_id: params.category_id,
+      credit_card_id: params.credit_card_id,
+      currency: params.currency,
+      date: params.date,
+      description: params.description,
+      invoice_month: params.invoice_month,
+      owner: params.owner,
+      owner_id: params.owner_id,
+      paid_from_transaction_id: debitId,
+      payment_method: params.method,
+      type: TransactionType.INCOME,
+      value: params.value,
+    },
+    include: TRANSACTION_RELATIONS,
+  });
+}
+
+// A standalone refund or discount row (no link, no prepayment). The caller holds the card lock and did the checks.
+export async function insertRefund(
+  tx: Prisma.TransactionClient,
+  params: CreateRefundDatasourceParams,
+): Promise<FinancialTransactionWithRelations> {
+  return tx.financialTransaction.create({
+    data: {
+      category_id: params.category_id,
+      credit_card_id: params.credit_card_id,
+      currency: params.currency,
+      date: params.date,
+      description: params.description,
+      invoice_month: params.invoice_month,
+      owner: params.owner,
+      owner_id: params.owner_id,
+      refunded_plan_id: params.refunded_plan_id,
+      refunded_transaction_id: params.refunded_transaction_id,
+      type: TransactionType.INCOME,
+      value: params.value,
+    },
+    include: TRANSACTION_RELATIONS,
+  });
 }

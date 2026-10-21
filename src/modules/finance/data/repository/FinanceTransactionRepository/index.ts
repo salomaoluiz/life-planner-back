@@ -179,7 +179,7 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
   }
 }
 
-function toCreateParams(params: CreateTransactionRepositoryParams) {
+export function toCreateParams(params: CreateTransactionRepositoryParams) {
   return {
     account_id: params.accountId,
     category_id: params.categoryId,
@@ -196,6 +196,7 @@ function toCreateParams(params: CreateTransactionRepositoryParams) {
     value: params.value,
   };
 }
+
 function toExportParams(query: ExportQuery) {
   return {
     account_ids: query.accountIds,

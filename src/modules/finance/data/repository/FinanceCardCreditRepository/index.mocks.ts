@@ -52,6 +52,7 @@ const datasourceMock = {
   countRefundsByPlanId: jest.fn(),
   countRefundsByTransactionId: jest.fn(),
   createEarlyPayment: jest.fn(),
+  createImportRows: jest.fn(),
   createRefund: jest.fn(),
   deleteCredit: jest.fn(),
   updateEarlyPayment: jest.fn(),

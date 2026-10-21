@@ -148,48 +148,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
           await assertInvoiceNotPaid(tx, card, month);
         }
 
-        // Ids are generated here so each row is tied to its tags whatever order the database returns.
-        const entries = rows.map((row) => {
-          const { tag_names: names, ...data } = row;
-
-          return { data: { ...data, id: uuidV4() }, names: names ?? [] };
-        });
-        const created = await tx.financialTransaction.createManyAndReturn({
-          data: entries.map((entry) => entry.data),
-          select: { account_id: true, paid: true, type: true, value: true },
-        });
-        const deltas = new Map<string, number>();
-
-        for (const row of created) {
-          for (const { accountId, delta } of ledgerDeltas(undefined, toLedgerEntry(row))) {
-            deltas.set(accountId, (deltas.get(accountId) ?? 0) + delta);
-          }
-        }
-
-        await applyLedgerDeltas(
-          tx,
-          [...deltas.entries()]
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([accountId, delta]) => ({ accountId, delta })),
-        );
-        // Tags belong to the owner of their rows: one resolution per owner (spec 047, owner per row).
-        const byOwner = new Map<string, typeof entries>();
-
-        for (const entry of entries) {
-          const key = `${entry.data.owner}|${entry.data.owner_id}`;
-
-          byOwner.set(key, [...(byOwner.get(key) ?? []), entry]);
-        }
-
-        for (const group of byOwner.values()) {
-          await tagCreatedRows(
-            tx,
-            group[0].data,
-            group.map((entry) => ({ id: entry.data.id, names: entry.names })),
-          );
-        }
-
-        return created.length;
+        return insertRows(tx, rows);
       },
       { timeout: 30000 },
     );
@@ -607,4 +566,54 @@ async function tagCreatedRows(
       })),
     ),
   });
+}
+
+// Writes the rows, applies the ledger once per account and tags the rows (spec 047). The caller holds the card
+// locks and checked the invoices; spec 048 reuses this inside the import transaction.
+export async function insertRows(
+  tx: Prisma.TransactionClient,
+  rows: CreateTransactionDatasourceParams[],
+): Promise<number> {
+  // Ids are generated here so each row is tied to its tags whatever order the database returns.
+  const entries = rows.map((row) => {
+    const { tag_names: names, ...data } = row;
+
+    return { data: { ...data, id: uuidV4() }, names: names ?? [] };
+  });
+  const created = await tx.financialTransaction.createManyAndReturn({
+    data: entries.map((entry) => entry.data),
+    select: { account_id: true, paid: true, type: true, value: true },
+  });
+  const deltas = new Map<string, number>();
+
+  for (const row of created) {
+    for (const { accountId, delta } of ledgerDeltas(undefined, toLedgerEntry(row))) {
+      deltas.set(accountId, (deltas.get(accountId) ?? 0) + delta);
+    }
+  }
+
+  await applyLedgerDeltas(
+    tx,
+    [...deltas.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([accountId, delta]) => ({ accountId, delta })),
+  );
+  // Tags belong to the owner of their rows: one resolution per owner (spec 047, owner per row).
+  const byOwner = new Map<string, typeof entries>();
+
+  for (const entry of entries) {
+    const key = `${entry.data.owner}|${entry.data.owner_id}`;
+
+    byOwner.set(key, [...(byOwner.get(key) ?? []), entry]);
+  }
+
+  for (const group of byOwner.values()) {
+    await tagCreatedRows(
+      tx,
+      group[0].data,
+      group.map((entry) => ({ id: entry.data.id, names: entry.names })),
+    );
+  }
+
+  return created.length;
 }

@@ -1,5 +1,9 @@
 import { InvoicePaymentMethod, OwnerType } from '@db/client';
-import { FinancialTransactionWithRelations } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
+import { PayInvoiceDatasourceParams } from '@finance/data/repository/datasource/IFinanceInvoicePaymentDatasource';
+import {
+  CreateTransactionDatasourceParams,
+  FinancialTransactionWithRelations,
+} from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
 import { CurrencyCode } from '@finance/domain/enum/Currency';
 
 export interface CardCreditAccountDatasourceParams {
@@ -37,12 +41,21 @@ export interface CreateRefundDatasourceParams {
   refunded_transaction_id?: string;
   value: number;
 }
+// Spec 048: everything one CSV import writes besides plain account rows, in ONE database transaction.
+export interface CreateImportRowsDatasourceParams {
+  earlyPayments: CreateEarlyPaymentDatasourceParams[];
+  payments: PayInvoiceDatasourceParams[];
+  purchases: CreateTransactionDatasourceParams[];
+  refunds: CreateRefundDatasourceParams[];
+}
 export interface IFinanceCardCreditDatasource {
   countRefundsByPlanId(planId: string): Promise<number>;
   countRefundsByTransactionId(transactionId: string): Promise<number>;
   createEarlyPayment(
     params: CreateEarlyPaymentDatasourceParams,
   ): Promise<FinancialTransactionWithRelations>;
+  // Rows, refunds, early payments, then invoice payments (spec 048 FR 19); returns how many rows it wrote.
+  createImportRows(params: CreateImportRowsDatasourceParams): Promise<number>;
   createRefund(params: CreateRefundDatasourceParams): Promise<FinancialTransactionWithRelations>;
   deleteCredit(id: string): Promise<void>;
   updateEarlyPayment(
