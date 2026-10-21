@@ -9,9 +9,12 @@ describe('GetBalanceSeriesUseCase', () => {
 
     const series = await setup.execute(mocks.input);
 
-    expect(series.points.map((point) => point.balance)).toEqual([65000, 69000, 72000]);
-    expect(series.points.map((point) => point.projected)).toEqual([false, false, true]);
-    expect(series.points[2].accounts).toEqual([{ balance: 72000, id: 'acc-1', name: 'Checking' }]);
+    // The current month is split at today: the balance of today, then the planned end of the month.
+    expect(series.points.map((point) => point.balance)).toEqual([65000, 69000, 70000, 72000]);
+    expect(series.points.map((point) => point.projected)).toEqual([false, false, false, true]);
+    expect(series.points[2]).toMatchObject({ end: '2026-10-20', start: '2026-10-01' });
+    expect(series.points[3]).toMatchObject({ end: '2026-10-31', start: '2026-10-21' });
+    expect(series.points[3].accounts).toEqual([{ balance: 72000, id: 'acc-1', name: 'Checking' }]);
   });
 
   it('SHOULD not read the planned balances for a period that ended', async () => {

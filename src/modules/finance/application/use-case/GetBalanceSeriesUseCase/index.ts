@@ -11,10 +11,12 @@ import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { IFinanceAccountRepository } from '@finance/domain/repository';
 import { balancesAtEnds, totalOf } from '@finance/domain/service/BalanceSeries';
 import {
+  Bucket,
   buildBuckets,
   Granularity,
   isGranularityAllowed,
 } from '@finance/domain/service/DashboardPeriod';
+import { addDays } from '@finance/domain/service/RecurrenceSchedule';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -53,7 +55,10 @@ export class GetBalanceSeriesUseCase implements UseCaseWithParams<
     }
 
     const owners = narrowOwners(input.accessibleOwners, input.ownerIds);
-    const buckets = buildBuckets(input.from, input.to, input.granularity);
+    const buckets = splitAtToday(
+      buildBuckets(input.from, input.to, input.granularity),
+      input.today,
+    );
     const filter = input.filter?.accountIds?.length ? new Set(input.filter.accountIds) : undefined;
     const accounts = (owners.length === 0 ? [] : await this.accountRepository.findAccounts(owners))
       .filter(
@@ -121,4 +126,17 @@ export class GetBalanceSeriesUseCase implements UseCaseWithParams<
       }),
     };
   }
+}
+
+// The bucket that holds today is worth the balance of today (realized); the rest of it follows as a projected point
+// (spec 046 FR 12: the line continues dashed from today to the end of the month).
+function splitAtToday(buckets: Bucket[], today: string): Bucket[] {
+  return buckets.flatMap((bucket) =>
+    bucket.start <= today && today < bucket.end
+      ? [
+          { end: today, start: bucket.start },
+          { end: bucket.end, start: addDays(today, 1) },
+        ]
+      : [bucket],
+  );
 }
