@@ -197,7 +197,10 @@ export class ImportTransactionsUseCase implements UseCaseWithParams<
         )
       : [];
     const duplicates = new Set(keyDuplicates);
-    const cardRows = await this.evaluateCardRows(checked, duplicates, input);
+    // A duplicate the user chose to import is written, so it counts in the invoice math (it stays reported).
+    const included = new Set(input.includeDuplicates ?? []);
+    const excluded = new Set([...duplicates].filter((line) => !included.has(line)));
+    const cardRows = await this.evaluateCardRows(checked, excluded, input);
 
     errors.push(...cardRows.errors);
 

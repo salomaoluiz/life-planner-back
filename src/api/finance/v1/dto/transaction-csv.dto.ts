@@ -62,6 +62,8 @@ const ImportRowApiSchema = z.object({
 
 export const ImportTransactionsApiSchema = z.object({
   dryRun: z.boolean(),
+  // Spec 048: duplicate lines the user chose to import (they count in the invoice math of the dry run).
+  includeDuplicates: z.array(z.number().int()).max(2000).optional(),
   owner: OwnerTypeApiSchema,
   ownerId: OwnerIdApiSchema,
   rows: z.array(ImportRowApiSchema).min(1).max(2000),

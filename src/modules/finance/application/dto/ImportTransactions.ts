@@ -36,6 +36,8 @@ export const ImportRowSchema = z.object({
 export const ImportTransactionsSchema = z.object({
   accessibleOwners: AccessibleOwnersSchema,
   dryRun: z.boolean(),
+  // Spec 048: lines flagged as duplicates that the user chose to import; they count in the invoice math.
+  includeDuplicates: z.array(z.number().int()).optional(),
   owner: OwnerTypeSchema,
   ownerId: OwnerIdSchema,
   rows: z.array(ImportRowSchema).min(1).max(MAX_IMPORT_ROWS),

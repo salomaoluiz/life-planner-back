@@ -477,4 +477,38 @@ describe('card credits and invoice payments (spec 048)', () => {
     expect(result.duplicates).toEqual([3]);
     expect(result.errors).toEqual([]);
   });
+
+  describe('duplicates the user chose to import', () => {
+    const early = {
+      ...refund,
+      categoryId: ID[SystemCategoryKey.CARD_EARLY_PAYMENT],
+      date: '2026-10-02',
+      description: 'Adiantamento',
+      invoiceMonth: '2026-09',
+      value: 30000,
+    };
+    const rows = [
+      { ...cardRow, date: '2026-09-10' },
+      { ...early, line: 3 },
+      { ...early, line: 4 },
+      { ...payment, line: 5, value: 40000 },
+    ];
+
+    it('SHOULD leave the repeated early payment out of the invoice WHEN it is not included', async () => {
+      const result = await setup.execute({ ...base, rows });
+
+      expect(result.duplicates).toContain(4);
+      expect(result.errors.map((e) => [e.code, e.line])).toEqual([['INVOICE_PAYMENT_MISMATCH', 5]]);
+    });
+
+    it('SHOULD count it WHEN the user included it, and still report it as a duplicate', async () => {
+      const result = await setup.execute({ ...base, includeDuplicates: [4], rows });
+
+      expect(result.duplicates).toContain(4);
+      expect(result.errors).toEqual([]);
+      expect(result.invoices).toEqual([
+        { amountDue: 40000, creditCardId: 'card-1', invoiceMonth: '2026-09', paid: true },
+      ]);
+    });
+  });
 });
