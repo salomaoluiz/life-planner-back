@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
@@ -12,6 +11,7 @@ import {
   insertRows,
   TRANSACTION_RELATIONS,
 } from '@finance/data/datasource/FinanceTransactionDatasource';
+import { assertNetUnchanged } from '@finance/data/datasource/invoiceNet';
 import {
   applyLedgerDeltas,
   assertInvoiceNotPaid,
@@ -328,26 +328,6 @@ function assertCredit(categoryId: string): void {
     categoryId !== EARLY_PAYMENT_CATEGORY_ID
   ) {
     throw new UnprocessableEntityException('Not a refund or an early payment');
-  }
-}
-async function assertNetUnchanged(
-  tx: Prisma.TransactionClient,
-  creditCardId: string,
-  invoiceMonth: string,
-  expectedNet: number,
-): Promise<void> {
-  const rows = await tx.financialTransaction.groupBy({
-    _sum: { value: true },
-    by: ['type'],
-    where: { credit_card_id: creditCardId, invoice_month: invoiceMonth },
-  });
-  const net = rows.reduce(
-    (sum, row) => sum + (row.type === TransactionType.INCOME ? -1 : 1) * (row._sum.value ?? 0),
-    0,
-  );
-
-  if (net !== expectedNet) {
-    throw new ConflictException('Invoice changed, reload and try again');
   }
 }
 // The refunds linked to one purchase (or plan), the new value included, may not pass its value.

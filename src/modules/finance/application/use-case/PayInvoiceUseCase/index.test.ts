@@ -17,6 +17,7 @@ it('SHOULD pay the amount stored on the invoice from the account, taking the car
       categoryId: '00000000-0000-4000-8000-000000000002',
       creditCardId: mocks.card.id,
       description: 'Invoice payment',
+      expectedNet: 45000,
       invoiceMonth: '2026-10',
       method: InvoicePaymentMethod.ACCOUNT,
       owner: mocks.card.owner,

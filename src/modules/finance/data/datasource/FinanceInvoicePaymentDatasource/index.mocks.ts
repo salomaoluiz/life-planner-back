@@ -32,6 +32,7 @@ const payParams = {
   credit_card_id: 'card-1',
   currency: 'BRL' as const,
   description: 'Invoice payment',
+  expected_net: 45000,
   invoice_month: '2026-10',
   method: 'ACCOUNT' as const,
   owner: 'USER' as const,
@@ -50,6 +51,7 @@ const paymentDeleteManySpy = jest.fn();
 const paymentFindFirstSpy = jest.fn();
 const paymentFindManySpy = jest.fn();
 const queryRawSpy = jest.fn();
+const transactionGroupBySpy = jest.fn();
 const transactionCreateSpy = jest.fn();
 const transactionDeleteManySpy = jest.fn();
 const transactionSpy = jest.fn();
@@ -70,6 +72,7 @@ const clientMock = {
     aggregate: aggregateSpy,
     create: transactionCreateSpy,
     deleteMany: transactionDeleteManySpy,
+    groupBy: transactionGroupBySpy,
   },
 };
 
@@ -102,6 +105,7 @@ const spies = {
   queryRaw: queryRawSpy,
   transactionCreate: transactionCreateSpy,
   transactionDeleteMany: transactionDeleteManySpy,
+  transactionGroupBy: transactionGroupBySpy,
 };
 
 export { mocks, setup, spies };

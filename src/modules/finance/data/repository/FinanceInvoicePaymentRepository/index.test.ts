@@ -56,6 +56,7 @@ describe('FinanceInvoicePaymentRepository', () => {
       creditCardId: 'card-1',
       currency: 'BRL' as const,
       description: 'Invoice payment',
+      expectedNet: 100,
       invoiceMonth: '2026-10',
       method: 'ACCOUNT' as never,
       owner: 'USER' as never,
@@ -67,6 +68,7 @@ describe('FinanceInvoicePaymentRepository', () => {
     expect(datasource.pay).toHaveBeenCalledWith(
       expect.objectContaining({
         account_owner_id: 'owner-1',
+        expected_net: 100,
         paid_on: new Date('2026-11-05T00:00:00.000Z'),
       }),
     );

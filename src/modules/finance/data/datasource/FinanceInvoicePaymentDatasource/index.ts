@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { InvoicePaymentMethod, Prisma, TransactionType } from '@db/client';
+import { assertNetUnchanged } from '@finance/data/datasource/invoiceNet';
 import {
   applyLedgerDeltas,
   lockCards,
@@ -53,7 +54,9 @@ export class FinanceInvoicePaymentDatasource implements IFinanceInvoicePaymentDa
 
   // The card row is locked first (the same order as a purchase write), then the invoice is re-summed
   // INSIDE the lock: a purchase that slipped in after the caller read the amount makes this a 409.
-  async pay(params: PayInvoiceDatasourceParams): Promise<FinancialInvoicePaymentWithAccount> {
+  async pay(
+    params: { expected_net: number } & PayInvoiceDatasourceParams,
+  ): Promise<FinancialInvoicePaymentWithAccount> {
     return this.db.client.$transaction(async (tx) => {
       await lockCards(tx, [params.credit_card_id]);
 
@@ -66,14 +69,13 @@ export class FinanceInvoicePaymentDatasource implements IFinanceInvoicePaymentDa
         throw new ConflictException('Invoice already paid');
       }
 
-      const sum = await tx.financialTransaction.aggregate({
-        _sum: { value: true },
-        where: { credit_card_id: params.credit_card_id, invoice_month: params.invoice_month },
-      });
-
-      if ((sum._sum.value ?? 0) !== params.amount) {
-        throw new ConflictException('Invoice changed, reload and try again');
-      }
+      // Same net rule as the invoice: purchases minus credits (spec 032).
+      await assertNetUnchanged(
+        tx,
+        params.credit_card_id,
+        params.invoice_month,
+        params.expected_net,
+      );
 
       return insertInvoicePayment(tx, params);
     });
