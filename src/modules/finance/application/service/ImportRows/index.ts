@@ -13,22 +13,32 @@ import {
 import { ImportRow } from '@finance/application/dto/ImportTransactions';
 import { TransactionType } from '@finance/domain/enum';
 import { SUPPORTED_CURRENCIES } from '@finance/domain/enum/Currency';
+import { importRowKind, parseInvoiceMonth } from '@finance/domain/service/ImportRowKind';
 import { normalizeText } from '@finance/domain/service/TextMatch';
 
 export type ImportErrorCode =
   | 'ACCOUNT_AND_CARD'
   | 'ACCOUNT_ARCHIVED'
   | 'ACCOUNT_NOT_FOUND'
-  | 'CARD_CREDIT_NOT_SUPPORTED'
+  | 'CARD_CREDIT_CATEGORY_MISUSED'
+  | 'CARD_INCOME_CATEGORY'
   | 'CARD_NOT_FOUND'
   | 'CATEGORY_ARCHIVED'
   | 'CATEGORY_NOT_FOUND'
   | 'CURRENCY_MISMATCH'
   | 'DESCRIPTION_INVALID'
+  | 'DUPLICATE_INVOICE_PAYMENT'
+  | 'EARLY_PAYMENT_OVER_DUE'
   | 'INVALID_DATE'
   | 'INVALID_VALUE'
+  | 'INVOICE_ALREADY_PAID'
+  | 'INVOICE_MONTH_INVALID'
+  | 'INVOICE_NOT_CLOSED'
+  | 'INVOICE_PAID'
+  | 'INVOICE_PAYMENT_MISMATCH'
   | 'OWNER_ARCHIVED'
   | 'OWNER_NOT_ACCESSIBLE'
+  | 'PAID_FROM_ACCOUNT_INVALID'
   | 'SYSTEM_CATEGORY'
   | 'TAG_TOO_LONG'
   | 'TOO_MANY_TAGS'
@@ -37,8 +47,15 @@ export interface ImportRowError {
   code: ImportErrorCode;
   line: number;
   message: string;
+  // Numbers and months the app puts in its own message (cents for values).
+  params?: Record<string, number | string>;
 }
 
+const KIND_MESSAGES = {
+  ACCOUNT_AND_CARD: 'Choose account or card, not both',
+  CARD_CREDIT_CATEGORY_MISUSED: 'This category only works for card income',
+  CARD_INCOME_CATEGORY: 'Card income must be a refund, a discount or an early payment',
+} as const;
 const MAX_TAGS = 10;
 const MIN_DATE = '1900-01-01';
 const MAX_DATE = '2100-12-31';
@@ -130,16 +147,18 @@ export function validateImportRow(row: ImportRow): ImportRowError | undefined {
     return { code: 'UNSUPPORTED_CURRENCY', line, message: 'Currency not supported' };
   }
 
-  if (row.accountId && row.creditCardId) {
-    return { code: 'ACCOUNT_AND_CARD', line, message: 'Choose account or card, not both' };
-  }
-
   if (!row.accountId && !row.creditCardId) {
     return { code: 'ACCOUNT_NOT_FOUND', line, message: 'Choose an account or a card' };
   }
 
-  if (row.creditCardId && row.type === TransactionType.INCOME) {
-    return { code: 'CARD_CREDIT_NOT_SUPPORTED', line, message: "Card credits can't be imported" };
+  if (parseInvoiceMonth(row.invoiceMonth) === 'INVALID') {
+    return { code: 'INVOICE_MONTH_INVALID', line, message: 'Invalid invoice month' };
+  }
+
+  const kind = importRowKind(row);
+
+  if (typeof kind === 'object') {
+    return { code: kind.error, line, message: KIND_MESSAGES[kind.error] };
   }
 
   return undefined;

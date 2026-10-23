@@ -1,6 +1,8 @@
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { InvoicePaymentMethod } from '@finance/domain/enum';
 import { CurrencyCode } from '@finance/domain/enum/Currency';
+import { PayInvoiceRepositoryParams } from '@finance/domain/repository/IFinanceInvoicePaymentRepository';
+import { CreateTransactionRepositoryParams } from '@finance/domain/repository/IFinanceTransactionRepository';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 // Refunds and early payments: INCOME rows on a card (spec 032). Every write is ONE database transaction under the card lock.
@@ -11,6 +13,9 @@ export type IFinanceCardCreditRepository = {
   // or the early payments would exceed it. ACCOUNT also writes the INVOICE_PAYMENT debit row.
   createEarlyPayment(params: CreateEarlyPaymentRepositoryParams): Promise<TransactionEntity>;
   // 422 WHEN the invoice has a payment record or the linked refunds would pass `maxLinked`.
+  // Spec 048 FR 19: purchases, refunds, early payments and invoice payments of a CSV import in ONE database
+  // transaction under the card locks; `expectedNet` and the refund cap are not checked (the import did it).
+  createImportRows(params: CreateImportRowsRepositoryParams): Promise<number>;
   createRefund(params: CreateRefundRepositoryParams): Promise<TransactionEntity>;
   // Refund or early payment (and its debit row, ledger restored). 422 WHEN the invoice has a payment record.
   deleteCredit(id: string): Promise<void>;
@@ -39,6 +44,12 @@ interface CreateEarlyPaymentRepositoryParams {
   owner: OwnerType;
   ownerId: string;
   value: number;
+}
+interface CreateImportRowsRepositoryParams {
+  earlyPayments: CreateEarlyPaymentRepositoryParams[];
+  payments: PayInvoiceRepositoryParams[];
+  purchases: CreateTransactionRepositoryParams[];
+  refunds: CreateRefundRepositoryParams[];
 }
 interface CreateRefundRepositoryParams {
   categoryId: string;
@@ -80,6 +91,7 @@ interface UpdateRefundRepositoryParams {
 export {
   CardCreditAccount,
   CreateEarlyPaymentRepositoryParams,
+  CreateImportRowsRepositoryParams,
   CreateRefundRepositoryParams,
   UpdateEarlyPaymentRepositoryParams,
   UpdateRefundRepositoryParams,

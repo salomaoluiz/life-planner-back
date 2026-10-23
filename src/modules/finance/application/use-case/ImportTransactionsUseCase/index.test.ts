@@ -1,6 +1,7 @@
 import { ForbiddenException, UnprocessableEntityException } from '@nestjs/common';
 
-import { TransactionType } from '@finance/domain/enum';
+import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
+import { SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 import { ValidationError } from '@shared/domain/error/ValidationError';
 
 import { mocks, setup } from './index.mocks';
@@ -11,7 +12,7 @@ describe('dry run', () => {
   it('SHOULD report no error and write nothing for valid rows', async () => {
     const result = await setup.execute({ ...base, rows: [validRow] });
 
-    expect(result).toEqual({ created: 0, duplicates: [], errors: [] });
+    expect(result).toEqual({ created: 0, duplicates: [], errors: [], invoices: [] });
     expect(mocks.transactionRepository.createManyTransactions).not.toHaveBeenCalled();
   });
 
@@ -28,8 +29,12 @@ describe('dry run', () => {
     ['UNSUPPORTED_CURRENCY', { currency: 'JPY' }],
     ['ACCOUNT_AND_CARD', { creditCardId: 'card-1' }],
     [
-      'CARD_CREDIT_NOT_SUPPORTED',
+      'CARD_INCOME_CATEGORY',
       { accountId: undefined, creditCardId: 'card-1', type: TransactionType.INCOME },
+    ],
+    [
+      'INVOICE_MONTH_INVALID',
+      { accountId: undefined, creditCardId: 'card-1', invoiceMonth: '2026-13' },
     ],
   ])('SHOULD report %s without a lookup', async (code, override) => {
     const result = await setup.execute({ ...base, rows: [{ ...validRow, ...override }] });
@@ -252,5 +257,258 @@ describe('owner per row (spec 047)', () => {
       { owner: 'USER', ownerId: 'user-id' },
       { owner: 'FAMILY', ownerId: 'family-id' },
     ]);
+  });
+});
+
+describe('card credits and invoice payments (spec 048)', () => {
+  const ID = SYSTEM_CATEGORY_IDS;
+  const cardRow = {
+    categoryId: 'cat-1',
+    creditCardId: 'card-1',
+    date: '2026-09-10',
+    description: 'Mercado',
+    invoiceMonth: '2026-09',
+    line: 2,
+    type: TransactionType.EXPENSE,
+    value: 100000,
+  };
+  const refund = {
+    ...cardRow,
+    categoryId: ID[SystemCategoryKey.CARD_REFUND],
+    description: 'Estorno',
+    line: 3,
+    type: TransactionType.INCOME,
+    value: 1200,
+  };
+  const discount = {
+    ...refund,
+    categoryId: ID[SystemCategoryKey.INSTALLMENT_PREPAYMENT_DISCOUNT],
+    line: 4,
+    value: 300,
+  };
+  const payment = {
+    ...cardRow,
+    accountId: 'acc-1',
+    categoryId: ID[SystemCategoryKey.INVOICE_PAYMENT],
+    date: '2026-10-02',
+    description: 'Pagamento',
+    line: 5,
+    value: 98500,
+  };
+
+  it('SHOULD write purchases, 2 credits and the payment in one call WHEN the payment equals the invoice', async () => {
+    const result = await setup.execute({
+      ...base,
+      dryRun: false,
+      rows: [cardRow, refund, discount, payment],
+    });
+
+    expect(result.created).toBe(4);
+    expect(mocks.transactionRepository.createManyTransactions).not.toHaveBeenCalled();
+
+    const call = mocks.cardCredit.createImportRows.mock.calls[0][0];
+
+    expect(call.purchases).toEqual([
+      expect.objectContaining({ invoiceMonth: '2026-09', value: 100000 }),
+    ]);
+    expect(call.refunds.map((r: { categoryId: string }) => r.categoryId)).toEqual([
+      ID[SystemCategoryKey.CARD_REFUND],
+      ID[SystemCategoryKey.INSTALLMENT_PREPAYMENT_DISCOUNT],
+    ]);
+    expect(call.payments).toEqual([
+      expect.objectContaining({
+        accountId: 'acc-1',
+        amount: 98500,
+        description: 'Invoice payment · Visa (2026-09)',
+        invoiceMonth: '2026-09',
+        method: 'ACCOUNT',
+        paidOn: '2026-10-02',
+      }),
+    ]);
+  });
+
+  it('SHOULD report INVOICE_PAYMENT_MISMATCH on the line AND answer 422 on import WHEN the payment is 1.000', async () => {
+    const rows = [cardRow, refund, discount, { ...payment, value: 100000 }];
+    const dry = await setup.execute({ ...base, rows });
+
+    expect(dry.errors).toEqual([
+      expect.objectContaining({ code: 'INVOICE_PAYMENT_MISMATCH', line: 5 }),
+    ]);
+    await expect(setup.execute({ ...base, dryRun: false, rows })).rejects.toThrow(
+      UnprocessableEntityException,
+    );
+    expect(mocks.cardCredit.createImportRows).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD return the invoices the file touches on a dry run', async () => {
+    const result = await setup.execute({ ...base, rows: [cardRow, refund, discount, payment] });
+
+    expect(result.invoices).toEqual([
+      { amountDue: 98500, creditCardId: 'card-1', invoiceMonth: '2026-09', paid: true },
+    ]);
+  });
+
+  it('SHOULD write an early payment without an account as EXTERNAL AND with one as ACCOUNT, with the card description kept', async () => {
+    const early = {
+      ...refund,
+      categoryId: ID[SystemCategoryKey.CARD_EARLY_PAYMENT],
+      date: '2026-10-16',
+      description: 'Adiantamento',
+      invoiceMonth: '2026-10',
+      value: 60000,
+    };
+
+    await setup.execute({
+      ...base,
+      dryRun: false,
+      rows: [
+        { ...cardRow, date: '2026-10-02', invoiceMonth: '2026-10' },
+        { ...early, line: 3 },
+        { ...early, accountId: 'acc-1', line: 4, value: 20000 },
+      ],
+    });
+
+    const { earlyPayments } = mocks.cardCredit.createImportRows.mock.calls[0][0];
+
+    expect(earlyPayments.map((e: { method: string }) => e.method)).toEqual(['EXTERNAL', 'ACCOUNT']);
+    expect(earlyPayments[1]).toEqual(
+      expect.objectContaining({
+        account: expect.objectContaining({ id: 'acc-1' }),
+        accountDescription: 'Early payment · Visa (2026-10)',
+        description: 'Adiantamento',
+      }),
+    );
+  });
+
+  it('SHOULD flag every early payment WHEN the sum passes the due', async () => {
+    const early = {
+      ...refund,
+      categoryId: ID[SystemCategoryKey.CARD_EARLY_PAYMENT],
+      date: '2026-10-16',
+      invoiceMonth: '2026-10',
+    };
+
+    const result = await setup.execute({
+      ...base,
+      rows: [
+        { ...cardRow, date: '2026-10-02', invoiceMonth: '2026-10' },
+        { ...early, line: 3, value: 60000 },
+        { ...early, line: 4, value: 50000 },
+      ],
+    });
+
+    expect(result.errors.map((e) => [e.code, e.line])).toEqual([
+      ['EARLY_PAYMENT_OVER_DUE', 3],
+      ['EARLY_PAYMENT_OVER_DUE', 4],
+    ]);
+  });
+
+  it.each([
+    ['CARD_INCOME_CATEGORY', { ...refund, categoryId: 'cat-1' }],
+    ['CARD_CREDIT_CATEGORY_MISUSED', { ...refund, accountId: 'acc-1', creditCardId: undefined }],
+    ['INVOICE_MONTH_INVALID', { ...cardRow, invoiceMonth: '2026-13' }],
+  ])('SHOULD report %s', async (code, row) => {
+    const result = await setup.execute({ ...base, rows: [row] });
+
+    expect(result.errors).toEqual([expect.objectContaining({ code, line: row.line })]);
+  });
+
+  it('SHOULD report PAID_FROM_ACCOUNT_INVALID for an archived account AND for another currency', async () => {
+    const early = {
+      ...refund,
+      accountId: 'acc-1',
+      categoryId: ID[SystemCategoryKey.CARD_EARLY_PAYMENT],
+      date: '2026-10-16',
+      invoiceMonth: '2026-10',
+    };
+
+    mocks.account.findAccountById.mockResolvedValueOnce({ ...mocks.account, status: 'ARCHIVED' });
+    const archived = await setup.execute({ ...base, rows: [cardRow, early] });
+
+    mocks.account.findAccountById.mockResolvedValueOnce({ currency: 'USD', status: 'ACTIVE' });
+    const usd = await setup.execute({ ...base, rows: [cardRow, early] });
+
+    expect(archived.errors.map((e) => e.code)).toContain('PAID_FROM_ACCOUNT_INVALID');
+    expect(usd.errors.map((e) => e.code)).toContain('PAID_FROM_ACCOUNT_INVALID');
+  });
+
+  it('SHOULD give the card row the invoice of the file regardless of the date AND the computed one without it', async () => {
+    await setup
+      .execute({
+        ...base,
+        dryRun: false,
+        rows: [
+          { ...cardRow, date: '2026-10-01', invoiceMonth: '2026-08' },
+          { ...cardRow, date: '2026-10-01', invoiceMonth: undefined, line: 3 },
+          refund,
+          { ...payment, invoiceMonth: undefined, line: 6, value: 1 },
+        ],
+      })
+      .catch(() => undefined);
+
+    const dry = await setup.execute({
+      ...base,
+      rows: [{ ...cardRow, date: '2026-10-01', invoiceMonth: undefined }, refund],
+    });
+
+    expect(dry.invoices.map((i) => i.invoiceMonth).sort()).toEqual(['2026-09', '2026-10']);
+  });
+
+  it('SHOULD take cards in a stable order in the repository call (lock order is by card id)', async () => {
+    await setup.execute({ ...base, dryRun: false, rows: [cardRow, refund, discount, payment] });
+
+    expect(mocks.cardCredit.createImportRows).toHaveBeenCalledTimes(1);
+  });
+
+  it('SHOULD flag a refund that repeats an existing one as duplicate WITHOUT an invoice error', async () => {
+    mocks.transactionRepository.findDuplicateCandidates.mockResolvedValueOnce([
+      {
+        accountId: null,
+        creditCardId: 'card-1',
+        date: '2026-09-10',
+        description: 'Estorno',
+        type: TransactionType.INCOME,
+        value: 1200,
+      },
+    ]);
+
+    const result = await setup.execute({ ...base, rows: [refund] });
+
+    expect(result.duplicates).toEqual([3]);
+    expect(result.errors).toEqual([]);
+  });
+
+  describe('duplicates the user chose to import', () => {
+    const early = {
+      ...refund,
+      categoryId: ID[SystemCategoryKey.CARD_EARLY_PAYMENT],
+      date: '2026-10-02',
+      description: 'Adiantamento',
+      invoiceMonth: '2026-09',
+      value: 30000,
+    };
+    const rows = [
+      { ...cardRow, date: '2026-09-10' },
+      { ...early, line: 3 },
+      { ...early, line: 4 },
+      { ...payment, line: 5, value: 40000 },
+    ];
+
+    it('SHOULD leave the repeated early payment out of the invoice WHEN it is not included', async () => {
+      const result = await setup.execute({ ...base, rows });
+
+      expect(result.duplicates).toContain(4);
+      expect(result.errors.map((e) => [e.code, e.line])).toEqual([['INVOICE_PAYMENT_MISMATCH', 5]]);
+    });
+
+    it('SHOULD count it WHEN the user included it, and still report it as a duplicate', async () => {
+      const result = await setup.execute({ ...base, includeDuplicates: [4], rows });
+
+      expect(result.duplicates).toContain(4);
+      expect(result.errors).toEqual([]);
+      expect(result.invoices).toEqual([
+        { amountDue: 40000, creditCardId: 'card-1', invoiceMonth: '2026-09', paid: true },
+      ]);
+    });
   });
 });

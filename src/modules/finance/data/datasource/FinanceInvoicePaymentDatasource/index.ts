@@ -75,42 +75,7 @@ export class FinanceInvoicePaymentDatasource implements IFinanceInvoicePaymentDa
         throw new ConflictException('Invoice changed, reload and try again');
       }
 
-      let transactionId: string | undefined;
-
-      if (params.method === InvoicePaymentMethod.ACCOUNT) {
-        const created = await tx.financialTransaction.create({
-          data: {
-            account_id: params.account_id,
-            category_id: params.category_id,
-            currency: params.currency,
-            date: params.paid_on,
-            description: params.description,
-            owner: params.account_owner as Prisma.FinancialTransactionUncheckedCreateInput['owner'],
-            owner_id: params.account_owner_id as string,
-            paid: true,
-            type: TransactionType.EXPENSE,
-            value: params.amount,
-          },
-        });
-
-        await applyLedgerDeltas(tx, ledgerDeltas(undefined, toLedgerEntry(created)));
-        transactionId = created.id;
-      }
-
-      return tx.financialInvoicePayment.create({
-        data: {
-          account_id: params.account_id,
-          amount: params.amount,
-          credit_card_id: params.credit_card_id,
-          invoice_month: params.invoice_month,
-          method: params.method,
-          owner: params.owner,
-          owner_id: params.owner_id,
-          paid_on: params.paid_on,
-          transaction_id: transactionId,
-        },
-        include: INCLUDE,
-      });
+      return insertInvoicePayment(tx, params);
     });
   }
 
@@ -140,4 +105,48 @@ export class FinanceInvoicePaymentDatasource implements IFinanceInvoicePaymentDa
       }
     });
   }
+}
+
+// The payment record and, for ACCOUNT, its paid debit row with the ledger. The caller holds the card lock and has
+// checked the amount (the import of spec 048 does it against the whole file).
+export async function insertInvoicePayment(
+  tx: Prisma.TransactionClient,
+  params: PayInvoiceDatasourceParams,
+): Promise<FinancialInvoicePaymentWithAccount> {
+  let transactionId: string | undefined;
+
+  if (params.method === InvoicePaymentMethod.ACCOUNT) {
+    const created = await tx.financialTransaction.create({
+      data: {
+        account_id: params.account_id,
+        category_id: params.category_id,
+        currency: params.currency,
+        date: params.paid_on,
+        description: params.description,
+        owner: params.account_owner as Prisma.FinancialTransactionUncheckedCreateInput['owner'],
+        owner_id: params.account_owner_id as string,
+        paid: true,
+        type: TransactionType.EXPENSE,
+        value: params.amount,
+      },
+    });
+
+    await applyLedgerDeltas(tx, ledgerDeltas(undefined, toLedgerEntry(created)));
+    transactionId = created.id;
+  }
+
+  return tx.financialInvoicePayment.create({
+    data: {
+      account_id: params.account_id,
+      amount: params.amount,
+      credit_card_id: params.credit_card_id,
+      invoice_month: params.invoice_month,
+      method: params.method,
+      owner: params.owner,
+      owner_id: params.owner_id,
+      paid_on: params.paid_on,
+      transaction_id: transactionId,
+    },
+    include: INCLUDE,
+  });
 }

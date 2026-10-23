@@ -81,7 +81,9 @@ Spec 033 contract: transactions gain `paid: boolean` (optional on create/update 
 
 ## Recurring transactions (spec 034)
 
-New contract (additive): `/finance/recurrences/*` and the `recurrenceId`/`occurrenceNumber`/`occurrenceCount`/`recurrenceFrequency` fields on transactions (see `api.md`). An app without this spec keeps working: real occurrences are normal transactions, but editing or deleting one without `scope` answers 422, so old builds cannot break a series by accident. The app sends `scope` on `PATCH`/`DELETE /transactions/:id` for recurring rows and uses `/recurrences/*` for the other scopes; the future-month list merges `GET /recurrences/projections` (client local `today`).
+New contract (additive): `/finance/recurrences/*` and the `recurrenceId`/`occurrenceNumber`/`occurrenceCount`/`recurrenceFrequency` fields on transactions (see `api.md`).
+
+CSV import card credits (spec 048, additive): import rows gain `invoiceMonth` (`YYYY-MM`) and `paidFromAccountId`; `categoryId` may be `CARD_REFUND`, `INSTALLMENT_PREPAYMENT_DISCOUNT`, `CARD_EARLY_PAYMENT` or `INVOICE_PAYMENT`; error lines may carry `params`; the dry run also answers `invoices: [{ creditCardId, invoiceMonth, amountDue, paid }]`; `CARD_CREDIT_NOT_SUPPORTED` is gone. Imported discounts (no prepayment) are edited and deleted through the refund endpoints. An app without this spec keeps working: real occurrences are normal transactions, but editing or deleting one without `scope` answers 422, so old builds cannot break a series by accident. The app sends `scope` on `PATCH`/`DELETE /transactions/:id` for recurring rows and uses `/recurrences/*` for the other scopes; the future-month list merges `GET /recurrences/projections` (client local `today`).
 
 Spec 035 (additive): `GET /finance/accounts/daily-balances` and `paymentAccountId` / `paymentAccount` on cards. The app shows the end-of-day balance in every day header of the transactions list and prefills the invoice payment account from the card link.
 

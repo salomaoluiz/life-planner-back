@@ -62,7 +62,11 @@ export class TransactionCsvController {
     const result = await this.transactionCsvService.import(req.user.id, input, today);
 
     if (input.dryRun) {
-      res.status(200).json({ duplicates: result.duplicates, errors: result.errors });
+      res.status(200).json({
+        duplicates: result.duplicates,
+        errors: result.errors,
+        invoices: result.invoices,
+      });
 
       return;
     }

@@ -3,10 +3,12 @@ import { Inject, Injectable } from '@nestjs/common';
 import { fromCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
 import { FinanceTransactionMapper } from '@finance/data/datasource/mapper/FinanceTransactionMapper';
 import { IFinanceCardCreditDatasource } from '@finance/data/repository/datasource/IFinanceCardCreditDatasource';
+import { toCreateParams } from '@finance/data/repository/FinanceTransactionRepository';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import {
   CardCreditAccount,
   CreateEarlyPaymentRepositoryParams,
+  CreateImportRowsRepositoryParams,
   CreateRefundRepositoryParams,
   IFinanceCardCreditRepository,
   UpdateEarlyPaymentRepositoryParams,
@@ -47,6 +49,54 @@ export class FinanceCardCreditRepository implements IFinanceCardCreditRepository
     });
 
     return FinanceTransactionMapper.toDomain(result);
+  }
+
+  async createImportRows(params: CreateImportRowsRepositoryParams): Promise<number> {
+    return this.cardCreditDatasource.createImportRows({
+      earlyPayments: params.earlyPayments.map((early) => ({
+        account: toAccount(early.account),
+        account_category_id: early.accountCategoryId,
+        account_description: early.accountDescription,
+        category_id: early.categoryId,
+        credit_card_id: early.creditCardId,
+        currency: early.currency,
+        date: fromCalendarDate(early.date),
+        description: early.description,
+        expected_net: early.expectedNet,
+        invoice_month: early.invoiceMonth,
+        method: early.method,
+        owner: early.owner,
+        owner_id: early.ownerId,
+        value: early.value,
+      })),
+      payments: params.payments.map((payment) => ({
+        account_id: payment.accountId,
+        account_owner: payment.accountOwner?.owner,
+        account_owner_id: payment.accountOwner?.ownerId,
+        amount: payment.amount,
+        category_id: payment.categoryId,
+        credit_card_id: payment.creditCardId,
+        currency: payment.currency,
+        description: payment.description,
+        invoice_month: payment.invoiceMonth,
+        method: payment.method,
+        owner: payment.owner,
+        owner_id: payment.ownerId,
+        paid_on: fromCalendarDate(payment.paidOn),
+      })),
+      purchases: params.purchases.map((row) => toCreateParams(row)),
+      refunds: params.refunds.map((refund) => ({
+        category_id: refund.categoryId,
+        credit_card_id: refund.creditCardId,
+        currency: refund.currency,
+        date: fromCalendarDate(refund.date),
+        description: refund.description,
+        invoice_month: refund.invoiceMonth,
+        owner: refund.owner,
+        owner_id: refund.ownerId,
+        value: refund.value,
+      })),
+    });
   }
 
   async createRefund(params: CreateRefundRepositoryParams): Promise<TransactionEntity> {

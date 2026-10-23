@@ -19,11 +19,15 @@ export const ImportRowSchema = z.object({
   currency: z.string().nullish(),
   date: z.string(),
   description: z.string(),
+  // Spec 048: the invoice month (`YYYY-MM`) of a card row; checked by the use case.
+  invoiceMonth: z.string().nullish(),
   line: z.number().int().min(1),
   // Spec 047: the owner of this row; omitted rows take the owner of the request.
   owner: OwnerTypeSchema.nullish(),
   ownerId: z.string().min(1).nullish(),
   paid: z.boolean().nullish(),
+  // Spec 048: the account debited by an early payment or an invoice payment.
+  paidFromAccountId: z.string().min(1).nullish(),
   tags: z.array(z.string()).nullish(),
   type: TransactionTypeSchema,
   value: z.number(),
@@ -32,6 +36,8 @@ export const ImportRowSchema = z.object({
 export const ImportTransactionsSchema = z.object({
   accessibleOwners: AccessibleOwnersSchema,
   dryRun: z.boolean(),
+  // Spec 048: lines flagged as duplicates that the user chose to import; they count in the invoice math.
+  includeDuplicates: z.array(z.number().int()).optional(),
   owner: OwnerTypeSchema,
   ownerId: OwnerIdSchema,
   rows: z.array(ImportRowSchema).min(1).max(MAX_IMPORT_ROWS),

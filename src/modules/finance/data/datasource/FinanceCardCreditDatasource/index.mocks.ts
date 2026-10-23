@@ -56,7 +56,9 @@ const deleteManySpy = jest.fn();
 const findUniqueSpy = jest.fn();
 const findUniqueOrThrowSpy = jest.fn();
 const groupBySpy = jest.fn();
+const paymentCreateSpy = jest.fn();
 const paymentFindFirstSpy = jest.fn();
+const createManyAndReturnSpy = jest.fn();
 const queryRawSpy = jest.fn();
 const transactionSpy = jest.fn();
 const updateSpy = jest.fn();
@@ -67,11 +69,12 @@ const clientMock = {
   $queryRaw: queryRawSpy,
   $transaction: transactionSpy,
   financialAccount: { update: accountUpdateSpy },
-  financialInvoicePayment: { findFirst: paymentFindFirstSpy },
+  financialInvoicePayment: { create: paymentCreateSpy, findFirst: paymentFindFirstSpy },
   financialTransaction: {
     aggregate: aggregateSpy,
     count: countSpy,
     create: createSpy,
+    createManyAndReturn: createManyAndReturnSpy,
     deleteMany: deleteManySpy,
     findUnique: findUniqueSpy,
     findUniqueOrThrow: findUniqueOrThrowSpy,
@@ -89,6 +92,8 @@ beforeEach(async () => {
     callback(clientMock),
   );
   paymentFindFirstSpy.mockResolvedValue(null);
+  paymentCreateSpy.mockResolvedValue({ id: 'payment-1' });
+  createManyAndReturnSpy.mockResolvedValue([]);
   queryRawSpy.mockResolvedValue([lockedRow]);
   findUniqueSpy.mockResolvedValue({ credit_card_id: 'card-1' });
   aggregateSpy.mockResolvedValue({ _sum: { value: 0 } });
@@ -104,16 +109,33 @@ beforeEach(async () => {
   setup = module.get(FinanceCardCreditDatasource);
 });
 
-const mocks = { earlyParams, lockedRow, refundParams };
+const paymentParams = {
+  account_id: 'acc-1',
+  account_owner: 'USER' as const,
+  account_owner_id: 'owner-1',
+  amount: 98500,
+  category_id: '00000000-0000-4000-8000-000000000002',
+  credit_card_id: 'card-1',
+  currency: 'BRL' as const,
+  description: 'Invoice payment · Card (2026-09)',
+  invoice_month: '2026-09',
+  method: 'ACCOUNT' as const,
+  owner: 'USER' as const,
+  owner_id: 'owner-1',
+  paid_on: date,
+};
+const mocks = { earlyParams, lockedRow, paymentParams, refundParams };
 const spies = {
   accountUpdate: accountUpdateSpy,
   aggregate: aggregateSpy,
   count: countSpy,
   create: createSpy,
+  createManyAndReturn: createManyAndReturnSpy,
   deleteMany: deleteManySpy,
   findUnique: findUniqueSpy,
   findUniqueOrThrow: findUniqueOrThrowSpy,
   groupBy: groupBySpy,
+  paymentCreate: paymentCreateSpy,
   paymentFindFirst: paymentFindFirstSpy,
   queryRaw: queryRawSpy,
   update: updateSpy,

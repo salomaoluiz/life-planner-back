@@ -5,11 +5,11 @@ import {
   UpdateCardRefundSchema,
 } from '@finance/application/dto/UpdateCardRefund';
 import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
+import { isRefundRow } from '@finance/application/service/RefundRow';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { ResolveRefundLinkUseCase } from '@finance/application/use-case/ResolveRefundLinkUseCase';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
-import { SystemCategoryKey } from '@finance/domain/enum';
 import {
   IFinanceCardCreditRepository,
   IFinanceCreditCardRepository,
@@ -50,11 +50,7 @@ export class UpdateCardRefundUseCase implements UseCaseWithParams<
 
     const refund = await this.transactionRepository.findTransactionById(input.id);
 
-    if (
-      !refund ||
-      refund.creditCardId !== card.id ||
-      refund.category.systemKey !== SystemCategoryKey.CARD_REFUND
-    ) {
+    if (!refund || refund.creditCardId !== card.id || !isRefundRow(refund)) {
       throw new NotFoundException();
     }
 
