@@ -101,6 +101,7 @@ export class PayInvoiceUseCase implements UseCaseWithParams<PayInvoiceInput, Inv
       creditCardId: card.id,
       currency: card.currency,
       description: INVOICE_PAYMENT_DESCRIPTION,
+      expectedNet: invoice.net,
       invoiceMonth: input.invoiceMonth,
       method: input.method,
       owner: card.owner,

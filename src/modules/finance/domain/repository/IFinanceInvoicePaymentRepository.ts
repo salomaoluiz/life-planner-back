@@ -21,12 +21,14 @@ interface PayInvoiceRepositoryParams {
   accountId?: string;
   // Owner of the paying account (the payment transaction takes it); only for ACCOUNT.
   accountOwner?: { owner: OwnerType; ownerId: string };
-  // The amount the caller saw; the write fails with 409 when the invoice no longer sums to it.
+  // The amount the caller saw; the write fails with 409 when the invoice no longer matches it.
   amount: number;
   categoryId: string;
   creditCardId: string;
   currency: CurrencyCode;
   description: string;
+  // The invoice net the caller saw (purchases minus credits); re-checked inside the card lock.
+  expectedNet: number;
   invoiceMonth: string;
   method: InvoicePaymentMethod;
   owner: OwnerType;

@@ -16,7 +16,10 @@ export interface IFinanceInvoicePaymentDatasource {
     invoiceMonth: string,
   ): Promise<FinancialInvoicePaymentWithAccount | null>;
   findByCardIds(creditCardIds: string[]): Promise<FinancialInvoicePaymentWithAccount[]>;
-  pay(params: PayInvoiceDatasourceParams): Promise<FinancialInvoicePaymentWithAccount>;
+  // The net the caller saw is re-checked inside the lock (409 when the invoice changed).
+  pay(
+    params: { expected_net: number } & PayInvoiceDatasourceParams,
+  ): Promise<FinancialInvoicePaymentWithAccount>;
   undo(creditCardId: string, invoiceMonth: string): Promise<void>;
 }
 export interface PayInvoiceDatasourceParams {

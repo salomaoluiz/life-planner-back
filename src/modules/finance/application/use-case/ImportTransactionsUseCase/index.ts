@@ -555,6 +555,8 @@ function toInvoicePayment(entry: CheckedRow, invoiceMonth: string): PayInvoiceRe
     creditCardId: card.id,
     currency: card.currency,
     description: `Invoice payment · ${card.title} (${invoiceMonth})`,
+    // The import checked the invoice against the whole file; the datasource does not compare it again.
+    expectedNet: 0,
     invoiceMonth,
     method: paidFrom ? InvoicePaymentMethod.ACCOUNT : InvoicePaymentMethod.EXTERNAL,
     owner: card.owner,

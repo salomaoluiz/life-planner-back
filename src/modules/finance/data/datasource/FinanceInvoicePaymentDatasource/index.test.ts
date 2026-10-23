@@ -4,6 +4,7 @@ describe('Method pay', () => {
   beforeEach(() => {
     spies.paymentFindFirst.mockResolvedValue(null);
     spies.aggregate.mockResolvedValue({ _sum: { value: 45000 } });
+    spies.transactionGroupBy.mockResolvedValue([{ _sum: { value: 45000 }, type: 'EXPENSE' }]);
     spies.transactionCreate.mockResolvedValue({
       account_id: 'acc-1',
       id: 'tx-1',
@@ -57,11 +58,25 @@ describe('Method pay', () => {
     expect(spies.paymentCreate).not.toHaveBeenCalled();
   });
 
-  it('SHOULD answer 409 WHEN a purchase changed the invoice total after the caller read it', async () => {
-    spies.aggregate.mockResolvedValue({ _sum: { value: 46000 } });
+  it('SHOULD answer 409 WHEN a purchase changed the invoice net after the caller read it', async () => {
+    spies.transactionGroupBy.mockResolvedValue([{ _sum: { value: 46000 }, type: 'EXPENSE' }]);
 
     await expect(setup.pay(mocks.payParams)).rejects.toThrow('Invoice changed');
     expect(spies.transactionCreate).not.toHaveBeenCalled();
+  });
+
+  // Regression: the raw sum added the early payments (+) instead of subtracting them, so any invoice
+  // with credits could never be paid again after an undo (409 "Invoice changed").
+  it('SHOULD compare the NET (purchases minus credits) WHEN the invoice has early payments', async () => {
+    spies.aggregate.mockResolvedValue({ _sum: { value: 95000 } });
+    spies.transactionGroupBy.mockResolvedValue([
+      { _sum: { value: 70000 }, type: 'EXPENSE' },
+      { _sum: { value: 25000 }, type: 'INCOME' },
+    ]);
+
+    expect(await setup.pay(mocks.payParams)).toEqual(mocks.payment);
+
+    expect(spies.paymentCreate).toHaveBeenCalledTimes(1);
   });
 });
 
