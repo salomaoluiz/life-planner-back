@@ -59,8 +59,16 @@ it('SHOULD forward the period, scope, currency AND the 045 filters to the summar
   expect(result).toEqual({ currency: 'BRL' });
 });
 
+it('SHOULD accept a `to` on the last day of the month 24 months ahead (spec 053)', async () => {
+  const setup = await build();
+
+  await setup.summary(request, { ...query, from: '2027-01-01', to: '2028-10-31' });
+
+  expect(serviceMock.getSummary).toHaveBeenCalled();
+});
+
 it.each([
-  ['a `to` after the end of the current month', { ...query, to: '2026-11-01' }],
+  ['a `to` after the 24-month limit', { ...query, from: '2027-01-01', to: '2028-11-01' }],
   ['a range over 2 years', { ...query, from: '2024-10-01' }],
   ['a `to` before `from`', { ...query, from: '2026-10-10', to: '2026-10-01' }],
   ['an unknown currency', { ...query, currency: 'XXX' }],
