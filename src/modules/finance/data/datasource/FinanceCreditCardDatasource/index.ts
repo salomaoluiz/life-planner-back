@@ -53,6 +53,7 @@ export class FinanceCreditCardDatasource implements IFinanceCreditCardDatasource
   // transaction as the card update. Paid invoices never change (spec 029 FR 9).
   async update(params: UpdateCreditCardDatasourceParams): Promise<FinancialCreditCard> {
     const data = {
+      archived_at: params.archived_at,
       brand: params.brand,
       closing_day: params.closing_day,
       color: params.color,

@@ -43,4 +43,32 @@ describe('GetBalanceSeriesUseCase', () => {
 
     expect(series.points[0].balance).toBe(0);
   });
+
+  describe('archived accounts (spec 052, owner decision)', () => {
+    const archived = {
+      ...mocks.account,
+      archivedAt: new Date('2026-09-15T15:00:00Z'),
+      status: 'ARCHIVED' as never,
+    };
+
+    it('SHOULD leave an archived account out of every point, value and detail', async () => {
+      mocks.accountRepository.findAccounts.mockResolvedValue([archived]);
+
+      const series = await setup.execute(mocks.input);
+
+      expect(series.points.map((point) => point.balance)).toEqual([0, 0, 0, 0]);
+      expect(series.points.every((point) => point.accounts.length === 0)).toBe(true);
+    });
+
+    it('SHOULD keep counting the active accounts next to an archived one', async () => {
+      mocks.accountRepository.findAccounts.mockResolvedValue([
+        archived,
+        { ...mocks.account, id: 'acc-2', ledgerBalance: 1000, name: 'Other' },
+      ]);
+
+      const series = await setup.execute(mocks.input);
+
+      expect(series.points[0].accounts.map((account) => account.id)).toEqual(['acc-2']);
+    });
+  });
 });

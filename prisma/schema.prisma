@@ -95,6 +95,7 @@ model FinancialAccount {
   ledger_balance  Int           @default(0)
   currency String @default("BRL") @db.VarChar(3)
   status          AccountStatus @default(ACTIVE)
+  archived_at     DateTime?     @db.Timestamptz(6)
   owner           OwnerType
   owner_id        String
   created_at      DateTime      @default(now()) @db.Timestamptz(6)
@@ -130,6 +131,7 @@ model FinancialCreditCard {
   last_digits String?         @db.Char(4)
   currency String @default("BRL") @db.VarChar(3)
   status      AccountStatus   @default(ACTIVE)
+  archived_at DateTime?       @db.Timestamptz(6)
   owner       OwnerType
   owner_id    String
   created_at  DateTime        @default(now()) @db.Timestamptz(6)

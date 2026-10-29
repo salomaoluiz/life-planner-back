@@ -5,6 +5,7 @@ describe('FinanceCreditCardMapper', () => {
   describe('toDomain', () => {
     it('SHOULD map every column to the entity', () => {
       expect(FinanceCreditCardMapper.toDomain(mocks.raw)).toEqual({
+        archivedAt: new Date('2026-10-10T12:00:00Z'),
         brand: 'MASTERCARD',
         closingDay: 31,
         color: '#3B5BDB',

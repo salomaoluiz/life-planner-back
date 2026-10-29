@@ -17,6 +17,11 @@ class AccountEntityFixture {
     return temp;
   }
 
+  withArchivedAt(archivedAt?: Date) {
+    this.value.archivedAt = archivedAt;
+    return this;
+  }
+
   withDefault() {
     this.value = {
       createdAt: faker.date.past(),

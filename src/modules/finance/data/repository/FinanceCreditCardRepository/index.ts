@@ -63,6 +63,7 @@ export class FinanceCreditCardRepository implements IFinanceCreditCardRepository
 
   async updateCreditCard(params: UpdateCreditCardRepositoryParams): Promise<CreditCardEntity> {
     const result = await this.creditCardDatasource.update({
+      archived_at: params.archivedAt,
       brand: params.brand,
       closing_day: params.closingDay,
       color: params.color,

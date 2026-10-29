@@ -14,6 +14,7 @@ import {
   IFinanceAccountRepository,
   IFinanceCreditCardRepository,
 } from '@finance/domain/repository';
+import { archivedAtFor } from '@finance/domain/service/ArchiveDay';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -64,6 +65,7 @@ export class UpdateCreditCardUseCase implements UseCaseWithParams<
     }
 
     const updated = await this.creditCardRepository.updateCreditCard({
+      archivedAt: archivedAtFor(card.status, input.status, new Date()),
       brand: input.brand,
       closingDay: input.closingDay,
       color: input.color,

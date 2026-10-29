@@ -124,6 +124,7 @@ export class FinanceAccountDatasource implements IFinanceAccountDatasource {
   async update(params: UpdateAccountDatasourceParams): Promise<FinancialAccount> {
     return this.db.client.financialAccount.update({
       data: {
+        archived_at: params.archived_at,
         icon: params.icon,
         name: params.name,
         status: params.status,

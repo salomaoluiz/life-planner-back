@@ -53,6 +53,11 @@ beforeEach(async () => {
   setup = module.get(GetBalanceSeriesUseCase);
 });
 
-const mocks = { accountRepository: accountRepositoryMock, daily: dailyMock, input: inputMock };
+const mocks = {
+  account: accountMock,
+  accountRepository: accountRepositoryMock,
+  daily: dailyMock,
+  input: inputMock,
+};
 
 export { mocks, setup };

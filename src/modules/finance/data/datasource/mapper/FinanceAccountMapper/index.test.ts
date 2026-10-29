@@ -7,6 +7,7 @@ describe('FinanceAccountMapper', () => {
       const result = FinanceAccountMapper.toDomain(mocks.raw);
 
       expect(result).toEqual({
+        archivedAt: new Date('2026-10-10T12:00:00Z'),
         createdAt: mocks.raw.created_at,
         currency: 'BRL' as const,
         icon: mocks.raw.icon,

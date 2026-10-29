@@ -5,6 +5,7 @@ import { FinancialAccount } from '@db/client';
 // region Mocks
 
 const rawAccountMock: FinancialAccount = {
+  archived_at: new Date('2026-10-10T12:00:00Z'),
   created_at: faker.date.past(),
   currency: 'BRL' as const,
   icon: 'bank',

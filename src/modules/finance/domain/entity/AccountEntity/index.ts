@@ -3,6 +3,7 @@ import { CurrencyCode, DEFAULT_CURRENCY } from '@finance/domain/enum/Currency';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 interface IAccountEntity {
+  archivedAt?: Date;
   createdAt: Date;
   currency?: CurrencyCode;
   icon: string;
@@ -17,6 +18,7 @@ interface IAccountEntity {
 }
 
 class AccountEntity {
+  archivedAt?: Date;
   createdAt: Date;
   currency: CurrencyCode;
   icon: string;
@@ -32,6 +34,7 @@ class AccountEntity {
   updatedAt: Date;
 
   constructor(params: IAccountEntity) {
+    this.archivedAt = params.archivedAt;
     this.createdAt = params.createdAt;
     this.currency = params.currency ?? DEFAULT_CURRENCY;
     this.icon = params.icon;

@@ -63,8 +63,8 @@ export class GetBalanceSeriesUseCase implements UseCaseWithParams<
     const accounts = (owners.length === 0 ? [] : await this.accountRepository.findAccounts(owners))
       .filter(
         (account) =>
+          account.status === AccountStatus.ACTIVE &&
           account.currency === input.currency &&
-          (account.status === AccountStatus.ACTIVE || account.ledgerBalance !== 0) &&
           (!filter || filter.has(account.id)),
       )
       .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));

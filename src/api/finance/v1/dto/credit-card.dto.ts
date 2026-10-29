@@ -60,6 +60,7 @@ export const UpdateCreditCardApiSchema = z
   });
 
 export const CreditCardApiSchema = z.object({
+  archivedAt: z.iso.datetime().nullable(),
   brand: CreditCardBrandSchema,
   closingDay: z.number().int(),
   color: z.string(),

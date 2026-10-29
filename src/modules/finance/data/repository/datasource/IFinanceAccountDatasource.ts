@@ -51,6 +51,7 @@ export interface UnpaidSumsRow {
   due_by_end_of_month: number;
 }
 export interface UpdateAccountDatasourceParams {
+  archived_at?: Date | null;
   icon?: string;
   id: string;
   name?: string;

@@ -7,6 +7,7 @@ import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 export class FinanceAccountMapper {
   static toDomain(raw: FinancialAccount): AccountEntity {
     return new AccountEntity({
+      archivedAt: raw.archived_at ?? undefined,
       createdAt: raw.created_at,
       currency: raw.currency as CurrencyCode,
       icon: raw.icon,

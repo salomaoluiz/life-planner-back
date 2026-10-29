@@ -65,8 +65,8 @@ export class GetDashboardSummaryUseCase implements UseCaseWithParams<
       : undefined;
     const accounts = allAccounts.filter(
       (account) =>
+        account.status === AccountStatus.ACTIVE &&
         account.currency === input.currency &&
-        isCounted(account) &&
         (!accountFilter || accountFilter.has(account.id)),
     );
     const paidRows =
@@ -92,7 +92,6 @@ export class GetDashboardSummaryUseCase implements UseCaseWithParams<
   }
 }
 
-// Archived accounts count while they still hold a balance.
 function currencyOptions(
   accounts: AccountEntity[],
   cards: { currency: CurrencyCode; status?: AccountStatus }[],
@@ -103,9 +102,6 @@ function currencyOptions(
     cards: cards.filter((c) => c.currency === code && c.status !== AccountStatus.ARCHIVED).length,
     code,
   })).filter((option) => option.accounts + option.cards > 0);
-}
-function isCounted(account: AccountEntity): boolean {
-  return account.status === AccountStatus.ACTIVE || account.ledgerBalance !== 0;
 }
 function sumOf(rows: DashboardRow[], previousRows: DashboardRow[], type: TransactionType) {
   function total(list: DashboardRow[], projected?: boolean): number {

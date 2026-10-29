@@ -5,6 +5,7 @@ import { FinancialCreditCard } from '@db/client';
 // region Mocks
 
 const rawCardMock: FinancialCreditCard = {
+  archived_at: new Date('2026-10-10T12:00:00Z'),
   brand: 'MASTERCARD',
   closing_day: 31,
   color: '#3B5BDB',

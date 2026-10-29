@@ -595,6 +595,21 @@ describe('Method sumDashboardRows (spec 046)', () => {
     expect(sql).toContain('ILIKE');
   });
 
+  it('SHOULD stop counting a source from its archive day, inside the same grouped query (spec 052)', async () => {
+    spies.queryRaw.mockResolvedValue([]);
+
+    await setup.sumDashboardRows(params);
+
+    const sql = sqlOf(0);
+
+    expect(sql).toContain('LEFT JOIN "financial_accounts" a ON a."id" = t."account_id"');
+    expect(sql).toContain('LEFT JOIN "financial_credit_cards" cc ON cc."id" = t."credit_card_id"');
+    expect(sql).toContain('"archived_at"');
+    expect(sql).toContain("AT TIME ZONE 'America/Sao_Paulo'");
+    expect(sql).toContain('t."date" <');
+    expect(spies.queryRaw).toHaveBeenCalledTimes(1);
+  });
+
   it('SHOULD skip the card rows when no invoice counts', async () => {
     spies.queryRaw.mockResolvedValue([]);
 
