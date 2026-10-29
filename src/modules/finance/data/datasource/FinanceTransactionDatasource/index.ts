@@ -433,6 +433,10 @@ function dashboardSumsSql(params: DashboardSumsParams): Prisma.Sql {
     );
   }
 
+  // Spec 052 FR 6: a row counts only before the archive day of its source (the card for card rows, else the account).
+  conditions.push(
+    Prisma.sql`(CASE WHEN cc."id" IS NOT NULL THEN cc."archived_at" ELSE a."archived_at" END IS NULL OR t."date" < ((CASE WHEN cc."id" IS NOT NULL THEN cc."archived_at" ELSE a."archived_at" END) AT TIME ZONE 'America/Sao_Paulo')::date)`,
+  );
   conditions.push(
     sources.length ? Prisma.sql`(${Prisma.join(sources, ' OR ')})` : Prisma.sql`FALSE`,
   );
@@ -464,6 +468,8 @@ function dashboardSumsSql(params: DashboardSumsParams): Prisma.Sql {
       COALESCE(SUM(t."value"), 0) AS "amount", COUNT(*) AS "count"
     FROM "financial_transactions" t
     JOIN "financial_categories" c ON c."id" = t."category_id"
+    LEFT JOIN "financial_accounts" a ON a."id" = t."account_id"
+    LEFT JOIN "financial_credit_cards" cc ON cc."id" = t."credit_card_id"
     ${tagJoin}
     WHERE ${Prisma.join(conditions, ' AND ')}
     GROUP BY 1, 2, 3, 4, 5, 6, 7`;
