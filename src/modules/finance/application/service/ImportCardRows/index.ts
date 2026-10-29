@@ -1,7 +1,10 @@
 import { ImportRowError } from '@finance/application/service/ImportRows';
 import { CardInvoiceData } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
-import { computeImportedInvoices } from '@finance/domain/service/ImportInvoiceMath';
+import {
+  computeImportedInvoices,
+  ImportedInvoice,
+} from '@finance/domain/service/ImportInvoiceMath';
 import { ImportRowKind } from '@finance/domain/service/ImportRowKind';
 
 // A card row of the import, with the invoice it lands on already resolved (spec 048 FR 8).
@@ -120,7 +123,7 @@ export function evaluateCardRows(input: {
             `Invoice ${item.invoiceMonth} has more than one payment`,
           ),
         );
-      } else if (item.date <= invoice.closingDate) {
+      } else if (paidBeforeClosing(item, invoice)) {
         errors.push(
           error(item, 'INVOICE_NOT_CLOSED', `Invoice ${item.invoiceMonth} is still open`, {
             month: item.invoiceMonth,
@@ -159,6 +162,12 @@ function error(
   params?: ImportRowError['params'],
 ): ImportRowError {
   return { code, line: item.line, message, params };
+}
+// An invoice still open today needs a payment after its closing date. A past invoice is closed whatever the day
+// it really closed on (the card's closing day may have changed since), so its payment only has to fall in or
+// after its own month.
+function paidBeforeClosing(item: CardRowItem, invoice: ImportedInvoice): boolean {
+  return invoice.closed ? item.date < `${item.invoiceMonth}-01` : item.date <= invoice.closingDate;
 }
 
 // What a row adds to the net of its invoice: purchases up, every credit down, payments nothing.

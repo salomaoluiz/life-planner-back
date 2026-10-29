@@ -66,6 +66,13 @@ describe('computeImportedInvoices', () => {
     const [invoice] = run([{ invoiceMonth: '2026-09', net: 100 }]);
 
     expect(invoice.closingDate).toBe('2026-09-25');
+    expect(invoice.closed).toBe(true);
+  });
+
+  it('SHOULD say an invoice is not closed WHEN its closing date is today or later', () => {
+    const [open] = run([{ invoiceMonth: '2026-10', net: 100 }]);
+
+    expect(open.closed).toBe(false);
   });
 });
 
