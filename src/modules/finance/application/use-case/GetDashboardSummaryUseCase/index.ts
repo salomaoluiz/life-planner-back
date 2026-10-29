@@ -16,7 +16,6 @@ import {
   IFinanceAccountRepository,
   IFinanceCreditCardRepository,
 } from '@finance/domain/repository';
-import { countsOnDay } from '@finance/domain/service/ArchiveDay';
 import { balancesAtEnds, totalOf } from '@finance/domain/service/BalanceSeries';
 import { previousPeriod } from '@finance/domain/service/DashboardPeriod';
 import { addDays } from '@finance/domain/service/RecurrenceSchedule';
@@ -66,7 +65,9 @@ export class GetDashboardSummaryUseCase implements UseCaseWithParams<
       : undefined;
     const accounts = allAccounts.filter(
       (account) =>
-        account.currency === input.currency && (!accountFilter || accountFilter.has(account.id)),
+        account.status === AccountStatus.ACTIVE &&
+        account.currency === input.currency &&
+        (!accountFilter || accountFilter.has(account.id)),
     );
     const paidRows =
       accounts.length === 0
@@ -75,19 +76,10 @@ export class GetDashboardSummaryUseCase implements UseCaseWithParams<
             accountIds: accounts.map((account) => account.id),
             from: input.from,
           });
-    const ends = [addDays(input.from, -1), input.today];
-    // Spec 052 FR 5: an archived account counts only on the days before its archive day.
     const [atPreviousEnd, atToday] = balancesAtEnds(
       accounts.map((account) => ({ accountId: account.id, ledger: account.ledgerBalance })),
       paidRows,
-      ends,
-    ).map((balances, index) =>
-      balances.filter((item) =>
-        countsOnDay(
-          accounts.find((account) => account.id === item.accountId)?.archivedAt,
-          ends[index],
-        ),
-      ),
+      [addDays(input.from, -1), input.today],
     );
 
     return {

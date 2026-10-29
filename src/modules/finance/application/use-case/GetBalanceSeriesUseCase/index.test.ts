@@ -44,40 +44,31 @@ describe('GetBalanceSeriesUseCase', () => {
     expect(series.points[0].balance).toBe(0);
   });
 
-  describe('archived accounts (spec 052)', () => {
-    const archived = { ...mocks.account, archivedAt: new Date('2026-09-15T15:00:00Z') };
+  describe('archived accounts (spec 052, owner decision)', () => {
+    const archived = {
+      ...mocks.account,
+      archivedAt: new Date('2026-09-15T15:00:00Z'),
+      status: 'ARCHIVED' as never,
+    };
 
-    it('SHOULD count the account before its archive day AND drop it (value and detail) from that day on', async () => {
+    it('SHOULD leave an archived account out of every point, value and detail', async () => {
       mocks.accountRepository.findAccounts.mockResolvedValue([archived]);
 
       const series = await setup.execute(mocks.input);
 
-      // 08-31 before the archive day; 09-30, 10-20 and the projected end of month after it.
-      expect(series.points.map((point) => point.balance)).toEqual([70000, 0, 0, 0]);
-      expect(series.points[0].accounts).toEqual([
-        { balance: 70000, id: 'acc-1', name: 'Checking' },
-      ]);
-      expect(series.points[1].accounts).toEqual([]);
-      expect(series.points[3].accounts).toEqual([]);
-    });
-
-    it('SHOULD treat an archived account without balance like any other', async () => {
-      mocks.accountRepository.findAccounts.mockResolvedValue([{ ...archived, ledgerBalance: 0 }]);
-
-      const series = await setup.execute(mocks.input);
-
       expect(series.points.map((point) => point.balance)).toEqual([0, 0, 0, 0]);
+      expect(series.points.every((point) => point.accounts.length === 0)).toBe(true);
     });
 
-    it('SHOULD count it on every day again WHEN reactivated', async () => {
+    it('SHOULD keep counting the active accounts next to an archived one', async () => {
       mocks.accountRepository.findAccounts.mockResolvedValue([
-        { ...archived, archivedAt: undefined },
+        archived,
+        { ...mocks.account, id: 'acc-2', ledgerBalance: 1000, name: 'Other' },
       ]);
 
       const series = await setup.execute(mocks.input);
 
-      expect(series.points[1].accounts).toHaveLength(1);
-      expect(series.points[2].balance).toBe(70000);
+      expect(series.points[0].accounts.map((account) => account.id)).toEqual(['acc-2']);
     });
   });
 });

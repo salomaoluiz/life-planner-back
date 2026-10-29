@@ -40,9 +40,13 @@ describe('GetDashboardSummaryUseCase', () => {
     });
   });
 
-  it('SHOULD leave an account archived before today out of the current balance but keep it in the previous one (spec 052)', async () => {
+  it('SHOULD leave an archived account out of both balances (spec 052, owner decision)', async () => {
     mocks.accountRepository.findAccounts.mockResolvedValue([
-      { ...mocks.account, archivedAt: new Date('2026-10-10T15:00:00Z') },
+      {
+        ...mocks.account,
+        archivedAt: new Date('2026-10-10T15:00:00Z'),
+        status: 'ARCHIVED' as never,
+      },
     ]);
     mocks.accountRepository.findPaidSumsFrom.mockResolvedValue([
       { accountId: 'acc-1', amount: 5000, date: '2026-03-01' },
@@ -51,7 +55,7 @@ describe('GetDashboardSummaryUseCase', () => {
 
     const summary = await setup.execute(mocks.input);
 
-    expect(summary.balance).toEqual({ current: 0, previous: 63000 });
+    expect(summary.balance).toEqual({ current: 0, previous: 0 });
   });
 
   it('SHOULD list the currencies in scope AND return zeros for a currency without accounts', async () => {
