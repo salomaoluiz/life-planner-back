@@ -68,7 +68,11 @@ const AmountsSchema = z.object({
 });
 
 export const DashboardSummaryApiSchema = z.object({
-  balance: z.object({ current: z.number().int(), previous: z.number().int() }),
+  balance: z.object({
+    current: z.number().int(),
+    previous: z.number().int(),
+    projectedEnd: z.number().int().nullable(),
+  }),
   currencies: z.array(
     z.object({
       accounts: z.number().int(),

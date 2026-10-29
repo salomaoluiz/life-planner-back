@@ -33,7 +33,7 @@ describe('GetDashboardSummaryUseCase', () => {
 
     const summary = await setup.execute(mocks.input);
 
-    expect(summary.balance).toEqual({ current: 68000, previous: 63000 });
+    expect(summary.balance).toEqual({ current: 68000, previous: 63000, projectedEnd: 75000 });
     expect(mocks.accountRepository.findPaidSumsFrom).toHaveBeenCalledWith({
       accountIds: ['acc-1'],
       from: '2025-11-01',
@@ -55,14 +55,14 @@ describe('GetDashboardSummaryUseCase', () => {
 
     const summary = await setup.execute(mocks.input);
 
-    expect(summary.balance).toEqual({ current: 0, previous: 0 });
+    expect(summary.balance).toEqual({ current: 0, previous: 0, projectedEnd: 0 });
   });
 
   it('SHOULD list the currencies in scope AND return zeros for a currency without accounts', async () => {
     const summary = await setup.execute({ ...mocks.input, currency: 'USD' });
 
     expect(summary.currencies).toEqual([expect.objectContaining({ accounts: 1, code: 'BRL' })]);
-    expect(summary.balance).toEqual({ current: 0, previous: 0 });
+    expect(summary.balance).toEqual({ current: 0, previous: 0, projectedEnd: 0 });
     expect(summary.income.realized).toBe(0);
     expect(mocks.accountRepository.findPaidSumsFrom).not.toHaveBeenCalled();
   });
@@ -73,7 +73,7 @@ describe('GetDashboardSummaryUseCase', () => {
       filter: { accountIds: ['other'], categoryIds: ['c'] },
     });
 
-    expect(summary.balance).toEqual({ current: 0, previous: 0 });
+    expect(summary.balance).toEqual({ current: 0, previous: 0, projectedEnd: 0 });
   });
 
   it('SHOULD return empty data without owners', async () => {
@@ -81,5 +81,26 @@ describe('GetDashboardSummaryUseCase', () => {
 
     expect(summary.currencies).toEqual([]);
     expect(summary.balance.current).toBe(0);
+  });
+
+  it('SHOULD return null as projected end WHEN the period ends today or before, without planning (spec 053)', async () => {
+    const summary = await setup.execute({ ...mocks.input, to: '2026-10-20' });
+
+    expect(summary.balance.projectedEnd).toBeNull();
+    expect(mocks.daily.execute).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD plan the month of the last day AND sum only the accounts in scope (spec 053)', async () => {
+    const summary = await setup.execute({ ...mocks.input, to: '2027-03-31' });
+
+    expect(mocks.daily.execute).toHaveBeenCalledWith(expect.objectContaining({ month: '2027-03' }));
+    // No planned day for 2027-03-31 in the mock: nothing to sum.
+    expect(summary.balance.projectedEnd).toBe(0);
+  });
+
+  it('SHOULD sum the planned balance of the accounts in scope on the last day (spec 053)', async () => {
+    const summary = await setup.execute(mocks.input);
+
+    expect(summary.balance.projectedEnd).toBe(75000);
   });
 });
