@@ -11,7 +11,11 @@ import {
   IFinanceCreditCardRepository,
   IFinanceRecurrenceRepository,
 } from '@finance/domain/repository';
-import { buildInvoiceFor, invoiceMonthOf } from '@finance/domain/service/InvoiceCalculator';
+import {
+  addInvoiceMonths,
+  buildInvoiceFor,
+  invoiceMonthOf,
+} from '@finance/domain/service/InvoiceCalculator';
 import {
   addDays,
   lastDayOfMonth,
@@ -90,6 +94,24 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
 
       result.push(...(await this.project(item, scheduled, input.today)));
     }
+
+    return result.sort(
+      (a, b) => a.date.localeCompare(b.date) || a.recurrenceId.localeCompare(b.recurrenceId),
+    );
+  }
+
+  // Spec 053: the same projections over up to 24 months, in windows of `MAX_PROJECTION_MONTHS`.
+  async executeChunked(params: GetProjectionsInput): Promise<ProjectedOccurrence[]> {
+    const { from, to } = validate(GetProjectionsSchema, params);
+    const result: ProjectedOccurrence[] = [];
+    let start = from;
+
+    do {
+      const end = addInvoiceMonths(start, MAX_PROJECTION_MONTHS - 1);
+
+      result.push(...(await this.execute({ ...params, from: start, to: to < end ? to : end })));
+      start = addInvoiceMonths(start, MAX_PROJECTION_MONTHS);
+    } while (start <= to);
 
     return result.sort(
       (a, b) => a.date.localeCompare(b.date) || a.recurrenceId.localeCompare(b.recurrenceId),

@@ -148,3 +148,31 @@ describe('filters (spec 045)', () => {
     expect(new Set(byCard.map((i) => i.recurrenceId))).toEqual(new Set(['series-2']));
   });
 });
+
+describe('executeChunked (spec 053)', () => {
+  it('SHOULD call execute in windows of at most 12 months and merge sorted', async () => {
+    const spy = jest.spyOn(setup, 'execute');
+    const result = await setup.executeChunked({ ...base, from: '2026-11', to: '2028-10' });
+
+    expect(spy.mock.calls.map(([input]) => [input.from, input.to])).toEqual([
+      ['2026-11', '2027-10'],
+      ['2027-11', '2028-10'],
+    ]);
+    expect(result).toHaveLength(24);
+    expect(result.map((item) => item.date)).toEqual([...result.map((item) => item.date)].sort());
+  });
+
+  it('SHOULD call execute once for a short range', async () => {
+    const spy = jest.spyOn(setup, 'execute');
+
+    await setup.executeChunked(base);
+
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('SHOULD reject a reversed range', async () => {
+    await expect(setup.executeChunked({ ...base, from: '2027-01', to: '2026-12' })).rejects.toThrow(
+      'The range must be 1 to 12 months',
+    );
+  });
+});
