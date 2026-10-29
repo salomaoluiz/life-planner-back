@@ -40,6 +40,7 @@ export const UpdateAccountApiSchema = z
 export const AdjustAccountBalanceApiSchema = z.object({ balance: BalanceApiSchema }).strict();
 
 export const AccountApiSchema = z.object({
+  archivedAt: z.iso.datetime().nullable(),
   // Current balance: initial + transactions dated up to today.
   balance: z.number().int(),
   createdAt: z.iso.datetime(),

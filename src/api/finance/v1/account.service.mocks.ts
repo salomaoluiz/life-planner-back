@@ -30,6 +30,7 @@ const accountResultMock = {
 };
 const withBalancesMock = { account: accountResultMock, balance: 150000, projectedBalance: 152075 };
 const accountApiMock = {
+  archivedAt: null,
   balance: 150000,
   createdAt: '2026-10-04T12:00:00.000Z',
   icon: 'bank',

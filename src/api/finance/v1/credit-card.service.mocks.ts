@@ -38,6 +38,7 @@ const cardResultMock = {
 };
 const cardApiMock = {
   ...cardResultMock,
+  archivedAt: null,
   createdAt: '2026-10-14T12:00:00.000Z',
   owner: 'USER',
   paymentAccount: linkedAccountMock,

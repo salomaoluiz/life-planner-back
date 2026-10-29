@@ -36,6 +36,7 @@ function toCreditCardOutput(
   const account = card.paymentAccountId ? accounts.get(card.paymentAccountId) : undefined;
 
   return {
+    archivedAt: card.archivedAt?.toISOString() ?? null,
     brand: card.brand,
     closingDay: card.closingDay,
     color: card.color,

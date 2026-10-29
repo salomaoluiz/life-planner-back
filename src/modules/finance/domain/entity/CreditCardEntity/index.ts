@@ -3,6 +3,7 @@ import { CurrencyCode, DEFAULT_CURRENCY } from '@finance/domain/enum/Currency';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 interface ICreditCardEntity {
+  archivedAt?: Date;
   brand: CreditCardBrand;
   closingDay: number;
   color: string;
@@ -22,6 +23,7 @@ interface ICreditCardEntity {
 }
 
 class CreditCardEntity {
+  archivedAt?: Date;
   brand: CreditCardBrand;
   closingDay: number;
   color: string;
@@ -40,6 +42,7 @@ class CreditCardEntity {
   updatedAt: Date;
 
   constructor(params: ICreditCardEntity) {
+    this.archivedAt = params.archivedAt;
     this.brand = params.brand;
     this.closingDay = params.closingDay;
     this.color = params.color;

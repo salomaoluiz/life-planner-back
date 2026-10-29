@@ -10,6 +10,7 @@ import { FinanceCreditCardDatasource } from './index';
 // region Mocks
 
 const cardMock: FinancialCreditCard = {
+  archived_at: null,
   brand: 'VISA',
   closing_day: 31,
   color: '#3B5BDB',

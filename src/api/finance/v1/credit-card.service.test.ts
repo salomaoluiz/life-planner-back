@@ -45,6 +45,19 @@ describe('findOne', () => {
   });
 });
 
+describe('archivedAt', () => {
+  it('SHOULD return the archive instant as ISO', async () => {
+    mocks.getByIdUseCase.execute.mockResolvedValueOnce({
+      ...mocks.cardResult,
+      archivedAt: new Date('2026-10-10T12:00:00.000Z'),
+    });
+
+    const result = await setup.findOne(mocks.userId, mocks.cardApi.id);
+
+    expect(result.archivedAt).toBe('2026-10-10T12:00:00.000Z');
+  });
+});
+
 describe('findOverview', () => {
   beforeEach(() => jest.useFakeTimers({ now: new Date('2026-10-15T12:00:00.000Z') }));
   afterEach(() => jest.useRealTimers());

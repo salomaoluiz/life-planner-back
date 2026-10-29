@@ -7,6 +7,7 @@ import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 export class FinanceCreditCardMapper {
   static toDomain(raw: FinancialCreditCard): CreditCardEntity {
     return new CreditCardEntity({
+      archivedAt: raw.archived_at ?? undefined,
       brand: CreditCardBrand[raw.brand],
       closingDay: raw.closing_day,
       color: raw.color,

@@ -10,6 +10,7 @@ import { FinanceAccountDatasource } from './index';
 // region Mocks
 
 const accountMock: FinancialAccount = {
+  archived_at: null,
   created_at: faker.date.past(),
   currency: 'BRL' as const,
   icon: 'bank',

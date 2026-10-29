@@ -23,6 +23,7 @@ function toAccountOutput({
   projectedBalance,
 }: AccountWithBalances): AccountOutput {
   return {
+    archivedAt: account.archivedAt?.toISOString() ?? null,
     balance,
     createdAt: account.createdAt.toISOString(),
     currency: account.currency,
