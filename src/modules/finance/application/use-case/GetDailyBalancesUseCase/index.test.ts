@@ -50,15 +50,15 @@ describe('GetDailyBalancesUseCase', () => {
 
     expect(mocks.accountRepository.findUnpaidSumsUntil).not.toHaveBeenCalled();
     expect(mocks.compute.execute).not.toHaveBeenCalled();
-    expect(mocks.projections.execute).not.toHaveBeenCalled();
+    expect(mocks.projections.executeChunked).not.toHaveBeenCalled();
     expect(result.days).toHaveLength(31);
   });
 
   it('SHOULD project only for months after today’s month AND count account occurrences', async () => {
     await setup.execute({ ...mocks.input, month: '2026-10' });
-    expect(mocks.projections.execute).not.toHaveBeenCalled();
+    expect(mocks.projections.executeChunked).not.toHaveBeenCalled();
 
-    mocks.projections.execute.mockResolvedValue([
+    mocks.projections.executeChunked.mockResolvedValue([
       {
         account: { icon: 'bank', id: accountId, name: 'Checking' },
         creditCard: null,
@@ -71,7 +71,7 @@ describe('GetDailyBalancesUseCase', () => {
 
     const result = await setup.execute(mocks.input);
 
-    expect(mocks.projections.execute).toHaveBeenCalledWith(
+    expect(mocks.projections.executeChunked).toHaveBeenCalledWith(
       expect.objectContaining({ from: '2026-11', to: '2026-11', today: '2026-10-20' }),
     );
     expect(day(result.days, '2026-11-24').accounts[0].balance).toBe(70000);
@@ -93,7 +93,7 @@ describe('GetDailyBalancesUseCase', () => {
   it('SHOULD add projected card occurrences to their invoice', async () => {
     mocks.creditCardRepository.findCreditCards.mockResolvedValue([mocks.card]);
     mocks.compute.execute.mockResolvedValue(invoiceData());
-    mocks.projections.execute.mockResolvedValue([
+    mocks.projections.executeChunked.mockResolvedValue([
       {
         account: null,
         creditCard: { id: cardId },
@@ -168,14 +168,14 @@ describe('GetDailyBalancesUseCase', () => {
     expect(day(result.days, '2026-11-05').cardsDue).toBe(-45000);
   });
 
-  it('SHOULD reject an ownerId the caller cannot access AND a month more than 12 ahead', async () => {
+  it('SHOULD reject an ownerId the caller cannot access AND a month more than 24 ahead', async () => {
     await expect(setup.execute({ ...mocks.input, ownerIds: ['stranger'] })).rejects.toThrow(
       ForbiddenException,
     );
-    await expect(setup.execute({ ...mocks.input, month: '2027-11' })).rejects.toThrow(
+    await expect(setup.execute({ ...mocks.input, month: '2028-11' })).rejects.toThrow(
       BadRequestException,
     );
-    await expect(setup.execute({ ...mocks.input, month: '2027-10' })).resolves.toBeDefined();
+    await expect(setup.execute({ ...mocks.input, month: '2028-10' })).resolves.toBeDefined();
   });
 
   it('SHOULD return zeros WHEN there are no accounts', async () => {
@@ -185,5 +185,42 @@ describe('GetDailyBalancesUseCase', () => {
 
     expect(result.accounts).toEqual([]);
     expect(day(result.days, '2026-11-01').total).toBe(0);
+  });
+
+  it('SHOULD read a range of months once AND plan every month of it (spec 053)', async () => {
+    mocks.projections.executeChunked.mockResolvedValue([
+      {
+        account: { icon: 'bank', id: accountId, name: 'Checking' },
+        creditCard: null,
+        date: '2027-01-05',
+        invoiceMonth: null,
+        type: 'EXPENSE',
+        value: 10000,
+      },
+    ]);
+
+    const result = await setup.execute({ ...mocks.input, month: '2026-10', untilMonth: '2027-02' });
+
+    expect(mocks.accountRepository.findPaidSumsFrom).toHaveBeenCalledTimes(1);
+    expect(mocks.accountRepository.findUnpaidSumsUntil).toHaveBeenCalledWith({
+      accountIds: [accountId],
+      to: '2027-02-28',
+    });
+    expect(mocks.projections.executeChunked).toHaveBeenCalledTimes(1);
+    expect(mocks.projections.executeChunked).toHaveBeenCalledWith(
+      expect.objectContaining({ from: '2026-11', to: '2027-02' }),
+    );
+    expect(result.days).toHaveLength(31 + 30 + 31 + 31 + 28);
+    expect(day(result.days, '2027-01-04').accounts[0].balance).toBe(70000);
+    expect(day(result.days, '2027-02-28').accounts[0].balance).toBe(60000);
+  });
+
+  it('SHOULD reject a range that ends before it starts OR past 24 months', async () => {
+    await expect(
+      setup.execute({ ...mocks.input, month: '2026-12', untilMonth: '2026-11' }),
+    ).rejects.toThrow(BadRequestException);
+    await expect(setup.execute({ ...mocks.input, untilMonth: '2028-11' })).rejects.toThrow(
+      BadRequestException,
+    );
   });
 });

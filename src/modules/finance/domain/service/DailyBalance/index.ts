@@ -5,7 +5,9 @@ export interface DailyBalanceInput {
   accounts: { accountId: string; opening: number }[];
   // Signed (negative) invoices that are not counted inside an account.
   cardsDue: { amount: number; date: string }[];
-  // `YYYY-MM`
+  // `YYYY-MM`, the last month of the range (default `month`, spec 053)
+  lastMonth?: string;
+  // `YYYY-MM`, the first month
   month: string;
   // Paid rows dated within the month.
   paid: DatedAmount[];
@@ -31,7 +33,7 @@ export interface DayBalance {
 // starting at `max(date, today)` (overdue ones count from today).
 export function buildDailyBalances(input: DailyBalanceInput): DayBalance[] {
   const first = `${input.month}-01`;
-  const last = lastDayOfMonth(first);
+  const last = lastDayOfMonth(`${input.lastMonth ?? input.month}-01`);
   const paidByDay = bucket(input.paid, (item) => item.date);
   const pendingByDay = bucket(input.pending, (item) => effectiveDate(item.date, input.today));
   const cardsByDay = bucket(

@@ -27,7 +27,7 @@ import { lastDayOfMonth } from '@finance/domain/service/RecurrenceSchedule';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
-export const MAX_BALANCE_MONTHS_AHEAD = 12;
+export const MAX_BALANCE_MONTHS_AHEAD = 24;
 
 export interface DailyBalances {
   accounts: AccountEntity[];
@@ -62,7 +62,12 @@ export class GetDailyBalancesUseCase implements UseCaseWithParams<
     const input = validate(GetDailyBalancesSchema, params);
     const todayMonth = input.today.slice(0, 7);
 
-    if (input.month > addInvoiceMonths(todayMonth, MAX_BALANCE_MONTHS_AHEAD)) {
+    const untilMonth = input.untilMonth ?? input.month;
+
+    if (
+      untilMonth < input.month ||
+      untilMonth > addInvoiceMonths(todayMonth, MAX_BALANCE_MONTHS_AHEAD)
+    ) {
       throw new BadRequestException('Month is too far ahead');
     }
     if (
@@ -75,7 +80,7 @@ export class GetDailyBalancesUseCase implements UseCaseWithParams<
 
     const owners = narrowOwners(input.accessibleOwners, input.ownerIds);
     const monthStart = `${input.month}-01`;
-    const monthEnd = lastDayOfMonth(monthStart);
+    const monthEnd = lastDayOfMonth(`${untilMonth}-01`);
     const [allAccounts, cards] =
       owners.length === 0
         ? [[], []]
@@ -96,12 +101,12 @@ export class GetDailyBalancesUseCase implements UseCaseWithParams<
       hasPending && cards.length > 0
         ? this.computeCardInvoicesUseCase.execute({ cards, today: input.today })
         : Promise.resolve<CardInvoiceData[]>([]),
-      hasPending && input.month > todayMonth
-        ? this.getProjectionsUseCase.execute({
+      hasPending && untilMonth > todayMonth
+        ? this.getProjectionsUseCase.executeChunked({
             accessibleOwners: input.accessibleOwners,
             from: addInvoiceMonths(todayMonth, 1),
             ownerIds: input.ownerIds,
-            to: input.month,
+            to: untilMonth,
             today: input.today,
           })
         : Promise.resolve<ProjectedOccurrence[]>([]),
@@ -139,6 +144,7 @@ export class GetDailyBalancesUseCase implements UseCaseWithParams<
               .reduce((total, row) => total + row.amount, 0),
         })),
         cardsDue,
+        lastMonth: untilMonth,
         month: input.month,
         paid: paidRows.filter((row) => row.date <= monthEnd),
         pending,

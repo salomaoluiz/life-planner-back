@@ -128,3 +128,22 @@ describe('buildDailyBalances', () => {
     });
   });
 });
+
+describe('buildDailyBalances over several months (spec 053)', () => {
+  it('SHOULD return every day up to the last month AND apply a pending item from its date', () => {
+    const days = buildDailyBalances({
+      accounts: [{ accountId: 'a', opening: 1000 }],
+      cardsDue: [],
+      lastMonth: '2026-12',
+      month: '2026-11',
+      paid: [],
+      pending: [{ accountId: 'a', amount: -300, date: '2026-12-10' }],
+      today: '2026-10-20',
+    });
+
+    expect(days).toHaveLength(30 + 31);
+    expect(days.find((d) => d.date === '2026-12-09')?.accounts[0].balance).toBe(1000);
+    expect(days.find((d) => d.date === '2026-12-10')?.accounts[0].balance).toBe(700);
+    expect(days[days.length - 1].date).toBe('2026-12-31');
+  });
+});
