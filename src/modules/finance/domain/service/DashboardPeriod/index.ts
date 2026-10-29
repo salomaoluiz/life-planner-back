@@ -1,4 +1,5 @@
 import { isPeriodValid } from '@finance/domain/entity/TransactionFilter';
+import { addInvoiceMonths } from '@finance/domain/service/InvoiceCalculator';
 import { addDays, lastDayOfMonth } from '@finance/domain/service/RecurrenceSchedule';
 
 // Spec 046: pure calendar math of the dashboard (buckets, granularity, previous period). Dates are `YYYY-MM-DD`.
@@ -36,8 +37,9 @@ export function defaultGranularity(from: string, to: string): Granularity {
   return days <= MAX_DAY_SPAN ? 'WEEK' : 'MONTH';
 }
 export function isDashboardPeriodValid(from: string, to: string, today: string): boolean {
-  return isPeriodValid(from, to) && to <= lastDayOfMonth(today);
+  return isPeriodValid(from, to) && to <= maxDashboardDate(today);
 }
+// Spec 053 FR 7: the last day of the month 24 months after the current one.
 export function isGranularityAllowed(granularity: Granularity, from: string, to: string): boolean {
   const days = spanInDays(from, to);
 
@@ -46,6 +48,9 @@ export function isGranularityAllowed(granularity: Granularity, from: string, to:
   }
 
   return granularity === 'WEEK' ? days <= MAX_WEEK_SPAN : true;
+}
+export function maxDashboardDate(today: string): string {
+  return lastDayOfMonth(`${addInvoiceMonths(today.slice(0, 7), 24)}-01`);
 }
 
 // Same length, ending the day before `from`; whole-month periods shift by whole months (12M → previous 12M).
