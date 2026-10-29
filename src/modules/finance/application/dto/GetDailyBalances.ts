@@ -11,6 +11,8 @@ export const GetDailyBalancesSchema = z.object({
   month: InvoiceMonthSchema,
   ownerIds: z.array(z.string()).optional(),
   today: CalendarDateSchema,
+  // Spec 053: the last month of the range (default: `month`).
+  untilMonth: InvoiceMonthSchema.optional(),
 });
 
 export type GetDailyBalancesInput = z.input<typeof GetDailyBalancesSchema>;

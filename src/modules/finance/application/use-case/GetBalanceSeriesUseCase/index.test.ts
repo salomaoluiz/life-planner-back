@@ -71,4 +71,32 @@ describe('GetBalanceSeriesUseCase', () => {
       expect(series.points[0].accounts.map((account) => account.id)).toEqual(['acc-2']);
     });
   });
+
+  it('SHOULD read the planned balances once for every future month of the period (spec 053)', async () => {
+    mocks.daily.execute.mockResolvedValue({
+      accounts: [mocks.account],
+      days: [
+        { accounts: [{ accountId: 'acc-1', balance: 72000 }], date: '2026-10-31' },
+        { accounts: [{ accountId: 'acc-1', balance: 80000 }], date: '2026-11-30' },
+        { accounts: [{ accountId: 'acc-1', balance: 90000 }], date: '2027-01-31' },
+      ],
+      month: '2026-10',
+    });
+
+    const series = await setup.execute({ ...mocks.input, to: '2027-01-31' });
+
+    expect(mocks.daily.execute).toHaveBeenCalledTimes(1);
+    expect(mocks.daily.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ month: '2026-10', untilMonth: '2027-01' }),
+    );
+    expect(series.points.filter((point) => point.projected).map((point) => point.balance)).toEqual([
+      72000, 80000, 0, 90000,
+    ]);
+  });
+
+  it('SHOULD mark every point projected for a period entirely in the future', async () => {
+    const series = await setup.execute({ ...mocks.input, from: '2026-12-01', to: '2027-02-28' });
+
+    expect(series.points.every((point) => point.projected)).toBe(true);
+  });
 });

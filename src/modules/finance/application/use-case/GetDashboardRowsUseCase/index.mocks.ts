@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
+import { GetProjectionsUseCase } from '@finance/application/use-case/GetProjectionsUseCase';
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
 import { DashboardSum } from '@finance/domain/repository';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -25,7 +26,21 @@ const creditCardRepositoryMock = { findCreditCards: jest.fn() };
 const transactionRepositoryMock = { sumDashboardRows: jest.fn() };
 const computeMock = { execute: jest.fn() };
 const expandMock = { execute: jest.fn() };
+const projectionsMock = { executeChunked: jest.fn() };
 
+function occurrenceOf(overrides: Record<string, unknown> = {}) {
+  return {
+    category: { id: 'cat-1' },
+    creditCard: null,
+    currency: 'BRL',
+    date: '2026-11-10',
+    invoiceListDate: null,
+    tags: [],
+    type: 'EXPENSE',
+    value: 10000,
+    ...overrides,
+  };
+}
 function sumOf(overrides: Partial<DashboardSum>): DashboardSum {
   return {
     amount: 1000,
@@ -53,6 +68,7 @@ beforeEach(async () => {
   ]);
   expandMock.execute.mockImplementation(async ({ categoryIds }) => Promise.resolve(categoryIds));
   transactionRepositoryMock.sumDashboardRows.mockResolvedValue([]);
+  projectionsMock.executeChunked.mockResolvedValue([]);
 
   const module = await Test.createTestingModule({
     providers: [
@@ -61,6 +77,7 @@ beforeEach(async () => {
       { provide: 'IFinanceTransactionRepository', useValue: transactionRepositoryMock },
       { provide: ComputeCardInvoicesUseCase, useValue: computeMock },
       { provide: ExpandCategoryIdsUseCase, useValue: expandMock },
+      { provide: GetProjectionsUseCase, useValue: projectionsMock },
     ],
   }).compile();
 
@@ -73,6 +90,8 @@ const mocks = {
   creditCardRepository: creditCardRepositoryMock,
   expand: expandMock,
   input: inputMock,
+  occurrenceOf,
+  projections: projectionsMock,
   sumOf,
   transactionRepository: transactionRepositoryMock,
 };

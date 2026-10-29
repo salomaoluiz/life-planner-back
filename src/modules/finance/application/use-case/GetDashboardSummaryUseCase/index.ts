@@ -4,6 +4,7 @@ import {
   GetDashboardSummaryInput,
   GetDashboardSummarySchema,
 } from '@finance/application/dto/GetDashboardSummary';
+import { GetDailyBalancesUseCase } from '@finance/application/use-case/GetDailyBalancesUseCase';
 import {
   DashboardRow,
   GetDashboardRowsUseCase,
@@ -28,7 +29,7 @@ export interface CurrencyOption {
   code: CurrencyCode;
 }
 export interface DashboardSummary {
-  balance: { current: number; previous: number };
+  balance: { current: number; previous: number; projectedEnd: null | number };
   currencies: CurrencyOption[];
   currency: CurrencyCode;
   expense: { previous: number; projected: number; realized: number };
@@ -46,6 +47,8 @@ export class GetDashboardSummaryUseCase implements UseCaseWithParams<
     private readonly accountRepository: IFinanceAccountRepository,
     @Inject('IFinanceCreditCardRepository')
     private readonly creditCardRepository: IFinanceCreditCardRepository,
+    @Inject(GetDailyBalancesUseCase)
+    private readonly getDailyBalancesUseCase: GetDailyBalancesUseCase,
     @Inject(GetDashboardRowsUseCase)
     private readonly getDashboardRowsUseCase: GetDashboardRowsUseCase,
   ) {}
@@ -82,13 +85,45 @@ export class GetDashboardSummaryUseCase implements UseCaseWithParams<
       [addDays(input.from, -1), input.today],
     );
 
+    // Spec 053 FR 14: the planned balance of the last day, only when that day is after today.
+    let projectedEnd: null | number = null;
+
+    if (input.to > input.today) {
+      projectedEnd =
+        accounts.length === 0
+          ? 0
+          : await this.plannedBalanceOn(input, new Set(accounts.map((account) => account.id)));
+    }
+
     return {
-      balance: { current: totalOf(atToday), previous: totalOf(atPreviousEnd) },
+      balance: { current: totalOf(atToday), previous: totalOf(atPreviousEnd), projectedEnd },
       currencies: currencyOptions(allAccounts, cards),
       currency: input.currency,
       expense: sumOf(rows, previousRows, TransactionType.EXPENSE),
       income: sumOf(rows, previousRows, TransactionType.INCOME),
     };
+  }
+
+  private async plannedBalanceOn(
+    input: {
+      accessibleOwners: GetDashboardSummaryInput['accessibleOwners'];
+      ownerIds?: string[];
+      to: string;
+      today: string;
+    },
+    ids: Set<string>,
+  ): Promise<number> {
+    const planned = await this.getDailyBalancesUseCase.execute({
+      accessibleOwners: input.accessibleOwners,
+      month: input.to.slice(0, 7),
+      ownerIds: input.ownerIds,
+      today: input.today,
+    });
+    const day = planned.days.find((item) => item.date === input.to);
+
+    return (day?.accounts ?? [])
+      .filter((item) => ids.has(item.accountId))
+      .reduce((total, item) => total + item.balance, 0);
   }
 }
 

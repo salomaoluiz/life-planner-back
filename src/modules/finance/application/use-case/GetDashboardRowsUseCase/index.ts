@@ -6,13 +6,15 @@ import {
 } from '@finance/application/dto/GetDashboardRows';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
+import { GetProjectionsUseCase } from '@finance/application/use-case/GetProjectionsUseCase';
 import { narrowOwners } from '@finance/domain/entity/OwnerAccess';
 import { TransactionSource, TransactionType } from '@finance/domain/enum';
 import {
   IFinanceCreditCardRepository,
   IFinanceTransactionRepository,
 } from '@finance/domain/repository';
-import { buildInvoiceFor } from '@finance/domain/service/InvoiceCalculator';
+import { addInvoiceMonths, buildInvoiceFor } from '@finance/domain/service/InvoiceCalculator';
+import { lastDayOfMonth } from '@finance/domain/service/RecurrenceSchedule';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -46,6 +48,8 @@ export class GetDashboardRowsUseCase implements UseCaseWithParams<
     private readonly creditCardRepository: IFinanceCreditCardRepository,
     @Inject(ExpandCategoryIdsUseCase)
     private readonly expandCategoryIdsUseCase: ExpandCategoryIdsUseCase,
+    @Inject(GetProjectionsUseCase)
+    private readonly getProjectionsUseCase: GetProjectionsUseCase,
     @Inject('IFinanceTransactionRepository')
     private readonly transactionRepository: IFinanceTransactionRepository,
   ) {}
@@ -97,7 +101,7 @@ export class GetDashboardRowsUseCase implements UseCaseWithParams<
       to: input.to,
     });
 
-    return sums.flatMap((sum) => {
+    const stored = sums.flatMap((sum) => {
       const counted = countedOf(sum, invoices);
 
       if (!counted || (!counted.realized && counted.date < monthStart)) {
@@ -118,6 +122,68 @@ export class GetDashboardRowsUseCase implements UseCaseWithParams<
           type: sum.type,
         },
       ];
+    });
+
+    return [...stored, ...(await this.projectedRows(input, source))];
+  }
+
+  // Spec 053 FR 11: the recurrence occurrences after the end of the current month exist only as projections.
+  // A series ends when its source is archived (spec 034), so the active-only lookup already follows the 052 rule.
+  private async projectedRows(
+    input: GetDashboardRowsInput,
+    source: TransactionSource | undefined,
+  ): Promise<DashboardRow[]> {
+    const filter = input.filter ?? {};
+    const horizon = lastDayOfMonth(input.today);
+
+    if (filter.paid === true || input.to <= horizon) {
+      return [];
+    }
+
+    const todayMonth = input.today.slice(0, 7);
+    const firstMonth = addInvoiceMonths(todayMonth, 1);
+    const fromMonth = input.from.slice(0, 7) > firstMonth ? input.from.slice(0, 7) : firstMonth;
+    const occurrences = await this.getProjectionsUseCase.executeChunked({
+      accessibleOwners: input.accessibleOwners,
+      filter: {
+        accountIds: filter.accountIds,
+        categoryIds: filter.categoryIds,
+        creditCardIds: filter.creditCardIds,
+        q: filter.q,
+        tagIds: filter.tagIds,
+      },
+      from: fromMonth,
+      ownerIds: input.ownerIds,
+      to: input.to.slice(0, 7),
+      today: input.today,
+    });
+
+    return occurrences.flatMap((item) => {
+      const onCard = item.creditCard !== null;
+      const date = onCard ? item.invoiceListDate : item.date;
+
+      if (
+        !date ||
+        date < input.from ||
+        date > input.to ||
+        item.currency !== input.currency ||
+        (source === TransactionSource.ACCOUNT && onCard) ||
+        (source === TransactionSource.CARD && !onCard)
+      ) {
+        return [];
+      }
+
+      const tagIds = input.byTag && item.tags.length > 0 ? item.tags.map((tag) => tag.id) : [null];
+
+      return tagIds.map((tagId) => ({
+        amount: item.value,
+        bucketDate: date,
+        categoryId: item.category.id,
+        count: 1,
+        projected: true,
+        tagId,
+        type: item.type,
+      }));
     });
   }
 

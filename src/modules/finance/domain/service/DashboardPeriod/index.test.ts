@@ -3,6 +3,7 @@ import {
   defaultGranularity,
   isDashboardPeriodValid,
   isGranularityAllowed,
+  maxDashboardDate,
   previousPeriod,
 } from './index';
 
@@ -70,14 +71,35 @@ describe('previousPeriod', () => {
   });
 });
 
+describe('maxDashboardDate', () => {
+  it('SHOULD be the last day of the month 24 months after the current one', () => {
+    expect(maxDashboardDate('2026-10-29')).toBe('2028-10-31');
+    expect(maxDashboardDate('2026-12-05')).toBe('2028-12-31');
+  });
+});
+
 describe('isDashboardPeriodValid', () => {
-  it('SHOULD refuse a `to` after the end of the current month', () => {
-    expect(isDashboardPeriodValid('2026-10-01', '2026-10-31', '2026-10-15')).toBe(true);
-    expect(isDashboardPeriodValid('2026-10-01', '2026-11-01', '2026-10-15')).toBe(false);
+  it('SHOULD accept an end up to 24 months after the current month and refuse the next day', () => {
+    expect(isDashboardPeriodValid('2027-01-01', '2028-10-31', '2026-10-29')).toBe(true);
+    expect(isDashboardPeriodValid('2027-01-01', '2028-11-30', '2026-10-29')).toBe(false);
+    expect(isDashboardPeriodValid('2025-11-01', '2026-10-31', '2026-10-29')).toBe(true);
   });
 
   it('SHOULD refuse more than 2 years and `to` before `from`', () => {
-    expect(isDashboardPeriodValid('2024-10-01', '2026-10-31', '2026-10-15')).toBe(false);
-    expect(isDashboardPeriodValid('2026-10-10', '2026-10-01', '2026-10-15')).toBe(false);
+    expect(isDashboardPeriodValid('2026-01-01', '2028-01-01', '2026-10-29')).toBe(false);
+    expect(isDashboardPeriodValid('2026-11-01', '2026-10-01', '2026-10-29')).toBe(false);
+  });
+});
+
+describe('previousPeriod for the 053 presets', () => {
+  it('SHOULD shift whole-month periods by whole months', () => {
+    expect(previousPeriod('2026-08-01', '2027-01-31')).toEqual({
+      from: '2026-02-01',
+      to: '2026-07-31',
+    });
+    expect(previousPeriod('2026-01-01', '2026-12-31')).toEqual({
+      from: '2025-01-01',
+      to: '2025-12-31',
+    });
   });
 });

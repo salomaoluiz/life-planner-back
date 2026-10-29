@@ -33,7 +33,7 @@ const accountRepositoryMock = {
 };
 const creditCardRepositoryMock = { findCreditCards: jest.fn() };
 const computeMock = { execute: jest.fn() };
-const projectionsMock = { execute: jest.fn() };
+const projectionsMock = { executeChunked: jest.fn() };
 
 // endregion Mocks
 
@@ -46,7 +46,7 @@ beforeEach(async () => {
   accountRepositoryMock.findUnpaidSumsUntil.mockResolvedValue([]);
   creditCardRepositoryMock.findCreditCards.mockResolvedValue([]);
   computeMock.execute.mockResolvedValue([]);
-  projectionsMock.execute.mockResolvedValue([]);
+  projectionsMock.executeChunked.mockResolvedValue([]);
 
   const module = await Test.createTestingModule({
     providers: [

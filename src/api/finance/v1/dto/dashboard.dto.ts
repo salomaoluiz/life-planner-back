@@ -27,7 +27,7 @@ const DashboardQueryFields = {
   today: CalendarDateApiSchema.optional(),
 };
 
-// `to` is at most the last day of the current month and the range at most 2 years.
+// `to` is at most the last day of the month 24 months after the current one and the range at most 2 years.
 function withDashboardPeriod<T extends z.ZodType<{ from: string; to: string; today?: string }>>(
   schema: T,
 ) {
@@ -38,7 +38,10 @@ function withDashboardPeriod<T extends z.ZodType<{ from: string; to: string; tod
         value.to,
         value.today ?? new Date().toISOString().slice(0, 10),
       ),
-    { message: 'The period can be at most 2 years and end by the end of the current month' },
+    {
+      message:
+        'The period can be at most 2 years and end by the end of the month 24 months after the current one',
+    },
   );
 }
 
@@ -65,7 +68,11 @@ const AmountsSchema = z.object({
 });
 
 export const DashboardSummaryApiSchema = z.object({
-  balance: z.object({ current: z.number().int(), previous: z.number().int() }),
+  balance: z.object({
+    current: z.number().int(),
+    previous: z.number().int(),
+    projectedEnd: z.number().int().nullable(),
+  }),
   currencies: z.array(
     z.object({
       accounts: z.number().int(),
