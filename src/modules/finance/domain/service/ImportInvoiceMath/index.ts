@@ -12,6 +12,8 @@ import {
 export interface ImportedInvoice {
   amountDue: number;
   closingDate: string;
+  // The invoice period ended before today, by the card's current closing day.
+  closed: boolean;
   // How far the early payments of the file pass what was due (0 when within it).
   earlyOver: number;
   invoiceMonth: string;
@@ -58,6 +60,7 @@ export function computeImportedInvoices(input: {
 
       return {
         amountDue: invoice.amountDue,
+        closed: input.today > invoice.closingDate,
         closingDate: invoice.closingDate,
         earlyOver: invoice.total < 0 ? Math.min(early, -invoice.total) : 0,
         invoiceMonth: month,

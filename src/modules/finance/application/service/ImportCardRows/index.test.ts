@@ -159,6 +159,28 @@ describe('evaluateCardRows', () => {
     expect(result.errors.map((error) => error.code)).toEqual(['INVOICE_NOT_CLOSED']);
   });
 
+  it('SHOULD accept the payment of a past invoice dated before the current closing day of the card', () => {
+    // The card closes on the 25th today, but in 2022 it closed on the 10th: the invoice is long closed.
+    const result = run([
+      item(2, 'CARD_PURCHASE', 1000, '2022-05', '2022-05-02'),
+      item(3, 'INVOICE_PAYMENT', 1000, '2022-05', '2022-05-17'),
+    ]);
+
+    expect(result.errors).toEqual([]);
+    expect(result.invoices).toEqual([
+      { amountDue: 1000, creditCardId: 'card-1', invoiceMonth: '2022-05', paid: true },
+    ]);
+  });
+
+  it('SHOULD refuse the payment of a past invoice dated before its own month', () => {
+    const result = run([
+      item(2, 'CARD_PURCHASE', 1000, '2022-05', '2022-04-20'),
+      item(3, 'INVOICE_PAYMENT', 1000, '2022-05', '2022-04-30'),
+    ]);
+
+    expect(result.errors.map((error) => error.code)).toEqual(['INVOICE_NOT_CLOSED']);
+  });
+
   it('SHOULD leave the rows already flagged as duplicates out of the math', () => {
     const result = evaluateCardRows({
       data: [{ card: card as never, invoices: undefined as never, payments: [], totals: [] }],
