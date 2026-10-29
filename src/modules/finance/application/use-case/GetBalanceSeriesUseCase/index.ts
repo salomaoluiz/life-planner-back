@@ -35,7 +35,7 @@ export interface BalanceSeries {
 }
 
 // Spec 046 FR 12: the balance at the end of every bucket. The past comes from the ledger minus the later paid
-// rows; the part after today from the planned daily balances of the current month (spec 035).
+// rows; the part after today from the planned daily balances of every month up to the end (spec 035, 053).
 export class GetBalanceSeriesUseCase implements UseCaseWithParams<
   GetBalanceSeriesInput,
   BalanceSeries
@@ -99,6 +99,8 @@ export class GetBalanceSeriesUseCase implements UseCaseWithParams<
           month: input.today.slice(0, 7),
           ownerIds: input.ownerIds,
           today: input.today,
+          untilMonth:
+            input.to.slice(0, 7) > input.today.slice(0, 7) ? input.to.slice(0, 7) : undefined,
         })
       : undefined;
 
