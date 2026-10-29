@@ -76,3 +76,5 @@ Migration `category_all_scopes`: `financial_categories.all_scopes boolean defaul
 ### Currency columns (spec 040)
 
 `currency VARCHAR(3) NOT NULL DEFAULT 'BRL'` on `financial_accounts`, `financial_credit_cards`, `financial_transactions`, `financial_recurrences` and `financial_installment_plans` (migration `20261020000200_currency_per_transaction`). Validated in code against `SUPPORTED_CURRENCIES` (no enum); a new code needs no migration. Every transaction row equals the currency of its account/card; generated rows copy the series/plan currency. Money stays integer minor units.
+
+Migration `archived_at` (spec 052): `financial_accounts.archived_at` and `financial_credit_cards.archived_at` `timestamptz NULL`. Set to `now()` by the update use cases on `ACTIVE → ARCHIVED`, cleared on `ARCHIVED → ACTIVE`, untouched otherwise (`archivedAtFor`). Backfill: already archived rows got `archived_at = updated_at` (approximation). The archive day is the `America/Sao_Paulo` calendar date (`ArchiveDay` service); the dashboard counts a source only before it.
