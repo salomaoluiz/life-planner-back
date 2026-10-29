@@ -116,3 +116,97 @@ describe('GetDashboardRowsUseCase', () => {
     );
   });
 });
+
+describe('projected recurrences (spec 053)', () => {
+  const future = { ...mocks.input, from: '2026-10-01', to: '2027-01-31' };
+
+  it('SHOULD count a monthly occurrence as projected in every future month on its date', async () => {
+    mocks.projections.executeChunked.mockResolvedValue(
+      ['2026-11-10', '2026-12-10', '2027-01-10'].map((date) => mocks.occurrenceOf({ date })),
+    );
+
+    const rows = await setup.execute(future);
+
+    expect(rows.map((row) => [row.bucketDate, row.amount, row.projected, row.categoryId])).toEqual([
+      ['2026-11-10', 10000, true, 'cat-1'],
+      ['2026-12-10', 10000, true, 'cat-1'],
+      ['2027-01-10', 10000, true, 'cat-1'],
+    ]);
+    expect(mocks.projections.executeChunked).toHaveBeenCalledWith(
+      expect.objectContaining({ from: '2026-11', to: '2027-01', today: '2026-10-20' }),
+    );
+  });
+
+  it('SHOULD place a card occurrence on its invoice date AND drop it outside the period', async () => {
+    mocks.projections.executeChunked.mockResolvedValue([
+      mocks.occurrenceOf({
+        creditCard: { id: 'card' },
+        date: '2026-11-03',
+        invoiceListDate: '2026-12-05',
+      }),
+      mocks.occurrenceOf({
+        creditCard: { id: 'card' },
+        date: '2027-01-28',
+        invoiceListDate: '2027-02-05',
+      }),
+    ]);
+
+    const rows = await setup.execute(future);
+
+    expect(rows.map((row) => row.bucketDate)).toEqual(['2026-12-05']);
+  });
+
+  it('SHOULD start the projections at the first month after today even for an earlier period', async () => {
+    await setup.execute({ ...future, from: '2026-05-01' });
+
+    expect(mocks.projections.executeChunked).toHaveBeenCalledWith(
+      expect.objectContaining({ from: '2026-11' }),
+    );
+  });
+
+  it('SHOULD ask for nothing WHEN paid = true OR the period ends this month', async () => {
+    await setup.execute({ ...future, filter: { paid: true } });
+    await setup.execute(mocks.input);
+
+    expect(mocks.projections.executeChunked).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD follow the source AND the currency', async () => {
+    mocks.projections.executeChunked.mockResolvedValue([
+      mocks.occurrenceOf({ creditCard: { id: 'card' }, invoiceListDate: '2026-12-05' }),
+      mocks.occurrenceOf({ date: '2026-11-11' }),
+      mocks.occurrenceOf({ currency: 'USD', date: '2026-11-12' }),
+    ]);
+
+    const accountOnly = await setup.execute({ ...future, filter: { source: 'ACCOUNT' as never } });
+    const cardOnly = await setup.execute({ ...future, filter: { source: 'CARD' as never } });
+
+    expect(accountOnly.map((row) => row.bucketDate)).toEqual(['2026-11-11']);
+    expect(cardOnly.map((row) => row.bucketDate)).toEqual(['2026-12-05']);
+  });
+
+  it('SHOULD split by tag with byTag AND forward the filters', async () => {
+    mocks.projections.executeChunked.mockResolvedValue([
+      mocks.occurrenceOf({ tags: [{ id: 't1' }, { id: 't2' }] }),
+      mocks.occurrenceOf({ date: '2026-11-11' }),
+    ]);
+
+    const rows = await setup.execute({
+      ...future,
+      byTag: true,
+      filter: { accountIds: ['a1'], categoryIds: ['c1'], q: 'rent', tagIds: ['t1'] },
+    });
+
+    expect(rows.map((row) => row.tagId)).toEqual(['t1', 't2', null]);
+    expect(mocks.projections.executeChunked).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filter: expect.objectContaining({
+          accountIds: ['a1'],
+          categoryIds: ['c1'],
+          q: 'rent',
+          tagIds: ['t1'],
+        }),
+      }),
+    );
+  });
+});
