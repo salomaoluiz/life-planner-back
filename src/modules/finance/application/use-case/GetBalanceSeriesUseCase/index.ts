@@ -6,9 +6,9 @@ import {
 } from '@finance/application/dto/GetBalanceSeries';
 import { GetDailyBalancesUseCase } from '@finance/application/use-case/GetDailyBalancesUseCase';
 import { narrowOwners } from '@finance/domain/entity/OwnerAccess';
-import { AccountStatus } from '@finance/domain/enum';
 import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { IFinanceAccountRepository } from '@finance/domain/repository';
+import { countsOnDay } from '@finance/domain/service/ArchiveDay';
 import { balancesAtEnds, totalOf } from '@finance/domain/service/BalanceSeries';
 import {
   Bucket,
@@ -62,10 +62,7 @@ export class GetBalanceSeriesUseCase implements UseCaseWithParams<
     const filter = input.filter?.accountIds?.length ? new Set(input.filter.accountIds) : undefined;
     const accounts = (owners.length === 0 ? [] : await this.accountRepository.findAccounts(owners))
       .filter(
-        (account) =>
-          account.currency === input.currency &&
-          (account.status === AccountStatus.ACTIVE || account.ledgerBalance !== 0) &&
-          (!filter || filter.has(account.id)),
+        (account) => account.currency === input.currency && (!filter || filter.has(account.id)),
       )
       .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
 
@@ -83,6 +80,7 @@ export class GetBalanceSeriesUseCase implements UseCaseWithParams<
     }
 
     const ids = new Set(accounts.map((account) => account.id));
+    const archivedAts = new Map(accounts.map((account) => [account.id, account.archivedAt]));
     const names = new Map(accounts.map((account) => [account.id, account.name]));
     const paidRows = await this.accountRepository.findPaidSumsFrom({
       accountIds: [...ids],
@@ -107,11 +105,14 @@ export class GetBalanceSeriesUseCase implements UseCaseWithParams<
       granularity: input.granularity,
       points: buckets.map((bucket, index) => {
         const projected = bucket.end > input.today;
-        const items = projected
-          ? (planned?.days.find((day) => day.date === bucket.end)?.accounts ?? []).filter((item) =>
-              ids.has(item.accountId),
-            )
-          : past[index];
+        // Spec 052 FR 5: an archived account counts only on the days before its archive day.
+        const items = (
+          projected
+            ? (planned?.days.find((day) => day.date === bucket.end)?.accounts ?? []).filter(
+                (item) => ids.has(item.accountId),
+              )
+            : past[index]
+        ).filter((item) => countsOnDay(archivedAts.get(item.accountId), bucket.end));
 
         return {
           ...bucket,

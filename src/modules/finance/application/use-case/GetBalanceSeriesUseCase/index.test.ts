@@ -43,4 +43,41 @@ describe('GetBalanceSeriesUseCase', () => {
 
     expect(series.points[0].balance).toBe(0);
   });
+
+  describe('archived accounts (spec 052)', () => {
+    const archived = { ...mocks.account, archivedAt: new Date('2026-09-15T15:00:00Z') };
+
+    it('SHOULD count the account before its archive day AND drop it (value and detail) from that day on', async () => {
+      mocks.accountRepository.findAccounts.mockResolvedValue([archived]);
+
+      const series = await setup.execute(mocks.input);
+
+      // 08-31 before the archive day; 09-30, 10-20 and the projected end of month after it.
+      expect(series.points.map((point) => point.balance)).toEqual([70000, 0, 0, 0]);
+      expect(series.points[0].accounts).toEqual([
+        { balance: 70000, id: 'acc-1', name: 'Checking' },
+      ]);
+      expect(series.points[1].accounts).toEqual([]);
+      expect(series.points[3].accounts).toEqual([]);
+    });
+
+    it('SHOULD treat an archived account without balance like any other', async () => {
+      mocks.accountRepository.findAccounts.mockResolvedValue([{ ...archived, ledgerBalance: 0 }]);
+
+      const series = await setup.execute(mocks.input);
+
+      expect(series.points.map((point) => point.balance)).toEqual([0, 0, 0, 0]);
+    });
+
+    it('SHOULD count it on every day again WHEN reactivated', async () => {
+      mocks.accountRepository.findAccounts.mockResolvedValue([
+        { ...archived, archivedAt: undefined },
+      ]);
+
+      const series = await setup.execute(mocks.input);
+
+      expect(series.points[1].accounts).toHaveLength(1);
+      expect(series.points[2].balance).toBe(70000);
+    });
+  });
 });
