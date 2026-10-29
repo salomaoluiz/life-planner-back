@@ -30,6 +30,7 @@ export interface IFinanceCreditCardDatasource {
   update(params: UpdateCreditCardDatasourceParams): Promise<FinancialCreditCard>;
 }
 export interface UpdateCreditCardDatasourceParams {
+  archived_at?: Date | null;
   brand?: CreditCardBrand;
   closing_day?: number;
   color?: string;

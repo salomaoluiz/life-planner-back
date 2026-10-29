@@ -48,6 +48,7 @@ interface FindUnpaidSumsUntilRepositoryParams {
   to: string;
 }
 interface UpdateAccountRepositoryParams {
+  archivedAt?: Date | null;
   icon?: string;
   id: string;
   name?: string;

@@ -95,6 +95,7 @@ export class FinanceAccountRepository implements IFinanceAccountRepository {
 
   async updateAccount(params: UpdateAccountRepositoryParams): Promise<AccountEntity> {
     const result = await this.accountDatasource.update({
+      archived_at: params.archivedAt,
       icon: params.icon,
       id: params.id,
       name: params.name,

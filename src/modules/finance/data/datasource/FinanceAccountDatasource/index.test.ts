@@ -117,6 +117,25 @@ describe('Method update', () => {
   });
 });
 
+describe('Method update archived_at', () => {
+  it('SHOULD forward archived_at (a date sets it, null clears it)', async () => {
+    spies.update.mockResolvedValue(mocks.account);
+    const at = new Date('2026-10-10T15:00:00Z');
+
+    await setup.update({ archived_at: at, id: mocks.account.id, status: 'ARCHIVED' as never });
+    await setup.update({ archived_at: null, id: mocks.account.id, status: 'ACTIVE' as never });
+
+    expect(spies.update).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ data: expect.objectContaining({ archived_at: at }) }),
+    );
+    expect(spies.update).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ data: expect.objectContaining({ archived_at: null }) }),
+    );
+  });
+});
+
 describe('Method findByIds', () => {
   it('SHOULD query by id list in ONE findMany AND skip the query for an empty list', async () => {
     spies.findMany.mockResolvedValue([mocks.account]);

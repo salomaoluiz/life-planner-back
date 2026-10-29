@@ -30,6 +30,7 @@ interface CreateCreditCardRepositoryParams {
 }
 // `null` clears the optional columns; `undefined` leaves them untouched.
 interface UpdateCreditCardRepositoryParams {
+  archivedAt?: Date | null;
   brand?: CreditCardBrand;
   closingDay?: number;
   color?: string;

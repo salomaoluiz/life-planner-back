@@ -72,3 +72,38 @@ it.each([
   await expect(setup.execute({ ...base(), ...patch } as never)).rejects.toThrow(ValidationError);
   expect(mocks.accountRepository.updateAccount).not.toHaveBeenCalled();
 });
+
+describe('archivedAt (spec 052)', () => {
+  beforeEach(() => jest.useFakeTimers({ now: new Date('2026-10-10T15:00:00Z') }));
+  afterEach(() => jest.useRealTimers());
+
+  it('SHOULD set archivedAt to now WHEN archiving', async () => {
+    await setup.execute({ ...base(), status: AccountStatus.ARCHIVED });
+
+    expect(mocks.accountRepository.updateAccount).toHaveBeenCalledWith(
+      expect.objectContaining({ archivedAt: new Date('2026-10-10T15:00:00Z') }),
+    );
+  });
+
+  it('SHOULD clear archivedAt WHEN reactivating', async () => {
+    mocks.accountRepository.findAccountById.mockResolvedValueOnce({
+      ...mocks.account,
+      status: AccountStatus.ARCHIVED,
+    });
+    await setup.execute({ ...base(), status: AccountStatus.ACTIVE });
+
+    expect(mocks.accountRepository.updateAccount).toHaveBeenCalledWith(
+      expect.objectContaining({ archivedAt: null }),
+    );
+  });
+
+  it('SHOULD NOT move archivedAt WHEN the status does not change', async () => {
+    mocks.accountRepository.findAccountById.mockResolvedValueOnce({
+      ...mocks.account,
+      status: AccountStatus.ARCHIVED,
+    });
+    await setup.execute({ ...base(), status: AccountStatus.ARCHIVED });
+
+    expect(mocks.accountRepository.updateAccount.mock.calls[0][0].archivedAt).toBeUndefined();
+  });
+});

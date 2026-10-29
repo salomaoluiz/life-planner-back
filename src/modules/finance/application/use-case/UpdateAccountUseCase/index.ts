@@ -7,6 +7,7 @@ import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { AccountStatus } from '@finance/domain/enum';
 import { IFinanceAccountRepository } from '@finance/domain/repository';
 import { AccountWithBalances } from '@finance/domain/service/AccountBalance';
+import { archivedAtFor } from '@finance/domain/service/ArchiveDay';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -33,6 +34,7 @@ export class UpdateAccountUseCase implements UseCaseWithParams<
     }
 
     const updated = await this.accountRepository.updateAccount({
+      archivedAt: archivedAtFor(account.status, input.status, new Date()),
       icon: input.icon,
       id: input.id,
       name: input.name,

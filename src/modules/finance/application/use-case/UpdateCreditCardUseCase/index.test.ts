@@ -156,3 +156,34 @@ it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)'
     status: 422,
   });
 });
+
+describe('archivedAt (spec 052)', () => {
+  beforeEach(() => jest.useFakeTimers({ now: new Date('2026-10-10T15:00:00Z') }));
+  afterEach(() => jest.useRealTimers());
+
+  it('SHOULD set archivedAt to now WHEN archiving', async () => {
+    await setup.execute({ ...mocks.base, status: 'ARCHIVED' as never });
+
+    expect(mocks.creditCardRepository.updateCreditCard).toHaveBeenCalledWith(
+      expect.objectContaining({ archivedAt: new Date('2026-10-10T15:00:00Z') }),
+    );
+  });
+
+  it('SHOULD clear archivedAt WHEN reactivating', async () => {
+    mocks.creditCardRepository.findCreditCardById.mockResolvedValueOnce({
+      ...mocks.card,
+      status: 'ARCHIVED' as never,
+    });
+    await setup.execute({ ...mocks.base, status: 'ACTIVE' as never });
+
+    expect(mocks.creditCardRepository.updateCreditCard).toHaveBeenCalledWith(
+      expect.objectContaining({ archivedAt: null }),
+    );
+  });
+
+  it('SHOULD NOT move archivedAt WHEN the status does not change', async () => {
+    await setup.execute({ ...mocks.base, title: 'Renamed' });
+
+    expect(mocks.creditCardRepository.updateCreditCard.mock.calls[0][0].archivedAt).toBeUndefined();
+  });
+});
