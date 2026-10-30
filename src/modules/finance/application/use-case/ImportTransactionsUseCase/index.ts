@@ -46,6 +46,7 @@ import {
   parseInvoiceMonth,
 } from '@finance/domain/service/ImportRowKind';
 import { invoiceMonthOf } from '@finance/domain/service/InvoiceCalculator';
+import { normalizeNotes } from '@finance/domain/service/Notes';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -511,6 +512,7 @@ function toCreateParams(
     date: row.date,
     description: row.description.trim(),
     invoiceMonth: card ? (month ?? invoiceMonthFor({ row }, card)) : undefined,
+    notes: normalizeNotes(row.notes),
     owner: targetOf(row, input).owner,
     ownerId: targetOf(row, input).ownerId,
     // Card rows derive it from their invoice; account rows are paid when dated up to today unless the file says so.

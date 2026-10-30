@@ -14,6 +14,7 @@ import { ImportRow } from '@finance/application/dto/ImportTransactions';
 import { TransactionType } from '@finance/domain/enum';
 import { SUPPORTED_CURRENCIES } from '@finance/domain/enum/Currency';
 import { importRowKind, parseInvoiceMonth } from '@finance/domain/service/ImportRowKind';
+import { NOTES_MAX } from '@finance/domain/service/Notes';
 import { normalizeText } from '@finance/domain/service/TextMatch';
 
 export type ImportErrorCode =
@@ -36,6 +37,8 @@ export type ImportErrorCode =
   | 'INVOICE_NOT_CLOSED'
   | 'INVOICE_PAID'
   | 'INVOICE_PAYMENT_MISMATCH'
+  | 'NOTES_NOT_ALLOWED'
+  | 'NOTES_TOO_LONG'
   | 'OWNER_ARCHIVED'
   | 'OWNER_NOT_ACCESSIBLE'
   | 'PAID_FROM_ACCOUNT_INVALID'
@@ -159,6 +162,21 @@ export function validateImportRow(row: ImportRow): ImportRowError | undefined {
 
   if (typeof kind === 'object') {
     return { code: kind.error, line, message: KIND_MESSAGES[kind.error] };
+  }
+
+  // Spec 059 FR 18: notes belong to normal transactions only, up to 1000 characters.
+  const notes = row.notes?.trim() ?? '';
+
+  if (notes.length > NOTES_MAX) {
+    return { code: 'NOTES_TOO_LONG', line, message: 'Notes have at most 1000 characters' };
+  }
+
+  if (notes !== '' && kind !== 'ACCOUNT_TRANSACTION' && kind !== 'CARD_PURCHASE') {
+    return {
+      code: 'NOTES_NOT_ALLOWED',
+      line,
+      message: 'Notes are only allowed on normal transactions',
+    };
   }
 
   return undefined;

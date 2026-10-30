@@ -26,6 +26,7 @@ describe('dry run', () => {
     ['DESCRIPTION_INVALID', { description: 'x'.repeat(201) }],
     ['TOO_MANY_TAGS', { tags: Array.from({ length: 11 }, (_, i) => `t${i}`) }],
     ['TAG_TOO_LONG', { tags: ['x'.repeat(31)] }],
+    ['NOTES_TOO_LONG', { notes: 'x'.repeat(1001) }],
     ['UNSUPPORTED_CURRENCY', { currency: 'JPY' }],
     ['ACCOUNT_AND_CARD', { creditCardId: 'card-1' }],
     [
@@ -124,6 +125,26 @@ describe('commit', () => {
     expect(mocks.transactionRepository.createManyTransactions.mock.calls[0][0]).toEqual([
       expect.objectContaining({ accountId: 'acc-1', currency: 'BRL', paid: true, tags: undefined }),
       expect.objectContaining({ paid: false, tags: ['fixo'] }),
+    ]);
+  });
+
+  it('SHOULD store the trimmed notes of a normal row AND null for an empty one (spec 059)', async () => {
+    await setup.execute({
+      ...base,
+      dryRun: false,
+      rows: [
+        { ...validRow, notes: '  Casa\nAeroporto ' },
+        { ...validRow, line: 3, notes: '   ' },
+        { ...validRow, line: 4 },
+      ],
+    });
+
+    const written = mocks.transactionRepository.createManyTransactions.mock.calls[0][0];
+
+    expect(written.map((row: { notes: null | string }) => row.notes)).toEqual([
+      'Casa\nAeroporto',
+      null,
+      null,
     ]);
   });
 
@@ -509,6 +530,40 @@ describe('card credits and invoice payments (spec 048)', () => {
       expect(result.invoices).toEqual([
         { amountDue: 40000, creditCardId: 'card-1', invoiceMonth: '2026-09', paid: true },
       ]);
+    });
+  });
+
+  describe('notes (spec 059 FR 18)', () => {
+    it.each([
+      ['a refund', { ...refund }],
+      ['a prepayment discount', { ...discount }],
+      ['an early payment', { ...refund, categoryId: ID[SystemCategoryKey.CARD_EARLY_PAYMENT] }],
+      ['an invoice payment', { ...payment }],
+    ])('SHOULD refuse a note on %s with a row error', async (_name, row) => {
+      const result = await setup.execute({
+        ...base,
+        rows: [cardRow, { ...row, notes: 'por quê' }],
+      });
+
+      expect(result.errors).toEqual([
+        {
+          code: 'NOTES_NOT_ALLOWED',
+          line: row.line,
+          message: 'Notes are only allowed on normal transactions',
+        },
+      ]);
+    });
+
+    it('SHOULD accept an empty note on a refund AND a note on a card purchase', async () => {
+      const result = await setup.execute({
+        ...base,
+        rows: [
+          { ...cardRow, notes: 'Presente' },
+          { ...refund, notes: '   ' },
+        ],
+      });
+
+      expect(result.errors).toEqual([]);
     });
   });
 });

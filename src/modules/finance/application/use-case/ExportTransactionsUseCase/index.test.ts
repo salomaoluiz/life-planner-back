@@ -21,7 +21,7 @@ it('SHOULD write the header, the category path and the owner name, ";"-separated
 
   expect(filename).toBe('transacoes-2026-01-01_2026-12-31.csv');
   expect(lines[0]).toBe(
-    `${BOM}Data;Descrição;Tipo;Valor;Moeda;Categoria;Conta;Cartão;Fatura;Pago;Tags;Pertence a;Parcela;Recorrente`,
+    `${BOM}Data;Descrição;Tipo;Valor;Moeda;Categoria;Conta;Cartão;Fatura;Pago;Tags;Pertence a;Parcela;Recorrente;Notas`,
   );
   expect(lines[1]).toContain('02/10/2026;Supermercado;');
   expect(lines[1]).toContain(';Casa > Mercado;');
@@ -93,4 +93,14 @@ it('SHOULD keep a description with the separator and a quote intact through quot
   const { csv } = await setup.execute({ ...base, accessibleOwners: mocks.accessibleOwners });
 
   expect(csv).toContain('"Mercado; ""Bom Preço"""');
+});
+
+it('SHOULD quote notes with separator, quotes and line breaks as ONE cell (spec 059 FR 17)', async () => {
+  mocks.transactionRepository.findTransactionsForExport.mockResolvedValueOnce([
+    { ...mocks.transactions.user, notes: 'Rota; "ida", volta\r\nTerminal 2' },
+  ]);
+
+  const { csv } = await setup.execute({ ...base, accessibleOwners: mocks.accessibleOwners });
+
+  expect(csv.endsWith(';"Rota; ""ida"", volta\r\nTerminal 2"\r\n')).toBe(true);
 });

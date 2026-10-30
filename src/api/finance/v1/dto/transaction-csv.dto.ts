@@ -49,6 +49,8 @@ const ImportRowApiSchema = z.object({
   // Spec 048: the invoice month (`YYYY-MM`) of a card row; the use case checks it.
   invoiceMonth: z.string().nullish(),
   line: z.number().int().min(1),
+  // Spec 059: optional note of a normal transaction; the use case checks it.
+  notes: z.string().nullish(),
   // The owner of this row (spec 047); omitted rows take the owner of the request.
   owner: OwnerTypeApiSchema.nullish(),
   ownerId: OwnerIdApiSchema.nullish(),
