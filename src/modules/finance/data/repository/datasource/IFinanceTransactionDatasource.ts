@@ -51,6 +51,8 @@ export interface DashboardSumRow {
 }
 export interface DashboardSumsParams {
   account_ids?: string[];
+  amount_max?: number;
+  amount_min?: number;
   by_tag: boolean;
   category_ids?: string[];
   credit_card_ids?: string[];
@@ -59,6 +61,7 @@ export interface DashboardSumsParams {
   invoice_refs: CardInvoiceKey[];
   owners: OwnerAccess[];
   q?: string;
+  search_category_ids?: string[];
   source?: TransactionSource;
   tag_ids?: string[];
   to: string;

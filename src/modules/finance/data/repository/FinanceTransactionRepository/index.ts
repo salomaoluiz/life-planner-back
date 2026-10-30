@@ -129,6 +129,8 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
   async sumDashboardRows(query: DashboardSumsQuery): Promise<DashboardSum[]> {
     const rows = await this.transactionDatasource.sumDashboardRows({
       account_ids: query.accountIds,
+      amount_max: query.amountRange?.maxCents,
+      amount_min: query.amountRange?.minCents,
       by_tag: query.byTag,
       category_ids: query.categoryIds,
       credit_card_ids: query.creditCardIds,
@@ -140,6 +142,7 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
       })),
       owners: query.owners,
       q: query.q,
+      search_category_ids: query.searchCategoryIds,
       source: query.source,
       tag_ids: query.tagIds,
       to: query.to,

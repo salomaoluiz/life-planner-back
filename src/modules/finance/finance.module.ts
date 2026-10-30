@@ -66,6 +66,7 @@ import { RemoveFamilyFromCategoryScopesUseCase } from '@finance/application/use-
 import { RemoveFamilyFromTagScopesUseCase } from '@finance/application/use-case/RemoveFamilyFromTagScopesUseCase';
 import { ResolveCardRowsPaidUseCase } from '@finance/application/use-case/ResolveCardRowsPaidUseCase';
 import { ResolveRefundLinkUseCase } from '@finance/application/use-case/ResolveRefundLinkUseCase';
+import { ResolveSearchCategoryIdsUseCase } from '@finance/application/use-case/ResolveSearchCategoryIdsUseCase';
 import { SplitRecurrenceUseCase } from '@finance/application/use-case/SplitRecurrenceUseCase';
 import { UndoInstallmentPrepaymentUseCase } from '@finance/application/use-case/UndoInstallmentPrepaymentUseCase';
 import { UndoInvoicePaymentUseCase } from '@finance/application/use-case/UndoInvoicePaymentUseCase';
@@ -145,6 +146,7 @@ const useCases = [
   GetAccountsUseCase,
   GetCategoriesUseCase,
   ExpandCategoryIdsUseCase,
+  ResolveSearchCategoryIdsUseCase,
   FindInvoicesInRangeUseCase,
   GetCategoryArchiveBlockersUseCase,
   GetCategoryIconsUseCase,

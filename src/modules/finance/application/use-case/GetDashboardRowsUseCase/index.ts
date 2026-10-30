@@ -7,6 +7,7 @@ import {
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
 import { GetProjectionsUseCase } from '@finance/application/use-case/GetProjectionsUseCase';
+import { ResolveSearchCategoryIdsUseCase } from '@finance/application/use-case/ResolveSearchCategoryIdsUseCase';
 import { narrowOwners } from '@finance/domain/entity/OwnerAccess';
 import { TransactionSource, TransactionType } from '@finance/domain/enum';
 import {
@@ -15,6 +16,7 @@ import {
 } from '@finance/domain/repository';
 import { addInvoiceMonths, buildInvoiceFor } from '@finance/domain/service/InvoiceCalculator';
 import { lastDayOfMonth } from '@finance/domain/service/RecurrenceSchedule';
+import { parseAmountQuery } from '@finance/domain/service/TransactionSearch';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -50,6 +52,8 @@ export class GetDashboardRowsUseCase implements UseCaseWithParams<
     private readonly expandCategoryIdsUseCase: ExpandCategoryIdsUseCase,
     @Inject(GetProjectionsUseCase)
     private readonly getProjectionsUseCase: GetProjectionsUseCase,
+    @Inject(ResolveSearchCategoryIdsUseCase)
+    private readonly resolveSearchCategoryIdsUseCase: ResolveSearchCategoryIdsUseCase,
     @Inject('IFinanceTransactionRepository')
     private readonly transactionRepository: IFinanceTransactionRepository,
   ) {}
@@ -82,8 +86,16 @@ export class GetDashboardRowsUseCase implements UseCaseWithParams<
             to: input.to,
             today: input.today,
           });
+    // Spec 059 FR 14-15: the text filter also matches the category (and its ancestors) and the amount.
+    const searchCategoryIds = filter.q
+      ? await this.resolveSearchCategoryIdsUseCase.execute({
+          accessibleOwners: input.accessibleOwners,
+          q: filter.q,
+        })
+      : undefined;
     const sums = await this.transactionRepository.sumDashboardRows({
       accountIds: filter.accountIds,
+      amountRange: (filter.q ? parseAmountQuery(filter.q) : null) ?? undefined,
       byTag: input.byTag,
       categoryIds,
       creditCardIds: filter.creditCardIds,
@@ -96,6 +108,7 @@ export class GetDashboardRowsUseCase implements UseCaseWithParams<
       }),
       owners,
       q: filter.q,
+      searchCategoryIds,
       source,
       tagIds: filter.tagIds,
       to: input.to,
