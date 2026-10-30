@@ -22,6 +22,8 @@ import {
   CreateCategoryApiSchema,
   CreateCategoryBody,
   UpdateCategoryApiSchema,
+  UpdateCategoryAppearanceApiSchema,
+  UpdateCategoryAppearanceBody,
   UpdateCategoryBody,
 } from '@api/finance/v1/dto/category.dto';
 import { TransactionTypeApiSchema } from '@api/finance/v1/dto/finance-fields';
@@ -75,5 +77,18 @@ export class CategoryController {
     const input = validate(UpdateCategoryApiSchema, body);
 
     return this.categoryService.update(req.user.id, id, input);
+  }
+
+  // Spec 058: the category and the icon / color of its descendants in one transaction.
+  @Patch(':id/appearance')
+  @ZodResponse({ status: 200, type: [CategoryOutput] })
+  async updateAppearance(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: UpdateCategoryAppearanceBody,
+  ) {
+    const input = validate(UpdateCategoryAppearanceApiSchema, body);
+
+    return this.categoryService.updateAppearance(req.user.id, id, input);
   }
 }

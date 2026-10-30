@@ -28,6 +28,7 @@ const categoryServiceMock = {
   delete: jest.fn().mockResolvedValue(undefined),
   findAll: jest.fn().mockResolvedValue([categoryApiMock]),
   update: jest.fn().mockResolvedValue(categoryApiMock),
+  updateAppearance: jest.fn().mockResolvedValue([categoryApiMock]),
 };
 
 // endregion Mocks

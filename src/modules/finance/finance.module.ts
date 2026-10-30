@@ -72,6 +72,7 @@ import { UndoInvoicePaymentUseCase } from '@finance/application/use-case/UndoInv
 import { UpdateAccountUseCase } from '@finance/application/use-case/UpdateAccountUseCase';
 import { UpdateCardEarlyPaymentUseCase } from '@finance/application/use-case/UpdateCardEarlyPaymentUseCase';
 import { UpdateCardRefundUseCase } from '@finance/application/use-case/UpdateCardRefundUseCase';
+import { UpdateCategorySubtreeAppearanceUseCase } from '@finance/application/use-case/UpdateCategorySubtreeAppearanceUseCase';
 import { UpdateCategoryUseCase } from '@finance/application/use-case/UpdateCategoryUseCase';
 import { UpdateCreditCardUseCase } from '@finance/application/use-case/UpdateCreditCardUseCase';
 import { UpdateInstallmentPlanUseCase } from '@finance/application/use-case/UpdateInstallmentPlanUseCase';
@@ -172,6 +173,7 @@ const useCases = [
   UndoInstallmentPrepaymentUseCase,
   UndoInvoicePaymentUseCase,
   UpdateAccountUseCase,
+  UpdateCategorySubtreeAppearanceUseCase,
   UpdateCategoryUseCase,
   UpdateCreditCardUseCase,
   UpdateTransactionUseCase,

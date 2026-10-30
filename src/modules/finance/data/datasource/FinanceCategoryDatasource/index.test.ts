@@ -325,3 +325,44 @@ describe('Method detachFamilyScope', () => {
     expect(spies.recordsUpdateMany).not.toHaveBeenCalled();
   });
 });
+
+describe('Method update › subtree appearance (spec 058)', () => {
+  it('SHOULD write the category and every descendant in ONE $transaction', async () => {
+    spies.update
+      .mockReturnValueOnce('self-op')
+      .mockReturnValueOnce('child-op')
+      .mockReturnValueOnce('grandchild-op');
+    spies.transaction.mockResolvedValueOnce([mocks.category]);
+
+    await setup.update({
+      icon_color: '#000000',
+      id: mocks.category.id,
+      subtree_appearance: [
+        { icon_color: '#112233', id: 'child' },
+        { icon: 'folder', id: 'grandchild' },
+      ],
+    });
+
+    expect(spies.update).toHaveBeenNthCalledWith(2, {
+      data: { icon: undefined, icon_color: '#112233' },
+      where: { id: 'child' },
+    });
+    expect(spies.update).toHaveBeenNthCalledWith(3, {
+      data: { icon: 'folder', icon_color: undefined },
+      where: { id: 'grandchild' },
+    });
+    expect(spies.transaction).toHaveBeenCalledTimes(1);
+    expect(spies.transaction).toHaveBeenCalledWith(['self-op', 'child-op', 'grandchild-op']);
+  });
+
+  it('SHOULD reject (and so write nothing) WHEN the transaction fails', async () => {
+    spies.transaction.mockRejectedValueOnce(new Error('boom'));
+
+    await expect(
+      setup.update({
+        id: mocks.category.id,
+        subtree_appearance: [{ icon: 'folder', id: 'child' }],
+      }),
+    ).rejects.toThrow('boom');
+  });
+});

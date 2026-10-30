@@ -6,6 +6,7 @@ import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { CreateCategoryUseCase } from '@finance/application/use-case/CreateCategoryUseCase';
 import { DeleteCategoryUseCase } from '@finance/application/use-case/DeleteCategoryUseCase';
 import { GetCategoriesUseCase } from '@finance/application/use-case/GetCategoriesUseCase';
+import { UpdateCategorySubtreeAppearanceUseCase } from '@finance/application/use-case/UpdateCategorySubtreeAppearanceUseCase';
 import { UpdateCategoryUseCase } from '@finance/application/use-case/UpdateCategoryUseCase';
 import { AccountStatus, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -57,6 +58,9 @@ const createCategoryUseCaseMock = { execute: jest.fn().mockResolvedValue(rootRes
 const deleteCategoryUseCaseMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const financeAccessServiceMock = { resolve: jest.fn().mockResolvedValue(accessibleOwners) };
 const getCategoriesUseCaseMock = { execute: jest.fn().mockResolvedValue([rootResultMock]) };
+const updateCategorySubtreeAppearanceUseCaseMock = {
+  execute: jest.fn().mockResolvedValue([rootResultMock, childResultMock]),
+};
 const updateCategoryUseCaseMock = { execute: jest.fn().mockResolvedValue(rootResultMock) };
 
 // endregion Mocks
@@ -73,6 +77,10 @@ beforeEach(async () => {
       { provide: DeleteCategoryUseCase, useValue: deleteCategoryUseCaseMock },
       { provide: FinanceAccessService, useValue: financeAccessServiceMock },
       { provide: GetCategoriesUseCase, useValue: getCategoriesUseCaseMock },
+      {
+        provide: UpdateCategorySubtreeAppearanceUseCase,
+        useValue: updateCategorySubtreeAppearanceUseCaseMock,
+      },
       { provide: UpdateCategoryUseCase, useValue: updateCategoryUseCaseMock },
     ],
   }).compile();
@@ -88,6 +96,7 @@ const mocks = {
   financeAccessService: financeAccessServiceMock,
   getCategoriesUseCase: getCategoriesUseCaseMock,
   rootApi: rootApiMock,
+  updateCategorySubtreeAppearanceUseCase: updateCategorySubtreeAppearanceUseCaseMock,
   updateCategoryUseCase: updateCategoryUseCaseMock,
   userId,
 };

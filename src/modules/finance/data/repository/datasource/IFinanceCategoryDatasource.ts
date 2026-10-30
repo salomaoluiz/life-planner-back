@@ -52,6 +52,8 @@ export interface UpdateCategoryDatasourceParams {
   // Switch to ALL: the category AND `subtree_ids` get the flag, the creator, their Personal scope as owner and `scopes`.
   scope?: { creator_id: string; scopes: CategoryScopeDatasourceParams[]; subtree_ids: string[] };
   status?: AccountStatus;
+  // Spec 058: appearance of descendants, in the same transaction as `id`.
+  subtree_appearance?: { icon?: string; icon_color?: string; id: string }[];
   subtree_depths?: { depth_level: number; id: string }[];
   // With `status`: these categories change status together with `id`.
   subtree_ids?: string[];

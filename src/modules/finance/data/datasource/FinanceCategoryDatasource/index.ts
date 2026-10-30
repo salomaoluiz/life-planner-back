@@ -159,6 +159,15 @@ export class FinanceCategoryDatasource implements IFinanceCategoryDatasource {
       }),
     ];
 
+    for (const item of params.subtree_appearance ?? []) {
+      operations.push(
+        this.db.client.financialCategory.update({
+          data: { icon: item.icon, icon_color: item.icon_color },
+          where: { id: item.id },
+        }),
+      );
+    }
+
     for (const subtree of params.subtree_depths ?? []) {
       operations.push(
         this.db.client.financialCategory.update({

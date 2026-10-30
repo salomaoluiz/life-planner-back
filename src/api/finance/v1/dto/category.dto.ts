@@ -29,7 +29,7 @@ export const CreateCategoryApiSchema = z
     message: 'ownerId is required, except for owner ALL where it must be omitted',
   });
 
-export const UpdateCategoryApiSchema = z
+const UpdateCategoryFields = z
   .object({
     icon: IconApiSchema,
     iconColor: IconColorApiSchema,
@@ -41,9 +41,30 @@ export const UpdateCategoryApiSchema = z
     status: z.enum(AccountStatus),
     type: TransactionTypeApiSchema,
   })
-  .partial()
-  .strict()
-  .refine(hasAtLeastOneField, { message: 'At least one field is required' });
+  .partial();
+
+export const UpdateCategoryApiSchema = UpdateCategoryFields.strict().refine(hasAtLeastOneField, {
+  message: 'At least one field is required',
+});
+
+// Spec 058: the PATCH fields plus the icon / color of the descendants, applied in one transaction.
+export const UpdateCategoryAppearanceApiSchema = UpdateCategoryFields.extend({
+  descendants: z
+    .array(
+      z
+        .object({
+          icon: IconApiSchema.optional(),
+          iconColor: IconColorApiSchema.optional(),
+          id: z.uuid(),
+        })
+        .strict()
+        .refine((item) => item.icon !== undefined || item.iconColor !== undefined, {
+          message: 'icon or iconColor is required',
+        }),
+    )
+    .min(1)
+    .max(500),
+}).strict();
 
 export const CategoryApiSchema = z.object({
   createdAt: z.iso.datetime(),
@@ -65,7 +86,9 @@ export const CategoryApiSchema = z.object({
 
 export type CreateCategoryApiInput = z.infer<typeof CreateCategoryApiSchema>;
 export type UpdateCategoryApiInput = z.infer<typeof UpdateCategoryApiSchema>;
+export type UpdateCategoryAppearanceApiInput = z.infer<typeof UpdateCategoryAppearanceApiSchema>;
 
 export class CategoryOutput extends createZodDto(CategoryApiSchema) {}
 export class CreateCategoryBody extends createZodDto(CreateCategoryApiSchema) {}
+export class UpdateCategoryAppearanceBody extends createZodDto(UpdateCategoryAppearanceApiSchema) {}
 export class UpdateCategoryBody extends createZodDto(UpdateCategoryApiSchema) {}
