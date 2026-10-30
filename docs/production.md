@@ -67,6 +67,8 @@ Stacks → Add stack → **Repository**: `https://github.com/salomaoluiz/life-pl
 
 Deploy. Expected: `life-planner-back-prod` running and `healthy`; the API log shows `prisma migrate deploy` applying every migration (the first start also creates the seeded system categories). A failed migration makes the container exit and restart in a loop: read the log, fix, redeploy. The API never serves on a half-migrated schema.
 
+Version check (spec 056): add `VERSION_REPO_API` and `VERSION_REPO_APP` (`owner/name` on GitHub) to the stack environment so the API can report the latest releases; optionally `GITHUB_TOKEN` (read-only, only raises the rate limit) and `VERSION_CHECK_TTL_SECONDS`. `APP_ENVIRONMENT` is fixed in the compose file (`production`).
+
 ## 4. Nginx and DNS
 
 Two server blocks in the main Nginx, same pattern and wildcard certificate as the other services (copy the `ssl_*` lines from an existing block):
