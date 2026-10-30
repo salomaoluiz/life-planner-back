@@ -119,6 +119,6 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer <staging-jwt>
 
 ## 7. Release and rollback
 
-- **Release:** merge to `main` → Portainer "Pull and redeploy" of the affected stack (API and web together when the API contract changes) → new APK only when the app changed. `main` must stay deployable: PRs merge green and migrations are additive.
+- **Release:** merge to `main` → wait for the `release` workflow (it tags `vX.Y.Z` and publishes the GitHub release; the API reports it as the latest version) → Portainer "Pull and redeploy" of the affected stack (API and web together when the API contract changes) → new APK only when the app changed. `main` must stay deployable: PRs merge green and migrations are additive.
 - **Rollback of code:** `git revert` the bad commit on `main` (or point the stack at a tag you created on the last good commit, Portainer takes `refs/heads/...` or `refs/tags/...`) and "Pull and redeploy". Because migrations are additive, the older code keeps working on the newer schema.
 - **Rollback of data:** restore from your backup automation.

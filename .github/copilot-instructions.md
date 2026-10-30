@@ -336,6 +336,7 @@ Minimum coverage thresholds:
 
 ## 🚀 Commands & Scripts
 
+- Version and changelog guardrail: a PR touching shipped paths (`src/`, `prisma/`, `Dockerfile`, `docker-compose*.yml`, dependencies, `yarn.lock`) must bump `package.json` `version` exactly one step (breaking → major, `feat` → minor, else patch) and add the matching top `CHANGELOG.md` entry; docs/tests/CI-only PRs must not bump (`yarn version:check`).
 - Changes to `src/` or `prisma/` must be validated with `yarn e2e` (see `.claude/CLAUDE.md` rule 14).
 
 ### Development

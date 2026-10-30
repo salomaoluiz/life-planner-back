@@ -1,6 +1,6 @@
 {
   "name": "life-planner-back",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "",
   "author": "",
   "private": true,
@@ -22,6 +22,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "e2e": "node scripts/e2e.mjs",
+    "version:check": "node scripts/check-version.mjs",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prepare": "husky"
   },

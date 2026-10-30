@@ -61,6 +61,10 @@ Placeholders: `<m>` module (e.g. `finance`), `X` PascalCase entity, `x` camelCas
 - [ ] Report the frontend files that must change (don't edit `../life-planner` unless asked).
 - [ ] Update "Current state" in `.claude/CLAUDE.md` and the mapping table in `integration.md`.
 
+## 7b. Version and changelog (golden rule 16)
+
+- [ ] Bump `package.json` `version` once (breaking → major, `feat` → minor, else patch) from the latest `origin/main`, add the `## [x.y.z] - YYYY-MM-DD` entry at the top of `CHANGELOG.md`, run `yarn version:check`. Docs/tests/CI-only changes don't bump.
+
 ## 8. Commit → `.claude/context/conventions.md`
 
 - [ ] Review `git diff --cached` for secrets/personal data, stage files by name, conventional commit; fix Husky failures (lint, prettier, type-check, tests).
