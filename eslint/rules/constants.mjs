@@ -7,4 +7,5 @@ export const internalModules = [
   '@finance',
   '@stock',
   '@user',
+  '@version',
 ];

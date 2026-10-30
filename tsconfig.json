@@ -21,6 +21,7 @@
       "@stock/*": ["src/modules/stock/*"],
       "@user/*": ["src/modules/user/*"],
       "@auth/*": ["src/modules/auth/*"],
+      "@version/*": ["src/modules/version/*"],
       "@db/*": ["generated/prisma/*"]
     },
     "incremental": false,

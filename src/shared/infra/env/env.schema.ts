@@ -1,7 +1,14 @@
 import { z } from 'zod';
 
+// Compose passes unset optional variables as empty strings.
+const emptyToUndefined = z
+  .string()
+  .optional()
+  .transform((value) => (value === '' ? undefined : value));
+
 export const envSchema = z.object({
   // App
+  APP_ENVIRONMENT: z.enum(['development', 'production', 'staging']).default('development'),
   CORS_ORIGINS: z.string().default(''),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(3000),
@@ -22,6 +29,12 @@ export const envSchema = z.object({
   // JWT
   JWT_EXPIRES_IN: z.coerce.number().default(3600),
   JWT_SECRET: z.string().min(10),
+
+  // Versions (spec 056)
+  GITHUB_TOKEN: emptyToUndefined,
+  VERSION_CHECK_TTL_SECONDS: z.coerce.number().int().positive().default(600),
+  VERSION_REPO_API: emptyToUndefined,
+  VERSION_REPO_APP: emptyToUndefined,
 
   // Sessions
   SESSION_IDLE_TTL_SECONDS: z.coerce.number().int().positive().default(172800),

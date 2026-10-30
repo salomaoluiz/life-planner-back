@@ -6,12 +6,36 @@ describe('validateEnvironment', () => {
 
     expect(result).toEqual({
       ...mocks.validConfig,
+      APP_ENVIRONMENT: 'development',
       CORS_ORIGINS: '',
       JWT_EXPIRES_IN: 7200, // Coerced
       PORT: 4000, // Coerced
       SESSION_IDLE_TTL_SECONDS: 172800,
       SWAGGER_ENABLED: true,
+      VERSION_CHECK_TTL_SECONDS: 600,
     });
+  });
+
+  it('SHOULD validate the version variables (spec 056)', () => {
+    const result = setup({
+      ...mocks.validConfig,
+      APP_ENVIRONMENT: 'staging',
+      GITHUB_TOKEN: '',
+      VERSION_CHECK_TTL_SECONDS: '30',
+      VERSION_REPO_API: 'your-org/your-api',
+    });
+
+    expect(result).toMatchObject({
+      APP_ENVIRONMENT: 'staging',
+      GITHUB_TOKEN: undefined,
+      VERSION_CHECK_TTL_SECONDS: 30,
+      VERSION_REPO_API: 'your-org/your-api',
+    });
+    expect(result.VERSION_REPO_APP).toBeUndefined();
+    expect(throwableSetup({ ...mocks.validConfig, APP_ENVIRONMENT: 'qa' })).toBeInstanceOf(Error);
+    expect(throwableSetup({ ...mocks.validConfig, VERSION_CHECK_TTL_SECONDS: '0' })).toBeInstanceOf(
+      Error,
+    );
   });
 
   it('SHOULD use default values WHEN optional fields are missing', () => {

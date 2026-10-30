@@ -67,6 +67,8 @@ Stacks → Add stack → **Repository**: `https://github.com/salomaoluiz/life-pl
 
 Deploy. Expected: `life-planner-back-prod` running and `healthy`; the API log shows `prisma migrate deploy` applying every migration (the first start also creates the seeded system categories). A failed migration makes the container exit and restart in a loop: read the log, fix, redeploy. The API never serves on a half-migrated schema.
 
+Version check (spec 056): add `VERSION_REPO_API` and `VERSION_REPO_APP` (`owner/name` on GitHub) to the stack environment so the API can report the latest releases; optionally `GITHUB_TOKEN` (read-only, only raises the rate limit) and `VERSION_CHECK_TTL_SECONDS`. `APP_ENVIRONMENT` is fixed in the compose file (`production`).
+
 ## 4. Nginx and DNS
 
 Two server blocks in the main Nginx, same pattern and wildcard certificate as the other services (copy the `ssl_*` lines from an existing block):
@@ -119,6 +121,6 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer <staging-jwt>
 
 ## 7. Release and rollback
 
-- **Release:** merge to `main` → Portainer "Pull and redeploy" of the affected stack (API and web together when the API contract changes) → new APK only when the app changed. `main` must stay deployable: PRs merge green and migrations are additive.
+- **Release:** merge to `main` → wait for the `release` workflow (it tags `vX.Y.Z` and publishes the GitHub release; the API reports it as the latest version) → Portainer "Pull and redeploy" of the affected stack (API and web together when the API contract changes) → new APK only when the app changed. `main` must stay deployable: PRs merge green and migrations are additive.
 - **Rollback of code:** `git revert` the bad commit on `main` (or point the stack at a tag you created on the last good commit, Portainer takes `refs/heads/...` or `refs/tags/...`) and "Pull and redeploy". Because migrations are additive, the older code keeps working on the newer schema.
 - **Rollback of data:** restore from your backup automation.

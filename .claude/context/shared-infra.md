@@ -15,11 +15,16 @@ The only place allowed to import third-party libs directly (ESLint `no-restricte
 | `csv/`             | `writeCsv(rows, { separator })` (UTF-8 BOM, CRLF, RFC 4180 quoting, formula guard `'` on `= + - @`), `guardFormula` (spec 047)  | import from `@shared/infra/csv`                                                                                                                                                                                                                                                       |
 | `token/`           | `generateToken()` (32 CSPRNG bytes, base64url, 43 chars), `hashToken()` (SHA-256 hex), `TOKEN_REGEX`                            | import from `@shared/infra/token`                                                                                                                                                                                                                                                     |
 
+| `github/` | `IGithubReleases.listReleases(repo)` (axios, 3 s timeout, `per_page=10`, drafts/prereleases dropped, optional bearer token, throws on failure; spec 056) | `'IGithubReleases'` |
+| `build-info/` | `IBuildInfo.read()` → `{ version, releasedAt, builtAt }` from `package.json`, the first `CHANGELOG.md` entry and the `build-time` file | `'IBuildInfo'` |
+
 ## Environment variables (`env/env.schema.ts`)
 
 `NODE_ENV`, `PORT`, `CORS_ORIGINS`, `DB_HOST`, `DB_NAME`, `DB_PASSWORD`, `DB_PORT`, `DB_USER`, `JWT_SECRET` (min 10 chars), `JWT_EXPIRES_IN` (seconds, default 3600), `SESSION_IDLE_TTL_SECONDS` (default 172800, sliding idle window of refresh sessions), `SWAGGER_ENABLED` (`'true'`/`'false'` only, default `true`, parsed to boolean; `false` skips `/swagger` via `http/swagger` `setupSwagger`). `SharedModule` re-exports `EnvModule`, so use cases can inject `EnvService`. `prisma.config.ts` and `docker-compose.yml` read the same `DB_*` names.
 
 `CORS_ORIGINS` (optional, default empty) feeds `http/cors` `buildCorsOptions()`, called from `main.ts`. `validation/email.ts` exports `emailSchema` (trim → lowercase → email, max 254) used by all auth schemas.
+
+Spec 056 adds `APP_ENVIRONMENT` (`production|staging|development`, default `development`), `VERSION_REPO_API`, `VERSION_REPO_APP` (`owner/name`, optional; empty disables the check), `GITHUB_TOKEN` (optional, read-only, never logged) and `VERSION_CHECK_TTL_SECONDS` (default 600).
 
 Adding a variable: `envSchema` → `EnvService` getter (+ its test/fixtures) → `docker-compose.yml` `environment` → placeholder in `.env.example`. Values never go in source.
 

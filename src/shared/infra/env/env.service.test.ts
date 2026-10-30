@@ -7,6 +7,11 @@ type EnvVarKey = keyof typeof mocks.envVars;
 
 const testCases: { key: EnvVarKey; method: EnvServiceKey }[] = [
   { key: 'NODE_ENV', method: 'environment' },
+  { key: 'APP_ENVIRONMENT', method: 'appEnvironment' },
+  { key: 'GITHUB_TOKEN', method: 'githubToken' },
+  { key: 'VERSION_CHECK_TTL_SECONDS', method: 'versionCheckTtlSeconds' },
+  { key: 'VERSION_REPO_API', method: 'versionRepoApi' },
+  { key: 'VERSION_REPO_APP', method: 'versionRepoApp' },
   { key: 'PORT', method: 'port' },
   { key: 'CORS_ORIGINS', method: 'corsOrigins' },
   { key: 'DB_HOST', method: 'dbHost' },

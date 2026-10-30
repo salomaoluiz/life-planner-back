@@ -12,8 +12,13 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
+      APP_ENVIRONMENT: production
       PORT: 3000
       SWAGGER_ENABLED: 'false'
+      VERSION_REPO_API: ${VERSION_REPO_API:-}
+      VERSION_REPO_APP: ${VERSION_REPO_APP:-}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      VERSION_CHECK_TTL_SECONDS: ${VERSION_CHECK_TTL_SECONDS:-600}
       CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS is required}
       DB_USER: ${DB_USER:?DB_USER is required}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}

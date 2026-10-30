@@ -17,6 +17,7 @@ class EnvServiceFixture {
 
   withDefault() {
     this.value = {
+      appEnvironment: 'development',
       corsOrigins: '',
       dbHost: faker.internet.ipv4(),
       dbName: faker.string.alphanumeric(10),
@@ -24,11 +25,15 @@ class EnvServiceFixture {
       dbPort: faker.internet.port().toString(),
       dbUser: faker.internet.username(),
       environment: faker.helpers.arrayElement(['development', 'production', 'test']),
+      githubToken: undefined,
       jwtExpiresIn: faker.number.int({ max: 86400, min: 3600 }),
       jwtSecret: faker.string.alphanumeric(64),
       port: faker.internet.port(),
       sessionIdleTtlSeconds: 172800,
       swaggerEnabled: true,
+      versionCheckTtlSeconds: 600,
+      versionRepoApi: undefined,
+      versionRepoApp: undefined,
     };
     return this;
   }

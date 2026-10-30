@@ -7,6 +7,7 @@ import { FamilyAPIModule } from '@api/family/family.module';
 import { FinanceAPIModule } from '@api/finance/finance.module';
 import { StockAPIModule } from '@api/stock/stock.module';
 import { UserAPIModule } from '@api/user/user.module';
+import { VersionAPIModule } from '@api/version/version.module';
 
 import { HealthModule } from './health/health.module';
 
@@ -20,6 +21,7 @@ import { HealthModule } from './health/health.module';
     StockAPIModule,
     UserAPIModule,
     UserExistsCheckModule,
+    VersionAPIModule,
   ],
 })
 export class ApiModule {}
