@@ -24,6 +24,7 @@ interface IRecurrenceEntity {
   id: string;
   lastGeneratedNumber: number;
   nextOccurrenceDate: null | string;
+  notes?: null | string;
   occurrenceCount: null | number;
   owner: OwnerType;
   ownerId: string;
@@ -48,6 +49,7 @@ class RecurrenceEntity {
   creditCardId: null | string;
   currency: CurrencyCode;
   description: string;
+  notes: null | string;
   // Inclusive; null = runs until the user ends it.
   endDate: null | string;
   // Number of occurrence 1 of this series (> 1 after a split).
@@ -82,6 +84,7 @@ class RecurrenceEntity {
     this.creditCardId = params.creditCardId;
     this.currency = params.currency ?? DEFAULT_CURRENCY;
     this.description = params.description;
+    this.notes = params.notes ?? null;
     this.endDate = params.endDate;
     this.firstNumber = params.firstNumber;
     this.frequency = params.frequency;

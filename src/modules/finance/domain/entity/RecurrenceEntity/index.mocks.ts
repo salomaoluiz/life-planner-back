@@ -28,6 +28,7 @@ const paramsMock: RecurrenceEntity = {
   id: 'recurrence-uuid-1',
   lastGeneratedNumber: 1,
   nextOccurrenceDate: '2026-11-05',
+  notes: null,
   occurrenceCount: 12,
   owner: OwnerType.USER,
   ownerId: 'owner-uuid-1',

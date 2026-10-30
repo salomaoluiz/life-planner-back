@@ -144,6 +144,7 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
             ? buildInvoiceFor(card, invoiceMonth, [], [], today).paymentDate
             : null,
         invoiceMonth,
+        notes: series.notes,
         occurrenceCount: series.occurrenceCount,
         occurrenceNumber: series.firstNumber - 1 + occurrence.k,
         owner: series.owner,

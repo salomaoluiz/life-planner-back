@@ -11,6 +11,7 @@ describe('FinanceInstallmentPlanMapper.toDomain', () => {
       description: 'Notebook',
       id: 'plan-1',
       installment_count: 10,
+      notes: null,
       owner: 'USER',
       owner_id: 'owner-1',
       prepayment: null,
@@ -42,6 +43,7 @@ describe('FinanceInstallmentPlanMapper.toDomain', () => {
       description: 'Notebook',
       id: 'plan-1',
       installment_count: 10,
+      notes: null,
       owner: 'USER',
       owner_id: 'owner-1',
       prepayment: {
@@ -68,5 +70,27 @@ describe('FinanceInstallmentPlanMapper.toDomain', () => {
       id: 'prepayment-1',
       targetInvoiceMonth: '2026-10',
     });
+  });
+
+  it('SHOULD map the notes of the plan', () => {
+    const result = FinanceInstallmentPlanMapper.toDomain({
+      category_id: 'cat-1',
+      created_at: new Date('2026-10-01T00:00:00.000Z'),
+      credit_card_id: 'card-1',
+      currency: 'BRL' as const,
+      date: new Date('2026-10-20T00:00:00.000Z'),
+      description: 'Notebook',
+      id: 'plan-1',
+      installment_count: 10,
+      notes: 'Black Friday',
+      owner: 'USER',
+      owner_id: 'owner-1',
+      prepayment: null,
+      total_value: 512000,
+      transactions: [],
+      updated_at: new Date('2026-10-02T00:00:00.000Z'),
+    });
+
+    expect(result.notes).toBe('Black Friday');
   });
 });

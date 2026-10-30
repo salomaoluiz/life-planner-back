@@ -208,6 +208,8 @@ model FinancialCategoryScope {
 model FinancialTransaction {
   id                       String                @id @default(uuid())
   description              String
+  // Spec 059: free text, trimmed, at most 1000 characters (CHECK in the migration); NULL when empty.
+  notes                    String?
   value                    Int
   date                     DateTime              @db.Date
   type                     TransactionType
@@ -353,6 +355,8 @@ enum RecurrenceStatus {
 model FinancialRecurrence {
   id                    String              @id @default(uuid())
   description           String
+  // Spec 059: free text, trimmed, at most 1000 characters (CHECK in the migration); NULL when empty.
+  notes                    String?
   value                 Int
   type                  TransactionType
   category_id           String
@@ -389,6 +393,8 @@ model FinancialInstallmentPlan {
   id                String    @id @default(uuid())
   credit_card_id    String
   description       String
+  // Spec 059: free text, trimmed, at most 1000 characters (CHECK in the migration); NULL when empty.
+  notes                    String?
   category_id       String
   total_value       Int
   installment_count Int       @db.SmallInt

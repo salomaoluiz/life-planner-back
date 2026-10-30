@@ -52,6 +52,7 @@ class RecurrenceEntityFixture {
       id: faker.string.uuid(),
       lastGeneratedNumber: 1,
       nextOccurrenceDate: '2026-11-05',
+      notes: null,
       occurrenceCount: null,
       owner: OwnerType.USER,
       ownerId: faker.string.uuid(),

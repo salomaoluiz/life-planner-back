@@ -26,6 +26,7 @@ describe('FinanceRecurrenceMapper.toDomain', () => {
       id: mocks.raw.id,
       lastGeneratedNumber: 1,
       nextOccurrenceDate: '2026-11-05',
+      notes: null,
       occurrenceCount: 12,
       owner: 'USER',
       ownerId: mocks.raw.owner_id,
@@ -68,5 +69,13 @@ describe('FinanceRecurrenceMapper.toDomain', () => {
     };
 
     expect(FinanceRecurrenceMapper.toDomain(raw).category.systemKey).toBe('CARD_REFUND');
+  });
+});
+
+describe('FinanceRecurrenceMapper.toDomain notes', () => {
+  it('SHOULD map the notes text with its line breaks', () => {
+    const raw = { ...mocks.raw, notes: 'Casa\nAeroporto' };
+
+    expect(FinanceRecurrenceMapper.toDomain(raw).notes).toBe('Casa\nAeroporto');
   });
 });

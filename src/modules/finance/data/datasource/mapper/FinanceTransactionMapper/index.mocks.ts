@@ -28,6 +28,7 @@ const rawTransactionMock: FinancialTransactionWithRelations = {
   installment_plan: null,
   installment_plan_id: null,
   invoice_month: null,
+  notes: null,
   occurrence_number: null,
   owner: 'FAMILY',
   owner_id: faker.string.uuid(),

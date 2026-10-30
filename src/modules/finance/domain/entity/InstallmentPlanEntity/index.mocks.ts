@@ -14,6 +14,7 @@ const paramsMock: InstallmentPlanEntity = {
   id: 'plan-uuid-1',
   installmentCount: 10,
   installments: [],
+  notes: null,
   owner: OwnerType.USER,
   ownerId: 'owner-uuid-1',
   prepayment: null,
