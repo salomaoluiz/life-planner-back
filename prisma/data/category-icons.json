@@ -1,0 +1,2270 @@
+[
+  {
+    "name": "folder",
+    "labelPt": "Pasta",
+    "labelEn": "Folder",
+    "group": "OTHER",
+    "keywords": [
+      "pasta",
+      "folder",
+      "arquivo",
+      "ficheiro",
+      "diretório",
+      "doc",
+      "documentos",
+      "organizar"
+    ],
+    "common": true,
+    "sort": 1
+  },
+  {
+    "name": "food",
+    "labelPt": "Comida",
+    "labelEn": "Food",
+    "group": "FOOD",
+    "keywords": ["comida", "alimentação", "refeição", "food", "meal", "almoço", "jantar"],
+    "common": true,
+    "sort": 2
+  },
+  {
+    "name": "car",
+    "labelPt": "Carro",
+    "labelEn": "Car",
+    "group": "TRANSPORT",
+    "keywords": ["carro", "automóvel", "veículo", "car", "auto", "vehicle"],
+    "common": true,
+    "sort": 3
+  },
+  {
+    "name": "home",
+    "labelPt": "Casa",
+    "labelEn": "Home",
+    "group": "HOME",
+    "keywords": ["casa", "moradia", "lar", "home", "house", "aluguel", "rent"],
+    "common": true,
+    "sort": 4
+  },
+  {
+    "name": "medical-bag",
+    "labelPt": "Saúde",
+    "labelEn": "Medical",
+    "group": "HEALTH",
+    "keywords": ["saúde", "médico", "medical", "health", "doctor", "emergência"],
+    "common": true,
+    "sort": 5
+  },
+  {
+    "name": "school",
+    "labelPt": "Escola",
+    "labelEn": "School",
+    "group": "EDUCATION",
+    "keywords": ["escola", "faculdade", "curso", "school", "college", "education", "formatura"],
+    "common": true,
+    "sort": 6
+  },
+  {
+    "name": "airplane",
+    "labelPt": "Avião",
+    "labelEn": "Airplane",
+    "group": "TRAVEL",
+    "keywords": ["avião", "voo", "viagem", "passagem", "airplane", "flight", "travel"],
+    "common": true,
+    "sort": 7
+  },
+  {
+    "name": "gift",
+    "labelPt": "Presente",
+    "labelEn": "Gift",
+    "group": "LEISURE",
+    "keywords": ["presente", "gift", "aniversário", "natal", "birthday"],
+    "common": true,
+    "sort": 8
+  },
+  {
+    "name": "cart",
+    "labelPt": "Carrinho",
+    "labelEn": "Cart",
+    "group": "SHOPPING",
+    "keywords": ["carrinho", "mercado", "supermercado", "compras", "cart", "shopping", "grocery"],
+    "common": true,
+    "sort": 9
+  },
+  {
+    "name": "bank",
+    "labelPt": "Banco",
+    "labelEn": "Bank",
+    "group": "FINANCE",
+    "keywords": ["banco", "bank", "instituição", "agência"],
+    "common": true,
+    "sort": 10
+  },
+  {
+    "name": "cash",
+    "labelPt": "Dinheiro",
+    "labelEn": "Cash",
+    "group": "FINANCE",
+    "keywords": ["dinheiro", "cash", "money", "espécie", "salário"],
+    "common": true,
+    "sort": 11
+  },
+  {
+    "name": "credit-card",
+    "labelPt": "Cartão de crédito",
+    "labelEn": "Credit card",
+    "group": "FINANCE",
+    "keywords": ["cartão", "crédito", "débito", "card", "credit", "debit"],
+    "common": true,
+    "sort": 12
+  },
+  {
+    "name": "water",
+    "labelPt": "Água",
+    "labelEn": "Water",
+    "group": "BILLS",
+    "keywords": ["água", "water", "saneamento", "conta", "esgoto"],
+    "common": false,
+    "sort": 13
+  },
+  {
+    "name": "lightning-bolt",
+    "labelPt": "Energia",
+    "labelEn": "Electricity",
+    "group": "BILLS",
+    "keywords": ["energia", "luz", "eletricidade", "raio", "electricity", "power", "bolt"],
+    "common": false,
+    "sort": 14
+  },
+  {
+    "name": "wifi",
+    "labelPt": "Internet",
+    "labelEn": "Internet",
+    "group": "BILLS",
+    "keywords": ["internet", "wifi", "rede", "banda larga", "network"],
+    "common": false,
+    "sort": 15
+  },
+  {
+    "name": "controller",
+    "labelPt": "Jogos",
+    "labelEn": "Games",
+    "group": "LEISURE",
+    "keywords": ["jogo", "videogame", "controle", "game", "controller", "gaming"],
+    "common": false,
+    "sort": 16
+  },
+  {
+    "name": "dumbbell",
+    "labelPt": "Academia",
+    "labelEn": "Gym",
+    "group": "HEALTH",
+    "keywords": ["academia", "gym", "treino", "musculação", "esporte", "workout", "fitness"],
+    "common": false,
+    "sort": 17
+  },
+  {
+    "name": "heart",
+    "labelPt": "Coração",
+    "labelEn": "Heart",
+    "group": "HEALTH",
+    "keywords": ["coração", "saúde", "amor", "heart", "health", "love"],
+    "common": false,
+    "sort": 18
+  },
+  {
+    "name": "shape-outline",
+    "labelPt": "Formas",
+    "labelEn": "Shapes",
+    "group": "OTHER",
+    "keywords": ["formas", "shape", "outro", "geral", "padrão", "default"],
+    "common": false,
+    "sort": 19
+  },
+  {
+    "name": "folder-open",
+    "labelPt": "Pasta aberta",
+    "labelEn": "Open folder",
+    "group": "OTHER",
+    "keywords": ["pasta", "aberta", "folder", "open", "diretório", "arquivo"],
+    "common": false,
+    "sort": 20
+  },
+  {
+    "name": "file-document",
+    "labelPt": "Documento",
+    "labelEn": "Document",
+    "group": "OTHER",
+    "keywords": ["documento", "doc", "texto", "contrato", "document", "file", "papel"],
+    "common": false,
+    "sort": 21
+  },
+  {
+    "name": "file-outline",
+    "labelPt": "Arquivo",
+    "labelEn": "File",
+    "group": "OTHER",
+    "keywords": ["arquivo", "ficheiro", "file", "doc", "papel"],
+    "common": false,
+    "sort": 22
+  },
+  {
+    "name": "archive",
+    "labelPt": "Caixa de arquivo",
+    "labelEn": "Archive box",
+    "group": "OTHER",
+    "keywords": ["arquivo", "caixa", "archive", "guardar", "morto", "box"],
+    "common": false,
+    "sort": 23
+  },
+  {
+    "name": "tag",
+    "labelPt": "Etiqueta",
+    "labelEn": "Tag",
+    "group": "OTHER",
+    "keywords": ["etiqueta", "tag", "rótulo", "label", "preço"],
+    "common": false,
+    "sort": 24
+  },
+  {
+    "name": "star",
+    "labelPt": "Estrela",
+    "labelEn": "Star",
+    "group": "OTHER",
+    "keywords": ["estrela", "star", "favorito", "favorite"],
+    "common": false,
+    "sort": 25
+  },
+  {
+    "name": "bookmark",
+    "labelPt": "Marcador",
+    "labelEn": "Bookmark",
+    "group": "OTHER",
+    "keywords": ["marcador", "bookmark", "favorito", "salvar"],
+    "common": false,
+    "sort": 26
+  },
+  {
+    "name": "dots-horizontal",
+    "labelPt": "Outros",
+    "labelEn": "Other",
+    "group": "OTHER",
+    "keywords": ["outros", "diversos", "other", "misc", "geral"],
+    "common": false,
+    "sort": 27
+  },
+  {
+    "name": "help-circle",
+    "labelPt": "Dúvida",
+    "labelEn": "Unknown",
+    "group": "OTHER",
+    "keywords": ["dúvida", "ajuda", "help", "unknown", "pergunta"],
+    "common": false,
+    "sort": 28
+  },
+  {
+    "name": "alert-circle",
+    "labelPt": "Alerta",
+    "labelEn": "Alert",
+    "group": "OTHER",
+    "keywords": ["alerta", "aviso", "alert", "warning", "atenção"],
+    "common": false,
+    "sort": 29
+  },
+  {
+    "name": "calendar",
+    "labelPt": "Calendário",
+    "labelEn": "Calendar",
+    "group": "OTHER",
+    "keywords": ["calendário", "data", "agenda", "calendar", "date"],
+    "common": false,
+    "sort": 30
+  },
+  {
+    "name": "clock-outline",
+    "labelPt": "Relógio",
+    "labelEn": "Clock",
+    "group": "OTHER",
+    "keywords": ["relógio", "hora", "tempo", "clock", "time"],
+    "common": false,
+    "sort": 31
+  },
+  {
+    "name": "silverware-fork-knife",
+    "labelPt": "Restaurante",
+    "labelEn": "Restaurant",
+    "group": "FOOD",
+    "keywords": ["restaurante", "talheres", "almoço", "jantar", "restaurant", "dining"],
+    "common": false,
+    "sort": 32
+  },
+  {
+    "name": "coffee",
+    "labelPt": "Café",
+    "labelEn": "Coffee",
+    "group": "FOOD",
+    "keywords": ["café", "coffee", "cafeteria", "padaria", "lanche"],
+    "common": false,
+    "sort": 33
+  },
+  {
+    "name": "pizza",
+    "labelPt": "Pizza",
+    "labelEn": "Pizza",
+    "group": "FOOD",
+    "keywords": ["pizza", "delivery", "fast food", "lanche"],
+    "common": false,
+    "sort": 34
+  },
+  {
+    "name": "hamburger",
+    "labelPt": "Hambúrguer",
+    "labelEn": "Hamburger",
+    "group": "FOOD",
+    "keywords": ["hambúrguer", "lanche", "fast food", "burger", "hamburger"],
+    "common": false,
+    "sort": 35
+  },
+  {
+    "name": "food-apple",
+    "labelPt": "Fruta",
+    "labelEn": "Fruit",
+    "group": "FOOD",
+    "keywords": ["fruta", "maçã", "feira", "hortifruti", "fruit", "apple"],
+    "common": false,
+    "sort": 36
+  },
+  {
+    "name": "carrot",
+    "labelPt": "Verdura",
+    "labelEn": "Vegetable",
+    "group": "FOOD",
+    "keywords": ["verdura", "legume", "cenoura", "hortifruti", "vegetable", "carrot"],
+    "common": false,
+    "sort": 37
+  },
+  {
+    "name": "fish",
+    "labelPt": "Peixe",
+    "labelEn": "Fish",
+    "group": "FOOD",
+    "keywords": ["peixe", "pescado", "fish", "seafood"],
+    "common": false,
+    "sort": 38
+  },
+  {
+    "name": "food-steak",
+    "labelPt": "Carne",
+    "labelEn": "Meat",
+    "group": "FOOD",
+    "keywords": ["carne", "churrasco", "açougue", "meat", "steak", "bbq"],
+    "common": false,
+    "sort": 39
+  },
+  {
+    "name": "bread-slice",
+    "labelPt": "Pão",
+    "labelEn": "Bread",
+    "group": "FOOD",
+    "keywords": ["pão", "padaria", "bread", "bakery"],
+    "common": false,
+    "sort": 40
+  },
+  {
+    "name": "cupcake",
+    "labelPt": "Doces",
+    "labelEn": "Sweets",
+    "group": "FOOD",
+    "keywords": ["doces", "bolo", "sobremesa", "cupcake", "sweets", "dessert"],
+    "common": false,
+    "sort": 41
+  },
+  {
+    "name": "ice-cream",
+    "labelPt": "Sorvete",
+    "labelEn": "Ice cream",
+    "group": "FOOD",
+    "keywords": ["sorvete", "gelato", "picolé", "ice cream"],
+    "common": false,
+    "sort": 42
+  },
+  {
+    "name": "beer",
+    "labelPt": "Cerveja",
+    "labelEn": "Beer",
+    "group": "FOOD",
+    "keywords": ["cerveja", "bar", "beer", "bebida", "drink"],
+    "common": false,
+    "sort": 43
+  },
+  {
+    "name": "glass-wine",
+    "labelPt": "Vinho",
+    "labelEn": "Wine",
+    "group": "FOOD",
+    "keywords": ["vinho", "wine", "bebida", "drink"],
+    "common": false,
+    "sort": 44
+  },
+  {
+    "name": "glass-cocktail",
+    "labelPt": "Drinks",
+    "labelEn": "Cocktail",
+    "group": "FOOD",
+    "keywords": ["drinks", "coquetel", "cocktail", "bar", "bebida"],
+    "common": false,
+    "sort": 45
+  },
+  {
+    "name": "cup",
+    "labelPt": "Copo",
+    "labelEn": "Cup",
+    "group": "FOOD",
+    "keywords": ["copo", "bebida", "suco", "cup", "drink", "juice"],
+    "common": false,
+    "sort": 46
+  },
+  {
+    "name": "bottle-soda",
+    "labelPt": "Refrigerante",
+    "labelEn": "Soda",
+    "group": "FOOD",
+    "keywords": ["refrigerante", "soda", "bebida", "bottle"],
+    "common": false,
+    "sort": 47
+  },
+  {
+    "name": "egg",
+    "labelPt": "Ovos",
+    "labelEn": "Eggs",
+    "group": "FOOD",
+    "keywords": ["ovos", "egg", "mercado"],
+    "common": false,
+    "sort": 48
+  },
+  {
+    "name": "noodles",
+    "labelPt": "Macarrão",
+    "labelEn": "Noodles",
+    "group": "FOOD",
+    "keywords": ["macarrão", "massa", "lámen", "noodles", "pasta"],
+    "common": false,
+    "sort": 49
+  },
+  {
+    "name": "rice",
+    "labelPt": "Arroz",
+    "labelEn": "Rice",
+    "group": "FOOD",
+    "keywords": ["arroz", "grãos", "rice", "grain"],
+    "common": false,
+    "sort": 50
+  },
+  {
+    "name": "baguette",
+    "labelPt": "Baguete",
+    "labelEn": "Baguette",
+    "group": "FOOD",
+    "keywords": ["baguete", "pão", "padaria", "baguette"],
+    "common": false,
+    "sort": 51
+  },
+  {
+    "name": "food-takeout-box",
+    "labelPt": "Marmita",
+    "labelEn": "Takeout",
+    "group": "FOOD",
+    "keywords": ["marmita", "quentinha", "delivery", "takeout", "lunch box"],
+    "common": false,
+    "sort": 52
+  },
+  {
+    "name": "silverware",
+    "labelPt": "Talheres",
+    "labelEn": "Cutlery",
+    "group": "FOOD",
+    "keywords": ["talheres", "cutlery", "refeição"],
+    "common": false,
+    "sort": 53
+  },
+  {
+    "name": "chef-hat",
+    "labelPt": "Cozinha",
+    "labelEn": "Cooking",
+    "group": "FOOD",
+    "keywords": ["cozinha", "cozinhar", "chef", "cooking", "kitchen"],
+    "common": false,
+    "sort": 54
+  },
+  {
+    "name": "sprout",
+    "labelPt": "Orgânicos",
+    "labelEn": "Organic",
+    "group": "FOOD",
+    "keywords": ["orgânicos", "planta", "horta", "organic", "sprout"],
+    "common": false,
+    "sort": 55
+  },
+  {
+    "name": "home-outline",
+    "labelPt": "Casa",
+    "labelEn": "House outline",
+    "group": "HOME",
+    "keywords": ["casa", "moradia", "home", "house"],
+    "common": false,
+    "sort": 56
+  },
+  {
+    "name": "home-city",
+    "labelPt": "Apartamento",
+    "labelEn": "Apartment",
+    "group": "HOME",
+    "keywords": ["apartamento", "condomínio", "apartment", "condo", "city"],
+    "common": false,
+    "sort": 57
+  },
+  {
+    "name": "key",
+    "labelPt": "Chave",
+    "labelEn": "Key",
+    "group": "HOME",
+    "keywords": ["chave", "aluguel", "key", "rent"],
+    "common": false,
+    "sort": 58
+  },
+  {
+    "name": "sofa",
+    "labelPt": "Sofá",
+    "labelEn": "Sofa",
+    "group": "HOME",
+    "keywords": ["sofá", "móveis", "sala", "sofa", "furniture", "couch"],
+    "common": false,
+    "sort": 59
+  },
+  {
+    "name": "bed",
+    "labelPt": "Cama",
+    "labelEn": "Bed",
+    "group": "HOME",
+    "keywords": ["cama", "quarto", "colchão", "bed", "bedroom"],
+    "common": false,
+    "sort": 60
+  },
+  {
+    "name": "table-furniture",
+    "labelPt": "Mesa",
+    "labelEn": "Table",
+    "group": "HOME",
+    "keywords": ["mesa", "móveis", "table", "furniture"],
+    "common": false,
+    "sort": 61
+  },
+  {
+    "name": "lamp",
+    "labelPt": "Luminária",
+    "labelEn": "Lamp",
+    "group": "HOME",
+    "keywords": ["luminária", "abajur", "lamp", "light", "decoração"],
+    "common": false,
+    "sort": 62
+  },
+  {
+    "name": "broom",
+    "labelPt": "Limpeza",
+    "labelEn": "Cleaning",
+    "group": "HOME",
+    "keywords": ["limpeza", "vassoura", "faxina", "cleaning", "broom"],
+    "common": false,
+    "sort": 63
+  },
+  {
+    "name": "washing-machine",
+    "labelPt": "Lavanderia",
+    "labelEn": "Laundry",
+    "group": "HOME",
+    "keywords": ["lavanderia", "máquina de lavar", "laundry", "washing"],
+    "common": false,
+    "sort": 64
+  },
+  {
+    "name": "hammer-wrench",
+    "labelPt": "Reparos",
+    "labelEn": "Repairs",
+    "group": "HOME",
+    "keywords": ["reparos", "reforma", "conserto", "manutenção", "repair", "maintenance"],
+    "common": false,
+    "sort": 65
+  },
+  {
+    "name": "hammer",
+    "labelPt": "Reforma",
+    "labelEn": "Renovation",
+    "group": "HOME",
+    "keywords": ["reforma", "obra", "martelo", "hammer", "renovation"],
+    "common": false,
+    "sort": 66
+  },
+  {
+    "name": "format-paint",
+    "labelPt": "Pintura",
+    "labelEn": "Painting",
+    "group": "HOME",
+    "keywords": ["pintura", "tinta", "paint", "roller"],
+    "common": false,
+    "sort": 67
+  },
+  {
+    "name": "flower",
+    "labelPt": "Jardim",
+    "labelEn": "Garden",
+    "group": "HOME",
+    "keywords": ["jardim", "flor", "plantas", "garden", "flower"],
+    "common": false,
+    "sort": 68
+  },
+  {
+    "name": "pot-mix",
+    "labelPt": "Utensílios",
+    "labelEn": "Kitchenware",
+    "group": "HOME",
+    "keywords": ["panela", "utensílios", "cozinha", "pot", "kitchenware"],
+    "common": false,
+    "sort": 69
+  },
+  {
+    "name": "fridge-outline",
+    "labelPt": "Geladeira",
+    "labelEn": "Fridge",
+    "group": "HOME",
+    "keywords": ["geladeira", "eletrodoméstico", "fridge", "appliance"],
+    "common": false,
+    "sort": 70
+  },
+  {
+    "name": "television",
+    "labelPt": "Televisão",
+    "labelEn": "Television",
+    "group": "HOME",
+    "keywords": ["televisão", "tv", "eletrônicos", "television"],
+    "common": false,
+    "sort": 71
+  },
+  {
+    "name": "fan",
+    "labelPt": "Ventilador",
+    "labelEn": "Fan",
+    "group": "HOME",
+    "keywords": ["ventilador", "ar condicionado", "fan", "cooling"],
+    "common": false,
+    "sort": 72
+  },
+  {
+    "name": "fire",
+    "labelPt": "Gás",
+    "labelEn": "Gas",
+    "group": "BILLS",
+    "keywords": ["gás", "fogão", "botijão", "fire", "gas"],
+    "common": false,
+    "sort": 73
+  },
+  {
+    "name": "home-lightning-bolt",
+    "labelPt": "Conta de luz",
+    "labelEn": "Power bill",
+    "group": "BILLS",
+    "keywords": ["luz", "energia", "conta", "power bill", "electricity"],
+    "common": false,
+    "sort": 74
+  },
+  {
+    "name": "water-pump",
+    "labelPt": "Conta de água",
+    "labelEn": "Water bill",
+    "group": "BILLS",
+    "keywords": ["água", "conta", "water bill", "sabesp"],
+    "common": false,
+    "sort": 75
+  },
+  {
+    "name": "file-document-outline",
+    "labelPt": "Boleto",
+    "labelEn": "Bill",
+    "group": "BILLS",
+    "keywords": ["boleto", "conta", "fatura", "bill", "invoice"],
+    "common": false,
+    "sort": 76
+  },
+  {
+    "name": "receipt",
+    "labelPt": "Recibo",
+    "labelEn": "Receipt",
+    "group": "BILLS",
+    "keywords": ["recibo", "nota", "comprovante", "receipt"],
+    "common": false,
+    "sort": 77
+  },
+  {
+    "name": "phone",
+    "labelPt": "Telefone",
+    "labelEn": "Phone",
+    "group": "BILLS",
+    "keywords": ["telefone", "celular", "plano", "phone", "mobile"],
+    "common": false,
+    "sort": 78
+  },
+  {
+    "name": "cellphone",
+    "labelPt": "Celular",
+    "labelEn": "Cell phone",
+    "group": "BILLS",
+    "keywords": ["celular", "smartphone", "plano", "cellphone", "mobile"],
+    "common": false,
+    "sort": 79
+  },
+  {
+    "name": "television-classic",
+    "labelPt": "TV a cabo",
+    "labelEn": "Cable TV",
+    "group": "BILLS",
+    "keywords": ["tv a cabo", "assinatura", "cable", "tv"],
+    "common": false,
+    "sort": 80
+  },
+  {
+    "name": "trash-can-outline",
+    "labelPt": "Lixo",
+    "labelEn": "Trash",
+    "group": "BILLS",
+    "keywords": ["lixo", "coleta", "trash", "garbage"],
+    "common": false,
+    "sort": 81
+  },
+  {
+    "name": "shield-home",
+    "labelPt": "Seguro residencial",
+    "labelEn": "Home insurance",
+    "group": "BILLS",
+    "keywords": ["seguro", "residencial", "home insurance", "proteção"],
+    "common": false,
+    "sort": 82
+  },
+  {
+    "name": "city",
+    "labelPt": "Condomínio",
+    "labelEn": "Condominium",
+    "group": "BILLS",
+    "keywords": ["condomínio", "taxa", "city", "condominium"],
+    "common": false,
+    "sort": 83
+  },
+  {
+    "name": "cash-register",
+    "labelPt": "Impostos",
+    "labelEn": "Taxes",
+    "group": "BILLS",
+    "keywords": ["impostos", "iptu", "taxas", "taxes", "tax"],
+    "common": false,
+    "sort": 84
+  },
+  {
+    "name": "calendar-clock",
+    "labelPt": "Vencimentos",
+    "labelEn": "Due dates",
+    "group": "BILLS",
+    "keywords": ["vencimento", "prazo", "due", "schedule"],
+    "common": false,
+    "sort": 85
+  },
+  {
+    "name": "bus",
+    "labelPt": "Ônibus",
+    "labelEn": "Bus",
+    "group": "TRANSPORT",
+    "keywords": ["ônibus", "transporte público", "bus", "transit"],
+    "common": false,
+    "sort": 86
+  },
+  {
+    "name": "train",
+    "labelPt": "Trem",
+    "labelEn": "Train",
+    "group": "TRANSPORT",
+    "keywords": ["trem", "metrô", "train", "metro", "subway"],
+    "common": false,
+    "sort": 87
+  },
+  {
+    "name": "subway-variant",
+    "labelPt": "Metrô",
+    "labelEn": "Subway",
+    "group": "TRANSPORT",
+    "keywords": ["metrô", "subway", "metro"],
+    "common": false,
+    "sort": 88
+  },
+  {
+    "name": "taxi",
+    "labelPt": "Táxi",
+    "labelEn": "Taxi",
+    "group": "TRANSPORT",
+    "keywords": ["táxi", "corrida", "uber", "taxi", "ride"],
+    "common": false,
+    "sort": 89
+  },
+  {
+    "name": "motorbike",
+    "labelPt": "Moto",
+    "labelEn": "Motorcycle",
+    "group": "TRANSPORT",
+    "keywords": ["moto", "motocicleta", "motorbike", "motorcycle"],
+    "common": false,
+    "sort": 90
+  },
+  {
+    "name": "bicycle",
+    "labelPt": "Bicicleta",
+    "labelEn": "Bicycle",
+    "group": "TRANSPORT",
+    "keywords": ["bicicleta", "bike", "bicycle"],
+    "common": false,
+    "sort": 91
+  },
+  {
+    "name": "gas-station",
+    "labelPt": "Combustível",
+    "labelEn": "Fuel",
+    "group": "TRANSPORT",
+    "keywords": ["combustível", "gasolina", "posto", "etanol", "fuel", "gas station"],
+    "common": false,
+    "sort": 92
+  },
+  {
+    "name": "car-wrench",
+    "labelPt": "Oficina",
+    "labelEn": "Car repair",
+    "group": "TRANSPORT",
+    "keywords": ["oficina", "mecânico", "conserto", "car repair", "mechanic"],
+    "common": false,
+    "sort": 93
+  },
+  {
+    "name": "car-wash",
+    "labelPt": "Lavagem",
+    "labelEn": "Car wash",
+    "group": "TRANSPORT",
+    "keywords": ["lavagem", "lava-rápido", "car wash"],
+    "common": false,
+    "sort": 94
+  },
+  {
+    "name": "parking",
+    "labelPt": "Estacionamento",
+    "labelEn": "Parking",
+    "group": "TRANSPORT",
+    "keywords": ["estacionamento", "parking", "garagem"],
+    "common": false,
+    "sort": 95
+  },
+  {
+    "name": "ev-station",
+    "labelPt": "Recarga",
+    "labelEn": "EV charging",
+    "group": "TRANSPORT",
+    "keywords": ["recarga", "elétrico", "ev", "charging"],
+    "common": false,
+    "sort": 96
+  },
+  {
+    "name": "road-variant",
+    "labelPt": "Pedágio",
+    "labelEn": "Toll",
+    "group": "TRANSPORT",
+    "keywords": ["pedágio", "estrada", "toll", "road"],
+    "common": false,
+    "sort": 97
+  },
+  {
+    "name": "car-key",
+    "labelPt": "Chave do carro",
+    "labelEn": "Car key",
+    "group": "TRANSPORT",
+    "keywords": ["chave", "carro", "car key"],
+    "common": false,
+    "sort": 98
+  },
+  {
+    "name": "tow-truck",
+    "labelPt": "Guincho",
+    "labelEn": "Tow truck",
+    "group": "TRANSPORT",
+    "keywords": ["guincho", "reboque", "tow"],
+    "common": false,
+    "sort": 99
+  },
+  {
+    "name": "truck",
+    "labelPt": "Caminhão",
+    "labelEn": "Truck",
+    "group": "TRANSPORT",
+    "keywords": ["caminhão", "frete", "truck", "freight"],
+    "common": false,
+    "sort": 100
+  },
+  {
+    "name": "scooter",
+    "labelPt": "Patinete",
+    "labelEn": "Scooter",
+    "group": "TRANSPORT",
+    "keywords": ["patinete", "scooter", "patinete elétrico", "mobilidade"],
+    "common": false,
+    "sort": 101
+  },
+  {
+    "name": "ferry",
+    "labelPt": "Balsa",
+    "labelEn": "Ferry",
+    "group": "TRANSPORT",
+    "keywords": ["balsa", "barco", "ferry", "boat"],
+    "common": false,
+    "sort": 102
+  },
+  {
+    "name": "shield-car",
+    "labelPt": "Seguro do carro",
+    "labelEn": "Car insurance",
+    "group": "TRANSPORT",
+    "keywords": ["seguro", "carro", "car insurance"],
+    "common": false,
+    "sort": 103
+  },
+  {
+    "name": "pill",
+    "labelPt": "Remédio",
+    "labelEn": "Medicine",
+    "group": "HEALTH",
+    "keywords": ["remédio", "farmácia", "medicamento", "pill", "medicine", "pharmacy"],
+    "common": false,
+    "sort": 104
+  },
+  {
+    "name": "hospital-box",
+    "labelPt": "Hospital",
+    "labelEn": "Hospital",
+    "group": "HEALTH",
+    "keywords": ["hospital", "emergência", "hospital", "clinic"],
+    "common": false,
+    "sort": 105
+  },
+  {
+    "name": "stethoscope",
+    "labelPt": "Consulta",
+    "labelEn": "Doctor visit",
+    "group": "HEALTH",
+    "keywords": ["consulta", "médico", "stethoscope", "doctor", "appointment"],
+    "common": false,
+    "sort": 106
+  },
+  {
+    "name": "tooth",
+    "labelPt": "Dentista",
+    "labelEn": "Dentist",
+    "group": "HEALTH",
+    "keywords": ["dentista", "dente", "tooth", "dentist", "dental"],
+    "common": false,
+    "sort": 107
+  },
+  {
+    "name": "eye",
+    "labelPt": "Oculista",
+    "labelEn": "Eye care",
+    "group": "HEALTH",
+    "keywords": ["oculista", "óculos", "visão", "eye", "glasses"],
+    "common": false,
+    "sort": 108
+  },
+  {
+    "name": "glasses",
+    "labelPt": "Óculos",
+    "labelEn": "Glasses",
+    "group": "HEALTH",
+    "keywords": ["óculos", "glasses", "visão"],
+    "common": false,
+    "sort": 109
+  },
+  {
+    "name": "needle",
+    "labelPt": "Vacina",
+    "labelEn": "Vaccine",
+    "group": "HEALTH",
+    "keywords": ["vacina", "injeção", "needle", "vaccine"],
+    "common": false,
+    "sort": 110
+  },
+  {
+    "name": "heart-pulse",
+    "labelPt": "Cardiologia",
+    "labelEn": "Cardiology",
+    "group": "HEALTH",
+    "keywords": ["cardiologia", "coração", "pulse", "heart"],
+    "common": false,
+    "sort": 111
+  },
+  {
+    "name": "brain",
+    "labelPt": "Terapia",
+    "labelEn": "Therapy",
+    "group": "HEALTH",
+    "keywords": ["terapia", "psicólogo", "mente", "brain", "therapy"],
+    "common": false,
+    "sort": 112
+  },
+  {
+    "name": "yoga",
+    "labelPt": "Yoga",
+    "labelEn": "Yoga",
+    "group": "HEALTH",
+    "keywords": ["yoga", "meditação", "pilates"],
+    "common": false,
+    "sort": 113
+  },
+  {
+    "name": "run",
+    "labelPt": "Corrida",
+    "labelEn": "Running",
+    "group": "HEALTH",
+    "keywords": ["corrida", "correr", "running", "run"],
+    "common": false,
+    "sort": 114
+  },
+  {
+    "name": "bandage",
+    "labelPt": "Curativo",
+    "labelEn": "Bandage",
+    "group": "HEALTH",
+    "keywords": ["curativo", "bandage", "first aid"],
+    "common": false,
+    "sort": 115
+  },
+  {
+    "name": "shield-plus",
+    "labelPt": "Plano de saúde",
+    "labelEn": "Health plan",
+    "group": "HEALTH",
+    "keywords": ["plano de saúde", "convênio", "health plan", "insurance"],
+    "common": false,
+    "sort": 116
+  },
+  {
+    "name": "spa",
+    "labelPt": "Spa",
+    "labelEn": "Spa",
+    "group": "HEALTH",
+    "keywords": ["spa", "massagem", "massage", "relax"],
+    "common": false,
+    "sort": 117
+  },
+  {
+    "name": "face-woman-shimmer",
+    "labelPt": "Beleza",
+    "labelEn": "Beauty",
+    "group": "HEALTH",
+    "keywords": ["beleza", "estética", "skin", "beauty"],
+    "common": false,
+    "sort": 118
+  },
+  {
+    "name": "content-cut",
+    "labelPt": "Cabeleireiro",
+    "labelEn": "Haircut",
+    "group": "HEALTH",
+    "keywords": ["cabelo", "cabeleireiro", "barbeiro", "haircut", "salon"],
+    "common": false,
+    "sort": 119
+  },
+  {
+    "name": "bike",
+    "labelPt": "Ciclismo",
+    "labelEn": "Cycling",
+    "group": "HEALTH",
+    "keywords": ["ciclismo", "bike", "cycling"],
+    "common": false,
+    "sort": 120
+  },
+  {
+    "name": "swim",
+    "labelPt": "Natação",
+    "labelEn": "Swimming",
+    "group": "HEALTH",
+    "keywords": ["natação", "piscina", "swim", "swimming"],
+    "common": false,
+    "sort": 121
+  },
+  {
+    "name": "book-open-variant",
+    "labelPt": "Livro",
+    "labelEn": "Book",
+    "group": "EDUCATION",
+    "keywords": ["livro", "leitura", "estudo", "book", "reading"],
+    "common": false,
+    "sort": 122
+  },
+  {
+    "name": "book-education",
+    "labelPt": "Material escolar",
+    "labelEn": "School supplies",
+    "group": "EDUCATION",
+    "keywords": ["material escolar", "caderno", "book", "supplies"],
+    "common": false,
+    "sort": 123
+  },
+  {
+    "name": "notebook",
+    "labelPt": "Caderno",
+    "labelEn": "Notebook",
+    "group": "EDUCATION",
+    "keywords": ["caderno", "notebook", "anotações"],
+    "common": false,
+    "sort": 124
+  },
+  {
+    "name": "pencil",
+    "labelPt": "Lápis",
+    "labelEn": "Pencil",
+    "group": "EDUCATION",
+    "keywords": ["lápis", "pencil", "escrever"],
+    "common": false,
+    "sort": 125
+  },
+  {
+    "name": "laptop",
+    "labelPt": "Notebook",
+    "labelEn": "Laptop",
+    "group": "EDUCATION",
+    "keywords": ["laptop", "computador", "estudo", "notebook"],
+    "common": false,
+    "sort": 126
+  },
+  {
+    "name": "translate",
+    "labelPt": "Idiomas",
+    "labelEn": "Languages",
+    "group": "EDUCATION",
+    "keywords": ["idiomas", "inglês", "curso", "language", "translate"],
+    "common": false,
+    "sort": 127
+  },
+  {
+    "name": "certificate",
+    "labelPt": "Certificado",
+    "labelEn": "Certificate",
+    "group": "EDUCATION",
+    "keywords": ["certificado", "diploma", "certificate"],
+    "common": false,
+    "sort": 128
+  },
+  {
+    "name": "school-outline",
+    "labelPt": "Mensalidade",
+    "labelEn": "Tuition",
+    "group": "EDUCATION",
+    "keywords": ["mensalidade", "escola", "tuition", "school"],
+    "common": false,
+    "sort": 129
+  },
+  {
+    "name": "atom",
+    "labelPt": "Ciências",
+    "labelEn": "Science",
+    "group": "EDUCATION",
+    "keywords": ["ciências", "física", "science", "atom"],
+    "common": false,
+    "sort": 130
+  },
+  {
+    "name": "palette",
+    "labelPt": "Arte",
+    "labelEn": "Art",
+    "group": "EDUCATION",
+    "keywords": ["arte", "pintura", "palette", "art"],
+    "common": false,
+    "sort": 131
+  },
+  {
+    "name": "music",
+    "labelPt": "Música",
+    "labelEn": "Music",
+    "group": "EDUCATION",
+    "keywords": ["música", "aula de música", "music", "lesson"],
+    "common": false,
+    "sort": 132
+  },
+  {
+    "name": "calculator",
+    "labelPt": "Matemática",
+    "labelEn": "Math",
+    "group": "EDUCATION",
+    "keywords": ["matemática", "calculadora", "math", "calculator"],
+    "common": false,
+    "sort": 133
+  },
+  {
+    "name": "human-male-board",
+    "labelPt": "Aulas",
+    "labelEn": "Classes",
+    "group": "EDUCATION",
+    "keywords": ["aulas", "professor", "classes", "teacher"],
+    "common": false,
+    "sort": 134
+  },
+  {
+    "name": "movie",
+    "labelPt": "Cinema",
+    "labelEn": "Cinema",
+    "group": "LEISURE",
+    "keywords": ["cinema", "filme", "movie", "film"],
+    "common": false,
+    "sort": 135
+  },
+  {
+    "name": "television-play",
+    "labelPt": "Streaming",
+    "labelEn": "Streaming",
+    "group": "LEISURE",
+    "keywords": ["streaming", "série", "netflix", "tv", "streaming"],
+    "common": false,
+    "sort": 136
+  },
+  {
+    "name": "music-note",
+    "labelPt": "Música",
+    "labelEn": "Music note",
+    "group": "LEISURE",
+    "keywords": ["música", "show", "music", "concert"],
+    "common": false,
+    "sort": 137
+  },
+  {
+    "name": "headphones",
+    "labelPt": "Fones",
+    "labelEn": "Headphones",
+    "group": "LEISURE",
+    "keywords": ["fones", "headphones", "podcast"],
+    "common": false,
+    "sort": 138
+  },
+  {
+    "name": "ticket",
+    "labelPt": "Ingresso",
+    "labelEn": "Ticket",
+    "group": "LEISURE",
+    "keywords": ["ingresso", "evento", "show", "ticket", "event"],
+    "common": false,
+    "sort": 139
+  },
+  {
+    "name": "party-popper",
+    "labelPt": "Festa",
+    "labelEn": "Party",
+    "group": "LEISURE",
+    "keywords": ["festa", "comemoração", "party", "celebration"],
+    "common": false,
+    "sort": 140
+  },
+  {
+    "name": "cake-variant",
+    "labelPt": "Aniversário",
+    "labelEn": "Birthday",
+    "group": "LEISURE",
+    "keywords": ["aniversário", "bolo", "birthday", "cake"],
+    "common": false,
+    "sort": 141
+  },
+  {
+    "name": "guitar-acoustic",
+    "labelPt": "Violão",
+    "labelEn": "Guitar",
+    "group": "LEISURE",
+    "keywords": ["violão", "guitarra", "guitar", "instrument"],
+    "common": false,
+    "sort": 142
+  },
+  {
+    "name": "soccer",
+    "labelPt": "Futebol",
+    "labelEn": "Soccer",
+    "group": "LEISURE",
+    "keywords": ["futebol", "esporte", "soccer", "football"],
+    "common": false,
+    "sort": 143
+  },
+  {
+    "name": "basketball",
+    "labelPt": "Basquete",
+    "labelEn": "Basketball",
+    "group": "LEISURE",
+    "keywords": ["basquete", "basketball", "bola", "quadra"],
+    "common": false,
+    "sort": 144
+  },
+  {
+    "name": "tennis",
+    "labelPt": "Tênis",
+    "labelEn": "Tennis",
+    "group": "LEISURE",
+    "keywords": ["tênis", "raquete", "tennis"],
+    "common": false,
+    "sort": 145
+  },
+  {
+    "name": "golf",
+    "labelPt": "Golfe",
+    "labelEn": "Golf",
+    "group": "LEISURE",
+    "keywords": ["golfe", "golf", "campo", "tacos"],
+    "common": false,
+    "sort": 146
+  },
+  {
+    "name": "pool",
+    "labelPt": "Sinuca",
+    "labelEn": "Pool",
+    "group": "LEISURE",
+    "keywords": ["sinuca", "bilhar", "pool"],
+    "common": false,
+    "sort": 147
+  },
+  {
+    "name": "chess-knight",
+    "labelPt": "Xadrez",
+    "labelEn": "Chess",
+    "group": "LEISURE",
+    "keywords": ["xadrez", "chess", "jogo de tabuleiro"],
+    "common": false,
+    "sort": 148
+  },
+  {
+    "name": "puzzle",
+    "labelPt": "Quebra-cabeça",
+    "labelEn": "Puzzle",
+    "group": "LEISURE",
+    "keywords": ["quebra-cabeça", "puzzle", "hobby"],
+    "common": false,
+    "sort": 149
+  },
+  {
+    "name": "camera",
+    "labelPt": "Fotografia",
+    "labelEn": "Photography",
+    "group": "LEISURE",
+    "keywords": ["fotografia", "câmera", "camera", "photo"],
+    "common": false,
+    "sort": 150
+  },
+  {
+    "name": "palette-outline",
+    "labelPt": "Hobbies",
+    "labelEn": "Hobbies",
+    "group": "LEISURE",
+    "keywords": ["hobbies", "artesanato", "hobby", "craft"],
+    "common": false,
+    "sort": 151
+  },
+  {
+    "name": "book-open-page-variant",
+    "labelPt": "Revistas",
+    "labelEn": "Magazines",
+    "group": "LEISURE",
+    "keywords": ["revistas", "leitura", "magazine", "reading"],
+    "common": false,
+    "sort": 152
+  },
+  {
+    "name": "youtube",
+    "labelPt": "Vídeos",
+    "labelEn": "Videos",
+    "group": "LEISURE",
+    "keywords": ["vídeos", "youtube", "video"],
+    "common": false,
+    "sort": 153
+  },
+  {
+    "name": "gamepad-variant",
+    "labelPt": "Videogame",
+    "labelEn": "Video game",
+    "group": "LEISURE",
+    "keywords": ["videogame", "console", "gamepad"],
+    "common": false,
+    "sort": 154
+  },
+  {
+    "name": "cards-playing",
+    "labelPt": "Cartas",
+    "labelEn": "Cards",
+    "group": "LEISURE",
+    "keywords": ["cartas", "baralho", "cards", "poker"],
+    "common": false,
+    "sort": 155
+  },
+  {
+    "name": "cart-outline",
+    "labelPt": "Compras",
+    "labelEn": "Shopping",
+    "group": "SHOPPING",
+    "keywords": ["compras", "mercado", "cart", "shopping"],
+    "common": false,
+    "sort": 156
+  },
+  {
+    "name": "basket",
+    "labelPt": "Cesta",
+    "labelEn": "Basket",
+    "group": "SHOPPING",
+    "keywords": ["cesta", "feira", "basket", "market"],
+    "common": false,
+    "sort": 157
+  },
+  {
+    "name": "shopping",
+    "labelPt": "Sacola",
+    "labelEn": "Shopping bag",
+    "group": "SHOPPING",
+    "keywords": ["sacola", "loja", "bag", "shopping"],
+    "common": false,
+    "sort": 158
+  },
+  {
+    "name": "store",
+    "labelPt": "Loja",
+    "labelEn": "Store",
+    "group": "SHOPPING",
+    "keywords": ["loja", "comércio", "store", "shop"],
+    "common": false,
+    "sort": 159
+  },
+  {
+    "name": "hanger",
+    "labelPt": "Roupas",
+    "labelEn": "Clothes",
+    "group": "SHOPPING",
+    "keywords": ["roupas", "vestuário", "clothes", "hanger", "fashion"],
+    "common": false,
+    "sort": 160
+  },
+  {
+    "name": "tshirt-crew",
+    "labelPt": "Camiseta",
+    "labelEn": "T-shirt",
+    "group": "SHOPPING",
+    "keywords": ["camiseta", "roupa", "tshirt", "shirt"],
+    "common": false,
+    "sort": 161
+  },
+  {
+    "name": "shoe-formal",
+    "labelPt": "Sapatos",
+    "labelEn": "Shoes",
+    "group": "SHOPPING",
+    "keywords": ["sapatos", "calçados", "shoes"],
+    "common": false,
+    "sort": 162
+  },
+  {
+    "name": "shoe-sneaker",
+    "labelPt": "Tênis",
+    "labelEn": "Sneakers",
+    "group": "SHOPPING",
+    "keywords": ["tênis", "calçado", "sneaker"],
+    "common": false,
+    "sort": 163
+  },
+  {
+    "name": "bag-personal",
+    "labelPt": "Bolsa",
+    "labelEn": "Handbag",
+    "group": "SHOPPING",
+    "keywords": ["bolsa", "acessórios", "handbag", "purse"],
+    "common": false,
+    "sort": 164
+  },
+  {
+    "name": "watch",
+    "labelPt": "Relógio de pulso",
+    "labelEn": "Watch",
+    "group": "SHOPPING",
+    "keywords": ["relógio", "watch", "acessório"],
+    "common": false,
+    "sort": 165
+  },
+  {
+    "name": "diamond-stone",
+    "labelPt": "Joias",
+    "labelEn": "Jewelry",
+    "group": "SHOPPING",
+    "keywords": ["joias", "jóias", "diamante", "jewelry", "diamond"],
+    "common": false,
+    "sort": 166
+  },
+  {
+    "name": "lipstick",
+    "labelPt": "Maquiagem",
+    "labelEn": "Makeup",
+    "group": "SHOPPING",
+    "keywords": ["maquiagem", "cosméticos", "makeup", "cosmetics"],
+    "common": false,
+    "sort": 167
+  },
+  {
+    "name": "shopping-search",
+    "labelPt": "Marketplace",
+    "labelEn": "Marketplace",
+    "group": "SHOPPING",
+    "keywords": ["marketplace", "online", "loja virtual", "online shopping"],
+    "common": false,
+    "sort": 168
+  },
+  {
+    "name": "package-variant",
+    "labelPt": "Encomenda",
+    "labelEn": "Package",
+    "group": "SHOPPING",
+    "keywords": ["encomenda", "pacote", "entrega", "package", "delivery"],
+    "common": false,
+    "sort": 169
+  },
+  {
+    "name": "sale",
+    "labelPt": "Promoção",
+    "labelEn": "Sale",
+    "group": "SHOPPING",
+    "keywords": ["promoção", "desconto", "sale", "discount"],
+    "common": false,
+    "sort": 170
+  },
+  {
+    "name": "gift-outline",
+    "labelPt": "Presentes",
+    "labelEn": "Gifts",
+    "group": "SHOPPING",
+    "keywords": ["presentes", "gift", "lembrança"],
+    "common": false,
+    "sort": 171
+  },
+  {
+    "name": "cash-multiple",
+    "labelPt": "Dinheiro vivo",
+    "labelEn": "Cash bills",
+    "group": "FINANCE",
+    "keywords": ["dinheiro", "notas", "cash", "bills", "money"],
+    "common": false,
+    "sort": 172
+  },
+  {
+    "name": "piggy-bank",
+    "labelPt": "Cofrinho",
+    "labelEn": "Piggy bank",
+    "group": "FINANCE",
+    "keywords": ["cofrinho", "poupança", "economia", "reserva", "savings", "piggy"],
+    "common": false,
+    "sort": 173
+  },
+  {
+    "name": "chart-line",
+    "labelPt": "Investimentos",
+    "labelEn": "Investments",
+    "group": "FINANCE",
+    "keywords": ["investimentos", "bolsa", "rendimento", "investment", "stocks", "chart"],
+    "common": false,
+    "sort": 174
+  },
+  {
+    "name": "trending-up",
+    "labelPt": "Rendimentos",
+    "labelEn": "Returns",
+    "group": "FINANCE",
+    "keywords": ["rendimentos", "lucro", "trending", "returns", "profit"],
+    "common": false,
+    "sort": 175
+  },
+  {
+    "name": "bank-outline",
+    "labelPt": "Tarifas",
+    "labelEn": "Bank fees",
+    "group": "FINANCE",
+    "keywords": ["tarifas", "banco", "fees", "bank"],
+    "common": false,
+    "sort": 176
+  },
+  {
+    "name": "wallet",
+    "labelPt": "Carteira",
+    "labelEn": "Wallet",
+    "group": "FINANCE",
+    "keywords": ["carteira", "wallet", "bolsa de dinheiro", "pagamentos"],
+    "common": false,
+    "sort": 177
+  },
+  {
+    "name": "credit-card-outline",
+    "labelPt": "Cartão",
+    "labelEn": "Card",
+    "group": "FINANCE",
+    "keywords": ["cartão", "card", "fatura"],
+    "common": false,
+    "sort": 178
+  },
+  {
+    "name": "percent",
+    "labelPt": "Juros",
+    "labelEn": "Interest",
+    "group": "FINANCE",
+    "keywords": ["juros", "percentual", "interest", "percent"],
+    "common": false,
+    "sort": 179
+  },
+  {
+    "name": "hand-coin",
+    "labelPt": "Empréstimo",
+    "labelEn": "Loan",
+    "group": "FINANCE",
+    "keywords": ["empréstimo", "financiamento", "loan", "hand coin"],
+    "common": false,
+    "sort": 180
+  },
+  {
+    "name": "safe",
+    "labelPt": "Cofre",
+    "labelEn": "Safe",
+    "group": "FINANCE",
+    "keywords": ["cofre", "reserva", "safe", "vault"],
+    "common": false,
+    "sort": 181
+  },
+  {
+    "name": "currency-usd",
+    "labelPt": "Dólar",
+    "labelEn": "Dollar",
+    "group": "FINANCE",
+    "keywords": ["dólar", "moeda", "dollar", "currency"],
+    "common": false,
+    "sort": 182
+  },
+  {
+    "name": "bitcoin",
+    "labelPt": "Cripto",
+    "labelEn": "Crypto",
+    "group": "FINANCE",
+    "keywords": ["cripto", "bitcoin", "crypto"],
+    "common": false,
+    "sort": 183
+  },
+  {
+    "name": "swap-horizontal",
+    "labelPt": "Transferência",
+    "labelEn": "Transfer",
+    "group": "FINANCE",
+    "keywords": ["transferência", "pix", "transfer", "swap"],
+    "common": false,
+    "sort": 184
+  },
+  {
+    "name": "cash-fast",
+    "labelPt": "Pix",
+    "labelEn": "Instant payment",
+    "group": "FINANCE",
+    "keywords": ["pix", "pagamento", "instant", "payment"],
+    "common": false,
+    "sort": 185
+  },
+  {
+    "name": "scale-balance",
+    "labelPt": "Jurídico",
+    "labelEn": "Legal",
+    "group": "FINANCE",
+    "keywords": ["jurídico", "advogado", "justiça", "legal", "law"],
+    "common": false,
+    "sort": 186
+  },
+  {
+    "name": "shield-check",
+    "labelPt": "Seguros",
+    "labelEn": "Insurance",
+    "group": "FINANCE",
+    "keywords": ["seguro", "proteção", "insurance", "shield"],
+    "common": false,
+    "sort": 187
+  },
+  {
+    "name": "paw",
+    "labelPt": "Pet",
+    "labelEn": "Pet",
+    "group": "PETS",
+    "keywords": ["pet", "animal", "cachorro", "gato", "paw"],
+    "common": false,
+    "sort": 188
+  },
+  {
+    "name": "dog",
+    "labelPt": "Cachorro",
+    "labelEn": "Dog",
+    "group": "PETS",
+    "keywords": ["cachorro", "cão", "dog", "pet"],
+    "common": false,
+    "sort": 189
+  },
+  {
+    "name": "cat",
+    "labelPt": "Gato",
+    "labelEn": "Cat",
+    "group": "PETS",
+    "keywords": ["gato", "cat", "pet"],
+    "common": false,
+    "sort": 190
+  },
+  {
+    "name": "bone",
+    "labelPt": "Ração",
+    "labelEn": "Pet food",
+    "group": "PETS",
+    "keywords": ["ração", "osso", "petisco", "bone", "pet food"],
+    "common": false,
+    "sort": 191
+  },
+  {
+    "name": "fishbowl",
+    "labelPt": "Aquário",
+    "labelEn": "Aquarium",
+    "group": "PETS",
+    "keywords": ["aquário", "peixe", "aquarium", "fish"],
+    "common": false,
+    "sort": 192
+  },
+  {
+    "name": "bird",
+    "labelPt": "Pássaro",
+    "labelEn": "Bird",
+    "group": "PETS",
+    "keywords": ["pássaro", "ave", "bird"],
+    "common": false,
+    "sort": 193
+  },
+  {
+    "name": "rabbit",
+    "labelPt": "Coelho",
+    "labelEn": "Rabbit",
+    "group": "PETS",
+    "keywords": ["coelho", "rabbit", "animal", "bichinho"],
+    "common": false,
+    "sort": 194
+  },
+  {
+    "name": "horse",
+    "labelPt": "Cavalo",
+    "labelEn": "Horse",
+    "group": "PETS",
+    "keywords": ["cavalo", "horse", "animal", "hípica"],
+    "common": false,
+    "sort": 195
+  },
+  {
+    "name": "dog-service",
+    "labelPt": "Veterinário",
+    "labelEn": "Vet",
+    "group": "PETS",
+    "keywords": ["veterinário", "vet", "clínica", "veterinarian"],
+    "common": false,
+    "sort": 196
+  },
+  {
+    "name": "airplane-takeoff",
+    "labelPt": "Passagem",
+    "labelEn": "Flight ticket",
+    "group": "TRAVEL",
+    "keywords": ["passagem", "voo", "flight", "ticket"],
+    "common": false,
+    "sort": 197
+  },
+  {
+    "name": "bag-suitcase",
+    "labelPt": "Mala",
+    "labelEn": "Suitcase",
+    "group": "TRAVEL",
+    "keywords": ["mala", "bagagem", "viagem", "suitcase", "luggage"],
+    "common": false,
+    "sort": 198
+  },
+  {
+    "name": "bed-king",
+    "labelPt": "Hotel",
+    "labelEn": "Hotel",
+    "group": "TRAVEL",
+    "keywords": ["hotel", "hospedagem", "pousada", "lodging"],
+    "common": false,
+    "sort": 199
+  },
+  {
+    "name": "beach",
+    "labelPt": "Praia",
+    "labelEn": "Beach",
+    "group": "TRAVEL",
+    "keywords": ["praia", "férias", "beach", "vacation"],
+    "common": false,
+    "sort": 200
+  },
+  {
+    "name": "umbrella-beach",
+    "labelPt": "Férias",
+    "labelEn": "Vacation",
+    "group": "TRAVEL",
+    "keywords": ["férias", "guarda-sol", "vacation", "holiday"],
+    "common": false,
+    "sort": 201
+  },
+  {
+    "name": "map-marker",
+    "labelPt": "Destino",
+    "labelEn": "Destination",
+    "group": "TRAVEL",
+    "keywords": ["destino", "local", "marker", "destination"],
+    "common": false,
+    "sort": 202
+  },
+  {
+    "name": "compass",
+    "labelPt": "Passeios",
+    "labelEn": "Tours",
+    "group": "TRAVEL",
+    "keywords": ["passeios", "turismo", "compass", "tour"],
+    "common": false,
+    "sort": 203
+  },
+  {
+    "name": "passport",
+    "labelPt": "Passaporte",
+    "labelEn": "Passport",
+    "group": "TRAVEL",
+    "keywords": ["passaporte", "visto", "documento", "passport", "visa"],
+    "common": false,
+    "sort": 204
+  },
+  {
+    "name": "tent",
+    "labelPt": "Camping",
+    "labelEn": "Camping",
+    "group": "TRAVEL",
+    "keywords": ["camping", "barraca", "tent", "camping"],
+    "common": false,
+    "sort": 205
+  },
+  {
+    "name": "ship-wheel",
+    "labelPt": "Cruzeiro",
+    "labelEn": "Cruise",
+    "group": "TRAVEL",
+    "keywords": ["cruzeiro", "navio", "cruise", "ship"],
+    "common": false,
+    "sort": 206
+  },
+  {
+    "name": "earth",
+    "labelPt": "Internacional",
+    "labelEn": "International",
+    "group": "TRAVEL",
+    "keywords": ["internacional", "mundo", "earth", "world"],
+    "common": false,
+    "sort": 207
+  },
+  {
+    "name": "briefcase",
+    "labelPt": "Trabalho",
+    "labelEn": "Work",
+    "group": "WORK",
+    "keywords": ["trabalho", "emprego", "work", "job", "briefcase"],
+    "common": false,
+    "sort": 208
+  },
+  {
+    "name": "briefcase-outline",
+    "labelPt": "Negócios",
+    "labelEn": "Business",
+    "group": "WORK",
+    "keywords": ["negócios", "empresa", "business"],
+    "common": false,
+    "sort": 209
+  },
+  {
+    "name": "desk",
+    "labelPt": "Escritório",
+    "labelEn": "Office",
+    "group": "WORK",
+    "keywords": ["escritório", "mesa", "office", "desk"],
+    "common": false,
+    "sort": 210
+  },
+  {
+    "name": "printer",
+    "labelPt": "Impressão",
+    "labelEn": "Printing",
+    "group": "WORK",
+    "keywords": ["impressão", "impressora", "printer", "print"],
+    "common": false,
+    "sort": 211
+  },
+  {
+    "name": "domain",
+    "labelPt": "Empresa",
+    "labelEn": "Company",
+    "group": "WORK",
+    "keywords": ["empresa", "prédio", "company", "building"],
+    "common": false,
+    "sort": 212
+  },
+  {
+    "name": "account-tie",
+    "labelPt": "Salário",
+    "labelEn": "Salary",
+    "group": "WORK",
+    "keywords": ["salário", "pagamento", "salary", "wage"],
+    "common": false,
+    "sort": 213
+  },
+  {
+    "name": "handshake",
+    "labelPt": "Contratos",
+    "labelEn": "Contracts",
+    "group": "WORK",
+    "keywords": ["contratos", "acordo", "handshake", "deal"],
+    "common": false,
+    "sort": 214
+  },
+  {
+    "name": "file-chart",
+    "labelPt": "Relatórios",
+    "labelEn": "Reports",
+    "group": "WORK",
+    "keywords": ["relatórios", "reports", "chart"],
+    "common": false,
+    "sort": 215
+  },
+  {
+    "name": "tools",
+    "labelPt": "Ferramentas",
+    "labelEn": "Tools",
+    "group": "WORK",
+    "keywords": ["ferramentas", "tools", "serviço"],
+    "common": false,
+    "sort": 216
+  },
+  {
+    "name": "bullhorn",
+    "labelPt": "Marketing",
+    "labelEn": "Marketing",
+    "group": "WORK",
+    "keywords": ["marketing", "divulgação", "publicidade", "advertising"],
+    "common": false,
+    "sort": 217
+  },
+  {
+    "name": "baby-carriage",
+    "labelPt": "Bebê",
+    "labelEn": "Baby",
+    "group": "FAMILY",
+    "keywords": ["bebê", "carrinho", "filho", "baby"],
+    "common": false,
+    "sort": 218
+  },
+  {
+    "name": "baby-face-outline",
+    "labelPt": "Criança",
+    "labelEn": "Child",
+    "group": "FAMILY",
+    "keywords": ["criança", "filho", "baby", "child"],
+    "common": false,
+    "sort": 219
+  },
+  {
+    "name": "human-male-female-child",
+    "labelPt": "Família",
+    "labelEn": "Family",
+    "group": "FAMILY",
+    "keywords": ["família", "filhos", "family", "kids"],
+    "common": false,
+    "sort": 220
+  },
+  {
+    "name": "account-group",
+    "labelPt": "Pessoas",
+    "labelEn": "People",
+    "group": "FAMILY",
+    "keywords": ["pessoas", "grupo", "amigos", "people", "group"],
+    "common": false,
+    "sort": 221
+  },
+  {
+    "name": "human-cane",
+    "labelPt": "Idosos",
+    "labelEn": "Elderly",
+    "group": "FAMILY",
+    "keywords": ["idosos", "avós", "elderly", "care"],
+    "common": false,
+    "sort": 222
+  },
+  {
+    "name": "teddy-bear",
+    "labelPt": "Brinquedos",
+    "labelEn": "Toys",
+    "group": "FAMILY",
+    "keywords": ["brinquedos", "criança", "toys", "teddy"],
+    "common": false,
+    "sort": 223
+  },
+  {
+    "name": "ring",
+    "labelPt": "Casamento",
+    "labelEn": "Wedding",
+    "group": "FAMILY",
+    "keywords": ["casamento", "aliança", "wedding", "ring"],
+    "common": false,
+    "sort": 224
+  },
+  {
+    "name": "flower-tulip",
+    "labelPt": "Flores",
+    "labelEn": "Flowers",
+    "group": "FAMILY",
+    "keywords": ["flores", "presente", "flowers"],
+    "common": false,
+    "sort": 225
+  },
+  {
+    "name": "hand-heart",
+    "labelPt": "Doações",
+    "labelEn": "Donations",
+    "group": "FAMILY",
+    "keywords": ["doações", "caridade", "donation", "charity"],
+    "common": false,
+    "sort": 226
+  },
+  {
+    "name": "church",
+    "labelPt": "Igreja",
+    "labelEn": "Church",
+    "group": "FAMILY",
+    "keywords": ["igreja", "dízimo", "church", "tithe"],
+    "common": false,
+    "sort": 227
+  },
+  {
+    "name": "face-man",
+    "labelPt": "Pessoal",
+    "labelEn": "Personal",
+    "group": "FAMILY",
+    "keywords": ["pessoal", "eu", "personal", "me"],
+    "common": false,
+    "sort": 228
+  },
+  {
+    "name": "toolbox-outline",
+    "labelPt": "Serviços",
+    "labelEn": "Services",
+    "group": "SERVICES",
+    "keywords": ["serviços", "manutenção", "services"],
+    "common": false,
+    "sort": 229
+  },
+  {
+    "name": "wrench",
+    "labelPt": "Manutenção",
+    "labelEn": "Maintenance",
+    "group": "SERVICES",
+    "keywords": ["manutenção", "conserto", "wrench", "maintenance"],
+    "common": false,
+    "sort": 230
+  },
+  {
+    "name": "lightbulb-on",
+    "labelPt": "Eletricista",
+    "labelEn": "Electrician",
+    "group": "SERVICES",
+    "keywords": ["eletricista", "elétrica", "lightbulb", "electrician"],
+    "common": false,
+    "sort": 231
+  },
+  {
+    "name": "pipe-wrench",
+    "labelPt": "Encanador",
+    "labelEn": "Plumber",
+    "group": "SERVICES",
+    "keywords": ["encanador", "hidráulica", "plumber", "pipe"],
+    "common": false,
+    "sort": 232
+  },
+  {
+    "name": "account-hard-hat",
+    "labelPt": "Pedreiro",
+    "labelEn": "Construction",
+    "group": "SERVICES",
+    "keywords": ["pedreiro", "obra", "construction", "builder"],
+    "common": false,
+    "sort": 233
+  },
+  {
+    "name": "truck-delivery",
+    "labelPt": "Entrega",
+    "labelEn": "Delivery",
+    "group": "SERVICES",
+    "keywords": ["entrega", "frete", "delivery", "shipping"],
+    "common": false,
+    "sort": 234
+  },
+  {
+    "name": "mailbox",
+    "labelPt": "Correios",
+    "labelEn": "Mail",
+    "group": "SERVICES",
+    "keywords": ["correios", "carta", "mail", "post"],
+    "common": false,
+    "sort": 235
+  },
+  {
+    "name": "washing-machine-alert",
+    "labelPt": "Diarista",
+    "labelEn": "Housekeeper",
+    "group": "SERVICES",
+    "keywords": ["diarista", "faxina", "empregada", "housekeeper", "maid"],
+    "common": false,
+    "sort": 236
+  },
+  {
+    "name": "scissors-cutting",
+    "labelPt": "Costureira",
+    "labelEn": "Tailor",
+    "group": "SERVICES",
+    "keywords": ["costureira", "ajuste", "tailor", "sewing"],
+    "common": false,
+    "sort": 237
+  },
+  {
+    "name": "shield-lock",
+    "labelPt": "Segurança",
+    "labelEn": "Security",
+    "group": "SERVICES",
+    "keywords": ["segurança", "alarme", "security", "alarm"],
+    "common": false,
+    "sort": 238
+  },
+  {
+    "name": "account-wrench",
+    "labelPt": "Técnico",
+    "labelEn": "Technician",
+    "group": "SERVICES",
+    "keywords": ["técnico", "assistência", "technician"],
+    "common": false,
+    "sort": 239
+  },
+  {
+    "name": "monitor",
+    "labelPt": "Computador",
+    "labelEn": "Computer",
+    "group": "TECH",
+    "keywords": ["computador", "monitor", "computer", "pc"],
+    "common": false,
+    "sort": 240
+  },
+  {
+    "name": "cellphone-link",
+    "labelPt": "Aplicativos",
+    "labelEn": "Apps",
+    "group": "TECH",
+    "keywords": ["aplicativos", "app", "apps", "software"],
+    "common": false,
+    "sort": 241
+  },
+  {
+    "name": "cloud",
+    "labelPt": "Nuvem",
+    "labelEn": "Cloud",
+    "group": "TECH",
+    "keywords": ["nuvem", "armazenamento", "cloud", "storage"],
+    "common": false,
+    "sort": 242
+  },
+  {
+    "name": "server",
+    "labelPt": "Servidor",
+    "labelEn": "Server",
+    "group": "TECH",
+    "keywords": ["servidor", "hospedagem", "server", "hosting"],
+    "common": false,
+    "sort": 243
+  },
+  {
+    "name": "console",
+    "labelPt": "Console",
+    "labelEn": "Console",
+    "group": "TECH",
+    "keywords": ["console", "videogame", "jogos", "playstation"],
+    "common": false,
+    "sort": 244
+  },
+  {
+    "name": "headset",
+    "labelPt": "Headset",
+    "labelEn": "Headset",
+    "group": "TECH",
+    "keywords": ["headset", "fone", "gamer"],
+    "common": false,
+    "sort": 245
+  },
+  {
+    "name": "keyboard",
+    "labelPt": "Teclado",
+    "labelEn": "Keyboard",
+    "group": "TECH",
+    "keywords": ["teclado", "keyboard", "periférico"],
+    "common": false,
+    "sort": 246
+  },
+  {
+    "name": "mouse",
+    "labelPt": "Mouse",
+    "labelEn": "Mouse",
+    "group": "TECH",
+    "keywords": ["mouse", "periférico", "computador", "acessório"],
+    "common": false,
+    "sort": 247
+  },
+  {
+    "name": "usb",
+    "labelPt": "Acessórios",
+    "labelEn": "Accessories",
+    "group": "TECH",
+    "keywords": ["acessórios", "cabo", "usb", "accessories"],
+    "common": false,
+    "sort": 248
+  },
+  {
+    "name": "robot",
+    "labelPt": "Inteligência artificial",
+    "labelEn": "AI",
+    "group": "TECH",
+    "keywords": ["inteligência artificial", "ia", "robô", "robot", "ai"],
+    "common": false,
+    "sort": 249
+  },
+  {
+    "name": "code-tags",
+    "labelPt": "Programação",
+    "labelEn": "Programming",
+    "group": "TECH",
+    "keywords": ["programação", "código", "code", "programming"],
+    "common": false,
+    "sort": 250
+  },
+  {
+    "name": "cellphone-wireless",
+    "labelPt": "Assinaturas",
+    "labelEn": "Subscriptions",
+    "group": "TECH",
+    "keywords": ["assinaturas", "mensalidade", "subscription", "recurring"],
+    "common": false,
+    "sort": 251
+  }
+]
