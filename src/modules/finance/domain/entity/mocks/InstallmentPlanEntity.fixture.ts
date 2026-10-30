@@ -43,6 +43,7 @@ class InstallmentPlanEntityFixture {
           .withValue(value as number)
           .build(),
       })),
+      notes: null,
       owner: OwnerType.USER,
       ownerId,
       prepayment: null,

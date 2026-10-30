@@ -6,6 +6,7 @@ import {
   DescriptionSchema,
   INT4_MAX,
   INT4_MIN,
+  NotesSchema,
   TagNameSchema,
   TagNamesSchema,
   ValueSchema,
@@ -20,6 +21,7 @@ export const DescriptionApiSchema = DescriptionSchema;
 export const IconApiSchema = z.string().trim().min(1).max(50);
 export const IconColorApiSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
 export const NameApiSchema = z.string().trim().min(1).max(60);
+export const NotesApiSchema = NotesSchema;
 export const OwnerIdApiSchema = z.uuid();
 export const OwnerTypeApiSchema = z.enum(OwnerType);
 // Spec 043: 1-30 characters after trimming; at most 10 per record. Names differing only by case collapse later.

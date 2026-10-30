@@ -541,3 +541,15 @@ it('SHOULD accept a tags-only patch AND reject more than 10 tags', async () => {
     ValidationError,
   );
 });
+
+it('SHOULD update the notes alone AND clear them with null (spec 059)', async () => {
+  await run({ notes: 'Reembolsar' });
+  expect(mocks.transactionRepository.updateTransaction).toHaveBeenLastCalledWith(
+    expect.objectContaining({ notes: 'Reembolsar' }),
+  );
+
+  await run({ notes: null });
+  expect(mocks.transactionRepository.updateTransaction).toHaveBeenLastCalledWith(
+    expect.objectContaining({ notes: null }),
+  );
+});

@@ -68,6 +68,7 @@ export class CreateTransactionUseCase implements UseCaseWithParams<
       date: input.date,
       description: input.description,
       invoiceMonth: card ? invoiceMonthOf(input.date, card.closingDay) : undefined,
+      notes: input.notes,
       owner: input.owner,
       ownerId: input.ownerId,
       // Account rows start paid when dated up to today (ISO dates compare as strings).

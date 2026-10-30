@@ -5,6 +5,7 @@ import {
   CalendarDateSchema,
   CurrencySchema,
   DescriptionSchema,
+  NotesSchema,
   OwnerIdSchema,
   OwnerTypeSchema,
   TagNamesSchema,
@@ -23,6 +24,7 @@ export const CreateRecurrenceSchema = z
     // Date of occurrence 1.
     date: CalendarDateSchema,
     description: DescriptionSchema,
+    notes: NotesSchema.optional(),
     // Inclusive; omitted = runs until the user ends it.
     endDate: CalendarDateSchema.optional(),
     frequency: z.enum(RecurrenceFrequency),

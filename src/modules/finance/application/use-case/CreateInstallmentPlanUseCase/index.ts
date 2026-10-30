@@ -72,6 +72,7 @@ export class CreateInstallmentPlanUseCase implements UseCaseWithParams<
         invoiceMonthOf(input.date, card.closingDay),
         input.installments,
       ),
+      notes: input.notes,
       owner: input.owner,
       ownerId: input.ownerId,
       tags: input.tags,

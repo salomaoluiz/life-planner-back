@@ -56,6 +56,7 @@ export class UpdateRecurrenceUseCase implements UseCaseWithParams<
     const seriesPatch: SeriesPatchRepositoryParams = {
       categoryId: input.categoryId,
       description: input.description,
+      notes: input.notes,
       value: input.value,
     };
     let deleteAfter: null | string | undefined;
@@ -75,6 +76,7 @@ export class UpdateRecurrenceUseCase implements UseCaseWithParams<
       rowPatch: {
         categoryId: input.categoryId,
         description: input.description,
+        notes: input.notes,
         value: input.value,
       },
       seriesPatch,

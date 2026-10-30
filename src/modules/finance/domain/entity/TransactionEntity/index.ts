@@ -50,6 +50,7 @@ interface ITransactionEntity {
   description: string;
   earlyPayment?: null | TransactionEarlyPaymentSummary;
   id: string;
+  notes?: null | string;
   // Total installments of the plan (join), the number of this row and the plan id; all null outside a plan.
   installmentCount: null | number;
   installmentNumber: null | number;
@@ -93,6 +94,7 @@ class TransactionEntity {
   // Calendar date `YYYY-MM-DD` (no time, no timezone).
   date: string;
   description: string;
+  notes: null | string;
   // Set on the INVOICE_PAYMENT debit row of an early payment.
   earlyPayment: null | TransactionEarlyPaymentSummary;
   id: string;
@@ -139,6 +141,7 @@ class TransactionEntity {
     this.currency = params.currency ?? DEFAULT_CURRENCY;
     this.date = params.date;
     this.description = params.description;
+    this.notes = params.notes ?? null;
     this.earlyPayment = params.earlyPayment ?? null;
     this.id = params.id;
     this.installmentCount = params.installmentCount;

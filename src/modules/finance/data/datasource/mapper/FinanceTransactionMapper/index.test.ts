@@ -29,6 +29,7 @@ describe('FinanceTransactionMapper.toDomain', () => {
       installmentNumber: null,
       installmentPlanId: null,
       invoiceMonth: null,
+      notes: null,
       occurrenceCount: null,
       occurrenceNumber: null,
       owner: 'FAMILY',
@@ -187,5 +188,13 @@ describe('FinanceTransactionMapper.toDomain recurrence', () => {
     };
 
     expect(FinanceTransactionMapper.toDomain(raw).occurrenceCount).toBeNull();
+  });
+});
+
+describe('FinanceTransactionMapper.toDomain notes', () => {
+  it('SHOULD map the notes text with its line breaks', () => {
+    const raw = { ...mocks.raw, notes: 'Casa\nAeroporto' };
+
+    expect(FinanceTransactionMapper.toDomain(raw).notes).toBe('Casa\nAeroporto');
   });
 });

@@ -7,6 +7,7 @@ import {
   DescriptionApiSchema,
   hasAtLeastOneField,
   IconColorApiSchema,
+  NotesApiSchema,
   OwnerIdApiSchema,
   OwnerTypeApiSchema,
   TagNamesApiSchema,
@@ -22,6 +23,7 @@ const TransactionFieldsSchema = z.object({
   creditCardId: z.uuid(),
   date: CalendarDateApiSchema,
   description: DescriptionApiSchema,
+  notes: NotesApiSchema,
   owner: OwnerTypeApiSchema,
   ownerId: OwnerIdApiSchema,
   // Account rows only: omitted on create → paid when dated up to `today` (spec 033).
@@ -36,6 +38,7 @@ const TransactionFieldsSchema = z.object({
 export const CreateTransactionApiSchema = TransactionFieldsSchema.partial({
   accountId: true,
   creditCardId: true,
+  notes: true,
   paid: true,
   tags: true,
 })
@@ -85,6 +88,8 @@ export const TransactionApiSchema = z.object({
   installmentNumber: z.number().int().nullable(),
   installmentPlanId: z.uuid().nullable(),
   invoiceMonth: z.string().nullable(),
+  // Spec 059: free text of normal rows; always null on system rows.
+  notes: z.string().nullable(),
   // Only on create / update responses of card purchases: the purchase left the card over its limit.
   overLimit: z.boolean().optional(),
   // Series position / total (null without end date) / id / frequency; all null outside a recurring series.

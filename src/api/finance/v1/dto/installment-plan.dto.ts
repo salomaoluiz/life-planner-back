@@ -6,6 +6,7 @@ import {
   CurrencyApiSchema,
   DescriptionApiSchema,
   hasAtLeastOneField,
+  NotesApiSchema,
   OwnerIdApiSchema,
   OwnerTypeApiSchema,
   TagNamesApiSchema,
@@ -26,6 +27,7 @@ export const CreateInstallmentPlanApiSchema = z
     date: CalendarDateApiSchema,
     description: DescriptionApiSchema,
     installments: InstallmentsApiSchema,
+    notes: NotesApiSchema.optional(),
     owner: OwnerTypeApiSchema,
     ownerId: OwnerIdApiSchema,
     tags: TagNamesApiSchema.optional(),
@@ -44,6 +46,7 @@ export const UpdateInstallmentPlanApiSchema = z
     date: CalendarDateApiSchema,
     description: DescriptionApiSchema,
     installments: InstallmentsApiSchema,
+    notes: NotesApiSchema,
     tags: TagNamesApiSchema,
     value: ValueApiSchema,
   })
@@ -73,6 +76,7 @@ export const InstallmentPlanApiSchema = z.object({
     description: z.string(),
     id: z.uuid(),
     installmentCount: z.number().int(),
+    notes: z.string().nullable(),
     owner: OwnerTypeApiSchema,
     ownerId: z.uuid(),
     prepayment: z

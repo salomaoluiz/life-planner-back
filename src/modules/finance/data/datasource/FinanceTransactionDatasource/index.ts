@@ -358,6 +358,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
           date: params.date,
           description: params.description,
           invoice_month: params.invoice_month,
+          notes: params.notes,
           owner: params.owner,
           owner_id: params.owner_id,
           paid: params.paid,
@@ -399,6 +400,7 @@ const DASHBOARD_EXCLUDED_KEYS = [
   SystemCategoryKey.INVOICE_PAYMENT,
 ];
 
+// Case- and accent-insensitive LIKE of a column against an already escaped pattern.
 function dashboardSumsSql(params: DashboardSumsParams): Prisma.Sql {
   const isCard = params.source === TransactionSource.CARD;
   const isAccount = params.source === undefined || params.source === TransactionSource.ACCOUNT;
@@ -450,11 +452,23 @@ function dashboardSumsSql(params: DashboardSumsParams): Prisma.Sql {
     );
   }
   if (params.q) {
-    const pattern = `%${params.q.replace(/[\\%_]/g, '\\$&')}%`;
+    const pattern = `%${params.q.trim().replace(/[\\%_]/g, '\\$&')}%`;
+    // Spec 059 FR 14: description, notes, category (the ids already include the descendants) or amount.
+    const matchers = [
+      foldedLike(Prisma.sql`t."description"`, pattern),
+      foldedLike(Prisma.sql`COALESCE(t."notes", '')`, pattern),
+    ];
 
-    conditions.push(
-      Prisma.sql`translate(lower(t."description"), ${ACCENTS}, ${PLAIN}) ILIKE translate(lower(${pattern}), ${ACCENTS}, ${PLAIN})`,
-    );
+    if (params.search_category_ids?.length) {
+      matchers.push(Prisma.sql`t."category_id" IN (${Prisma.join(params.search_category_ids)})`);
+    }
+    if (params.amount_min !== undefined && params.amount_max !== undefined) {
+      matchers.push(
+        Prisma.sql`ABS(t."value") BETWEEN ${params.amount_min} AND ${params.amount_max}`,
+      );
+    }
+
+    conditions.push(Prisma.sql`(${Prisma.join(matchers, ' OR ')})`);
   }
 
   const tagJoin = params.by_tag
@@ -473,6 +487,9 @@ function dashboardSumsSql(params: DashboardSumsParams): Prisma.Sql {
     ${tagJoin}
     WHERE ${Prisma.join(conditions, ' AND ')}
     GROUP BY 1, 2, 3, 4, 5, 6, 7`;
+}
+function foldedLike(column: Prisma.Sql, pattern: string): Prisma.Sql {
+  return Prisma.sql`translate(lower(${column}), ${ACCENTS}, ${PLAIN}) ILIKE translate(lower(${pattern}), ${ACCENTS}, ${PLAIN})`;
 }
 
 // Spec 045: the optional filters as extra AND conditions (none → the same query as before).

@@ -268,3 +268,23 @@ describe('tags (spec 043)', () => {
     );
   });
 });
+
+describe('notes (spec 059)', () => {
+  it('SHOULD give the new series the edited notes AND keep the old ones when none are sent', async () => {
+    await setup.execute({ ...base, notes: 'Novo contrato', value: 220000 });
+    expect(mocks.recurrenceRepository.applyChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        newSeries: expect.objectContaining({ notes: 'Novo contrato' }),
+        rowPatch: expect.objectContaining({ notes: 'Novo contrato' }),
+      }),
+    );
+
+    await setup.execute({ ...base, value: 220000 });
+    expect(mocks.recurrenceRepository.applyChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        newSeries: expect.objectContaining({ notes: null }),
+        rowPatch: expect.not.objectContaining({ notes: expect.anything() }),
+      }),
+    );
+  });
+});

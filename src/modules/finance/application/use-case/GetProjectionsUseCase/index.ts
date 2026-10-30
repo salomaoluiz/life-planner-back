@@ -2,6 +2,7 @@ import { BadRequestException, Inject } from '@nestjs/common';
 
 import { GetProjectionsInput, GetProjectionsSchema } from '@finance/application/dto/GetRecurrences';
 import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
+import { ResolveSearchCategoryIdsUseCase } from '@finance/application/use-case/ResolveSearchCategoryIdsUseCase';
 import { narrowOwners } from '@finance/domain/entity/OwnerAccess';
 import { ProjectedOccurrence } from '@finance/domain/entity/ProjectedOccurrence';
 import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
@@ -22,7 +23,7 @@ import {
   occurrencesBetween,
   ScheduledOccurrence,
 } from '@finance/domain/service/RecurrenceSchedule';
-import { matchesText } from '@finance/domain/service/TextMatch';
+import { matchesTransactionQuery } from '@finance/domain/service/TransactionSearch';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -37,6 +38,8 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
     private readonly expandCategoryIdsUseCase: ExpandCategoryIdsUseCase,
     @Inject('IFinanceCreditCardRepository')
     private readonly creditCardRepository: IFinanceCreditCardRepository,
+    @Inject(ResolveSearchCategoryIdsUseCase)
+    private readonly resolveSearchCategoryIdsUseCase: ResolveSearchCategoryIdsUseCase,
     @Inject('IFinanceRecurrenceRepository')
     private readonly recurrenceRepository: IFinanceRecurrenceRepository,
   ) {}
@@ -67,9 +70,17 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
           }),
         )
       : undefined;
+    const searchCategoryIds = new Set(
+      filter.q
+        ? await this.resolveSearchCategoryIdsUseCase.execute({
+            accessibleOwners: input.accessibleOwners,
+            q: filter.q,
+          })
+        : [],
+    );
     const series = (
       await this.recurrenceRepository.findByOwners(owners, { status: RecurrenceStatus.ACTIVE })
-    ).filter((item) => matchesSeries(item, filter, categoryIds));
+    ).filter((item) => matchesSeries(item, filter, categoryIds, searchCategoryIds));
 
     if (series.length === 0 || from > to) {
       return [];
@@ -144,6 +155,7 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
             ? buildInvoiceFor(card, invoiceMonth, [], [], today).paymentDate
             : null,
         invoiceMonth,
+        notes: series.notes,
         occurrenceCount: series.occurrenceCount,
         occurrenceNumber: series.firstNumber - 1 + occurrence.k,
         owner: series.owner,
@@ -161,7 +173,8 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
 function matchesSeries(
   item: RecurrenceEntity,
   filter: TransactionFilter,
-  categoryIds?: ReadonlySet<string>,
+  categoryIds: ReadonlySet<string> | undefined,
+  searchCategoryIds: ReadonlySet<string>,
 ): boolean {
   const tagIds = filter.tagIds?.length ? new Set(filter.tagIds) : undefined;
   const hasSources = !!filter.accountIds?.length || !!filter.creditCardIds?.length;
@@ -173,7 +186,17 @@ function matchesSeries(
     (!categoryIds || categoryIds.has(item.categoryId)) &&
     (!tagIds || (item.tags ?? []).some((tag) => tagIds.has(tag.id))) &&
     (!hasSources || inSources) &&
-    (!filter.q || matchesText(item.description, filter.q))
+    (!filter.q ||
+      matchesTransactionQuery(
+        {
+          categoryId: item.categoryId,
+          description: item.description,
+          notes: item.notes,
+          valueCents: item.value,
+        },
+        filter.q,
+        searchCategoryIds,
+      ))
   );
 }
 function max(a: string, b: string): string {

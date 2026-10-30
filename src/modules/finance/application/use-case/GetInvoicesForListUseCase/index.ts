@@ -7,12 +7,13 @@ import {
 import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
 import { FindInvoicesInRangeUseCase } from '@finance/application/use-case/FindInvoicesInRangeUseCase';
 import { InvoiceDetail, splitInvoiceRows } from '@finance/application/use-case/GetInvoiceUseCase';
+import { ResolveSearchCategoryIdsUseCase } from '@finance/application/use-case/ResolveSearchCategoryIdsUseCase';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { hasFilter, TransactionFilter } from '@finance/domain/entity/TransactionFilter';
 import { InvoiceStatus, TransactionType } from '@finance/domain/enum';
 import { IFinanceTransactionRepository } from '@finance/domain/repository';
 import { lastDayOfMonth } from '@finance/domain/service/RecurrenceSchedule';
-import { matchesText } from '@finance/domain/service/TextMatch';
+import { matchesTransactionQuery } from '@finance/domain/service/TransactionSearch';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -28,6 +29,8 @@ export class GetInvoicesForListUseCase implements UseCaseWithParams<
     private readonly expandCategoryIdsUseCase: ExpandCategoryIdsUseCase,
     @Inject(FindInvoicesInRangeUseCase)
     private readonly findInvoicesInRangeUseCase: FindInvoicesInRangeUseCase,
+    @Inject(ResolveSearchCategoryIdsUseCase)
+    private readonly resolveSearchCategoryIdsUseCase: ResolveSearchCategoryIdsUseCase,
     @Inject('IFinanceTransactionRepository')
     private readonly transactionRepository: IFinanceTransactionRepository,
   ) {}
@@ -111,13 +114,29 @@ export class GetInvoicesForListUseCase implements UseCaseWithParams<
         )
       : undefined;
     const tagIds = filter.tagIds?.length ? new Set(filter.tagIds) : undefined;
+    const query = filter.q;
+    const searchCategoryIds = new Set(
+      query
+        ? await this.resolveSearchCategoryIdsUseCase.execute({ accessibleOwners, q: query })
+        : [],
+    );
 
     return {
       active: !!categoryIds || !!tagIds || !!filter.q,
       matches: (row: TransactionEntity) =>
         (!categoryIds || categoryIds.has(row.categoryId)) &&
         (!tagIds || row.tags.some((tag) => tagIds.has(tag.id))) &&
-        (!filter.q || matchesText(row.description, filter.q)),
+        (!query ||
+          matchesTransactionQuery(
+            {
+              categoryId: row.categoryId,
+              description: row.description,
+              notes: row.notes,
+              valueCents: row.value,
+            },
+            query,
+            searchCategoryIds,
+          )),
     };
   }
 }

@@ -58,6 +58,7 @@ function toTransactionOutput(
     installmentNumber: transaction.installmentNumber,
     installmentPlanId: transaction.installmentPlanId,
     invoiceMonth: transaction.invoiceMonth,
+    notes: transaction.notes,
     occurrenceCount: transaction.occurrenceCount,
     occurrenceNumber: transaction.occurrenceNumber,
     overLimit,

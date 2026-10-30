@@ -29,6 +29,7 @@ export interface CreateTransactionDatasourceParams {
   date: Date;
   description: string;
   invoice_month?: null | string;
+  notes?: null | string;
   owner: OwnerType;
   owner_id: string;
   // Account rows only (spec 033); card rows stay NULL.
@@ -50,6 +51,8 @@ export interface DashboardSumRow {
 }
 export interface DashboardSumsParams {
   account_ids?: string[];
+  amount_max?: number;
+  amount_min?: number;
   by_tag: boolean;
   category_ids?: string[];
   credit_card_ids?: string[];
@@ -58,6 +61,7 @@ export interface DashboardSumsParams {
   invoice_refs: CardInvoiceKey[];
   owners: OwnerAccess[];
   q?: string;
+  search_category_ids?: string[];
   source?: TransactionSource;
   tag_ids?: string[];
   to: string;
@@ -153,6 +157,7 @@ export interface UpdateTransactionDatasourceParams {
   description?: string;
   id: string;
   invoice_month?: null | string;
+  notes?: null | string;
   owner?: OwnerType;
   owner_id?: string;
   // true/false on account rows, null when the row moves to a card (spec 033).

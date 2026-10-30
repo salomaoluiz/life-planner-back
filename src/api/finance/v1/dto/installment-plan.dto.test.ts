@@ -74,6 +74,7 @@ describe('InstallmentPlanApiSchema', () => {
         description: 'Notebook',
         id: uuid,
         installmentCount: 1,
+        notes: null,
         owner: 'USER',
         ownerId: uuid,
         prepayment: null,

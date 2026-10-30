@@ -4,6 +4,7 @@ import {
   AccessibleOwnersSchema,
   CalendarDateSchema,
   DescriptionSchema,
+  NotesSchema,
   OwnerIdSchema,
   OwnerTypeSchema,
   TagNamesSchema,
@@ -21,6 +22,7 @@ export const UpdateTransactionSchema = z
     date: CalendarDateSchema.optional(),
     description: DescriptionSchema.optional(),
     id: z.string().min(1),
+    notes: NotesSchema.optional(),
     owner: OwnerTypeSchema.optional(),
     ownerId: OwnerIdSchema.optional(),
     paid: z.boolean().optional(),
@@ -42,6 +44,7 @@ export const UpdateTransactionSchema = z
       input.creditCardId !== undefined ||
       input.date !== undefined ||
       input.description !== undefined ||
+      input.notes !== undefined ||
       input.owner !== undefined ||
       input.ownerId !== undefined ||
       input.paid !== undefined ||

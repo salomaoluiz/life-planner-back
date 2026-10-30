@@ -22,6 +22,8 @@ export const ImportRowSchema = z.object({
   // Spec 048: the invoice month (`YYYY-MM`) of a card row; checked by the use case.
   invoiceMonth: z.string().nullish(),
   line: z.number().int().min(1),
+  // Spec 059: optional note of a normal transaction; checked by the use case.
+  notes: z.string().nullish(),
   // Spec 047: the owner of this row; omitted rows take the owner of the request.
   owner: OwnerTypeSchema.nullish(),
   ownerId: z.string().min(1).nullish(),

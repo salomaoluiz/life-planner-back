@@ -142,4 +142,29 @@ describe('filters (spec 045)', () => {
     ).rejects.toThrow();
     await expect(setup.execute(base)).rejects.toThrow();
   });
+
+  it('SHOULD match a purchase by its notes, its category name or its amount', async () => {
+    const noted = { ...matching, categoryId: 'cat-x', notes: 'Presente da Ana', value: 1234 };
+    const plain = { ...other, categoryId: 'cat-y', notes: null, value: 999 };
+
+    mocks.transactionRepository.findCardPurchases.mockResolvedValue([noted, plain]);
+    const byNotes = await setup.execute({
+      ...base,
+      filter: { from: '2026-11-01', q: 'presente', to: '2026-11-30' },
+    });
+    mocks.resolveSearch.execute.mockResolvedValue(['cat-y']);
+    const byCategory = await setup.execute({
+      ...base,
+      filter: { from: '2026-11-01', q: 'lazer', to: '2026-11-30' },
+    });
+    mocks.resolveSearch.execute.mockResolvedValue([]);
+    const byAmount = await setup.execute({
+      ...base,
+      filter: { from: '2026-11-01', q: '12,34', to: '2026-11-30' },
+    });
+
+    expect(byNotes[0].purchases).toEqual([noted]);
+    expect(byCategory[0].purchases).toEqual([plain]);
+    expect(byAmount[0].purchases).toEqual([noted]);
+  });
 });

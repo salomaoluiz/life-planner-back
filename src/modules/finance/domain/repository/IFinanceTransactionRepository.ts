@@ -74,6 +74,8 @@ interface DashboardSum {
 }
 interface DashboardSumsQuery {
   accountIds?: string[];
+  // Spec 059: an amount-like `q` also matches rows whose absolute value (cents) is in the range.
+  amountRange?: { maxCents: number; minCents: number };
   byTag: boolean;
   categoryIds?: string[];
   creditCardIds?: string[];
@@ -82,8 +84,10 @@ interface DashboardSumsQuery {
   // The invoices whose card rows count; none → no card rows.
   invoiceRefs: CardInvoiceRef[];
   owners: OwnerAccess[];
-  // Case and accent insensitive match on the description.
+  // Case and accent insensitive match on the description and notes (plus the two fields around it).
   q?: string;
+  // Spec 059: categories whose name (or an ancestor's) matches `q`.
+  searchCategoryIds?: string[];
   source?: TransactionSource;
   tagIds?: string[];
   to: string;
@@ -104,6 +108,7 @@ interface CreateTransactionRepositoryParams {
   date: string;
   description: string;
   invoiceMonth?: string;
+  notes?: null | string;
   owner: OwnerType;
   ownerId: string;
   // Account rows only; omitted for card rows.
@@ -133,6 +138,7 @@ interface UpdateTransactionRepositoryParams {
   description?: string;
   id: string;
   invoiceMonth?: null | string;
+  notes?: null | string;
   owner?: OwnerType;
   ownerId?: string;
   // true/false on account rows, null when the row moves to a card.

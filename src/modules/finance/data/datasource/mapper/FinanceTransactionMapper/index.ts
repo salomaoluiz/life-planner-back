@@ -53,6 +53,7 @@ export class FinanceTransactionMapper {
       installmentNumber: raw.installment_number,
       installmentPlanId: raw.installment_plan_id,
       invoiceMonth: raw.invoice_month,
+      notes: raw.notes,
       occurrenceCount: raw.recurrence
         ? totalOccurrences(
             {

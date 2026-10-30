@@ -176,3 +176,37 @@ describe('executeChunked (spec 053)', () => {
     );
   });
 });
+
+describe('notes (spec 059)', () => {
+  it('SHOULD carry the series notes on every projected occurrence', async () => {
+    const result = await setup.execute(base);
+
+    expect(result.length).toBeGreaterThan(0);
+    expect(result.every((item) => item.notes === 'Contrato anual')).toBe(true);
+  });
+});
+
+describe('search by notes, category and amount (spec 059)', () => {
+  function ids(items: { recurrenceId: string }[]) {
+    return new Set(items.map((i) => i.recurrenceId));
+  }
+
+  it('SHOULD match the series notes, its category name and its amount', async () => {
+    const byNotes = await setup.execute({ ...base, filter: { q: 'contrato' } });
+
+    mocks.resolveSearch.execute.mockResolvedValue([mocks.series.categoryId]);
+    const byCategory = await setup.execute({ ...base, filter: { q: 'moradia' } });
+
+    mocks.resolveSearch.execute.mockResolvedValue([]);
+    const byAmount = await setup.execute({
+      ...base,
+      filter: { q: String(mocks.series.value / 100).replace('.', ',') },
+    });
+    const none = await setup.execute({ ...base, filter: { q: 'inexistente' } });
+
+    expect(ids(byNotes)).toEqual(new Set([mocks.series.id]));
+    expect(ids(byCategory)).toEqual(new Set([mocks.series.id]));
+    expect(ids(byAmount)).toEqual(new Set([mocks.series.id]));
+    expect(none).toEqual([]);
+  });
+});

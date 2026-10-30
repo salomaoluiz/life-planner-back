@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 
 import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
+import { ResolveSearchCategoryIdsUseCase } from '@finance/application/use-case/ResolveSearchCategoryIdsUseCase';
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
 import RecurrenceEntityFixture from '@finance/domain/entity/mocks/RecurrenceEntity.fixture';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -12,10 +13,16 @@ import { GetProjectionsUseCase } from './index';
 const accessibleOwners = [{ owner: OwnerType.USER, ownerId: 'user-id' }];
 const cardMock = new CreditCardEntityFixture().build();
 const seriesMock = new RecurrenceEntityFixture()
-  .withFields({ id: 'series-1', lastGeneratedNumber: 1, startDate: '2026-10-05' })
+  .withFields({
+    id: 'series-1',
+    lastGeneratedNumber: 1,
+    notes: 'Contrato anual',
+    startDate: '2026-10-05',
+  })
   .build();
 
 const expandMock = { execute: jest.fn() };
+const resolveSearchMock = { execute: jest.fn() };
 const creditCardRepositoryMock = { findCreditCardById: jest.fn() };
 const recurrenceRepositoryMock = { findByOwners: jest.fn(), findFutureNumbers: jest.fn() };
 
@@ -29,11 +36,13 @@ beforeEach(async () => {
   recurrenceRepositoryMock.findByOwners.mockResolvedValue([seriesMock]);
   recurrenceRepositoryMock.findFutureNumbers.mockResolvedValue([]);
   expandMock.execute.mockImplementation(async ({ categoryIds }) => categoryIds);
+  resolveSearchMock.execute.mockResolvedValue([]);
 
   const module = await Test.createTestingModule({
     providers: [
       GetProjectionsUseCase,
       { provide: ExpandCategoryIdsUseCase, useValue: expandMock },
+      { provide: ResolveSearchCategoryIdsUseCase, useValue: resolveSearchMock },
       { provide: 'IFinanceCreditCardRepository', useValue: creditCardRepositoryMock },
       { provide: 'IFinanceRecurrenceRepository', useValue: recurrenceRepositoryMock },
     ],
@@ -48,6 +57,7 @@ const mocks = {
   creditCardRepository: creditCardRepositoryMock,
   expand: expandMock,
   recurrenceRepository: recurrenceRepositoryMock,
+  resolveSearch: resolveSearchMock,
   series: seriesMock,
 };
 const spies = {};

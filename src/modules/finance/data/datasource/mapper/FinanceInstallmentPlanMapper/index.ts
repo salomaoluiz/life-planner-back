@@ -17,6 +17,7 @@ export class FinanceInstallmentPlanMapper {
       id: raw.id,
       installmentCount: raw.installment_count,
       installments: raw.transactions.map((row) => FinanceTransactionMapper.toDomain(row)),
+      notes: raw.notes,
       owner: OwnerType[raw.owner],
       ownerId: raw.owner_id,
       prepayment: raw.prepayment

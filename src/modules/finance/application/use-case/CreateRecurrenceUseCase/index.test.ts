@@ -160,3 +160,13 @@ describe('tags (spec 043)', () => {
     );
   });
 });
+
+describe('notes (spec 059)', () => {
+  it('SHOULD store the notes on the series', async () => {
+    await setup.execute({ ...mocks.input, notes: ' Contrato 12 meses ' });
+
+    expect(mocks.recurrenceRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ notes: 'Contrato 12 meses' }),
+    );
+  });
+});

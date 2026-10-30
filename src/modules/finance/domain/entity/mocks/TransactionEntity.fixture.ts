@@ -107,6 +107,7 @@ class TransactionEntityFixture {
       installmentNumber: null,
       installmentPlanId: null,
       invoiceMonth: null,
+      notes: null,
       occurrenceCount: null,
       occurrenceNumber: null,
       owner: OwnerType.USER,

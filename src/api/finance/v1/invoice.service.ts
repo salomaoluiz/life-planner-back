@@ -57,6 +57,7 @@ function toDetailOutput({ card, credits, filtered, invoice, purchases }: Invoice
       id: purchase.id,
       installmentCount: purchase.installmentCount,
       installmentNumber: purchase.installmentNumber,
+      notes: purchase.notes,
       ownerId: purchase.ownerId,
       prepaid: purchase.prepaymentId !== null,
       value: purchase.value,

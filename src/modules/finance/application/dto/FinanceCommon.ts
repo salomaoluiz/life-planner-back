@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { isPeriodValid } from '@finance/domain/entity/TransactionFilter';
 import { TransactionType } from '@finance/domain/enum';
 import { SUPPORTED_CURRENCIES } from '@finance/domain/enum/Currency';
+import { normalizeNotes, NOTES_MAX } from '@finance/domain/service/Notes';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export const INT4_MAX = 2147483647;
@@ -40,6 +41,13 @@ export const CalendarDateSchema = z
   .regex(/^\d{4}-\d{2}-\d{2}$/)
   .refine(isValidCalendarDate, { message: 'Invalid calendar date' });
 export const DescriptionSchema = z.string().trim().min(1).max(200);
+// Spec 059: optional free text; `null` or empty clears it, absent leaves it (on update). Trimmed length <= 1000.
+export const NotesSchema = z
+  .string()
+  .trim()
+  .max(NOTES_MAX)
+  .nullable()
+  .transform((value) => normalizeNotes(value));
 // Integer cents, strictly positive (the sign comes from the type), max int4.
 export const ValueSchema = z.number().int().min(1).max(INT4_MAX);
 

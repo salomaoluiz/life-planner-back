@@ -28,6 +28,7 @@ export class FinanceInstallmentPlanRepository implements IFinanceInstallmentPlan
       currency: params.currency,
       date: fromCalendarDate(params.date),
       description: params.description,
+      notes: params.notes,
       owner: params.owner,
       owner_id: params.ownerId,
       rows: toRows(params.months, params.values),
@@ -70,6 +71,7 @@ export class FinanceInstallmentPlanRepository implements IFinanceInstallmentPlan
       date: fromCalendarDate(params.date),
       description: params.description,
       id: params.id,
+      notes: params.notes,
       rows: toRows(params.months, params.values),
       tag_names: params.tags,
     });
@@ -80,6 +82,7 @@ export class FinanceInstallmentPlanRepository implements IFinanceInstallmentPlan
       category_id: params.categoryId,
       description: params.description,
       from_number: params.fromNumber,
+      notes: params.notes,
       plan_id: params.planId,
       tag_names: params.tags,
       value: params.value,
@@ -91,6 +94,7 @@ export class FinanceInstallmentPlanRepository implements IFinanceInstallmentPlan
       category_id: params.categoryId,
       description: params.description,
       id: params.id,
+      notes: params.notes,
       tag_names: params.tags,
     });
   }

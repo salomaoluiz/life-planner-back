@@ -113,3 +113,13 @@ describe('tags (spec 043)', () => {
     );
   });
 });
+
+describe('notes (spec 059)', () => {
+  it('SHOULD create the occurrence with its own notes (ONLY_THIS)', async () => {
+    await setup.execute({ ...base, notes: 'Só desta vez' });
+
+    expect(mocks.recurrenceRepository.createOccurrence).toHaveBeenCalledWith(
+      expect.objectContaining({ notes: 'Só desta vez' }),
+    );
+  });
+});

@@ -98,6 +98,7 @@ it('SHOULD require systemKey (nullable) AND excludeFromTotals on the category su
     installmentNumber: null,
     installmentPlanId: null,
     invoiceMonth: null,
+    notes: null,
     occurrenceCount: null,
     occurrenceNumber: null,
     owner: 'USER',
@@ -159,5 +160,29 @@ describe('UpdateTransactionApiSchema scope (spec 030)', () => {
       true,
     );
     expect(UpdateTransactionApiSchema.safeParse({ scope: 'ALL', value: 5 }).success).toBe(false);
+  });
+});
+
+describe('notes (spec 059)', () => {
+  it('SHOULD trim the ends, keep line breaks AND turn empty or null into null', () => {
+    expect(CreateTransactionApiSchema.parse({ ...valid, notes: '  Casa\nAeroporto  ' }).notes).toBe(
+      'Casa\nAeroporto',
+    );
+    expect(CreateTransactionApiSchema.parse({ ...valid, notes: '   ' }).notes).toBeNull();
+    expect(CreateTransactionApiSchema.parse({ ...valid, notes: null }).notes).toBeNull();
+    expect(CreateTransactionApiSchema.parse(valid).notes).toBeUndefined();
+  });
+
+  it('SHOULD allow 1000 characters (plus trailing spaces) AND refuse 1001', () => {
+    expect(
+      CreateTransactionApiSchema.safeParse({ ...valid, notes: `${'a'.repeat(1000)}     ` }).success,
+    ).toBe(true);
+    expect(
+      CreateTransactionApiSchema.safeParse({ ...valid, notes: 'a'.repeat(1001) }).success,
+    ).toBe(false);
+  });
+
+  it('SHOULD let an update clear the notes on its own', () => {
+    expect(UpdateTransactionApiSchema.parse({ notes: null })).toEqual({ notes: null });
   });
 });

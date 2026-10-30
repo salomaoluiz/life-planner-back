@@ -127,3 +127,59 @@ describe('filters (spec 045)', () => {
     expect(mocks.transactionRepository.findTransactions).not.toHaveBeenCalled();
   });
 });
+
+describe('search by notes, category and amount (spec 059)', () => {
+  const rows = [
+    { categoryId: 'c-ride', description: 'Uber', notes: 'Casa → Aeroporto', value: 3870 },
+    { categoryId: 'c-food', description: 'Padaria', notes: null, value: 2240 },
+    { categoryId: 'c-food', description: 'Pizza', notes: null, value: 3899 },
+  ];
+
+  beforeEach(() => {
+    mocks.transactionRepository.findTransactions.mockResolvedValue(rows);
+  });
+
+  it('SHOULD match the notes', async () => {
+    const result = await setup.execute({
+      accessibleOwners: mocks.accessibleOwners,
+      filter: { q: 'aeroporto' },
+    });
+
+    expect(result).toEqual([rows[0]]);
+  });
+
+  it('SHOULD match the categories resolved from the name (ancestors included)', async () => {
+    mocks.resolveSearch.execute.mockResolvedValue(['c-food']);
+
+    const result = await setup.execute({
+      accessibleOwners: mocks.accessibleOwners,
+      filter: { q: 'alimentacao' },
+    });
+
+    expect(mocks.resolveSearch.execute).toHaveBeenCalledWith({
+      accessibleOwners: mocks.accessibleOwners,
+      q: 'alimentacao',
+    });
+    expect(result).toEqual([rows[1], rows[2]]);
+  });
+
+  it('SHOULD match the amount: 38,70 exactly, 38 as 38,00 to 38,99', async () => {
+    const exact = await setup.execute({
+      accessibleOwners: mocks.accessibleOwners,
+      filter: { q: '38,70' },
+    });
+    const whole = await setup.execute({
+      accessibleOwners: mocks.accessibleOwners,
+      filter: { q: '38' },
+    });
+
+    expect(exact).toEqual([rows[0]]);
+    expect(whole).toEqual([rows[0], rows[2]]);
+  });
+
+  it('SHOULD NOT resolve categories WHEN there is no text filter', async () => {
+    await setup.execute({ accessibleOwners: mocks.accessibleOwners });
+
+    expect(mocks.resolveSearch.execute).not.toHaveBeenCalled();
+  });
+});

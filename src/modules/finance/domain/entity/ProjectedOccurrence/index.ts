@@ -17,6 +17,7 @@ export interface ProjectedOccurrence {
   date: string;
   description: string;
   frequency: RecurrenceFrequency;
+  notes: null | string;
   // Planned payment day (`YYYY-MM-DD`) of that invoice: the day the list shows it; null for account series.
   invoiceListDate: null | string;
   // `YYYY-MM` of the invoice by the card's CURRENT closing rule; null for account series.

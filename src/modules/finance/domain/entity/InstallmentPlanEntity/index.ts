@@ -19,6 +19,7 @@ interface IInstallmentPlanEntity {
   id: string;
   installmentCount: number;
   installments: TransactionEntity[];
+  notes?: null | string;
   owner: OwnerType;
   ownerId: string;
   prepayment?: null | PlanPrepaymentSummary;
@@ -36,6 +37,7 @@ class InstallmentPlanEntity {
   description: string;
   id: string;
   installmentCount: number;
+  notes: null | string;
   // One transaction per installment, ordered by `installmentNumber`.
   installments: TransactionEntity[];
   owner: OwnerType;
@@ -53,6 +55,7 @@ class InstallmentPlanEntity {
     this.currency = params.currency ?? DEFAULT_CURRENCY;
     this.date = params.date;
     this.description = params.description;
+    this.notes = params.notes ?? null;
     this.id = params.id;
     this.installmentCount = params.installmentCount;
     this.installments = params.installments;

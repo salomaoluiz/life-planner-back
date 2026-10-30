@@ -134,3 +134,16 @@ describe('tags (spec 043)', () => {
     );
   });
 });
+
+describe('notes (spec 059)', () => {
+  it('SHOULD patch the series AND every row with the notes, null clearing them', async () => {
+    await setup.execute({ ...base, notes: null });
+
+    expect(mocks.recurrenceRepository.applyChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        rowPatch: expect.objectContaining({ notes: null }),
+        seriesPatch: expect.objectContaining({ notes: null }),
+      }),
+    );
+  });
+});

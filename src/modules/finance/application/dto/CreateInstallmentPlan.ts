@@ -5,6 +5,7 @@ import {
   CalendarDateSchema,
   CurrencySchema,
   DescriptionSchema,
+  NotesSchema,
   OwnerIdSchema,
   OwnerTypeSchema,
   TagNamesSchema,
@@ -23,6 +24,7 @@ export const CreateInstallmentPlanSchema = z
     date: CalendarDateSchema,
     description: DescriptionSchema,
     installments: InstallmentsSchema,
+    notes: NotesSchema.optional(),
     owner: OwnerTypeSchema,
     ownerId: OwnerIdSchema,
     // Spec 043 FR 10: attached to every installment row.

@@ -23,6 +23,8 @@ const PurchaseApiSchema = z.object({
   id: z.uuid(),
   installmentCount: z.number().int().nullable(),
   installmentNumber: z.number().int().nullable(),
+  // Spec 059: the note of the purchase, when it has one.
+  notes: z.string().nullable(),
   ownerId: z.uuid(),
   prepaid: z.boolean(),
   value: z.number().int(),

@@ -423,6 +423,19 @@ describe('Method update on a paid invoice (spec 030 FR 16)', () => {
     expect(spies.update).toHaveBeenCalledTimes(1);
   });
 
+  it('SHOULD allow the notes WITHOUT looking at the payments (spec 059 FR 5)', async () => {
+    spies.queryRaw.mockResolvedValue(lockedRow);
+    spies.paymentFindFirst.mockResolvedValue({ id: 'payment-1' });
+    spies.update.mockResolvedValue(mocks.transaction);
+
+    await setup.update({ id: mocks.transaction.id, notes: 'Reembolso' });
+
+    expect(spies.paymentFindFirst).not.toHaveBeenCalled();
+    expect(spies.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ notes: 'Reembolso' }) }),
+    );
+  });
+
   it('SHOULD refuse a value change (422)', async () => {
     spies.queryRaw.mockResolvedValue(lockedRow);
     spies.paymentFindFirst.mockResolvedValue({ id: 'payment-1' });
@@ -593,6 +606,25 @@ describe('Method sumDashboardRows (spec 046)', () => {
     expect(sql).toContain('"category_id" IN');
     expect(sql).toContain('EXISTS');
     expect(sql).toContain('ILIKE');
+  });
+
+  it('SHOULD match the notes, the categories and the amount range, escaping LIKE wildcards (spec 059)', async () => {
+    spies.queryRaw.mockResolvedValue([]);
+
+    await setup.sumDashboardRows({
+      ...params,
+      amount_max: 3879,
+      amount_min: 3870,
+      q: ' 50%_\\ ',
+      search_category_ids: ['cat-9'],
+    });
+
+    const call = spies.queryRaw.mock.calls[0][0];
+
+    expect(call.sql).toContain('COALESCE(t."notes", \'\')');
+    expect(call.sql).toContain('ABS(t."value") BETWEEN');
+    expect(call.sql).toContain('t."category_id" IN');
+    expect(call.values).toEqual(expect.arrayContaining(['%50\\%\\_\\\\%', 'cat-9', 3870, 3879]));
   });
 
   it('SHOULD stop counting a source from its archive day, inside the same grouped query (spec 052)', async () => {

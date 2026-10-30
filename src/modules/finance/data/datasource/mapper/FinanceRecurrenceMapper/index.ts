@@ -52,6 +52,7 @@ export class FinanceRecurrenceMapper {
       nextOccurrenceDate: raw.next_occurrence_date
         ? toCalendarDate(raw.next_occurrence_date)
         : null,
+      notes: raw.notes,
       occurrenceCount: totalOccurrences({ endDate, frequency, startDate }, raw.first_number),
       owner: OwnerType[raw.owner],
       ownerId: raw.owner_id,

@@ -210,3 +210,28 @@ describe('projected recurrences (spec 053)', () => {
     );
   });
 });
+
+describe('search by notes, category and amount (spec 059)', () => {
+  it('SHOULD hand the SQL the matching category ids AND the amount range of the query', async () => {
+    mocks.resolveSearch.execute.mockResolvedValue(['c1', 'c2']);
+
+    await setup.execute({ ...mocks.input, filter: { q: '38,7' } });
+
+    expect(mocks.transactionRepository.sumDashboardRows).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amountRange: { maxCents: 3879, minCents: 3870 },
+        q: '38,7',
+        searchCategoryIds: ['c1', 'c2'],
+      }),
+    );
+  });
+
+  it('SHOULD send neither WHEN there is no text filter', async () => {
+    await setup.execute({ ...mocks.input });
+
+    expect(mocks.resolveSearch.execute).not.toHaveBeenCalled();
+    expect(mocks.transactionRepository.sumDashboardRows).toHaveBeenCalledWith(
+      expect.objectContaining({ amountRange: undefined, searchCategoryIds: undefined }),
+    );
+  });
+});

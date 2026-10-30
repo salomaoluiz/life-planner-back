@@ -4,6 +4,7 @@ import {
   AccessibleOwnersSchema,
   CalendarDateSchema,
   DescriptionSchema,
+  NotesSchema,
   TagNamesSchema,
   ValueSchema,
 } from '@finance/application/dto/FinanceCommon';
@@ -14,6 +15,7 @@ export const UpdateRecurrenceSchema = z.object({
   accessibleOwners: AccessibleOwnersSchema,
   categoryId: z.string().min(1).optional(),
   description: DescriptionSchema.optional(),
+  notes: NotesSchema.optional(),
   // `null` removes the end date.
   endDate: CalendarDateSchema.nullable().optional(),
   id: z.string().min(1),
@@ -33,6 +35,7 @@ export const SplitRecurrenceSchema = z
     endDate: CalendarDateSchema.nullable().optional(),
     frequency: z.enum(RecurrenceFrequency).optional(),
     id: z.string().min(1),
+    notes: NotesSchema.optional(),
     occurrenceNumber: z.number().int().min(1),
     tags: TagNamesSchema.optional(),
     today: CalendarDateSchema,

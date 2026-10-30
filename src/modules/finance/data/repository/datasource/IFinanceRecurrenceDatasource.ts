@@ -29,6 +29,7 @@ export interface CreateOccurrenceDatasourceParams {
   date: Date;
   description?: string;
   invoice_month?: string;
+  notes?: null | string;
   number: number;
   paid?: boolean;
   recurrence_id: string;
@@ -46,6 +47,7 @@ export interface CreateRecurrenceDatasourceParams {
   frequency: RecurrenceFrequency;
   last_generated_number: number;
   next_occurrence_date: Date | null;
+  notes?: null | string;
   owner: OwnerType;
   owner_id: string;
   rows: OccurrenceRowDatasourceParams[];
@@ -114,6 +116,7 @@ export interface NewSeriesDatasourceParams {
   frequency: RecurrenceFrequency;
   last_generated_number: number;
   next_occurrence_date: Date | null;
+  notes?: null | string;
   owner: OwnerType;
   owner_id: string;
   skipped_numbers: number[];
@@ -146,6 +149,7 @@ export interface RowPatchDatasourceParams {
   credit_card_id?: string;
   description?: string;
   invoice_months?: { id: string; invoice_month: string }[];
+  notes?: null | string;
   value?: number;
 }
 export interface SeriesPatchDatasourceParams {
@@ -157,6 +161,7 @@ export interface SeriesPatchDatasourceParams {
   frequency?: RecurrenceFrequency;
   last_generated_number?: number;
   next_occurrence_date?: Date | null;
+  notes?: null | string;
   skipped_numbers?: number[];
   status?: RecurrenceStatus;
   value?: number;
