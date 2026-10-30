@@ -10,6 +10,7 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: ${NODE_ENV}
+      APP_ENVIRONMENT: ${APP_ENVIRONMENT:-staging}
       PORT: ${PORT}
       CORS_ORIGINS: ${CORS_ORIGINS}
       DB_USER: ${DB_USER}
@@ -21,6 +22,10 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
       SESSION_IDLE_TTL_SECONDS: ${SESSION_IDLE_TTL_SECONDS:-172800}
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
+      VERSION_REPO_API: ${VERSION_REPO_API:-}
+      VERSION_REPO_APP: ${VERSION_REPO_APP:-}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      VERSION_CHECK_TTL_SECONDS: ${VERSION_CHECK_TTL_SECONDS:-600}
 
     healthcheck:
       test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3000/api/health']

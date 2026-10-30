@@ -16,6 +16,7 @@ ENV DB_NAME=mydatabase
 
 RUN yarn prisma generate
 RUN yarn build
+RUN date -u +%Y-%m-%dT%H:%M:%SZ > build-time
 
 FROM node:24-alpine AS runtime
 
@@ -28,6 +29,8 @@ RUN corepack enable
 COPY package.json yarn.lock ./
 RUN yarn install --production --frozen-lockfile --ignore-scripts && yarn cache clean
 
+COPY CHANGELOG.md ./
+COPY --from=builder /app/build-time ./build-time
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/generated ./generated
 COPY --from=builder /app/prisma ./prisma
