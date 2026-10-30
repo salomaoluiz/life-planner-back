@@ -28,6 +28,7 @@ module.exports = {
     '^@shared/(.*)$': '<rootDir>/src/shared/$1',
     '^@stock/(.*)$': '<rootDir>/src/modules/stock/$1',
     '^@user/(.*)$': '<rootDir>/src/modules/user/$1',
+    '^@version/(.*)$': '<rootDir>/src/modules/version/$1',
     '^@db/(.*)$': '<rootDir>/generated/prisma/$1',
   },
   preset: 'ts-jest',
