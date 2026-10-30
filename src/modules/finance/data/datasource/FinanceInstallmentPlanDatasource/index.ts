@@ -49,6 +49,7 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
           date: params.date,
           description: params.description,
           installment_count: params.rows.length,
+          notes: params.notes,
           owner: params.owner,
           owner_id: params.owner_id,
           total_value: sumOf(params.rows),
@@ -162,6 +163,7 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
           date: params.date,
           description: params.description,
           installment_count: params.rows.length,
+          notes: params.notes,
           total_value: sumOf(params.rows),
         },
         where: { id: params.id },
@@ -177,6 +179,7 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
           currency: plan.currency,
           date: params.date,
           description: params.description,
+          notes: params.notes,
           owner: plan.owner,
           owner_id: plan.owner_id,
           plan_id: params.id,
@@ -240,6 +243,7 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
         data: {
           category_id: params.category_id,
           description: params.description,
+          notes: params.notes,
           value: params.value,
         },
         where,
@@ -264,7 +268,11 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
   async updateText(params: UpdateInstallmentPlanTextDatasourceParams): Promise<void> {
     await this.db.client.$transaction(async (tx) => {
       await lockCards(tx, [await this.cardOf(tx, params.id)]);
-      const data = { category_id: params.category_id, description: params.description };
+      const data = {
+        category_id: params.category_id,
+        description: params.description,
+        notes: params.notes,
+      };
       await tx.financialInstallmentPlan.update({ data, where: { id: params.id } });
       await tx.financialTransaction.updateMany({
         data,
@@ -301,6 +309,7 @@ interface RowsContext {
   currency: string;
   date: Date;
   description: string;
+  notes?: null | string;
   owner: Prisma.FinancialTransactionCreateManyInput['owner'];
   owner_id: string;
   plan_id: string;
@@ -322,6 +331,7 @@ function toRows(
     installment_number: index + 1,
     installment_plan_id: context.plan_id,
     invoice_month: row.invoice_month,
+    notes: context.notes,
     owner: context.owner,
     owner_id: context.owner_id,
     type: 'EXPENSE',

@@ -91,6 +91,7 @@ export class CreateRecurrenceUseCase implements UseCaseWithParams<
       frequency: input.frequency,
       lastGeneratedNumber: plan.lastGeneratedNumber,
       nextOccurrenceDate: plan.nextOccurrenceDate,
+      notes: input.notes,
       owner: input.owner,
       ownerId: input.ownerId,
       rows,

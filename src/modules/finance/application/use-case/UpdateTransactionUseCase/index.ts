@@ -137,6 +137,7 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
       description: input.description,
       id: input.id,
       invoiceMonth,
+      notes: input.notes,
       owner: input.owner,
       ownerId: input.ownerId,
       paid: paidFor(input, transaction, card !== undefined),
@@ -177,7 +178,7 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
       input.ownerId !== undefined ||
       input.type !== undefined
     ) {
-      throw new BadRequestException('Only value, description and category can change here');
+      throw new BadRequestException('Only value, description, notes and category can change here');
     }
 
     const consistency = await this.ensureTransactionConsistencyUseCase.execute({
@@ -201,6 +202,7 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
         categoryId: input.categoryId,
         description: input.description,
         id: input.id,
+        notes: input.notes,
         tags: input.tags,
         value: input.value,
       });
@@ -209,6 +211,7 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
         categoryId: input.categoryId,
         description: input.description,
         fromNumber: transaction.installmentNumber as number,
+        notes: input.notes,
         planId: transaction.installmentPlanId as string,
         tags: input.tags,
         value: input.value,
@@ -235,6 +238,7 @@ function assertRecurringEdit(input: ParsedUpdateInput): void {
     input.categoryId === undefined &&
     input.creditCardId === undefined &&
     input.description === undefined &&
+    input.notes === undefined &&
     input.owner === undefined &&
     input.ownerId === undefined &&
     input.type === undefined &&
@@ -258,7 +262,7 @@ function assertRecurringEdit(input: ParsedUpdateInput): void {
     input.type !== undefined
   ) {
     throw new BadRequestException(
-      'Only value, description, category, date and paid can change here',
+      'Only value, description, notes, category, date and paid can change here',
     );
   }
 }

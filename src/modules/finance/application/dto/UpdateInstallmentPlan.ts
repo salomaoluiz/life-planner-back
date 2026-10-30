@@ -5,6 +5,7 @@ import {
   AccessibleOwnersSchema,
   CalendarDateSchema,
   DescriptionSchema,
+  NotesSchema,
   TagNamesSchema,
   ValueSchema,
 } from '@finance/application/dto/FinanceCommon';
@@ -18,6 +19,7 @@ export const UpdateInstallmentPlanSchema = z
     description: DescriptionSchema.optional(),
     id: z.string().min(1),
     installments: InstallmentsSchema.optional(),
+    notes: NotesSchema.optional(),
     // `[]` removes every tag; omitted keeps them (also across a recreate).
     tags: TagNamesSchema.optional(),
     today: CalendarDateSchema,
@@ -30,6 +32,7 @@ export const UpdateInstallmentPlanSchema = z
       input.creditCardId !== undefined ||
       input.date !== undefined ||
       input.description !== undefined ||
+      input.notes !== undefined ||
       input.installments !== undefined ||
       input.tags !== undefined ||
       input.value !== undefined,

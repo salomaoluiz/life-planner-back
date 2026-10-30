@@ -42,6 +42,7 @@ function toInstallmentPlanOutput({
       description: plan.description,
       id: plan.id,
       installmentCount: plan.installmentCount,
+      notes: plan.notes,
       owner: plan.owner,
       ownerId: plan.ownerId,
       prepayment: plan.prepayment,

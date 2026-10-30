@@ -423,6 +423,19 @@ describe('Method update on a paid invoice (spec 030 FR 16)', () => {
     expect(spies.update).toHaveBeenCalledTimes(1);
   });
 
+  it('SHOULD allow the notes WITHOUT looking at the payments (spec 059 FR 5)', async () => {
+    spies.queryRaw.mockResolvedValue(lockedRow);
+    spies.paymentFindFirst.mockResolvedValue({ id: 'payment-1' });
+    spies.update.mockResolvedValue(mocks.transaction);
+
+    await setup.update({ id: mocks.transaction.id, notes: 'Reembolso' });
+
+    expect(spies.paymentFindFirst).not.toHaveBeenCalled();
+    expect(spies.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ notes: 'Reembolso' }) }),
+    );
+  });
+
   it('SHOULD refuse a value change (422)', async () => {
     spies.queryRaw.mockResolvedValue(lockedRow);
     spies.paymentFindFirst.mockResolvedValue({ id: 'payment-1' });

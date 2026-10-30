@@ -5,6 +5,7 @@ import {
   CalendarDateSchema,
   CurrencySchema,
   DescriptionSchema,
+  NotesSchema,
   OwnerIdSchema,
   OwnerTypeSchema,
   TagNamesSchema,
@@ -21,6 +22,7 @@ export const CreateTransactionSchema = z
     currency: CurrencySchema.optional(),
     date: CalendarDateSchema,
     description: DescriptionSchema,
+    notes: NotesSchema.optional(),
     owner: OwnerTypeSchema,
     ownerId: OwnerIdSchema,
     // Account rows only; omitted → paid when dated up to `today` (spec 033 FR 4).

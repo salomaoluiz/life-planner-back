@@ -74,6 +74,7 @@ interface SeriesTemplate {
   credit_card_id: null | string;
   currency: string;
   description: string;
+  notes: null | string;
   owner: Prisma.FinancialTransactionCreateManyInput['owner'];
   owner_id: string;
   type: Prisma.FinancialTransactionCreateManyInput['type'];
@@ -248,9 +249,17 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
         where: { id: { in: affected.map((row) => row.id) } },
       });
     }
-    if (patch.description !== undefined || patch.category_id !== undefined) {
+    if (
+      patch.description !== undefined ||
+      patch.category_id !== undefined ||
+      patch.notes !== undefined
+    ) {
       await tx.financialTransaction.updateMany({
-        data: { category_id: patch.category_id, description: patch.description },
+        data: {
+          category_id: patch.category_id,
+          description: patch.description,
+          notes: patch.notes,
+        },
         where: { id: { in: affected.map((row) => row.id) } },
       });
     }
@@ -413,6 +422,7 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
           frequency: params.frequency,
           last_generated_number: params.last_generated_number,
           next_occurrence_date: params.next_occurrence_date,
+          notes: params.notes,
           owner: params.owner,
           owner_id: params.owner_id,
           start_date: params.start_date,
@@ -428,6 +438,7 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
         credit_card_id: params.credit_card_id ?? null,
         currency: params.currency,
         description: params.description,
+        notes: params.notes ?? null,
         owner: params.owner,
         owner_id: params.owner_id,
         type: params.type,
@@ -504,6 +515,7 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
           ...series,
           category_id: params.category_id ?? series.category_id,
           description: params.description ?? series.description,
+          notes: params.notes === undefined ? series.notes : params.notes,
           value: params.value ?? series.value,
         },
         series.id,
@@ -615,13 +627,14 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
           currency: string;
           description: string;
           last_generated_number: number;
+          notes: null | string;
           owner: SeriesTemplate['owner'];
           owner_id: string;
           type: SeriesTemplate['type'];
           value: number;
         }[]
       >(
-        Prisma.sql`SELECT "account_id", "category_id", "credit_card_id", "currency", "description", "last_generated_number", "owner"::text AS "owner", "owner_id", "type"::text AS "type", "value" FROM "financial_recurrences" WHERE "id" = ${params.id} FOR UPDATE`,
+        Prisma.sql`SELECT "account_id", "category_id", "credit_card_id", "currency", "description", "last_generated_number", "notes", "owner"::text AS "owner", "owner_id", "type"::text AS "type", "value" FROM "financial_recurrences" WHERE "id" = ${params.id} FOR UPDATE`,
       );
 
       if (locked.length === 0 || locked[0].last_generated_number !== params.expected_last) {
@@ -675,6 +688,7 @@ function toRows(
     date: row.date,
     description: template.description,
     invoice_month: row.invoice_month ?? null,
+    notes: template.notes,
     occurrence_number: row.number,
     owner: template.owner,
     owner_id: template.owner_id,
@@ -709,6 +723,7 @@ function templateOf(
     credit_card_id: base.credit_card_id ?? null,
     currency: base.currency,
     description: base.description,
+    notes: base.notes ?? null,
     owner: base.owner,
     owner_id: base.owner_id,
     type: base.type,

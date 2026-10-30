@@ -85,6 +85,7 @@ export class SplitRecurrenceUseCase implements UseCaseWithParams<
       description: input.description ?? series.description,
       endDate: input.endDate === undefined ? series.endDate : input.endDate,
       frequency: input.frequency ?? series.frequency,
+      notes: input.notes === undefined ? series.notes : input.notes,
       value: input.value ?? series.value,
     };
 
@@ -142,6 +143,7 @@ export class SplitRecurrenceUseCase implements UseCaseWithParams<
     const common = {
       categoryId: target.categoryId,
       description: target.description,
+      notes: target.notes,
       value: target.value,
     };
     const sourceFields =
@@ -202,6 +204,7 @@ export class SplitRecurrenceUseCase implements UseCaseWithParams<
         ...rowPatch,
         categoryId: input.categoryId,
         description: input.description,
+        notes: input.notes,
         value: input.value,
       },
       seriesPatch,

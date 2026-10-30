@@ -101,6 +101,7 @@ export class UpdateInstallmentPlanUseCase implements UseCaseWithParams<
         description: input.description ?? plan.description,
         id: plan.id,
         months: installmentInvoiceMonths(invoiceMonthOf(date, card.closingDay), count),
+        notes: input.notes === undefined ? plan.notes : input.notes,
         tags: input.tags,
         values: splitInstallments(newTotal, count),
       });
@@ -109,6 +110,7 @@ export class UpdateInstallmentPlanUseCase implements UseCaseWithParams<
         categoryId: input.categoryId,
         description: input.description,
         id: plan.id,
+        notes: input.notes,
         tags: input.tags,
       });
     }

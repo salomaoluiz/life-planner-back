@@ -279,3 +279,19 @@ it('SHOULD pass the tag names to the repository AND reject 11 tags or a 31-chara
     ValidationError,
   );
 });
+
+it('SHOULD pass the notes to the repository (spec 059)', async () => {
+  await setup.execute({ ...mocks.input, notes: ' Casa → Aeroporto ' });
+
+  expect(mocks.transactionRepository.createTransaction).toHaveBeenCalledWith(
+    expect.objectContaining({ notes: 'Casa → Aeroporto' }),
+  );
+});
+
+it('SHOULD turn whitespace-only notes into null (spec 059)', async () => {
+  await setup.execute({ ...mocks.input, notes: '   ' });
+
+  expect(mocks.transactionRepository.createTransaction).toHaveBeenCalledWith(
+    expect.objectContaining({ notes: null }),
+  );
+});

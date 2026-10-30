@@ -50,6 +50,7 @@ describe('structural edits', () => {
       description: 'Notebook',
       id: mocks.plan.id,
       months: expect.arrayContaining(['2026-10', '2027-09']),
+      notes: null,
       values: Array(12).fill(1000),
     });
     expect(mocks.ensureConsistency.execute).toHaveBeenCalledWith(
@@ -140,6 +141,20 @@ describe('tags (spec 043)', () => {
 
     expect(mocks.planRepository.recreatePlan).toHaveBeenCalledWith(
       expect.objectContaining({ tags: [] }),
+    );
+  });
+});
+
+describe('notes (spec 059)', () => {
+  it('SHOULD send the new notes to a text edit AND keep the plan notes on a structural recreate', async () => {
+    await setup.execute({ ...mocks.input, notes: 'Black Friday' });
+    expect(mocks.planRepository.updatePlanText).toHaveBeenCalledWith(
+      expect.objectContaining({ notes: 'Black Friday' }),
+    );
+
+    await setup.execute({ ...mocks.input, installments: 12, value: 12000 });
+    expect(mocks.planRepository.recreatePlan).toHaveBeenCalledWith(
+      expect.objectContaining({ notes: mocks.plan.notes }),
     );
   });
 });

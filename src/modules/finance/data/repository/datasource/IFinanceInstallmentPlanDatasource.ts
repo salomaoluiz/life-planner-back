@@ -9,6 +9,7 @@ export interface CreateInstallmentPlanDatasourceParams {
   currency: CurrencyCode;
   date: Date;
   description: string;
+  notes?: null | string;
   owner: OwnerType;
   owner_id: string;
   rows: InstallmentRowDatasourceParams[];
@@ -46,6 +47,7 @@ export interface RecreateInstallmentPlanDatasourceParams {
   date: Date;
   description: string;
   id: string;
+  notes?: null | string;
   rows: InstallmentRowDatasourceParams[];
   tag_names?: string[];
 }
@@ -53,12 +55,14 @@ export interface UpdateInstallmentPlanTextDatasourceParams {
   category_id?: string;
   description?: string;
   id: string;
+  notes?: null | string;
   tag_names?: string[];
 }
 export interface UpdateInstallmentsFromDatasourceParams {
   category_id?: string;
   description?: string;
   from_number: number;
+  notes?: null | string;
   plan_id: string;
   tag_names?: string[];
   value?: number;

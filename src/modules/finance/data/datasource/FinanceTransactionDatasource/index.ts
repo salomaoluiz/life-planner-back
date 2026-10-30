@@ -358,6 +358,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
           date: params.date,
           description: params.description,
           invoice_month: params.invoice_month,
+          notes: params.notes,
           owner: params.owner,
           owner_id: params.owner_id,
           paid: params.paid,

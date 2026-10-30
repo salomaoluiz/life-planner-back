@@ -27,6 +27,7 @@ interface CreateInstallmentPlanRepositoryParams {
   date: string;
   description: string;
   months: string[];
+  notes?: null | string;
   owner: OwnerType;
   ownerId: string;
   // Spec 043: tag names attached to every row.
@@ -44,6 +45,7 @@ interface RecreateInstallmentPlanRepositoryParams {
   description: string;
   id: string;
   months: string[];
+  notes?: null | string;
   // `undefined` carries the tags of the first installment over to the new rows.
   tags?: string[];
   values: number[];
@@ -52,12 +54,14 @@ interface UpdateInstallmentPlanTextRepositoryParams {
   categoryId?: string;
   description?: string;
   id: string;
+  notes?: null | string;
   tags?: string[];
 }
 interface UpdateInstallmentsFromRepositoryParams {
   categoryId?: string;
   description?: string;
   fromNumber: number;
+  notes?: null | string;
   planId: string;
   tags?: string[];
   value?: number;

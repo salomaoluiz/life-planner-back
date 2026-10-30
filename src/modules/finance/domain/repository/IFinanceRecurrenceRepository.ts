@@ -55,6 +55,7 @@ interface CreateOccurrenceRepositoryParams {
   date: string;
   description?: string;
   invoiceMonth?: string;
+  notes?: null | string;
   number: number;
   paid?: boolean;
   recurrenceId: string;
@@ -71,6 +72,7 @@ interface CreateRecurrenceRepositoryParams {
   frequency: RecurrenceFrequency;
   lastGeneratedNumber: number;
   nextOccurrenceDate: null | string;
+  notes?: null | string;
   owner: OwnerType;
   ownerId: string;
   rows: OccurrenceRow[];
@@ -109,6 +111,7 @@ interface NewSeriesRepositoryParams {
   frequency: RecurrenceFrequency;
   lastGeneratedNumber: number;
   nextOccurrenceDate: null | string;
+  notes?: null | string;
   owner: OwnerType;
   ownerId: string;
   skippedNumbers: number[];
@@ -143,6 +146,7 @@ interface RowPatchRepositoryParams {
   categoryId?: string;
   creditCardId?: string;
   description?: string;
+  notes?: null | string;
   // New invoice month per row (a card change recomputes them).
   invoiceMonths?: { id: string; invoiceMonth: string }[];
   value?: number;
@@ -156,6 +160,7 @@ interface SeriesPatchRepositoryParams {
   frequency?: RecurrenceFrequency;
   lastGeneratedNumber?: number;
   nextOccurrenceDate?: null | string;
+  notes?: null | string;
   skippedNumbers?: number[];
   status?: RecurrenceStatus;
   value?: number;

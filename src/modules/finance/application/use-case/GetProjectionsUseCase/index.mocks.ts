@@ -12,7 +12,12 @@ import { GetProjectionsUseCase } from './index';
 const accessibleOwners = [{ owner: OwnerType.USER, ownerId: 'user-id' }];
 const cardMock = new CreditCardEntityFixture().build();
 const seriesMock = new RecurrenceEntityFixture()
-  .withFields({ id: 'series-1', lastGeneratedNumber: 1, startDate: '2026-10-05' })
+  .withFields({
+    id: 'series-1',
+    lastGeneratedNumber: 1,
+    notes: 'Contrato anual',
+    startDate: '2026-10-05',
+  })
   .build();
 
 const expandMock = { execute: jest.fn() };

@@ -104,6 +104,7 @@ interface CreateTransactionRepositoryParams {
   date: string;
   description: string;
   invoiceMonth?: string;
+  notes?: null | string;
   owner: OwnerType;
   ownerId: string;
   // Account rows only; omitted for card rows.
@@ -133,6 +134,7 @@ interface UpdateTransactionRepositoryParams {
   description?: string;
   id: string;
   invoiceMonth?: null | string;
+  notes?: null | string;
   owner?: OwnerType;
   ownerId?: string;
   // true/false on account rows, null when the row moves to a card.

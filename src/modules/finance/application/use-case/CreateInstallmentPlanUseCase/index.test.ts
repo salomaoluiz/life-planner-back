@@ -101,3 +101,11 @@ it('SHOULD pass the tag names to the plan creation (spec 043 FR 10)', async () =
     expect.objectContaining({ tags: ['viagem'] }),
   );
 });
+
+it('SHOULD store the notes on the plan (spec 059)', async () => {
+  await setup.execute({ ...mocks.input, notes: 'Presente' });
+
+  expect(mocks.planRepository.createPlan).toHaveBeenCalledWith(
+    expect.objectContaining({ notes: 'Presente' }),
+  );
+});

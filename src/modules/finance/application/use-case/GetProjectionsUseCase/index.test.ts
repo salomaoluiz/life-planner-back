@@ -176,3 +176,12 @@ describe('executeChunked (spec 053)', () => {
     );
   });
 });
+
+describe('notes (spec 059)', () => {
+  it('SHOULD carry the series notes on every projected occurrence', async () => {
+    const result = await setup.execute(base);
+
+    expect(result.length).toBeGreaterThan(0);
+    expect(result.every((item) => item.notes === 'Contrato anual')).toBe(true);
+  });
+});
