@@ -4,6 +4,8 @@ import { AccountController } from '@api/finance/v1/account.controller';
 import { AccountService } from '@api/finance/v1/account.service';
 import { CardCreditController } from '@api/finance/v1/card-credit.controller';
 import { CardCreditService } from '@api/finance/v1/card-credit.service';
+import { CategoryIconController } from '@api/finance/v1/category-icon.controller';
+import { CategoryIconService } from '@api/finance/v1/category-icon.service';
 import { CategoryController } from '@api/finance/v1/category.controller';
 import { CategoryService } from '@api/finance/v1/category.service';
 import { CreditCardController } from '@api/finance/v1/credit-card.controller';
@@ -34,6 +36,7 @@ import { FinanceModule } from '@finance/finance.module';
     AccountController,
     CardCreditController,
     CategoryController,
+    CategoryIconController,
     InvoiceController,
     CreditCardController,
     DashboardController,
@@ -48,6 +51,7 @@ import { FinanceModule } from '@finance/finance.module';
   providers: [
     AccountService,
     CardCreditService,
+    CategoryIconService,
     CategoryService,
     CreditCardService,
     DashboardService,
