@@ -5,11 +5,13 @@ import {
   CategoryOutput,
   CreateCategoryApiInput,
   UpdateCategoryApiInput,
+  UpdateCategoryAppearanceApiInput,
 } from '@api/finance/v1/dto/category.dto';
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { CreateCategoryUseCase } from '@finance/application/use-case/CreateCategoryUseCase';
 import { DeleteCategoryUseCase } from '@finance/application/use-case/DeleteCategoryUseCase';
 import { GetCategoriesUseCase } from '@finance/application/use-case/GetCategoriesUseCase';
+import { UpdateCategorySubtreeAppearanceUseCase } from '@finance/application/use-case/UpdateCategorySubtreeAppearanceUseCase';
 import { UpdateCategoryUseCase } from '@finance/application/use-case/UpdateCategoryUseCase';
 import CategoryEntity from '@finance/domain/entity/CategoryEntity';
 import { categoryScopeKind, visibleScopes } from '@finance/domain/entity/CategoryScope';
@@ -57,6 +59,7 @@ export class CategoryService {
     private readonly deleteCategoryUseCase: DeleteCategoryUseCase,
     private readonly financeAccessService: FinanceAccessService,
     private readonly getCategoriesUseCase: GetCategoriesUseCase,
+    private readonly updateCategorySubtreeAppearanceUseCase: UpdateCategorySubtreeAppearanceUseCase,
     private readonly updateCategoryUseCase: UpdateCategoryUseCase,
   ) {}
 
@@ -106,5 +109,23 @@ export class CategoryService {
     });
 
     return toCategoryOutput(category, accessibleOwners);
+  }
+
+  async updateAppearance(
+    userId: string,
+    id: string,
+    input: UpdateCategoryAppearanceApiInput,
+  ): Promise<CategoryOutput[]> {
+    const accessibleOwners = await this.financeAccessService.resolve(userId);
+
+    const categories = await this.updateCategorySubtreeAppearanceUseCase.execute({
+      ...input,
+      accessibleOwners,
+      callerId: userId,
+      id,
+      today: todayInSaoPaulo(),
+    });
+
+    return categories.map((category) => toCategoryOutput(category, accessibleOwners));
   }
 }

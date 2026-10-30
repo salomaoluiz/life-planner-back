@@ -20,6 +20,11 @@ export type IFinanceCategoryRepository = {
   updateCategory(params: UpdateCategoryRepositoryParams): Promise<CategoryEntity>;
 };
 
+interface CategoryAppearance {
+  icon?: string;
+  iconColor?: string;
+  id: string;
+}
 interface CreateCategoryRepositoryParams {
   allScopes?: boolean;
   creatorId?: string;
@@ -53,12 +58,15 @@ interface UpdateCategoryRepositoryParams {
   scope?: { creatorId: string; scopes: OwnerAccess[]; subtreeIds: string[] };
   // Spec 041: the category and `subtreeIds` change status in the same database transaction.
   status?: AccountStatus;
+  // Spec 058: icon / color of descendants, written in the same database transaction as the category.
+  subtreeAppearance?: CategoryAppearance[];
   subtreeDepths?: SubtreeDepth[];
   subtreeIds?: string[];
   type?: TransactionType;
 }
 
 export {
+  CategoryAppearance,
   CreateCategoryRepositoryParams,
   FindCategoriesRepositoryParams,
   SubtreeDepth,

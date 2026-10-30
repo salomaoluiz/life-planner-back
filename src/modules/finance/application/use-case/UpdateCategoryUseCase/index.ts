@@ -70,6 +70,8 @@ export class UpdateCategoryUseCase implements UseCaseWithParams<
     });
     const descendants = collectDescendants(scopeCategories, category.id);
 
+    this.assertSubtreeAppearance(input.subtreeAppearance, descendants);
+
     // Spec 041: archive / reactivate the category together with its whole subtree (no-op when unchanged).
     const status = input.status !== category.status ? input.status : undefined;
 
@@ -176,10 +178,31 @@ export class UpdateCategoryUseCase implements UseCaseWithParams<
       parentId: parentChanges ? (nextParentId ?? null) : undefined,
       scope,
       status,
+      subtreeAppearance: input.subtreeAppearance,
       subtreeDepths,
       subtreeIds: status && descendants.map((child) => child.id),
       type: input.type,
     });
+  }
+
+  // Spec 058 FR 4 / 9: every descendant id belongs to the subtree of the edited category, once.
+  private assertSubtreeAppearance(
+    items: { id: string }[] | undefined,
+    descendants: CategoryEntity[],
+  ): void {
+    const allowed = new Set(descendants.map((child) => child.id));
+    const seen = new Set<string>();
+
+    for (const item of items ?? []) {
+      if (seen.has(item.id)) {
+        throw new UnprocessableEntityException('Duplicate descendant');
+      }
+      seen.add(item.id);
+
+      if (!allowed.has(item.id)) {
+        throw new UnprocessableEntityException('Descendant is not in the subtree');
+      }
+    }
   }
 
   // Spec 041 FR 7-8: recurrences and running installment plans of the subtree block the archive.

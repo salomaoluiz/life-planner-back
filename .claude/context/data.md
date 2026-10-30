@@ -46,3 +46,7 @@ Purchase and payment writes lock the card row first (`lockCards`, `SELECT … FO
 ### Card credits (spec 032)
 
 `FinancePrepaymentDatasource` (`prepay`/`undo`: card lock first, eligible rows recomputed inside the lock, `original_months` JSON for undo, the record ↔ discount-row cycle is broken before deleting) and `FinanceCardCreditDatasource` (refunds + early payments: lock card → `assertInvoiceNotPaid` → cap/net re-check inside the lock → write; an early payment from an account also writes the `INVOICE_PAYMENT` debit row and moves the ledger, `deleteCredit` removes card row first, then the debit row). `FinanceTransactionDatasource.sumCardInvoices` returns the NET per invoice (EXPENSE − INCOME) and `early_paid`; the ACCOUNT list keeps `INVOICE_PAYMENT` rows that an early payment points at. `FinanceOwnerDataDatasource` deletes referencing rows first (early payments, refunds, prepayments).
+
+## Raw SQL: icon search (spec 058)
+
+`FinanceCategoryIconDatasource` uses `Prisma.sql` tagged templates (parameters only, like `sumDashboardRows`): `to_tsquery('simple', 'pas:* & fol:*')` over `search`, ordered by exact name/label match, `ts_rank`, `sort`; the fallback (FTS empty and 3+ characters) uses `strict_word_similarity(text, search_text) >= 0.2` (0.3 misses transpositions such as `psata` → `pasta`). The terms come from the pure `toSearchTerms` (only `[a-z0-9]` survive, so no tsquery operator reaches SQL).

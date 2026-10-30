@@ -407,3 +407,60 @@ it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)'
     status: 422,
   });
 });
+
+describe('subtree appearance (spec 058)', () => {
+  it('SHOULD pass descendants of the subtree (grandchildren included) to the repository', async () => {
+    const subtreeAppearance = [
+      { iconColor: '#112233', id: 'b' },
+      { icon: 'folder', iconColor: '#445566', id: 'c' },
+    ];
+
+    await run('a', { iconColor: '#000000', subtreeAppearance });
+
+    expect(mocks.categoryRepository.updateCategory).toHaveBeenCalledWith(
+      expect.objectContaining({ iconColor: '#000000', id: 'a', subtreeAppearance }),
+    );
+  });
+
+  it('SHOULD accept an update made only of descendants', async () => {
+    await run('a', { subtreeAppearance: [{ icon: 'folder', id: 'b' }] });
+
+    expect(mocks.categoryRepository.updateCategory).toHaveBeenCalled();
+  });
+
+  it.each([
+    ['another tree', [{ icon: 'folder', id: 'e' }]],
+    ['the edited category itself', [{ icon: 'folder', id: 'a' }]],
+    ['an unknown id', [{ icon: 'folder', id: 'missing' }]],
+    [
+      'a duplicated id',
+      [
+        { icon: 'folder', id: 'b' },
+        { iconColor: '#112233', id: 'b' },
+      ],
+    ],
+  ])('SHOULD reject (422) and write nothing WHEN a descendant is %s', async (_label, items) => {
+    await expect(run('a', { subtreeAppearance: items })).rejects.toThrow(
+      UnprocessableEntityException,
+    );
+    expect(mocks.categoryRepository.updateCategory).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD only allow the subtree of a subcategory (siblings and ancestors are rejected)', async () => {
+    await expect(run('b', { subtreeAppearance: [{ icon: 'folder', id: 'a' }] })).rejects.toThrow(
+      UnprocessableEntityException,
+    );
+    await run('b', { subtreeAppearance: [{ icon: 'folder', id: 'c' }] });
+
+    expect(mocks.categoryRepository.updateCategory).toHaveBeenCalledTimes(1);
+  });
+
+  it('SHOULD reject an item with neither icon nor iconColor and more than 500 items', async () => {
+    await expect(run('a', { subtreeAppearance: [{ id: 'b' }] })).rejects.toThrow(ValidationError);
+    await expect(
+      run('a', {
+        subtreeAppearance: Array.from({ length: 501 }, () => ({ icon: 'folder', id: 'b' })),
+      }),
+    ).rejects.toThrow(ValidationError);
+  });
+});

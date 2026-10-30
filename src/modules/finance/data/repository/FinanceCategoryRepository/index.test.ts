@@ -144,3 +144,16 @@ describe('updateCategory', () => {
     expect(result).toBe(mocks.categoryEntity);
   });
 });
+
+it('SHOULD map the subtree appearance to datasource rows WHEN updating', async () => {
+  await setup.updateCategory({
+    id: 'parent',
+    subtreeAppearance: [{ icon: 'folder', iconColor: '#112233', id: 'child' }],
+  });
+
+  expect(mocks.categoryDatasource.update).toHaveBeenCalledWith(
+    expect.objectContaining({
+      subtree_appearance: [{ icon: 'folder', icon_color: '#112233', id: 'child' }],
+    }),
+  );
+});

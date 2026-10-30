@@ -120,3 +120,38 @@ describe('delete', () => {
     expect(Reflect.getMetadata(HTTP_CODE_METADATA, CategoryController.prototype.delete)).toBe(204);
   });
 });
+
+describe('updateAppearance (spec 058)', () => {
+  const child = '5c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f';
+
+  it('SHOULD validate the body and delegate to the service', async () => {
+    const body = { descendants: [{ iconColor: '#112233', id: child }], icon: 'folder' };
+
+    const result = await setup.updateAppearance(mocks.request, mocks.category.id, body as never);
+
+    expect(mocks.categoryService.updateAppearance).toHaveBeenCalledWith(
+      mocks.request.user.id,
+      mocks.category.id,
+      body,
+    );
+    expect(result).toEqual([mocks.category]);
+  });
+
+  it.each([
+    ['no descendants', { descendants: [], icon: 'folder' }],
+    ['a missing descendants key', { icon: 'folder' }],
+    ['a descendant without icon or iconColor', { descendants: [{ id: child }] }],
+    ['a bad color', { descendants: [{ iconColor: 'red', id: child }] }],
+    ['a non-uuid descendant id', { descendants: [{ icon: 'folder', id: 'abc' }] }],
+    ['an unknown key', { descendants: [{ icon: 'folder', id: child }], ownerId: 'x' }],
+    [
+      '501 descendants',
+      { descendants: Array.from({ length: 501 }, () => ({ icon: 'folder', id: child })) },
+    ],
+  ])('SHOULD throw ValidationError WHEN the body has %s', async (_label, body) => {
+    await expect(
+      setup.updateAppearance(mocks.request, mocks.category.id, body as never),
+    ).rejects.toThrow(ValidationError);
+    expect(mocks.categoryService.updateAppearance).not.toHaveBeenCalled();
+  });
+});

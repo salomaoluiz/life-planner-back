@@ -38,6 +38,7 @@ import { GetAccountsUseCase } from '@finance/application/use-case/GetAccountsUse
 import { GetBalanceSeriesUseCase } from '@finance/application/use-case/GetBalanceSeriesUseCase';
 import { GetCategoriesUseCase } from '@finance/application/use-case/GetCategoriesUseCase';
 import { GetCategoryArchiveBlockersUseCase } from '@finance/application/use-case/GetCategoryArchiveBlockersUseCase';
+import { GetCategoryIconsUseCase } from '@finance/application/use-case/GetCategoryIconsUseCase';
 import { GetCreditCardByIdUseCase } from '@finance/application/use-case/GetCreditCardByIdUseCase';
 import { GetCreditCardsOverviewUseCase } from '@finance/application/use-case/GetCreditCardsOverviewUseCase';
 import { GetCreditCardsUseCase } from '@finance/application/use-case/GetCreditCardsUseCase';
@@ -71,6 +72,7 @@ import { UndoInvoicePaymentUseCase } from '@finance/application/use-case/UndoInv
 import { UpdateAccountUseCase } from '@finance/application/use-case/UpdateAccountUseCase';
 import { UpdateCardEarlyPaymentUseCase } from '@finance/application/use-case/UpdateCardEarlyPaymentUseCase';
 import { UpdateCardRefundUseCase } from '@finance/application/use-case/UpdateCardRefundUseCase';
+import { UpdateCategorySubtreeAppearanceUseCase } from '@finance/application/use-case/UpdateCategorySubtreeAppearanceUseCase';
 import { UpdateCategoryUseCase } from '@finance/application/use-case/UpdateCategoryUseCase';
 import { UpdateCreditCardUseCase } from '@finance/application/use-case/UpdateCreditCardUseCase';
 import { UpdateInstallmentPlanUseCase } from '@finance/application/use-case/UpdateInstallmentPlanUseCase';
@@ -80,6 +82,7 @@ import { UpdateTransactionUseCase } from '@finance/application/use-case/UpdateTr
 import { FinanceAccountDatasource } from '@finance/data/datasource/FinanceAccountDatasource';
 import { FinanceCardCreditDatasource } from '@finance/data/datasource/FinanceCardCreditDatasource';
 import { FinanceCategoryDatasource } from '@finance/data/datasource/FinanceCategoryDatasource';
+import { FinanceCategoryIconDatasource } from '@finance/data/datasource/FinanceCategoryIconDatasource';
 import { FinanceCreditCardDatasource } from '@finance/data/datasource/FinanceCreditCardDatasource';
 import { FinanceInstallmentPlanDatasource } from '@finance/data/datasource/FinanceInstallmentPlanDatasource';
 import { FinanceInvoicePaymentDatasource } from '@finance/data/datasource/FinanceInvoicePaymentDatasource';
@@ -90,6 +93,7 @@ import { FinanceTagDatasource } from '@finance/data/datasource/FinanceTagDatasou
 import { FinanceTransactionDatasource } from '@finance/data/datasource/FinanceTransactionDatasource';
 import { FinanceAccountRepository } from '@finance/data/repository/FinanceAccountRepository';
 import { FinanceCardCreditRepository } from '@finance/data/repository/FinanceCardCreditRepository';
+import { FinanceCategoryIconRepository } from '@finance/data/repository/FinanceCategoryIconRepository';
 import { FinanceCategoryRepository } from '@finance/data/repository/FinanceCategoryRepository';
 import { FinanceCreditCardRepository } from '@finance/data/repository/FinanceCreditCardRepository';
 import { FinanceInstallmentPlanRepository } from '@finance/data/repository/FinanceInstallmentPlanRepository';
@@ -143,6 +147,7 @@ const useCases = [
   ExpandCategoryIdsUseCase,
   FindInvoicesInRangeUseCase,
   GetCategoryArchiveBlockersUseCase,
+  GetCategoryIconsUseCase,
   GetFamilyArchiveBlockersUseCase,
   GetAccountsByIdsUseCase,
   GetCreditCardByIdUseCase,
@@ -168,6 +173,7 @@ const useCases = [
   UndoInstallmentPrepaymentUseCase,
   UndoInvoicePaymentUseCase,
   UpdateAccountUseCase,
+  UpdateCategorySubtreeAppearanceUseCase,
   UpdateCategoryUseCase,
   UpdateCreditCardUseCase,
   UpdateTransactionUseCase,
@@ -190,6 +196,8 @@ const useCases = [
     { provide: 'IFinanceCardCreditDatasource', useClass: FinanceCardCreditDatasource },
     { provide: 'IFinanceCategoryRepository', useClass: FinanceCategoryRepository },
     { provide: 'IFinanceCategoryDatasource', useClass: FinanceCategoryDatasource },
+    { provide: 'IFinanceCategoryIconDatasource', useClass: FinanceCategoryIconDatasource },
+    { provide: 'IFinanceCategoryIconRepository', useClass: FinanceCategoryIconRepository },
     { provide: 'IFinanceCreditCardRepository', useClass: FinanceCreditCardRepository },
     { provide: 'IFinanceCreditCardDatasource', useClass: FinanceCreditCardDatasource },
     { provide: 'IFinanceInstallmentPlanRepository', useClass: FinanceInstallmentPlanRepository },

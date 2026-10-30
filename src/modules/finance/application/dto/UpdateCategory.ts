@@ -24,6 +24,22 @@ export const UpdateCategorySchema = z
     scope: z.literal(ALL_SCOPES).optional(),
     // ARCHIVED / ACTIVE applies to the whole subtree (spec 041).
     status: z.enum(AccountStatus).optional(),
+    // Spec 058: descendants that take a new icon / color together with the category (1-500, one field at least).
+    subtreeAppearance: z
+      .array(
+        z
+          .object({
+            icon: IconSchema.optional(),
+            iconColor: IconColorSchema.optional(),
+            id: z.string().min(1),
+          })
+          .refine((item) => item.icon !== undefined || item.iconColor !== undefined, {
+            message: 'icon or iconColor is required',
+          }),
+      )
+      .min(1)
+      .max(500)
+      .optional(),
     // Server date (`YYYY-MM-DD`) used to tell which installment plans are still running when archiving.
     today: z
       .string()
@@ -39,6 +55,7 @@ export const UpdateCategorySchema = z
       input.parentId !== undefined ||
       input.scope !== undefined ||
       input.status !== undefined ||
+      input.subtreeAppearance !== undefined ||
       input.type !== undefined,
     { message: 'At least one field is required' },
   );

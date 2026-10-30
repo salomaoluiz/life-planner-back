@@ -96,6 +96,11 @@ export class FinanceCategoryRepository implements IFinanceCategoryRepository {
         subtree_ids: params.scope.subtreeIds,
       },
       status: params.status,
+      subtree_appearance: params.subtreeAppearance?.map((item) => ({
+        icon: item.icon,
+        icon_color: item.iconColor,
+        id: item.id,
+      })),
       subtree_depths: params.subtreeDepths?.map((subtree) => ({
         depth_level: subtree.depthLevel,
         id: subtree.id,

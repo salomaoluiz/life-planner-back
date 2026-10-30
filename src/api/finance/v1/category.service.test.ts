@@ -117,3 +117,24 @@ describe('ALL category output', () => {
     expect(result.ownerId).toBe(familyB);
   });
 });
+
+describe('updateAppearance (spec 058)', () => {
+  it('SHOULD run the subtree use case with the caller scope and map every category', async () => {
+    const result = await setup.updateAppearance(mocks.userId, mocks.rootApi.id, {
+      descendants: [{ icon: 'folder', id: mocks.childResult.id }],
+      iconColor: '#112233',
+    });
+
+    expect(mocks.updateCategorySubtreeAppearanceUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accessibleOwners: mocks.accessibleOwners,
+        callerId: mocks.userId,
+        descendants: [{ icon: 'folder', id: mocks.childResult.id }],
+        iconColor: '#112233',
+        id: mocks.rootApi.id,
+      }),
+    );
+    expect(result.map((category) => category.id)).toEqual([mocks.rootApi.id, mocks.childResult.id]);
+    expect(result[0]).toEqual(mocks.rootApi);
+  });
+});

@@ -491,3 +491,20 @@ model FinancialRecurrenceTag {
   @@index([tag_id])
   @@map("financial_recurrence_tags")
 }
+
+// Spec 058: curated icon catalog. `search_text` / `search` are generated columns (see the migration), queried only
+// with raw SQL, so Prisma never writes them.
+model CategoryIcon {
+  name        String  @id
+  label_pt    String
+  label_en    String
+  group_key   String
+  keywords    String[]
+  common      Boolean @default(false)
+  sort        Int
+  search_text Unsupported("text")?
+  search      Unsupported("tsvector")?
+
+  @@index([search], map: "category_icons_search_idx", type: Gin)
+  @@map("category_icons")
+}
