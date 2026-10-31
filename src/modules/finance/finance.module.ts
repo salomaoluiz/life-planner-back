@@ -56,6 +56,7 @@ import { GetRecurrencesUseCase } from '@finance/application/use-case/GetRecurren
 import { GetRecurrenceUseCase } from '@finance/application/use-case/GetRecurrenceUseCase';
 import { GetTagsUseCase } from '@finance/application/use-case/GetTagsUseCase';
 import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransactionsUseCase';
+import { GetUpcomingItemsUseCase } from '@finance/application/use-case/GetUpcomingItemsUseCase';
 import { HasFinanceDataByOwnerUseCase } from '@finance/application/use-case/HasFinanceDataByOwnerUseCase';
 import { ImportTransactionsUseCase } from '@finance/application/use-case/ImportTransactionsUseCase';
 import { MaterializeOccurrenceUseCase } from '@finance/application/use-case/MaterializeOccurrenceUseCase';
@@ -155,6 +156,7 @@ const useCases = [
   GetCreditCardByIdUseCase,
   GetBalanceSeriesUseCase,
   GetDailyBalancesUseCase,
+  GetUpcomingItemsUseCase,
   GetDashboardRowsUseCase,
   GetDashboardSummaryUseCase,
   GetFinanceTotalsUseCase,
