@@ -3,6 +3,12 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [1.3.0] - 2026-10-31
+
+### Added
+
+- `GET /api/v1/finance/upcoming`: the overdue items (no limit) and the next days' items (default 7 days, 5 items) of unpaid account transactions, open card invoices (one item per card and month) and recurrence projections, for the app home (spec 062).
+
 ## [1.2.0] - 2026-10-30
 
 ### Added

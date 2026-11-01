@@ -26,6 +26,8 @@ import { TransactionCsvController } from '@api/finance/v1/transaction-csv.contro
 import { TransactionCsvService } from '@api/finance/v1/transaction-csv.service';
 import { TransactionController } from '@api/finance/v1/transaction.controller';
 import { TransactionService } from '@api/finance/v1/transaction.service';
+import { UpcomingController } from '@api/finance/v1/upcoming.controller';
+import { UpcomingService } from '@api/finance/v1/upcoming.service';
 import { FamilyModule } from '@family/family.module';
 import { FinanceModule } from '@finance/finance.module';
 
@@ -46,6 +48,7 @@ import { FinanceModule } from '@finance/finance.module';
     TagController,
     TransactionCsvController,
     TransactionController,
+    UpcomingController,
   ],
   imports: [FamilyModule, FinanceModule],
   providers: [
@@ -62,6 +65,7 @@ import { FinanceModule } from '@finance/finance.module';
     TagService,
     TransactionCsvService,
     TransactionService,
+    UpcomingService,
   ],
 })
 export class FinanceAPIModule {}
