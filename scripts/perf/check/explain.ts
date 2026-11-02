@@ -41,17 +41,26 @@ export async function runExplain(args: {
 
       const violations: string[] = [];
       let indexSatisfied = entry.indexes.length === 0;
+      const usedBy: string[] = [];
       for (const [i, sql] of statements.entries()) {
         if (!/^\s*select\b/i.test(sql) || !sql.includes(`"${entry.table}"`)) continue;
         const explained = await client.query(`EXPLAIN (FORMAT JSON) ${sql}`, values[i]);
         const plan = (explained.rows[0] as Record<string, unknown>)['QUERY PLAN'];
+        usedBy.push(
+          inspectPlan(plan, { ...entry, indexes: ['?'], seqScanException: 'x' })[0]
+            ?.replace(/^.*plan used: /, '')
+            .replace(')', '') ?? '',
+        );
         const found = inspectPlan(plan, { ...entry, indexes: [] });
         violations.push(...found.filter((message) => !violations.includes(message)));
         if (inspectPlan(plan, { ...entry, seqScanException: 'index check only' }).length === 0) {
           indexSatisfied = true;
         }
       }
-      if (!indexSatisfied) violations.push(`expected index not used: ${entry.indexes.join(', ')}`);
+      if (!indexSatisfied)
+        violations.push(
+          `expected index not used: ${entry.indexes.join(', ')} (${usedBy.join(' | ')})`,
+        );
       results.push({ key: entry.key, violations });
     }
 

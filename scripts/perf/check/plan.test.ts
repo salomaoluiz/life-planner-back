@@ -18,7 +18,7 @@ describe('inspectPlan', () => {
   it('SHOULD flag a Seq Scan on the table and the missing index', () => {
     const violations = inspectPlan(seqScan, opts);
     expect(violations).toContain('Seq Scan on financial_transactions');
-    expect(violations).toContain('index idx_owner_date not used');
+    expect(violations).toContain('index idx_owner_date not used (plan used: none)');
   });
   it('SHOULD allow the Seq Scan WHEN there is an exception', () =>
     expect(inspectPlan(seqScan, { ...opts, indexes: [], seqScanException: 'spec 078' })).toEqual(

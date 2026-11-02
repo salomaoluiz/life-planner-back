@@ -8,6 +8,6 @@
     ],
     "maxPoolWaiting": null,
     "repeat": 3,
-    "wallMs": null
+    "wallMs": 514
   }
 }

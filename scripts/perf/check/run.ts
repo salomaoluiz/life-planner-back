@@ -82,6 +82,7 @@ export async function checkMain(
   const baseUrl = `http://127.0.0.1:${port}`;
   const server = deps.startServer(port);
   const failures: string[] = [];
+  const errors: string[] = [];
   const lines: string[] = [];
   const baselines = new Map<PerfModule, Record<string, { maxBytes: number; p50Ms: number }>>();
   const registry = loadRegistry(join(ROOT, 'perf/budgets'), modules);
@@ -104,7 +105,22 @@ export async function checkMain(
     for (const name of modules) {
       for (const [key, entry] of Object.entries(registry[name])) {
         if (entry.kind !== 'read') continue;
-        const { bytes, p50 } = await measureRoute({ baseUrl, key, path: pathOf(name, key), token });
+        let path: string;
+        try {
+          path = pathOf(name, key);
+        } catch (error) {
+          // A fixture the dataset does not have (e.g. an installment plan in the reference month).
+          lines.push(`${name} | ${key} | skipped: ${(error as Error).message}`);
+          continue;
+        }
+        let measured: { bytes: number; p50: number };
+        try {
+          measured = await measureRoute({ baseUrl, key, path, token });
+        } catch (error) {
+          errors.push(`${key}: ${(error as Error).message}`);
+          continue;
+        }
+        const { bytes, p50 } = measured;
         checked += 1;
         const list = !parseRegistryKey(key).template.includes(':');
         const sizeProblem = checkSize({
@@ -176,14 +192,15 @@ export async function checkMain(
   if (update) {
     for (const [name, updates] of baselines) deps.applyBaseline(name, updates);
   }
+  failures.push(...errors);
   const verdict =
-    update || failures.length === 0
+    (update && errors.length === 0) || failures.length === 0
       ? `PERF CHECK PASSED: ${checked}/${checked}`
       : `PERF CHECK FAILED: ${failures.length}\n${failures.map((failure) => `- ${failure}`).join('\n')}`;
   deps.writeSummary(`\n${[...lines, '', verdict].join('\n')}\n`);
   deps.log(verdict);
 
-  return update || failures.length === 0 ? 0 : 1;
+  return (update && errors.length === 0) || failures.length === 0 ? 0 : 1;
 }
 
 function defaultDeps(): CheckDeps {
@@ -208,7 +225,14 @@ function defaultDeps(): CheckDeps {
     build: () => spawnSync('yarn', ['build'], { cwd: ROOT, stdio: 'inherit' }).status ?? 1,
     explain: async (entries) => (await import('./explain-boot')).bootAndExplain(entries),
     log: (line) => console.log(line),
-    login: async (baseUrl) => (await import('./explain-boot')).loginPerfUser(baseUrl),
+    login: async (baseUrl) => {
+      // The env is validated when AppModule is imported, so the counter flag must be set before that import.
+      // The compiled server was spawned before this point and does not inherit it.
+      process.env.PERF_COUNT_QUERIES = '1';
+      process.env.SWAGGER_ENABLED = 'false';
+
+      return (await import('./explain-boot')).loginPerfUser(baseUrl);
+    },
     startServer: (port) => startServer({ env: process.env, port }),
     waitHealthy: (baseUrl, timeoutMs) => waitHealthy(baseUrl, timeoutMs),
     writeSummary: (text) => {

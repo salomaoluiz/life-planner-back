@@ -56,6 +56,7 @@ function registryWith(overrides: Record<string, unknown> = {}) {
 
 describe('checkMain', () => {
   beforeEach(() => {
+    jest.clearAllMocks();
     registryWith();
     (measureRoute as jest.Mock).mockResolvedValue({ bytes: 1000, p50: 100 });
     (measureConcurrent as jest.Mock).mockResolvedValue({ wallMs: 10 });
@@ -137,6 +138,24 @@ describe('checkMain', () => {
     expect(deps.applyBaseline).toHaveBeenCalledWith('stock', {
       [KEY]: { maxBytes: 1100, p50Ms: 300 },
     });
+  });
+
+  it('SHOULD skip a route whose fixture is missing instead of aborting', async () => {
+    registryWith({ params: { id: 'plan' } });
+    (loadRegistry as jest.Mock).mockReturnValue({
+      stock: { 'GET /api/v1/stock/items/:id': { ...entry, params: { id: 'plan' } } },
+    });
+    const { deps } = makeDeps();
+    expect(await checkMain(['--module', 'stock'], ENV, deps)).toBe(0);
+    expect(measureRoute).not.toHaveBeenCalled();
+    expect(deps.writeSummary).toHaveBeenCalledWith(expect.stringContaining('skipped'));
+  });
+
+  it('SHOULD fail that route but keep measuring WHEN one call returns non-2xx', async () => {
+    (measureRoute as jest.Mock).mockRejectedValueOnce(new Error(`${KEY} -> 400`));
+    const { deps } = makeDeps();
+    expect(await checkMain(['--module', 'stock', '--update-baseline'], ENV, deps)).toBe(1);
+    expect(deps.log).toHaveBeenCalledWith(expect.stringContaining(`${KEY} -> 400`));
   });
 
   it('SHOULD print usage and exit 2 WHEN the module is unknown', async () => {

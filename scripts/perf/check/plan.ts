@@ -26,7 +26,8 @@ export function inspectPlan(
   const violations: string[] = [];
   if (seqScan && !opts.seqScanException) violations.push(`Seq Scan on ${opts.table}`);
   for (const index of opts.indexes) {
-    if (!used.has(index)) violations.push(`index ${index} not used`);
+    if (!used.has(index))
+      violations.push(`index ${index} not used (plan used: ${[...used].join(', ') || 'none'})`);
   }
 
   return violations;

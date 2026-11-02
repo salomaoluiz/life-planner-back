@@ -2,9 +2,9 @@
   "GET /api/health": {
     "indexes": null,
     "kind": "read",
-    "maxBytes": null,
+    "maxBytes": 118,
     "maxQueries": 0,
-    "p50Ms": null,
+    "p50Ms": 24,
     "scenario": ""
   }
 }
