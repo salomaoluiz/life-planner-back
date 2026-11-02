@@ -57,7 +57,7 @@ Placeholders: `<m>` module (e.g. `finance`), `X` PascalCase entity, `x` camelCas
 
 ## 6c. Perf budget (spec 065)
 
-- [ ] Add every new route to `perf/budgets/<module>.json` (key `METHOD /path`, `kind`, `scenario`/`recipe`) and run `yarn perf --module <m> --update-baseline`; `yarn test` fails on a route without an entry. Full rules text arrives in spec 068.
+- [ ] Add every new route to `perf/budgets/<module>.json` (key `METHOD /path`, `kind`, `scenario`/`recipe`), run `yarn perf --module <m> --update-baseline`, then `yarn perf --changed` and expect `PERF PASSED` (golden rule 17, `.claude/context/performance.md`); `yarn test` fails on a route without an entry.
 
 ## 7. Integration → `.claude/context/integration.md`
 
