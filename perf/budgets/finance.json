@@ -112,7 +112,7 @@
     "kind": "read",
     "maxBytes": 6999,
     "maxQueries": 0,
-    "p50Ms": 44,
+    "p50Ms": 49,
     "scenario": ""
   },
   "GET /api/v1/finance/accounts/daily-balances": {
@@ -120,7 +120,7 @@
     "kind": "read",
     "maxBytes": 41825,
     "maxQueries": 0,
-    "p50Ms": 46,
+    "p50Ms": 52,
     "scenario": "month={referenceMonth}"
   },
   "GET /api/v1/finance/categories": {
@@ -128,7 +128,7 @@
     "kind": "read",
     "maxBytes": 84115,
     "maxQueries": 0,
-    "p50Ms": 38,
+    "p50Ms": 40,
     "scenario": ""
   },
   "GET /api/v1/finance/category-icons": {
@@ -144,7 +144,7 @@
     "kind": "read",
     "maxBytes": 2257,
     "maxQueries": 0,
-    "p50Ms": 23,
+    "p50Ms": 26,
     "scenario": ""
   },
   "GET /api/v1/finance/credit-cards/:id": {
@@ -163,7 +163,7 @@
     "kind": "read",
     "maxBytes": 7549,
     "maxQueries": 0,
-    "p50Ms": 62,
+    "p50Ms": 67,
     "params": {
       "id": "card",
       "month": "referenceMonth"
@@ -175,7 +175,7 @@
     "kind": "read",
     "maxBytes": 24491,
     "maxQueries": 0,
-    "p50Ms": 105,
+    "p50Ms": 121,
     "scenario": "month={referenceMonth}"
   },
   "GET /api/v1/finance/credit-cards/overview": {
@@ -183,7 +183,7 @@
     "kind": "read",
     "maxBytes": 101226,
     "maxQueries": 0,
-    "p50Ms": 78,
+    "p50Ms": 86,
     "scenario": ""
   },
   "GET /api/v1/finance/dashboard/balance-series #day": {
@@ -191,7 +191,7 @@
     "kind": "read",
     "maxBytes": 42847,
     "maxQueries": 0,
-    "p50Ms": 46,
+    "p50Ms": 47,
     "scenario": "currency=BRL&from={monthStart}&to={monthEnd}&granularity=DAY"
   },
   "GET /api/v1/finance/dashboard/summary": {
@@ -199,7 +199,7 @@
     "kind": "read",
     "maxBytes": 341,
     "maxQueries": 0,
-    "p50Ms": 173,
+    "p50Ms": 164,
     "scenario": "currency=BRL&from={monthStart}&to={monthEnd}"
   },
   "GET /api/v1/finance/dashboard/totals": {
@@ -207,7 +207,7 @@
     "kind": "read",
     "maxBytes": 1709,
     "maxQueries": 0,
-    "p50Ms": 123,
+    "p50Ms": 118,
     "scenario": "currency=BRL&from={monthStart}&to={monthEnd}&groupBy=CATEGORY&type=EXPENSE"
   },
   "GET /api/v1/finance/installment-plans/:id": {
@@ -243,7 +243,7 @@
     "kind": "read",
     "maxBytes": 35426,
     "maxQueries": 0,
-    "p50Ms": 48,
+    "p50Ms": 43,
     "params": {
       "id": "recurrence"
     },
@@ -254,7 +254,7 @@
     "kind": "read",
     "maxBytes": 3,
     "maxQueries": 0,
-    "p50Ms": 42,
+    "p50Ms": 41,
     "scenario": "from={referenceMonth}&to={nextMonth}"
   },
   "GET /api/v1/finance/tags": {
@@ -262,7 +262,7 @@
     "kind": "read",
     "maxBytes": 17157,
     "maxQueries": 0,
-    "p50Ms": 61,
+    "p50Ms": 59,
     "scenario": ""
   },
   "GET /api/v1/finance/transactions #card": {
@@ -281,7 +281,7 @@
     "kind": "read",
     "maxBytes": 61700,
     "maxQueries": 0,
-    "p50Ms": 164,
+    "p50Ms": 159,
     "scenario": "source=CARD&from={monthStart}&to={monthEnd}",
     "table": "financial_transactions"
   },
@@ -291,7 +291,7 @@
     "knownException": "Month list is ~1 KB per row; removed by spec 079 (lean transaction payload)",
     "maxBytes": 361841,
     "maxQueries": 0,
-    "p50Ms": 94,
+    "p50Ms": 99,
     "scenario": "from={monthStart}&to={monthEnd}",
     "table": "financial_transactions"
   },
@@ -301,7 +301,7 @@
     "knownException": "Unbounded list, removed by spec 078 (period required and keyset pagination)",
     "maxBytes": 8841412,
     "maxQueries": 0,
-    "p50Ms": 666,
+    "p50Ms": 637,
     "scenario": "",
     "seqScanException": "Full scan until spec 078",
     "table": "financial_transactions"
@@ -312,7 +312,7 @@
     "knownException": "CSV export, unbounded by design",
     "maxBytes": 63224,
     "maxQueries": 0,
-    "p50Ms": 187,
+    "p50Ms": 193,
     "scenario": "from={monthStart}&to={monthEnd}&format=BR"
   },
   "GET /api/v1/finance/transactions/export/count": {
@@ -320,7 +320,7 @@
     "kind": "read",
     "maxBytes": 15,
     "maxQueries": 0,
-    "p50Ms": 32,
+    "p50Ms": 36,
     "scenario": "from={monthStart}&to={monthEnd}"
   },
   "GET /api/v1/finance/upcoming": {
@@ -329,7 +329,7 @@
     "knownException": "Oversized payload; removed by spec 082 (upcoming endpoint slimming)",
     "maxBytes": 507269,
     "maxQueries": 0,
-    "p50Ms": 388,
+    "p50Ms": 400,
     "scenario": "ownerId={userId}"
   },
   "PATCH /api/v1/finance/accounts/:id": {

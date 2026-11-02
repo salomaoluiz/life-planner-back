@@ -30,7 +30,7 @@
     "kind": "read",
     "maxBytes": 235,
     "maxQueries": 0,
-    "p50Ms": 21,
+    "p50Ms": 27,
     "params": {
       "familyId": "family"
     },
@@ -41,7 +41,7 @@
     "kind": "read",
     "maxBytes": 865,
     "maxQueries": 0,
-    "p50Ms": 37,
+    "p50Ms": 43,
     "params": {
       "familyId": "family"
     },

@@ -14,7 +14,7 @@
     "knownException": "Deferred, see perf-roadmap.md",
     "maxBytes": 454980,
     "maxQueries": 0,
-    "p50Ms": 51,
+    "p50Ms": 48,
     "scenario": ""
   },
   "GET /api/v1/stock/items/:id": {

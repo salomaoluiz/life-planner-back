@@ -4,7 +4,7 @@
     "kind": "read",
     "maxBytes": 302,
     "maxQueries": 0,
-    "p50Ms": 0,
+    "p50Ms": 1,
     "scenario": ""
   }
 }

@@ -96,6 +96,19 @@ describe('checkMain', () => {
     expect(deps.log).toHaveBeenCalledWith(expect.stringContaining(KEY));
   });
 
+  it('SHOULD re-measure a suspected regression once and keep the better p50', async () => {
+    (measureRoute as jest.Mock)
+      .mockResolvedValueOnce({ bytes: 1000, p50: 300 })
+      .mockResolvedValueOnce({ bytes: 1000, p50: 105 });
+    expect(await checkMain(['--module', 'stock'], ENV, makeDeps().deps)).toBe(0);
+    expect(measureRoute).toHaveBeenCalledTimes(2);
+  });
+
+  it('SHOULD still fail WHEN the slowdown repeats', async () => {
+    (measureRoute as jest.Mock).mockResolvedValue({ bytes: 1000, p50: 300 });
+    expect(await checkMain(['--module', 'stock'], ENV, makeDeps().deps)).toBe(1);
+  });
+
   it('SHOULD pass WHEN the baseline is null', async () => {
     registryWith({ p50Ms: null });
     (measureRoute as jest.Mock).mockResolvedValue({ bytes: 1000, p50: 900 });
@@ -149,6 +162,23 @@ describe('checkMain', () => {
     expect(await checkMain(['--module', 'stock'], ENV, deps)).toBe(0);
     expect(measureRoute).not.toHaveBeenCalled();
     expect(deps.writeSummary).toHaveBeenCalledWith(expect.stringContaining('skipped'));
+  });
+
+  it('SHOULD store the median of 5 rounds WHEN --update-baseline', async () => {
+    for (const p50 of [100, 900, 120, 110, 130]) {
+      (measureRoute as jest.Mock).mockResolvedValueOnce({ bytes: 1000, p50 });
+    }
+    const { deps } = makeDeps();
+    expect(await checkMain(['--module', 'stock', '--update-baseline'], ENV, deps)).toBe(0);
+    expect(measureRoute).toHaveBeenCalledTimes(5);
+    expect(deps.applyBaseline).toHaveBeenCalledWith('stock', {
+      [KEY]: { maxBytes: 1100, p50Ms: 120 },
+    });
+  });
+
+  it('SHOULD measure once WHEN not updating the baseline', async () => {
+    await checkMain(['--module', 'stock'], ENV, makeDeps().deps);
+    expect(measureRoute).toHaveBeenCalledTimes(1);
   });
 
   it('SHOULD fail that route but keep measuring WHEN one call returns non-2xx', async () => {

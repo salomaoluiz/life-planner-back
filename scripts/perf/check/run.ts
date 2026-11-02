@@ -8,11 +8,13 @@ import { assertPerfRunAllowed } from '../measure/safety';
 import { loadRegistry, parseRegistryKey } from '../registry';
 import { loadConcurrency } from './concurrency';
 import { ExplainEntry } from './explain';
-import { isRegression, checkSize } from './stats';
+import { checkSize, isRegression, p50 as median } from './stats';
 import { measureConcurrent, measureRoute } from './timing';
 import { RunningServer, startServer, waitHealthy } from './server';
 
 const ROOT = resolve(__dirname, '../../..');
+// --update-baseline measures this many rounds and stores the median, so one noisy round does not set the baseline.
+export const BASELINE_ROUNDS = 5;
 const USAGE = 'usage: yarn perf:check [--module <module>] [--update-baseline]';
 
 export interface CheckDeps {
@@ -87,6 +89,8 @@ export async function checkMain(
   const baselines = new Map<PerfModule, Record<string, { maxBytes: number; p50Ms: number }>>();
   const registry = loadRegistry(join(ROOT, 'perf/budgets'), modules);
   const scenarios = loadConcurrency(join(ROOT, 'perf/concurrency.json'));
+  const samples = new Map<string, { bytes: number; module: PerfModule; p50s: number[] }>();
+  const walls = new Map<PerfModule, number[]>();
   let checked = 0;
 
   try {
@@ -102,64 +106,82 @@ export async function checkMain(
       return query ? `${path}?${query}` : path;
     };
 
-    for (const name of modules) {
-      for (const [key, entry] of Object.entries(registry[name])) {
-        if (entry.kind !== 'read') continue;
-        let path: string;
-        try {
-          path = pathOf(name, key);
-        } catch (error) {
-          // A fixture the dataset does not have (e.g. an installment plan in the reference month).
-          lines.push(`${name} | ${key} | skipped: ${(error as Error).message}`);
-          continue;
-        }
-        let measured: { bytes: number; p50: number };
-        try {
-          measured = await measureRoute({ baseUrl, key, path, token });
-        } catch (error) {
-          errors.push(`${key}: ${(error as Error).message}`);
-          continue;
-        }
-        const { bytes, p50 } = measured;
-        checked += 1;
-        const list = !parseRegistryKey(key).template.includes(':');
-        const sizeProblem = checkSize({
-          bytes,
-          kind: list ? 'list' : 'other',
-          knownException: entry.knownException,
-          maxBytes: entry.maxBytes,
-        });
-        const slow = isRegression(p50, entry.p50Ms);
-        lines.push(
-          `${name} | ${key} | p50 ${Math.round(p50)} ms (base ${entry.p50Ms ?? '-'}) | ${bytes} B`,
-        );
-        if (slow)
-          failures.push(`${key}: p50 ${Math.round(p50)} ms over baseline ${entry.p50Ms} ms`);
-        if (sizeProblem) failures.push(`${key}: ${sizeProblem}`);
-        baselines.set(name, {
-          ...baselines.get(name),
-          [key]: { maxBytes: Math.ceil(bytes * 1.1), p50Ms: Math.round(p50) },
-        });
-      }
-
-      const scenario = scenarios[name];
-      if (scenario) {
-        const { wallMs } = await measureConcurrent({
-          baseUrl,
-          calls: scenario.calls.map((key) => ({ path: pathOf(name, key) })),
-          repeat: scenario.repeat,
-          token,
-        });
-        checked += 1;
-        lines.push(
-          `${name} | concurrency x${scenario.repeat} | wall ${Math.round(wallMs)} ms (base ${scenario.wallMs ?? '-'})`,
-        );
-        if (isRegression(wallMs, scenario.wallMs)) {
-          failures.push(
-            `${name} concurrency: wall ${Math.round(wallMs)} ms over baseline ${scenario.wallMs} ms`,
+    for (let round = 0; round < (update ? BASELINE_ROUNDS : 1); round += 1) {
+      for (const name of modules) {
+        for (const [key, entry] of Object.entries(registry[name])) {
+          if (entry.kind !== 'read') continue;
+          let path: string;
+          try {
+            path = pathOf(name, key);
+          } catch (error) {
+            // A fixture the dataset does not have (e.g. an installment plan in the reference month).
+            if (round === 0) lines.push(`${name} | ${key} | skipped: ${(error as Error).message}`);
+            continue;
+          }
+          let measured: { bytes: number; p50: number };
+          try {
+            measured = await measureRoute({ baseUrl, key, path, token });
+          } catch (error) {
+            if (round === 0) errors.push(`${key}: ${(error as Error).message}`);
+            continue;
+          }
+          let { p50 } = measured;
+          const { bytes } = measured;
+          // A noisy machine or a remote database can spike one round: a suspected regression is measured once
+          // more and the better of the two counts (a real slowdown stays slow).
+          if (round === 0 && !update && isRegression(p50, entry.p50Ms)) {
+            try {
+              p50 = Math.min(p50, (await measureRoute({ baseUrl, key, path, token })).p50);
+            } catch {
+              // Keep the first measurement.
+            }
+          }
+          const sample = samples.get(`${name} ${key}`) ?? { bytes: 0, module: name, p50s: [] };
+          sample.bytes = Math.max(sample.bytes, bytes);
+          sample.p50s.push(p50);
+          samples.set(`${name} ${key}`, sample);
+          if (round > 0) continue;
+          checked += 1;
+          const list = !parseRegistryKey(key).template.includes(':');
+          const sizeProblem = checkSize({
+            bytes,
+            kind: list ? 'list' : 'other',
+            knownException: entry.knownException,
+            maxBytes: entry.maxBytes,
+          });
+          const slow = isRegression(p50, entry.p50Ms);
+          lines.push(
+            `${name} | ${key} | p50 ${Math.round(p50)} ms (base ${entry.p50Ms ?? '-'}) | ${bytes} B`,
           );
+          if (slow)
+            failures.push(`${key}: p50 ${Math.round(p50)} ms over baseline ${entry.p50Ms} ms`);
+          if (sizeProblem) failures.push(`${key}: ${sizeProblem}`);
         }
-        if (update) deps.applyWall(name, Math.round(wallMs));
+
+        const scenario = scenarios[name];
+        if (scenario) {
+          const concurrent = {
+            baseUrl,
+            calls: scenario.calls.map((key) => ({ path: pathOf(name, key) })),
+            repeat: scenario.repeat,
+            token,
+          };
+          let { wallMs } = await measureConcurrent(concurrent);
+          if (round === 0 && !update && isRegression(wallMs, scenario.wallMs)) {
+            wallMs = Math.min(wallMs, (await measureConcurrent(concurrent)).wallMs);
+          }
+          walls.set(name, [...(walls.get(name) ?? []), wallMs]);
+          if (round > 0) continue;
+          checked += 1;
+          lines.push(
+            `${name} | concurrency x${scenario.repeat} | wall ${Math.round(wallMs)} ms (base ${scenario.wallMs ?? '-'})`,
+          );
+          if (isRegression(wallMs, scenario.wallMs)) {
+            failures.push(
+              `${name} concurrency: wall ${Math.round(wallMs)} ms over baseline ${scenario.wallMs} ms`,
+            );
+          }
+        }
       }
     }
 
@@ -190,6 +212,14 @@ export async function checkMain(
   }
 
   if (update) {
+    for (const [id, sample] of samples) {
+      const key = id.slice(sample.module.length + 1);
+      baselines.set(sample.module, {
+        ...baselines.get(sample.module),
+        [key]: { maxBytes: Math.ceil(sample.bytes * 1.1), p50Ms: Math.round(median(sample.p50s)) },
+      });
+    }
+    for (const [name, values] of walls) deps.applyWall(name, Math.round(median(values)));
     for (const [name, updates] of baselines) deps.applyBaseline(name, updates);
   }
   failures.push(...errors);

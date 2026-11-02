@@ -24,7 +24,7 @@
     "kind": "read",
     "maxBytes": 113,
     "maxQueries": 0,
-    "p50Ms": 17,
+    "p50Ms": 18,
     "scenario": ""
   },
   "PATCH /api/v1/user/:id": {
