@@ -16,7 +16,11 @@ const envServiceMock = {
   dbHost: 'localhost',
   dbName: 'test_db',
   dbPassword: 'password',
+  dbPoolConnectionTimeoutMs: 0,
+  dbPoolIdleTimeoutMs: 30000,
+  dbPoolMax: 20,
   dbPort: '5432',
+  dbStatementTimeoutMs: 0,
   dbUser: 'user',
   perfCountQueries: false,
 } as unknown as EnvService;
