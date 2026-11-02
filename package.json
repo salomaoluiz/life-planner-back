@@ -22,6 +22,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "e2e": "node scripts/e2e.mjs",
+    "perf": "ts-node -r tsconfig-paths/register scripts/perf/cli.ts",
     "perf:seed": "ts-node -r tsconfig-paths/register scripts/perf/seed.ts",
     "version:check": "node scripts/check-version.mjs",
     "test:e2e": "jest --config ./test/jest-e2e.json",
