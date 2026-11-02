@@ -21,7 +21,18 @@ describe('QueryCounter', () => {
       control: 2,
       statements: ['SELECT 1', 'BEGIN', 'SELECT 2', 'COMMIT'],
       total: 4,
+      values: [[], [], [], []],
     });
+  });
+
+  it('SHOULD record bind values next to each statement', async () => {
+    QueryCounter.enable();
+    QueryCounter.begin();
+
+    await runQuery('SELECT $1', [7]);
+    await runQuery('SELECT 2');
+
+    expect(QueryCounter.end().values).toEqual([[7], []]);
   });
 
   it('SHOULD ignore queries outside begin and end', async () => {
