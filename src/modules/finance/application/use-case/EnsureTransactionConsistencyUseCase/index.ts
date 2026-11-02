@@ -90,12 +90,17 @@ export class EnsureTransactionConsistencyUseCase implements UseCaseWithParams<
       throw new UnprocessableEntityException('System category is reserved');
     }
 
-    const card = input.creditCardId ? await this.ensureCard(input.creditCardId, input) : undefined;
-    const account = card ? undefined : await this.ensureAccount(input.accountId as string, input);
-
-    // The category check below runs for both sources.
-
-    const category = await this.categoryRepository.findCategoryById(input.categoryId);
+    // The source and the category are read in parallel; the source errors still win (they are checked first).
+    const [source, category] = await Promise.all([
+      input.creditCardId
+        ? this.ensureCard(input.creditCardId, input).then((card) => ({ account: undefined, card }))
+        : this.ensureAccount(input.accountId as string, input).then((account) => ({
+            account,
+            card: undefined,
+          })),
+      this.categoryRepository.findCategoryById(input.categoryId),
+    ]);
+    const { account, card } = source;
 
     if (!category || !isVisibleTo(category, input.accessibleOwners)) {
       throw new NotFoundException('Category not found');
