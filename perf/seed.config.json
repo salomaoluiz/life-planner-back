@@ -1,0 +1,17 @@
+{
+  "seed": 64,
+  "stock": { "items": 1000 },
+  "family": { "families": 3, "invitesPerFamily": 2 },
+  "finance": {
+    "accounts": 18,
+    "archivedAccounts": 3,
+    "cards": 5,
+    "categories": 120,
+    "tags": 30,
+    "transactions": 12000,
+    "years": 7,
+    "referenceMonthMin": 300,
+    "installmentPlans": 40,
+    "recurrences": 20
+  }
+}
