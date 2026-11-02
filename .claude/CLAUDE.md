@@ -23,6 +23,7 @@ Clean Architecture / DDD: `src/api` (controllers + services) → `src/modules/<m
 | Lint rules, import order, naming, commit flow, Docker/env                          | `.claude/context/conventions.md`                                |
 | Frontend ↔ backend contract, cross-repo changes, auth flow, frontend migration     | `.claude/context/integration.md`                                |
 | Running the E2E guardrail suite (Maestro flows live in the frontend)               | `../life-planner/.claude/context/e2e.md`                        |
+| Performance budgets, `yarn perf`, PR performance block, `perf-report/summary.md`   | `.claude/context/performance.md`                                |
 | Building a whole new feature / CRUD slice end-to-end                               | skill `new-feature-slice` (`.claude/skills/new-feature-slice/`) |
 
 Tip: for a single-layer change read just that layer file + `conventions.md`. To see what already exists in a module, list `src/modules/<module>` instead of guessing (there is no `docs/ai` inventory in this repo yet).
@@ -64,3 +65,12 @@ Reference implementation for any new work: **`user` module** (the only one compl
     - E2E runs only on the owner's Mac (same as frontend rule 12). Exit code 2 (could not run: cloud session, API or app not running, sibling folder missing): say so in the final report; never claim the change was validated.
 15. **Destructive-action guardrail.** If a task, spec or plan would require a destructive action outside the scope of the spec being implemented, stop and ask the owner before doing it, and wait for the answer. This covers deleting data of a real (non-test) user, force-pushing, rewriting history, resetting or discarding someone's uncommitted or unpushed work (including unpushed local commits and branches you did not create), and deleting branches, files or databases the task did not create. It applies to every feature and plan, in both repos, and a plan or an owner's earlier approval for one action does not extend to another.
 16. **Version and changelog guardrail.** Every PR that touches shipped paths (`src/`, `prisma/`, `Dockerfile`, `docker-compose*.yml`, `package.json` dependencies, `yarn.lock`) bumps `package.json` `version` once (breaking → major, `feat` → minor, anything else → patch, from the latest `origin/main`) and adds a matching `## [x.y.z] - YYYY-MM-DD` entry at the top of `CHANGELOG.md` with 1–5 short user-facing bullets (English, spec number when there is one). Docs/tests/CI-only PRs don't bump. Re-bump after a rebase if `main` moved. `yarn version:check` must pass before the PR (Husky `pre-push` and the `version-check` CI job run it). Merging tags `vX.Y.Z` through the `release` workflow.
+17. **Performance guardrail.** Details, commands and registry format: `.claude/context/performance.md`.
+    - Every PR that changes `src/` or `prisma/` runs `yarn perf --changed` and is opened only when it ends `PERF PASSED` (read only `perf-report/summary.md`). Shared paths select every module.
+    - The PR description has a "Performance" block: modules checked, the summary line, and before/after for any budget that changed.
+    - Budgets only go down silently; raising one needs a reason in the PR and the owner's review.
+    - Every new route gets its registry entry (`perf/budgets/<module>.json`) in the same PR; the coverage tests fail otherwise.
+    - Lists of any module have a period or pagination; a list over 256 KB needs a `knownException` with the spec that removes it.
+    - Money data is never cached with `max-age`; caches are `private, no-cache` plus validation.
+    - Backend: a new `include` in a list read must be justified by the query budget.
+    - If `yarn perf` cannot run (exit 2: database, seed or build), say so in the final report with its one-line reason; never claim the change was checked.
