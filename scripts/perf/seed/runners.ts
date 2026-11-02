@@ -8,9 +8,9 @@ import { seedStock } from './stock';
 export function createRunners(): Runners {
   return {
     family: async (ctx: SeedContext) => {
-      const { created, familyIds } = await seedFamilies(ctx.client, ctx.cfg.family);
+      const { familyIds } = await seedFamilies(ctx.client, ctx.cfg.family);
 
-      return { counts: { families: familyIds.length, familyRecordsCreated: created }, familyIds };
+      return { counts: { families: familyIds.length }, familyIds };
     },
     finance: async (ctx: SeedContext) =>
       seedFinance(
@@ -21,7 +21,7 @@ export function createRunners(): Runners {
         ctx.rng,
       ),
     stock: async (ctx: SeedContext) => {
-      const created = await seedStock(
+      await seedStock(
         ctx.client,
         ctx.cfg.stock,
         { familyIds: ctx.familyIds, personal: ctx.userId },
@@ -29,7 +29,7 @@ export function createRunners(): Runners {
         ctx.rng,
       );
 
-      return { counts: { stockCreated: created } };
+      return { counts: { stock: ctx.cfg.stock.items } };
     },
   };
 }
