@@ -1,6 +1,8 @@
 import type { Runners, SeedContext } from '../seed';
 
 import { seedFamilies } from './family';
+import { seedFinance } from './finance';
+import type { FinanceVolumes } from './finance-plan';
 import { seedStock } from './stock';
 
 export function createRunners(): Runners {
@@ -10,9 +12,14 @@ export function createRunners(): Runners {
 
       return { counts: { families: familyIds.length, familyRecordsCreated: created }, familyIds };
     },
-    finance: async () => {
-      throw new Error('finance seed is not implemented yet');
-    },
+    finance: async (ctx: SeedContext) =>
+      seedFinance(
+        ctx.client,
+        ctx.cfg.finance as unknown as FinanceVolumes,
+        { familyIds: ctx.familyIds, userId: ctx.userId },
+        ctx.today,
+        ctx.rng,
+      ),
     stock: async (ctx: SeedContext) => {
       const created = await seedStock(
         ctx.client,
