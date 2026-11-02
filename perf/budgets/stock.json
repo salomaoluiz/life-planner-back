@@ -11,17 +11,18 @@
   "GET /api/v1/stock/items": {
     "indexes": null,
     "kind": "read",
-    "maxBytes": null,
+    "knownException": "Deferred, see perf-roadmap.md",
+    "maxBytes": 454980,
     "maxQueries": 0,
-    "p50Ms": null,
+    "p50Ms": 48,
     "scenario": ""
   },
   "GET /api/v1/stock/items/:id": {
     "indexes": null,
     "kind": "read",
-    "maxBytes": null,
+    "maxBytes": 527,
     "maxQueries": 0,
-    "p50Ms": null,
+    "p50Ms": 23,
     "params": {
       "id": "stockItem"
     },

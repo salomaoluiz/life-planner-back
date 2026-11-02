@@ -4,6 +4,7 @@ export interface QueryCount {
   control: number;
   statements: string[];
   total: number;
+  values: unknown[][];
 }
 
 type QueryFn = (...args: unknown[]) => unknown;
@@ -15,9 +16,11 @@ const CONTROL = /^\s*(BEGIN|COMMIT|ROLLBACK|SAVEPOINT|RELEASE)\b/i;
 export class QueryCounter {
   private static original?: Client['query'];
   private static recording?: string[];
+  private static recordingValues?: unknown[][];
 
   static begin(): void {
     QueryCounter.recording = [];
+    QueryCounter.recordingValues = [];
   }
 
   static disable(): void {
@@ -26,6 +29,7 @@ export class QueryCounter {
       QueryCounter.original = undefined;
     }
     QueryCounter.recording = undefined;
+    QueryCounter.recordingValues = undefined;
   }
 
   static enable(): void {
@@ -33,7 +37,7 @@ export class QueryCounter {
     const original = Client.prototype.query;
     QueryCounter.original = original;
     Client.prototype.query = function patched(this: Client, ...args: unknown[]) {
-      QueryCounter.record(args[0]);
+      QueryCounter.record(args[0], args[1]);
 
       return (original as unknown as QueryFn).apply(this, args);
     } as unknown as Client['query'];
@@ -41,12 +45,15 @@ export class QueryCounter {
 
   static end(): QueryCount {
     const statements = QueryCounter.recording ?? [];
+    const values = QueryCounter.recordingValues ?? [];
     QueryCounter.recording = undefined;
+    QueryCounter.recordingValues = undefined;
 
     return {
       control: statements.filter((sql) => CONTROL.test(sql)).length,
       statements,
       total: statements.length,
+      values,
     };
   }
 
@@ -54,9 +61,12 @@ export class QueryCounter {
     return QueryCounter.original !== undefined;
   }
 
-  private static record(first: unknown): void {
+  private static record(first: unknown, second: unknown): void {
     if (!QueryCounter.recording) return;
-    const text = typeof first === 'string' ? first : ((first as { text?: string })?.text ?? '');
-    QueryCounter.recording.push(text);
+    const config =
+      typeof first === 'string' ? undefined : (first as { text?: string; values?: unknown[] });
+    QueryCounter.recording.push(typeof first === 'string' ? first : (config?.text ?? ''));
+    const bound = Array.isArray(second) ? second : config?.values;
+    QueryCounter.recordingValues?.push(Array.isArray(bound) ? bound : []);
   }
 }

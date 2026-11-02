@@ -18,6 +18,15 @@ describe('assertPerfRunAllowed', () => {
     expect(() => assertPerfRunAllowed({ ...good, DB_HOST: '127.0.0.1' })).not.toThrow();
   });
 
+  it('SHOULD allow a remote staging host WHEN PERF_DB_HOST_ALLOW names it exactly', () => {
+    const remote = { ...good, DB_HOST: 'db.example.com', PERF_DB_HOST_ALLOW: 'db.example.com' };
+    expect(() => assertPerfRunAllowed(remote)).not.toThrow();
+    expect(() => assertPerfRunAllowed({ ...remote, NODE_ENV: 'production' })).toThrow(SeedRefusal);
+    expect(() =>
+      assertPerfRunAllowed({ ...remote, PERF_DB_HOST_ALLOW: 'other.example.com' }),
+    ).toThrow(SeedRefusal);
+  });
+
   it.each([
     { ...good, PERF_SEED_ALLOW: undefined },
     { ...good, NODE_ENV: 'production' },

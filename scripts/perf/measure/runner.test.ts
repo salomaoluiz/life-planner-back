@@ -15,7 +15,9 @@ describe('measureRequest', () => {
 
   it('SHOULD return the statements counted around the call and warm a GET up first', async () => {
     jest.spyOn(QueryCounter, 'begin').mockImplementation();
-    jest.spyOn(QueryCounter, 'end').mockReturnValue({ control: 0, statements: [], total: 7 });
+    jest
+      .spyOn(QueryCounter, 'end')
+      .mockReturnValue({ control: 0, statements: [], total: 7, values: [] });
     const fetchFn = jest.fn().mockResolvedValue(response(200));
 
     const result = await measureRequest({
@@ -35,7 +37,9 @@ describe('measureRequest', () => {
 
   it('SHOULD call a write exactly once', async () => {
     jest.spyOn(QueryCounter, 'begin').mockImplementation();
-    jest.spyOn(QueryCounter, 'end').mockReturnValue({ control: 2, statements: [], total: 9 });
+    jest
+      .spyOn(QueryCounter, 'end')
+      .mockReturnValue({ control: 2, statements: [], total: 9, values: [] });
     const fetchFn = jest.fn().mockResolvedValue(response(201));
 
     await measureRequest({
@@ -52,7 +56,9 @@ describe('measureRequest', () => {
 
   it('SHOULD hand the response body to onResponse', async () => {
     jest.spyOn(QueryCounter, 'begin').mockImplementation();
-    jest.spyOn(QueryCounter, 'end').mockReturnValue({ control: 0, statements: [], total: 1 });
+    jest
+      .spyOn(QueryCounter, 'end')
+      .mockReturnValue({ control: 0, statements: [], total: 1, values: [] });
     const onResponse = jest.fn();
 
     await measureRequest({
@@ -69,7 +75,9 @@ describe('measureRequest', () => {
 
   it('SHOULD throw the key and status only WHEN the call fails', async () => {
     jest.spyOn(QueryCounter, 'begin').mockImplementation();
-    jest.spyOn(QueryCounter, 'end').mockReturnValue({ control: 0, statements: [], total: 0 });
+    jest
+      .spyOn(QueryCounter, 'end')
+      .mockReturnValue({ control: 0, statements: [], total: 0, values: [] });
     const fetchFn = jest.fn().mockResolvedValue(response(500));
 
     await expect(

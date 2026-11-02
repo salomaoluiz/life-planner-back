@@ -20,6 +20,7 @@ function deps(overrides: Partial<CliDeps> = {}): CliDeps & { lines: string[] } {
     lines,
     log: (line) => lines.push(line),
     readManifest: () => manifest,
+    runCheck: jest.fn().mockReturnValue(0),
     runJest: jest.fn().mockReturnValue(0),
     runSeed: jest.fn().mockReturnValue(0),
     summaryVerdict: () => 'PERF PASSED: 1/1',
@@ -148,5 +149,19 @@ describe('main', () => {
 
     expect(await main(['--bogus'], goodEnv, d)).toBe(2);
     expect(d.lines[0]).toContain('usage: yarn perf');
+  });
+});
+
+describe('main perf:check hook (spec 066)', () => {
+  it('SHOULD run perf:check for the selected modules after jest and keep the worst code', async () => {
+    const d = deps({ runCheck: jest.fn().mockReturnValue(1) });
+    expect(await main(['--module', 'finance'], goodEnv, d)).toBe(1);
+    expect(d.runCheck).toHaveBeenCalledWith(['finance'], false);
+  });
+
+  it('SHOULD not run perf:check WHEN --dry-run', async () => {
+    const d = deps();
+    await main(['--module', 'finance', '--dry-run'], goodEnv, d);
+    expect(d.runCheck).not.toHaveBeenCalled();
   });
 });
