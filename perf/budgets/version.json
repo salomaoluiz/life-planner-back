@@ -1,0 +1,10 @@
+{
+  "GET /api/v1/version": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": ""
+  }
+}

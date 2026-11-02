@@ -1,0 +1,75 @@
+{
+  "DELETE /api/v1/user/me": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Deletes the perf account itself.",
+    "scenario": ""
+  },
+  "GET /api/v1/user/:id": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "params": {
+      "id": "userId"
+    },
+    "scenario": ""
+  },
+  "GET /api/v1/user/me": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": ""
+  },
+  "PATCH /api/v1/user/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Changes the profile of the perf account; no restore step yet.",
+    "scenario": ""
+  },
+  "POST /api/v1/auth/login/email": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Creates or revokes sessions or users of the perf account; no create-then-delete cycle that leaves the account untouched.",
+    "scenario": ""
+  },
+  "POST /api/v1/auth/logout": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Creates or revokes sessions or users of the perf account; no create-then-delete cycle that leaves the account untouched.",
+    "scenario": ""
+  },
+  "POST /api/v1/auth/refresh": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Creates or revokes sessions or users of the perf account; no create-then-delete cycle that leaves the account untouched.",
+    "scenario": ""
+  },
+  "POST /api/v1/auth/signup/email": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Creates or revokes sessions or users of the perf account; no create-then-delete cycle that leaves the account untouched.",
+    "scenario": ""
+  }
+}
