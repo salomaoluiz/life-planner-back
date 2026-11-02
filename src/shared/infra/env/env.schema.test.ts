@@ -8,6 +8,10 @@ describe('validateEnvironment', () => {
       ...mocks.validConfig,
       APP_ENVIRONMENT: 'development',
       CORS_ORIGINS: '',
+      DB_POOL_CONNECTION_TIMEOUT_MS: 0,
+      DB_POOL_IDLE_TIMEOUT_MS: 30000,
+      DB_POOL_MAX: 20,
+      DB_STATEMENT_TIMEOUT_MS: 0,
       JWT_EXPIRES_IN: 7200, // Coerced
       PERF_COUNT_QUERIES: false,
       PORT: 4000, // Coerced
@@ -49,6 +53,29 @@ describe('validateEnvironment', () => {
       PORT: 3000,
       SESSION_IDLE_TTL_SECONDS: 172800,
     });
+  });
+
+  it('SHOULD coerce the pool variables AND reject invalid values', () => {
+    const result = setup({
+      ...mocks.validConfig,
+      DB_POOL_CONNECTION_TIMEOUT_MS: '5000',
+      DB_POOL_IDLE_TIMEOUT_MS: '10000',
+      DB_POOL_MAX: '25',
+      DB_STATEMENT_TIMEOUT_MS: '15000',
+    });
+
+    expect(result).toMatchObject({
+      DB_POOL_CONNECTION_TIMEOUT_MS: 5000,
+      DB_POOL_IDLE_TIMEOUT_MS: 10000,
+      DB_POOL_MAX: 25,
+      DB_STATEMENT_TIMEOUT_MS: 15000,
+    });
+    expect(setup({ ...mocks.validConfig, DB_POOL_MAX: '' }).DB_POOL_MAX).toBe(20);
+    expect(throwableSetup({ ...mocks.validConfig, DB_POOL_MAX: '0' })).toBeInstanceOf(Error);
+    expect(throwableSetup({ ...mocks.validConfig, DB_POOL_MAX: '2.5' })).toBeInstanceOf(Error);
+    expect(throwableSetup({ ...mocks.validConfig, DB_STATEMENT_TIMEOUT_MS: '-1' })).toBeInstanceOf(
+      Error,
+    );
   });
 
   it('SHOULD keep CORS_ORIGINS WHEN provided', () => {

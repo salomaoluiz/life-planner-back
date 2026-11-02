@@ -6,6 +6,14 @@ const emptyToUndefined = z
   .optional()
   .transform((value) => (value === '' ? undefined : value));
 
+// Optional integer; an empty string (unset compose/.env value) falls back to the default.
+function optionalInt(min: number, fallback: number) {
+  return z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.coerce.number().int().min(min).default(fallback),
+  );
+}
+
 export const envSchema = z.object({
   // App
   APP_ENVIRONMENT: z.enum(['development', 'production', 'staging']).default('development'),
@@ -25,6 +33,11 @@ export const envSchema = z.object({
   DB_PASSWORD: z.string(),
   DB_PORT: z.string(),
   DB_USER: z.string(),
+  // Connection pool of the pg driver behind Prisma. 0 disables a timeout.
+  DB_POOL_CONNECTION_TIMEOUT_MS: optionalInt(0, 0),
+  DB_POOL_IDLE_TIMEOUT_MS: optionalInt(0, 30000),
+  DB_POOL_MAX: optionalInt(1, 20),
+  DB_STATEMENT_TIMEOUT_MS: optionalInt(0, 0),
 
   // JWT
   JWT_EXPIRES_IN: z.coerce.number().default(3600),
