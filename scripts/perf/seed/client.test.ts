@@ -20,6 +20,16 @@ describe('ApiClient', () => {
     expect(fetchFn.mock.calls[1][0]).toBe('http://localhost:3000/api/v1/stock/items');
   });
 
+  it('SHOULD expose the access token after login', async () => {
+    const fetchFn = jest.fn().mockResolvedValue(response(200, { token: 'secret-token' }));
+    const client = new ApiClient('http://localhost:3000', fetchFn);
+    expect(client.accessToken).toBeUndefined();
+
+    await client.login('a@example.com', 'pw');
+
+    expect(client.accessToken).toBe('secret-token');
+  });
+
   it('fails with method, path and status only', async () => {
     const fetchFn = jest.fn().mockResolvedValue(response(422, { message: 'a@example.com bad' }));
     const client = new ApiClient('http://localhost:3000', fetchFn);

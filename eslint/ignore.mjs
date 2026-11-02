@@ -12,6 +12,7 @@ export default {
     'generated/**/*',
     'jest.config.js',
     'prisma.config.ts',
+    'perf/**/*',
     'prisma/**/*',
     'scripts/**/*',
     'tsconfig.json',
