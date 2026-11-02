@@ -30,6 +30,7 @@ function fakeApi() {
   let seq = 0;
   const writes: string[] = [];
   const paid = new Set<string>();
+  const prepaid = new Set<string>();
   const id = () => `id-${(seq += 1)}`;
   const collections: Record<string, string> = {
     '/api/v1/finance/accounts': 'accounts',
@@ -43,6 +44,8 @@ function fakeApi() {
   const client = {
     get: jest.fn(async (path: string) => {
       if (collections[path]) return store[collections[path]];
+      const plan = path.match(/installment-plans\/([^/]+)$/);
+      if (plan) return { installments: [{ prepaid: prepaid.has(plan[1]) }] };
       const invoice = path.match(/credit-cards\/(.+)\/invoices\/(.+)$/);
       if (invoice) {
         return { credits: [], invoice: { payment: paid.has(path) ? {} : null }, purchases: [{}] };
@@ -66,13 +69,15 @@ function fakeApi() {
         return row;
       }
       if (path.startsWith('/api/v1/finance/installment-plans') && path.endsWith('/prepayment')) {
+        prepaid.add(path.split('/')[5]);
+
         return {};
       }
       if (path.startsWith('/api/v1/finance/installment-plans')) {
         const plan = { id: id() };
         store.transactions.push({ description: body?.description, installmentPlanId: plan.id });
 
-        return plan;
+        return { plan };
       }
       if (path.includes('/refunds') || path.includes('/early-payments')) {
         store.transactions.push({ description: body?.description });
@@ -92,7 +97,7 @@ function fakeApi() {
     }),
   };
 
-  return { client, store, writes };
+  return { client, prepaid, store, writes };
 }
 
 const refs = { familyIds: ['fam-1'], userId: 'user-1' };
@@ -114,6 +119,28 @@ describe('seedFinance', () => {
     expect(store.accounts.filter((a) => a.status === 'ARCHIVED')).toHaveLength(1);
     expect(result.referenceMonth).toBe('2026-10');
     expect(result.counts.financeCreated).toBeGreaterThan(0);
+  });
+
+  it('prepays the first plan with its real id, also when an earlier run created it unprepaid', async () => {
+    const { client, store, writes } = fakeApi();
+    await run(client);
+    const prepayments = writes.filter((w) => w.endsWith('/prepayment'));
+    expect(prepayments).toHaveLength(1);
+    expect(prepayments[0]).not.toContain('undefined');
+
+    const planId = String(store.transactions.find((t) => t.installmentPlanId)?.installmentPlanId);
+    expect(prepayments[0]).toBe(`POST /api/v1/finance/installment-plans/${planId}/prepayment`);
+  });
+
+  it('prepays an existing unprepaid first plan on a rerun', async () => {
+    const { client, prepaid, writes } = fakeApi();
+    await run(client);
+    prepaid.clear();
+    const before = writes.filter((w) => w.endsWith('/prepayment')).length;
+
+    await run(client);
+
+    expect(writes.filter((w) => w.endsWith('/prepayment')).length).toBe(before + 1);
   });
 
   it('creates 0 records on a second run', async () => {

@@ -6,6 +6,7 @@ type Client = Pick<ApiClient, 'get' | 'patch' | 'post'>;
 type NamedRow = {
   description?: string;
   id: string;
+  installmentPlanId?: null | string;
   name?: string;
   status?: string;
   title?: string;
@@ -140,10 +141,29 @@ export async function seedFinance(
   }
 
   // 4. Installment plans (the first one gets a prepayment) and recurrences.
+  const prepay = (planId: string) =>
+    post(`${BASE}/installment-plans/${planId}/prepayment`, {
+      date: today,
+      targetInvoiceMonth: today.slice(0, 7),
+    });
   for (const item of plan.installmentPlans) {
+    const existingRow = rows.find(
+      (r) => r.installmentPlanId && matches(r.description ?? '', item.description),
+    );
+    if (existingRow) {
+      // An earlier run may have stopped before the prepayment.
+      const planId = existingRow.installmentPlanId as string;
+      if (item.prepay) {
+        const { installments } = await client.get<{ installments: { prepaid: boolean }[] }>(
+          `${BASE}/installment-plans/${planId}`,
+        );
+        if (!installments.some((i) => i.prepaid)) await prepay(planId);
+      }
+      continue;
+    }
     if (descriptions.some((d) => matches(d, item.description))) continue;
     const card = plan.cards[item.cardIndex];
-    const { id } = await post<{ id: string }>(`${BASE}/installment-plans`, {
+    const result = await post<{ plan: { id: string } }>(`${BASE}/installment-plans`, {
       categoryId: categoryIds[item.categoryIndex],
       creditCardId: cardIds[item.cardIndex],
       date: item.date,
@@ -152,12 +172,7 @@ export async function seedFinance(
       value: item.value,
       ...ownerOf(card.owner),
     });
-    if (item.prepay) {
-      await post(`${BASE}/installment-plans/${id}/prepayment`, {
-        date: today,
-        targetInvoiceMonth: today.slice(0, 7),
-      });
-    }
+    if (item.prepay) await prepay(result.plan.id);
   }
   const existingRecurrences = new Set(
     (await client.get<NamedRow[]>(`${BASE}/recurrences`)).map((r) => r.description ?? ''),
