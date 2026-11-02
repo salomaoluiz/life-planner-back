@@ -1,0 +1,48 @@
+{
+  "DELETE /api/v1/stock/items/:id": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "stock.delete",
+    "scenario": ""
+  },
+  "GET /api/v1/stock/items": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": ""
+  },
+  "GET /api/v1/stock/items/:id": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "params": {
+      "id": "stockItem"
+    },
+    "scenario": ""
+  },
+  "PATCH /api/v1/stock/items/:id": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "stock.patch",
+    "scenario": ""
+  },
+  "POST /api/v1/stock/items": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "stock.create",
+    "scenario": ""
+  }
+}

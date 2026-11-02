@@ -1,0 +1,95 @@
+{
+  "DELETE /api/v1/families/:familyId": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "family.delete",
+    "scenario": ""
+  },
+  "DELETE /api/v1/family-members/:memberId": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs a second user (invite token or member); not part of the perf dataset.",
+    "scenario": ""
+  },
+  "GET /api/v1/families": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": ""
+  },
+  "GET /api/v1/families/:familyId": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "params": {
+      "familyId": "family"
+    },
+    "scenario": ""
+  },
+  "GET /api/v1/families/:familyId/members": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "params": {
+      "familyId": "family"
+    },
+    "scenario": ""
+  },
+  "GET /api/v1/family-invites/:token": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs a second user (invite token or member); not part of the perf dataset.",
+    "scenario": ""
+  },
+  "PATCH /api/v1/families/:familyId": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "family.patch",
+    "scenario": ""
+  },
+  "POST /api/v1/families": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "family.create",
+    "scenario": ""
+  },
+  "POST /api/v1/families/:familyId/members": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs a second user (invite token or member); not part of the perf dataset.",
+    "scenario": ""
+  },
+  "POST /api/v1/family-invites/:token/accept": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs a second user (invite token or member); not part of the perf dataset.",
+    "scenario": ""
+  }
+}

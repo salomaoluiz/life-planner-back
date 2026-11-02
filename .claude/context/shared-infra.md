@@ -26,6 +26,8 @@ The only place allowed to import third-party libs directly (ESLint `no-restricte
 
 Spec 056 adds `APP_ENVIRONMENT` (`production|staging|development`, default `development`), `VERSION_REPO_API`, `VERSION_REPO_APP` (`owner/name`, optional; empty disables the check), `GITHUB_TOKEN` (optional, read-only, never logged) and `VERSION_CHECK_TTL_SECONDS` (default 600).
 
+`PERF_COUNT_QUERIES` (`'1'` enables, default off; spec 065): `Database` then calls `QueryCounter.enable()` (`db/QueryCounter.ts`, patches `pg.Client.prototype.query`, `begin()`/`end()` return the statements counted in between). Only the perf runner sets it. `http/configure-app` holds the app setup (CORS, body limit, URI versioning, `api` prefix, swagger) shared by `main.ts` and the perf runner.
+
 Adding a variable: `envSchema` → `EnvService` getter (+ its test/fixtures) → `docker-compose.yml` `environment` → placeholder in `.env.example`. Values never go in source.
 
 ## Adding a wrapper

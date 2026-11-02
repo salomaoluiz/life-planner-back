@@ -34,7 +34,7 @@ module.exports = {
   preset: 'ts-jest',
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   testEnvironment: 'node',
-  testPathIgnorePatterns: ['/node_modules/', '/tests/'],
+  testPathIgnorePatterns: ['/node_modules/', '/tests/', '\\.perf\\.test\\.ts$'],
   testRegex: '.*\\.test\\.ts$',
   transform: {
     '^.+\\.(t|j)s$': 'ts-jest',

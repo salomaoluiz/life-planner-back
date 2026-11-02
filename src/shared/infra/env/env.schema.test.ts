@@ -9,6 +9,7 @@ describe('validateEnvironment', () => {
       APP_ENVIRONMENT: 'development',
       CORS_ORIGINS: '',
       JWT_EXPIRES_IN: 7200, // Coerced
+      PERF_COUNT_QUERIES: false,
       PORT: 4000, // Coerced
       SESSION_IDLE_TTL_SECONDS: 172800,
       SWAGGER_ENABLED: true,
@@ -114,5 +115,22 @@ describe('validateEnvironment', () => {
         json.properties[key as keyof typeof json.properties].errors[0],
       );
     });
+  });
+
+  it.each([
+    { expected: true, raw: '1' },
+    { expected: false, raw: '0' },
+    { expected: false, raw: '' },
+    { expected: false, raw: undefined },
+  ])('SHOULD parse PERF_COUNT_QUERIES=$raw as $expected', ({ expected, raw }) => {
+    const result = setup({ ...mocks.validConfig, PERF_COUNT_QUERIES: raw });
+
+    expect(result.PERF_COUNT_QUERIES).toBe(expected);
+  });
+
+  it('SHOULD reject PERF_COUNT_QUERIES=banana', () => {
+    expect(throwableSetup({ ...mocks.validConfig, PERF_COUNT_QUERIES: 'banana' })).toBeInstanceOf(
+      Error,
+    );
   });
 });

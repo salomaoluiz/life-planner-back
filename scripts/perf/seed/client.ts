@@ -6,6 +6,10 @@ export class ApiClient {
     private readonly fetchFn: typeof fetch = fetch,
   ) {}
 
+  get accessToken(): string | undefined {
+    return this.token;
+  }
+
   delete(path: string, body?: unknown): Promise<void> {
     return this.request<void>('DELETE', path, body);
   }

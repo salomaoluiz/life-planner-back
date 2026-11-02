@@ -56,6 +56,12 @@ export class EnvService {
     return this.nestConfigService.get('JWT_SECRET');
   }
 
+  // Perf
+
+  get perfCountQueries(): Env['PERF_COUNT_QUERIES'] {
+    return this.nestConfigService.get('PERF_COUNT_QUERIES');
+  }
+
   // Sessions
 
   get sessionIdleTtlSeconds(): Env['SESSION_IDLE_TTL_SECONDS'] {

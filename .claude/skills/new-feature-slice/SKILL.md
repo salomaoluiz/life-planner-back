@@ -55,6 +55,10 @@ Placeholders: `<m>` module (e.g. `finance`), `X` PascalCase entity, `x` camelCas
 
 - [ ] Run `yarn e2e --changed`, then once `yarn e2e` (full suite); read only the printed summary. A backend-only slice needs no new flow; report exit code 2 as "not validated".
 
+## 6c. Perf budget (spec 065)
+
+- [ ] Add every new route to `perf/budgets/<module>.json` (key `METHOD /path`, `kind`, `scenario`/`recipe`) and run `yarn perf --module <m> --update-baseline`; `yarn test` fails on a route without an entry. Full rules text arrives in spec 068.
+
 ## 7. Integration → `.claude/context/integration.md`
 
 - [ ] Compare with the frontend entity/model; keep enum values and ids consistent.

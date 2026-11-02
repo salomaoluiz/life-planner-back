@@ -60,3 +60,5 @@ docs/superpowers
 
 # Perf seed (spec 064): environment specific
 /perf/seed.manifest.json
+
+/perf-report

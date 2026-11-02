@@ -28,6 +28,7 @@ class EnvServiceFixture {
       githubToken: undefined,
       jwtExpiresIn: faker.number.int({ max: 86400, min: 3600 }),
       jwtSecret: faker.string.alphanumeric(64),
+      perfCountQueries: false,
       port: faker.internet.port(),
       sessionIdleTtlSeconds: 172800,
       swaggerEnabled: true,

@@ -1,0 +1,549 @@
+{
+  "DELETE /api/v1/finance/accounts/:id": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "account.delete",
+    "scenario": ""
+  },
+  "DELETE /api/v1/finance/categories/:id": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "category.delete",
+    "scenario": ""
+  },
+  "DELETE /api/v1/finance/credit-cards/:id": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "card.delete",
+    "scenario": ""
+  },
+  "DELETE /api/v1/finance/credit-cards/:id/early-payments/:earlyPaymentId": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
+    "scenario": ""
+  },
+  "DELETE /api/v1/finance/credit-cards/:id/invoices/:month/payment": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
+    "scenario": ""
+  },
+  "DELETE /api/v1/finance/credit-cards/:id/refunds/:refundId": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
+    "scenario": ""
+  },
+  "DELETE /api/v1/finance/installment-plans/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
+    "scenario": ""
+  },
+  "DELETE /api/v1/finance/installment-plans/:id/prepayment": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
+    "scenario": ""
+  },
+  "DELETE /api/v1/finance/recurrences/:id": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "recurrence.delete",
+    "scenario": ""
+  },
+  "DELETE /api/v1/finance/recurrences/:id/occurrences/:number": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
+    "scenario": ""
+  },
+  "DELETE /api/v1/finance/tags/:id": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "tag.delete",
+    "scenario": ""
+  },
+  "DELETE /api/v1/finance/transactions/:id": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "transaction.delete",
+    "scenario": ""
+  },
+  "GET /api/v1/finance/accounts": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": ""
+  },
+  "GET /api/v1/finance/accounts/daily-balances": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "month={referenceMonth}"
+  },
+  "GET /api/v1/finance/categories": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": ""
+  },
+  "GET /api/v1/finance/category-icons": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "q=home"
+  },
+  "GET /api/v1/finance/credit-cards": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": ""
+  },
+  "GET /api/v1/finance/credit-cards/:id": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "params": {
+      "id": "card"
+    },
+    "scenario": ""
+  },
+  "GET /api/v1/finance/credit-cards/:id/invoices/:month": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "params": {
+      "id": "card",
+      "month": "referenceMonth"
+    },
+    "scenario": ""
+  },
+  "GET /api/v1/finance/credit-cards/invoices": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "month={referenceMonth}"
+  },
+  "GET /api/v1/finance/credit-cards/overview": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": ""
+  },
+  "GET /api/v1/finance/dashboard/balance-series #day": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "currency=BRL&from={monthStart}&to={monthEnd}&granularity=DAY"
+  },
+  "GET /api/v1/finance/dashboard/summary": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "currency=BRL&from={monthStart}&to={monthEnd}"
+  },
+  "GET /api/v1/finance/dashboard/totals": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "currency=BRL&from={monthStart}&to={monthEnd}&groupBy=CATEGORY&type=EXPENSE"
+  },
+  "GET /api/v1/finance/installment-plans/:id": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "params": {
+      "id": "plan"
+    },
+    "scenario": ""
+  },
+  "GET /api/v1/finance/installment-plans/:id/prepayment-preview": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
+    "scenario": ""
+  },
+  "GET /api/v1/finance/recurrences": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": ""
+  },
+  "GET /api/v1/finance/recurrences/:id": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "params": {
+      "id": "recurrence"
+    },
+    "scenario": ""
+  },
+  "GET /api/v1/finance/recurrences/projections": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "from={referenceMonth}&to={nextMonth}"
+  },
+  "GET /api/v1/finance/tags": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": ""
+  },
+  "GET /api/v1/finance/transactions #card": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "source=CARD"
+  },
+  "GET /api/v1/finance/transactions #card-month": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "source=CARD&from={monthStart}&to={monthEnd}"
+  },
+  "GET /api/v1/finance/transactions #month": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "from={monthStart}&to={monthEnd}"
+  },
+  "GET /api/v1/finance/transactions #unbounded": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": ""
+  },
+  "GET /api/v1/finance/transactions/export": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "from={monthStart}&to={monthEnd}"
+  },
+  "GET /api/v1/finance/transactions/export/count": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "from={monthStart}&to={monthEnd}"
+  },
+  "GET /api/v1/finance/upcoming": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "ownerId={userId}"
+  },
+  "PATCH /api/v1/finance/accounts/:id": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "account.patch",
+    "scenario": ""
+  },
+  "PATCH /api/v1/finance/categories/:id": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "category.patch",
+    "scenario": ""
+  },
+  "PATCH /api/v1/finance/categories/:id/appearance": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
+    "scenario": ""
+  },
+  "PATCH /api/v1/finance/credit-cards/:id": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "card.patch",
+    "scenario": ""
+  },
+  "PATCH /api/v1/finance/credit-cards/:id/early-payments/:earlyPaymentId": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
+    "scenario": ""
+  },
+  "PATCH /api/v1/finance/credit-cards/:id/refunds/:refundId": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
+    "scenario": ""
+  },
+  "PATCH /api/v1/finance/installment-plans/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
+    "scenario": ""
+  },
+  "PATCH /api/v1/finance/recurrences/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
+    "scenario": ""
+  },
+  "PATCH /api/v1/finance/tags/:id": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "tag.patch",
+    "scenario": ""
+  },
+  "PATCH /api/v1/finance/transactions/:id": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "transaction.patch",
+    "scenario": ""
+  },
+  "POST /api/v1/finance/accounts": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "account.create",
+    "scenario": ""
+  },
+  "POST /api/v1/finance/accounts/:id/balance-adjustment": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
+    "scenario": ""
+  },
+  "POST /api/v1/finance/categories": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "category.create",
+    "scenario": ""
+  },
+  "POST /api/v1/finance/credit-cards": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "card.create",
+    "scenario": ""
+  },
+  "POST /api/v1/finance/credit-cards/:id/early-payments": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
+    "scenario": ""
+  },
+  "POST /api/v1/finance/credit-cards/:id/invoices/:month/payment": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
+    "scenario": ""
+  },
+  "POST /api/v1/finance/credit-cards/:id/refunds": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
+    "scenario": ""
+  },
+  "POST /api/v1/finance/installment-plans": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
+    "scenario": ""
+  },
+  "POST /api/v1/finance/installment-plans/:id/prepayment": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
+    "scenario": ""
+  },
+  "POST /api/v1/finance/recurrences": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "recurrence.create",
+    "scenario": ""
+  },
+  "POST /api/v1/finance/recurrences/:id/occurrences/:number": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
+    "scenario": ""
+  },
+  "POST /api/v1/finance/recurrences/:id/split": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
+    "scenario": ""
+  },
+  "POST /api/v1/finance/tags": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "tag.create",
+    "scenario": ""
+  },
+  "POST /api/v1/finance/transactions": {
+    "indexes": null,
+    "kind": "write",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "recipe": "transaction.create",
+    "scenario": ""
+  },
+  "POST /api/v1/finance/transactions/import": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Bulk import needs a prepared file and a matching cleanup; not covered yet.",
+    "scenario": ""
+  }
+}

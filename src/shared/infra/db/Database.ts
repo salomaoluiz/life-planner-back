@@ -4,11 +4,17 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@db/client';
 import { EnvService } from '@shared/infra/env/env.service';
 
+import { QueryCounter } from './QueryCounter';
+
 @Injectable()
 export class Database {
   prisma: PrismaClient;
 
   constructor(private readonly env: EnvService) {
+    if (this.env.perfCountQueries) {
+      QueryCounter.enable();
+    }
+
     const adapter = new PrismaPg({
       connectionString: `postgresql://${encodeURIComponent(this.env.dbUser)}:${encodeURIComponent(this.env.dbPassword)}@${this.env.dbHost}:${this.env.dbPort}/${this.env.dbName}`,
     });

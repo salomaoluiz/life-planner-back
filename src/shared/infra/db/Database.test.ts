@@ -1,5 +1,6 @@
 import type { Database } from './Database';
 import { mocks, setup, spies } from './Database.mocks';
+import { QueryCounter } from './QueryCounter';
 
 describe('Database', () => {
   it('SHOULD initialize PrismaPg and PrismaClient with correct configuration', () => {
@@ -27,5 +28,19 @@ describe('Database', () => {
 
   it('SHOULD return the prisma client instance via getter', () => {
     expect(setup.client).toBe(mocks.prismaClientInstance);
+  });
+
+  it('SHOULD enable the query counter WHEN perfCountQueries is true', () => {
+    const DatabaseClass = setup.constructor as new (env: typeof mocks.envService) => Database;
+    new DatabaseClass({
+      ...mocks.envService,
+      perfCountQueries: true,
+    } as unknown as typeof mocks.envService);
+
+    expect(jest.mocked(QueryCounter.enable)).toHaveBeenCalledTimes(1);
+  });
+
+  it('SHOULD not touch the query counter WHEN perfCountQueries is false', () => {
+    expect(jest.mocked(QueryCounter.enable)).not.toHaveBeenCalled();
   });
 });
