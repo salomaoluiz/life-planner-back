@@ -44,3 +44,13 @@ Builder class with `value`, `build()` (returns a copy and resets), `withDefault(
 - Datasource tests mock `Database` (`client.<model>.<method>` spies); repository tests mock the datasource + mapper; controller tests mock the service; service tests mock use cases.
 - Fake data only (faker, `test@example.com`, `user-id-123`).
 - Commands: `yarn test`, `yarn test:watch`, `yarn test:cov`. Note: the `test:e2e` script points to `./test/jest-e2e.json` but the folder is `tests/` — fix the path before relying on e2e.
+
+## Perf dataset (`yarn perf:seed`, spec 064)
+
+Fills a dedicated perf account with a fixed volume (stock, family, finance; `perf/seed.config.json`) through the HTTP API of a local instance, so perf budgets always measure the same data. Code: `scripts/perf/seed.ts` and `scripts/perf/seed/*` (unit tests next to them, HTTP client mocked).
+
+- Env (from `.env`, placeholders in `.env.example`): `PERF_USER_EMAIL`, `PERF_USER_PASSWORD`, `PERF_SEED_ALLOW=staging`, optional `PERF_API_URL` (default `http://localhost:<PORT>`). Never printed, logged or written to the manifest.
+- Run: `zsh -ic 'yarn perf:seed [--module stock|family|finance] [--reset]'`. Without `--module` it seeds everything.
+- Safety gate (exit code 2, one line): `PERF_SEED_ALLOW=staging` required, `NODE_ENV` not `production`, API host `localhost` or `127.0.0.1`. `--reset` deletes only the perf account (`DELETE /api/v1/user/me`) and refuses if the logged-in email is not `PERF_USER_EMAIL`.
+- Deterministic and idempotent: fixed faker seed (`seed` in the config), names prefixed `Perf`; a second run creates 0 records. A non-2xx response aborts with `METHOD path -> status` (no body).
+- Output: `perf/seed.manifest.json` (gitignored): perf user id, family ids, reference month (the month before today, at least 300 rows), counts, config hash, timestamp.
