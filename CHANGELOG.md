@@ -12,6 +12,7 @@ Format: [Keep a Changelog](https://keepachangelog.com).
 ### Changed
 
 - The opt-in query counter now also records bind values.
+- The perf run gate accepts a remote staging database only when `PERF_DB_HOST_ALLOW` equals `DB_HOST`.
 
 ## [1.3.1] - 2026-11-02
 

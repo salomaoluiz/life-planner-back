@@ -15,8 +15,14 @@ export function assertPerfRunAllowed(env: NodeJS.ProcessEnv): void {
   if (env.NODE_ENV === 'production' || env.APP_ENVIRONMENT === 'production') {
     throw new SeedRefusal('perf run refused: the environment is production');
   }
-  if (!env.DB_HOST || !LOCAL_HOSTS.includes(env.DB_HOST)) {
-    throw new SeedRefusal('perf run refused: DB_HOST must be localhost or 127.0.0.1');
+  // A remote staging database needs an explicit opt-in naming that exact host (production is still refused above).
+  const allowed =
+    env.DB_HOST !== undefined &&
+    (LOCAL_HOSTS.includes(env.DB_HOST) || env.PERF_DB_HOST_ALLOW === env.DB_HOST);
+  if (!allowed) {
+    throw new SeedRefusal(
+      'perf run refused: DB_HOST must be localhost, 127.0.0.1 or equal to PERF_DB_HOST_ALLOW',
+    );
   }
 }
 
