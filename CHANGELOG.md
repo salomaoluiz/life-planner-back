@@ -3,6 +3,16 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [1.3.2] - 2026-11-02
+
+### Added
+
+- `yarn perf:check`: p50 time, response size, concurrency and `EXPLAIN` checks per module against a locally compiled API, also run by `yarn perf` (spec 066).
+
+### Changed
+
+- The opt-in query counter now also records bind values.
+
 ## [1.3.1] - 2026-11-02
 
 ### Added
