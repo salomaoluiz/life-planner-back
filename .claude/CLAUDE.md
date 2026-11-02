@@ -70,6 +70,7 @@ Reference implementation for any new work: **`user` module** (the only one compl
 17. **Performance guardrail.** Details, commands and registry format: `.claude/context/performance.md`.
     - Every PR that changes `src/` or `prisma/` runs `yarn perf --changed` and is opened only when it ends `PERF PASSED` (read only `perf-report/summary.md`). Shared paths select every module.
     - The PR description has a "Performance" block: modules checked, the summary line, and before/after for any budget that changed.
+    - Always run the perf check (`yarn perf --changed`) before opening the PR, every time, even for a change that looks unrelated to performance. Never run it with `--update-baseline` by default: update a baseline only when you are absolutely sure your change is what lowered it (same PR, reviewed diff, and say so in the PR); a baseline never moves because the local data or machine differs, or to turn a failing run green.
     - Budgets only go down silently; raising one needs a reason in the PR and the owner's review.
     - Every new route gets its registry entry (`perf/budgets/<module>.json`) in the same PR; the coverage tests fail otherwise.
     - Lists of any module have a period or pagination; a list over 256 KB needs a `knownException` with the spec that removes it.
