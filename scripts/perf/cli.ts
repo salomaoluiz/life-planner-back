@@ -29,6 +29,7 @@ export interface CliDeps {
   configHash(): string;
   log(line: string): void;
   readManifest(): SeedManifest | undefined;
+  runCheck(modules: PerfModule[], updateBaseline: boolean): number;
   runJest(env: Record<string, string>): number;
   runSeed(module: SeedModuleName | undefined): number;
   summaryVerdict(): string | undefined;
@@ -95,8 +96,10 @@ export async function main(
   });
   const verdict = deps.summaryVerdict();
   if (verdict) deps.log(verdict);
+  // Timing, payload size, concurrency and EXPLAIN (spec 066) run after the query counts.
+  const checkCode = deps.runCheck(modules, args.updateBaseline);
 
-  return code;
+  return Math.max(code, checkCode);
 }
 
 export function parseCliArgs(argv: string[]): CliArgs {
@@ -142,6 +145,24 @@ function defaultDeps(): CliDeps {
       } catch {
         return undefined;
       }
+    },
+    runCheck: (modules, updateBaseline) => {
+      let worst = 0;
+      for (const name of modules) {
+        const status =
+          spawnSync(
+            'yarn',
+            ['perf:check', '--module', name, ...(updateBaseline ? ['--update-baseline'] : [])],
+            {
+              cwd: ROOT,
+              env: process.env,
+              stdio: 'inherit',
+            },
+          ).status ?? 1;
+        worst = Math.max(worst, status);
+      }
+
+      return worst;
     },
     runJest: (extraEnv) =>
       spawnSync(
