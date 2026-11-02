@@ -135,6 +135,31 @@ describe('checkMain', () => {
     expect(await checkMain(['--module', 'stock'], ENV, makeDeps().deps)).toBe(1);
   });
 
+  it('SHOULD fail WHEN the pool waiting regresses AND skip it WHEN the baseline is null', async () => {
+    (loadConcurrency as jest.Mock).mockReturnValue({
+      stock: { calls: [KEY], maxPoolWaiting: 2, repeat: 3, wallMs: null },
+    });
+    (measureConcurrent as jest.Mock).mockResolvedValue({ maxPoolWaiting: 9, wallMs: 10 });
+    const failing = makeDeps();
+    expect(await checkMain(['--module', 'stock'], ENV, failing.deps)).toBe(1);
+    expect(failing.deps.log).toHaveBeenCalledWith(expect.stringContaining('pool waiting 9'));
+
+    (loadConcurrency as jest.Mock).mockReturnValue({
+      stock: { calls: [KEY], maxPoolWaiting: null, repeat: 3, wallMs: null },
+    });
+    expect(await checkMain(['--module', 'stock'], ENV, makeDeps().deps)).toBe(0);
+  });
+
+  it('SHOULD store the median pool waiting WHEN --update-baseline', async () => {
+    (loadConcurrency as jest.Mock).mockReturnValue({
+      stock: { calls: [KEY], maxPoolWaiting: null, repeat: 3, wallMs: null },
+    });
+    (measureConcurrent as jest.Mock).mockResolvedValue({ maxPoolWaiting: 3, wallMs: 10 });
+    const { deps } = makeDeps();
+    expect(await checkMain(['--module', 'stock', '--update-baseline'], ENV, deps)).toBe(0);
+    expect(deps.applyWall).toHaveBeenCalledWith('stock', 10, 3);
+  });
+
   it('SHOULD fail WHEN EXPLAIN reports a violation', async () => {
     registryWith({ indexes: ['idx'], table: 't' });
     const { deps } = makeDeps({

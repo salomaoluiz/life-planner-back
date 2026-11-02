@@ -1,6 +1,8 @@
 import { VersioningType } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import type { NextFunction, Request, Response } from 'express';
 
+import { QueryCounter } from '@shared/infra/db/QueryCounter';
 import { EnvService } from '@shared/infra/env/env.service';
 import { buildCorsOptions } from '@shared/infra/http/cors';
 import { setupSwagger } from '@shared/infra/http/swagger';
@@ -21,4 +23,18 @@ export function configureApp(app: NestExpressApplication): void {
   });
   app.setGlobalPrefix('api');
   setupSwagger(app, env.swaggerEnabled);
+
+  // Perf runner only (spec 069): the compiled API runs in another process, so the pool pressure travels in a header.
+  if (env.perfCountQueries) {
+    app.use((req: Request, res: Response, next: NextFunction) => {
+      if (req.headers['x-perf-reset-pool'] === '1') QueryCounter.resetPool();
+      const writeHead = res.writeHead.bind(res) as (...args: unknown[]) => Response;
+      res.writeHead = ((...args: unknown[]) => {
+        res.setHeader('x-perf-pool-max-waiting', String(QueryCounter.poolMaxWaiting()));
+
+        return writeHead(...args);
+      }) as typeof res.writeHead;
+      next();
+    });
+  }
 }
