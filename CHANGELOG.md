@@ -3,6 +3,16 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [1.3.1] - 2026-11-02
+
+### Added
+
+- Opt-in SQL statement counter (`PERF_COUNT_QUERIES=1`) and `yarn perf` query-count budgets per route and module, with a route coverage test (spec 065).
+
+### Changed
+
+- The app setup (CORS, body limit, versioning, prefix, swagger) moved to `configureApp`, shared by `main.ts` and the perf runner; `pg` is now a direct dependency.
+
 ## [1.3.0] - 2026-10-31
 
 ### Added
