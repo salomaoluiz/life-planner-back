@@ -43,6 +43,13 @@ function fakeApi() {
 
   const client = {
     get: jest.fn(async (path: string) => {
+      const [base, query] = path.split('?');
+      if (base === '/api/v1/finance/transactions') {
+        // Like the real API: card purchases only come with source=CARD.
+        const wantCard = query === 'source=CARD';
+
+        return store.transactions.filter((t) => Boolean(t.creditCardId) === wantCard);
+      }
       if (collections[path]) return store[collections[path]];
       const plan = path.match(/installment-plans\/([^/]+)$/);
       if (plan) return { installments: [{ prepaid: prepaid.has(plan[1]) }] };

@@ -117,7 +117,11 @@ export async function seedFinance(
   }
 
   // 3. Transactions: only the descriptions not there yet.
-  const rows = await client.get<NamedRow[]>(`${BASE}/transactions`);
+  // The list splits account rows and card purchases by source.
+  const rows = [
+    ...(await client.get<NamedRow[]>(`${BASE}/transactions?source=ACCOUNT`)),
+    ...(await client.get<NamedRow[]>(`${BASE}/transactions?source=CARD`)),
+  ];
   const descriptions = rows.map((r) => r.description ?? '');
   const known = new Set(descriptions);
   for (const tx of plan.transactions.filter((t) => !known.has(t.description))) {
