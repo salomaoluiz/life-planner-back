@@ -3,6 +3,17 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [1.3.3] - 2026-11-02
+
+### Added
+
+- `DB_POOL_MAX`, `DB_POOL_IDLE_TIMEOUT_MS`, `DB_POOL_CONNECTION_TIMEOUT_MS` and `DB_STATEMENT_TIMEOUT_MS` configure the database pool (default max 20 instead of 10) (spec 069).
+- The perf check records the pool waiting count of the concurrency scenario (`maxPoolWaiting`).
+
+### Changed
+
+- Transaction writes read the account (or card) and the category in parallel.
+
 ## [1.3.2] - 2026-11-02
 
 ### Added

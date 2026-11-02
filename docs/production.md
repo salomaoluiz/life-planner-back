@@ -65,6 +65,8 @@ Stacks → Add stack → **Repository**: `https://github.com/salomaoluiz/life-pl
 | `SESSION_IDLE_TTL_SECONDS` | `172800`                           |
 | `CORS_ORIGINS`             | `https://life-planner.example.com` |
 
+Optional pool tuning (spec 069; defaults apply when unset): `DB_POOL_MAX` (20), `DB_POOL_IDLE_TIMEOUT_MS` (30000), `DB_POOL_CONNECTION_TIMEOUT_MS` (0 = wait without limit), `DB_STATEMENT_TIMEOUT_MS` (0 = off). Sizing rule: API instances × `DB_POOL_MAX` ≤ 80% of the database server's `max_connections`. Rollback to the previous behaviour: `DB_POOL_MAX=10`.
+
 Deploy. Expected: `life-planner-back-prod` running and `healthy`; the API log shows `prisma migrate deploy` applying every migration (the first start also creates the seeded system categories). A failed migration makes the container exit and restart in a loop: read the log, fix, redeploy. The API never serves on a half-migrated schema.
 
 Version check (spec 056): add `VERSION_REPO_API` and `VERSION_REPO_APP` (`owner/name` on GitHub) to the stack environment so the API can report the latest releases; optionally `GITHUB_TOKEN` (read-only, only raises the rate limit) and `VERSION_CHECK_TTL_SECONDS`. `APP_ENVIRONMENT` is fixed in the compose file (`production`).
