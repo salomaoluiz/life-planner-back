@@ -6,8 +6,8 @@ export class ApiClient {
     private readonly fetchFn: typeof fetch = fetch,
   ) {}
 
-  delete(path: string): Promise<void> {
-    return this.request<void>('DELETE', path);
+  delete(path: string, body?: unknown): Promise<void> {
+    return this.request<void>('DELETE', path, body);
   }
 
   get<T>(path: string): Promise<T> {
