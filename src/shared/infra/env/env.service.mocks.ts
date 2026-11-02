@@ -17,6 +17,7 @@ const envVarsMock = {
   JWT_EXPIRES_IN: '1d',
   JWT_SECRET: 'secret',
   NODE_ENV: 'test',
+  PERF_COUNT_QUERIES: false,
   PORT: 3000,
   SESSION_IDLE_TTL_SECONDS: 172800,
   SWAGGER_ENABLED: true,

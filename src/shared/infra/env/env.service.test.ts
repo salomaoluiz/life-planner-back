@@ -12,6 +12,7 @@ const testCases: { key: EnvVarKey; method: EnvServiceKey }[] = [
   { key: 'VERSION_CHECK_TTL_SECONDS', method: 'versionCheckTtlSeconds' },
   { key: 'VERSION_REPO_API', method: 'versionRepoApi' },
   { key: 'VERSION_REPO_APP', method: 'versionRepoApp' },
+  { key: 'PERF_COUNT_QUERIES', method: 'perfCountQueries' },
   { key: 'PORT', method: 'port' },
   { key: 'CORS_ORIGINS', method: 'corsOrigins' },
   { key: 'DB_HOST', method: 'dbHost' },

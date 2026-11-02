@@ -10,6 +10,7 @@ import { Database } from './Database';
 
 jest.mock('@prisma/adapter-pg');
 jest.mock('@db/client');
+jest.mock('./QueryCounter');
 
 const envServiceMock = {
   dbHost: 'localhost',
@@ -17,6 +18,7 @@ const envServiceMock = {
   dbPassword: 'password',
   dbPort: '5432',
   dbUser: 'user',
+  perfCountQueries: false,
 } as unknown as EnvService;
 
 const prismaPgInstanceMock = {} as PrismaPg;

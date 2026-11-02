@@ -36,6 +36,12 @@ export const envSchema = z.object({
   VERSION_REPO_API: emptyToUndefined,
   VERSION_REPO_APP: emptyToUndefined,
 
+  // Perf guardrail (spec 065): count SQL statements per request
+  PERF_COUNT_QUERIES: z
+    .enum(['0', '1', ''])
+    .optional()
+    .transform((value) => value === '1'),
+
   // Sessions
   SESSION_IDLE_TTL_SECONDS: z.coerce.number().int().positive().default(172800),
 });
