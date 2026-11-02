@@ -1,0 +1,13 @@
+{
+  "finance": {
+    "calls": [
+      "GET /api/v1/finance/transactions #month",
+      "GET /api/v1/finance/transactions #card-month",
+      "GET /api/v1/finance/credit-cards/invoices",
+      "GET /api/v1/finance/accounts/daily-balances"
+    ],
+    "maxPoolWaiting": null,
+    "repeat": 3,
+    "wallMs": null
+  }
+}

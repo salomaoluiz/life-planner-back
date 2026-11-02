@@ -266,40 +266,49 @@
     "scenario": ""
   },
   "GET /api/v1/finance/transactions #card": {
-    "indexes": null,
+    "indexes": [],
     "kind": "read",
+    "knownException": "Unbounded list, removed by spec 078 (period required and keyset pagination)",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "scenario": "source=CARD"
+    "scenario": "source=CARD",
+    "seqScanException": "Full scan until spec 078",
+    "table": "financial_transactions"
   },
   "GET /api/v1/finance/transactions #card-month": {
-    "indexes": null,
+    "indexes": ["financial_transactions_owner_owner_id_date_idx"],
     "kind": "read",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "scenario": "source=CARD&from={monthStart}&to={monthEnd}"
+    "scenario": "source=CARD&from={monthStart}&to={monthEnd}",
+    "table": "financial_transactions"
   },
   "GET /api/v1/finance/transactions #month": {
-    "indexes": null,
+    "indexes": ["financial_transactions_owner_owner_id_date_idx"],
     "kind": "read",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "scenario": "from={monthStart}&to={monthEnd}"
+    "scenario": "from={monthStart}&to={monthEnd}",
+    "table": "financial_transactions"
   },
   "GET /api/v1/finance/transactions #unbounded": {
-    "indexes": null,
+    "indexes": [],
     "kind": "read",
+    "knownException": "Unbounded list, removed by spec 078 (period required and keyset pagination)",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "scenario": ""
+    "scenario": "",
+    "seqScanException": "Full scan until spec 078",
+    "table": "financial_transactions"
   },
   "GET /api/v1/finance/transactions/export": {
     "indexes": null,
     "kind": "read",
+    "knownException": "CSV export, unbounded by design",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,

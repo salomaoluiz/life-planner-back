@@ -11,6 +11,7 @@
   "GET /api/v1/stock/items": {
     "indexes": null,
     "kind": "read",
+    "knownException": "Deferred, see perf-roadmap.md",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,

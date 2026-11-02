@@ -84,3 +84,26 @@ describe('loadRegistry', () => {
     expect(() => loadRegistry(dirWith({}), ['stock'])).toThrow('stock.json');
   });
 });
+
+describe('loadRegistry optional perf:check fields', () => {
+  it('SHOULD accept knownException, seqScanException and table', () => {
+    const dir = dirWith({
+      health: {
+        'GET /api/health': {
+          ...base,
+          knownException: 'spec 078',
+          seqScanException: 'spec 078',
+          table: 'financial_transactions',
+        },
+      },
+    });
+    expect(loadRegistry(dir, ['health']).health['GET /api/health'].table).toBe(
+      'financial_transactions',
+    );
+  });
+
+  it('SHOULD reject a non-string knownException', () => {
+    const dir = dirWith({ health: { 'GET /api/health': { ...base, knownException: 3 } } });
+    expect(() => loadRegistry(dir, ['health'])).toThrow('perf registry');
+  });
+});

@@ -11,6 +11,7 @@ const entrySchema = z
   .object({
     indexes: z.array(z.string()).nullable(),
     kind: z.enum(['read', 'unmeasured', 'write']),
+    knownException: z.string().min(1).optional(),
     maxBytes: z.number().int().nonnegative().nullable(),
     maxQueries: z.number().int().nonnegative(),
     p50Ms: z.number().nonnegative().nullable(),
@@ -18,6 +19,8 @@ const entrySchema = z
     reason: z.string().min(1).optional(),
     recipe: z.string().min(1).optional(),
     scenario: z.string(),
+    seqScanException: z.string().min(1).optional(),
+    table: z.string().min(1).optional(),
   })
   .superRefine((entry, ctx) => {
     if (entry.kind === 'unmeasured' && !entry.reason) {
