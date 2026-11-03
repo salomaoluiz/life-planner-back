@@ -171,10 +171,10 @@ export async function checkMain(
           if (round === 0 && !update && isRegression(wallMs, scenario.wallMs)) {
             const again = await measureConcurrent(concurrent);
             wallMs = Math.min(wallMs, again.wallMs);
-            maxPoolWaiting = Math.min(
-              maxPoolWaiting ?? again.maxPoolWaiting ?? 0,
-              again.maxPoolWaiting ?? 0,
-            );
+            maxPoolWaiting =
+              maxPoolWaiting === undefined || again.maxPoolWaiting === undefined
+                ? undefined
+                : Math.min(maxPoolWaiting, again.maxPoolWaiting);
           }
           walls.set(name, [...(walls.get(name) ?? []), wallMs]);
           if (maxPoolWaiting !== undefined) {

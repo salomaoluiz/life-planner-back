@@ -150,6 +150,18 @@ describe('checkMain', () => {
     expect(await checkMain(['--module', 'stock'], ENV, makeDeps().deps)).toBe(0);
   });
 
+  it('SHOULD NOT report a pool waiting of 0 WHEN the API sends no header, even after a retry', async () => {
+    (loadConcurrency as jest.Mock).mockReturnValue({
+      stock: { calls: [KEY], maxPoolWaiting: 0, repeat: 3, wallMs: 100 },
+    });
+    (measureConcurrent as jest.Mock).mockResolvedValue({ wallMs: 400 });
+    const { deps } = makeDeps();
+
+    await checkMain(['--module', 'stock'], ENV, deps);
+
+    expect(deps.log).not.toHaveBeenCalledWith(expect.stringContaining('pool waiting'));
+  });
+
   it('SHOULD store the median pool waiting WHEN --update-baseline', async () => {
     (loadConcurrency as jest.Mock).mockReturnValue({
       stock: { calls: [KEY], maxPoolWaiting: null, repeat: 3, wallMs: null },
