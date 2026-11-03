@@ -3,13 +3,6 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
-## [1.3.3] - 2026-11-02
-
-### Changed
-
-- Perf tests only read: the registry has no `write` kind or recipes (every write route is `unmeasured`), so a run leaves no data behind (spec 093).
-- `yarn perf:seed` pins the dataset of the default base user (`anchorDate`, every recurrence ended) and stores a fingerprint; `yarn perf` and `yarn perf:check` exit 2 when the dataset drifted or the seed config changed (`yarn perf:seed --reset`).
-
 ## [1.3.2] - 2026-11-02
 
 ### Added
