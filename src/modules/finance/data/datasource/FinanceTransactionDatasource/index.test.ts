@@ -131,13 +131,14 @@ describe('Method findById', () => {
     expect(await setup.findById('missing')).toBeNull();
     expect(spies.findUnique).toHaveBeenCalledWith({
       include: mocks.include,
+      relationLoadStrategy: 'join',
       where: { id: mocks.transaction.id },
     });
   });
 });
 
 describe('Method findByOwners', () => {
-  it('SHOULD query every owner in ONE findMany, joined, sorted by date desc then created_at desc', async () => {
+  it('SHOULD query every owner in ONE findMany, sorted by date, created_at and id desc, per-relation WHEN unbounded', async () => {
     spies.findMany.mockResolvedValue([mocks.transaction]);
 
     const result = await setup.findByOwners(mocks.owners);
@@ -146,7 +147,8 @@ describe('Method findByOwners', () => {
     expect(spies.findMany).toHaveBeenCalledTimes(1);
     expect(spies.findMany).toHaveBeenCalledWith({
       include: mocks.include,
-      orderBy: [{ date: 'desc' }, { created_at: 'desc' }],
+      orderBy: [{ date: 'desc' }, { created_at: 'desc' }, { id: 'desc' }],
+      relationLoadStrategy: 'query',
       where: {
         AND: [
           { OR: [{ owner: 'USER', owner_id: mocks.owners[0].ownerId }] },
@@ -172,6 +174,18 @@ describe('Method findByOwners', () => {
       credit_card_id: { not: null },
       invoice_month: '2026-10',
     });
+    expect(spies.findMany.mock.calls[0][0].relationLoadStrategy).toBe('join');
+  });
+
+  it('SHOULD load the relations with join WHEN the account list has a period', async () => {
+    spies.findMany.mockResolvedValue([]);
+
+    await setup.findByOwners(mocks.owners, TransactionSource.ACCOUNT, {
+      from: '2026-10-01',
+      to: '2026-10-31',
+    });
+
+    expect(spies.findMany.mock.calls[0][0].relationLoadStrategy).toBe('join');
   });
 });
 
@@ -398,6 +412,20 @@ describe('Card purchases', () => {
     expect(await setup.findCardPurchases([])).toEqual([]);
     spies.count.mockResolvedValue(2);
     expect(await setup.countByCreditCardId('card-1')).toBe(2);
+  });
+
+  it('SHOULD read the purchases of the invoices in ONE joined query with a stable order', async () => {
+    spies.findMany.mockResolvedValue([mocks.transaction]);
+
+    const keys = [{ credit_card_id: 'card-1', invoice_month: '2026-10' }];
+
+    expect(await setup.findCardPurchases(keys)).toEqual([mocks.transaction]);
+    expect(spies.findMany).toHaveBeenCalledWith({
+      include: mocks.include,
+      orderBy: [{ date: 'asc' }, { created_at: 'asc' }, { id: 'asc' }],
+      relationLoadStrategy: 'join',
+      where: { OR: keys },
+    });
   });
 });
 
@@ -693,7 +721,7 @@ describe('Method countForExport / findForExport (spec 047)', () => {
     expect(spies.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         include: mocks.include,
-        orderBy: [{ date: 'asc' }, { created_at: 'asc' }],
+        orderBy: [{ date: 'asc' }, { created_at: 'asc' }, { id: 'asc' }],
         where: {
           AND: expect.arrayContaining([
             { OR: [{ account_id: { in: ['a1'] } }, { credit_card_id: { in: ['c1'] } }] },
@@ -701,6 +729,7 @@ describe('Method countForExport / findForExport (spec 047)', () => {
         },
       }),
     );
+    expect(spies.findMany.mock.calls[0][0]).not.toHaveProperty('relationLoadStrategy');
   });
 });
 
