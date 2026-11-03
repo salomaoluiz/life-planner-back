@@ -10,6 +10,7 @@ import {
 } from '@finance/data/datasource/ledger';
 import { fromCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
 import { toOwnerWhere } from '@finance/data/datasource/mapper/OwnerWhere';
+import { relationLoadStrategyFor } from '@finance/data/datasource/relationLoadStrategy';
 import {
   applyTagNames,
   resolveTagIds,
@@ -38,7 +39,8 @@ import { ledgerDeltas } from '@finance/domain/service/LedgerBalance';
 import { Database } from '@shared/infra/db/Database';
 import { uuidV4 } from '@shared/infra/uuid';
 
-// Account and category summaries come back in the same query (no N+1).
+// Account and category summaries come back in the same query (no N+1). Bounded reads add
+// `relationLoadStrategy: 'join'` (preview `relationJoins`): ONE SQL statement instead of one per relation.
 export const TRANSACTION_RELATIONS = {
   account: { select: { icon: true, id: true, name: true } },
   category: {
@@ -179,6 +181,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
   async findById(id: string): Promise<FinancialTransactionWithRelations | null> {
     return this.db.client.financialTransaction.findUnique({
       include: TRANSACTION_RELATIONS,
+      relationLoadStrategy: 'join',
       where: { id },
     });
   }
@@ -211,7 +214,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
   ): Promise<FinancialTransactionWithRelations[]> {
     return this.db.client.financialTransaction.findMany({
       include: TRANSACTION_RELATIONS,
-      orderBy: [{ date: 'asc' }, { created_at: 'asc' }],
+      orderBy: [{ date: 'asc' }, { created_at: 'asc' }, { id: 'asc' }],
       where: exportWhere(params),
     });
   }
@@ -240,7 +243,9 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
           };
     return this.db.client.financialTransaction.findMany({
       include: TRANSACTION_RELATIONS,
-      orderBy: [{ date: 'desc' }, { created_at: 'desc' }],
+      // `id` breaks ties (rows imported or materialized together share date and created_at): a stable order.
+      orderBy: [{ date: 'desc' }, { created_at: 'desc' }, { id: 'desc' }],
+      relationLoadStrategy: relationLoadStrategyFor(source, filter),
       where: { AND: [toOwnerWhere(owners), sourceWhere, ...filterWhere(source, filter)] },
     });
   }
@@ -251,7 +256,8 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
     }
     return this.db.client.financialTransaction.findMany({
       include: TRANSACTION_RELATIONS,
-      orderBy: [{ date: 'asc' }, { created_at: 'asc' }],
+      orderBy: [{ date: 'asc' }, { created_at: 'asc' }, { id: 'asc' }],
+      relationLoadStrategy: 'join',
       where: { OR: keys.map((key) => ({ ...key })) },
     });
   }

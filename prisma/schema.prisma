@@ -8,6 +8,8 @@ generator client {
   provider     = "prisma-client"
   output       = "../generated/prisma"
   moduleFormat = "cjs"
+  // Lets a bounded read with relations run as ONE joined query (`relationLoadStrategy: 'join'`).
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {
