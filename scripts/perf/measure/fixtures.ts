@@ -66,9 +66,9 @@ export async function resolveFixtures(
       ...base,
       referenceMonth: shiftMonth(base.referenceMonth, -back),
     } as Fixtures);
-    const rows = await client.get<{ installmentPlanId: null | string }[]>(
-      `${FINANCE}/transactions?source=CARD&${month}`,
-    );
+    const { items: rows } = await client.get<{
+      items: { installmentPlanId: null | string }[];
+    }>(`${FINANCE}/transactions?source=CARD&${month}`);
     plan = rows.find((row) => row.installmentPlanId)?.installmentPlanId ?? undefined;
   }
 

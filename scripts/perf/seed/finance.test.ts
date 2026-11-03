@@ -45,10 +45,15 @@ function fakeApi() {
     get: jest.fn(async (path: string) => {
       const [base, query] = path.split('?');
       if (base === '/api/v1/finance/transactions') {
-        // Like the real API: card purchases only come with source=CARD.
-        const wantCard = query === 'source=CARD';
+        // Like the real API: card purchases only come with source=CARD; the first 2-year window holds every row.
+        const params = new URLSearchParams(query);
+        const wantCard = params.get('source') === 'CARD';
+        const items =
+          params.get('from') === '2015-01-01'
+            ? store.transactions.filter((t) => Boolean(t.creditCardId) === wantCard)
+            : [];
 
-        return store.transactions.filter((t) => Boolean(t.creditCardId) === wantCard);
+        return { items, nextCursor: null };
       }
       if (collections[path]) return store[collections[path]];
       const plan = path.match(/installment-plans\/([^/]+)$/);

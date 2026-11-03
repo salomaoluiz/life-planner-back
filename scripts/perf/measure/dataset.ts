@@ -20,27 +20,31 @@ const TRANSACTION_WINDOWS = Array.from({ length: 10 }, (_, i) => ({
 const TRANSACTIONS_PATH = '/api/v1/finance/transactions';
 const PAGE_LIMIT = 500;
 
-interface TransactionsPage {
-  items: unknown[];
+interface TransactionsPage<T = unknown> {
+  items: T[];
   nextCursor: null | string;
 }
 
-async function countTransactions(client: Pick<ApiClient, 'get'>): Promise<number> {
-  let total = 0;
+// Every row of the list for `extraQuery` (e.g. `source=CARD`), read window by window and page by page.
+export async function listAllTransactions<T = unknown>(
+  client: Pick<ApiClient, 'get'>,
+  extraQuery = '',
+): Promise<T[]> {
+  const rows: T[] = [];
   for (const { from, to } of TRANSACTION_WINDOWS) {
     let cursor: null | string = null;
     do {
-      const page: TransactionsPage = await client.get<TransactionsPage>(
-        `${TRANSACTIONS_PATH}?from=${from}&to=${to}&limit=${PAGE_LIMIT}${
+      const page: TransactionsPage<T> = await client.get<TransactionsPage<T>>(
+        `${TRANSACTIONS_PATH}?${extraQuery ? `${extraQuery}&` : ''}from=${from}&to=${to}&limit=${PAGE_LIMIT}${
           cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''
         }`,
       );
-      total += page.items.length;
+      rows.push(...page.items);
       cursor = page.nextCursor;
     } while (cursor);
   }
 
-  return total;
+  return rows;
 }
 
 // Size of every list of the base user. Reads only.
@@ -51,7 +55,7 @@ export async function measureDataset(
   for (const [name, path] of Object.entries(LISTS)) {
     sizes[name] = (await client.get<unknown[]>(path)).length;
   }
-  sizes.transactions = await countTransactions(client);
+  sizes.transactions = (await listAllTransactions(client)).length;
 
   return sizes;
 }
