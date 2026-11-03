@@ -12,8 +12,8 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": 113,
-    "maxQueries": 0,
-    "p50Ms": 16,
+    "maxQueries": 2,
+    "p50Ms": 17,
     "params": {
       "id": "userId"
     },
@@ -23,8 +23,8 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": 113,
-    "maxQueries": 0,
-    "p50Ms": 18,
+    "maxQueries": 2,
+    "p50Ms": 16,
     "scenario": ""
   },
   "PATCH /api/v1/user/:id": {
