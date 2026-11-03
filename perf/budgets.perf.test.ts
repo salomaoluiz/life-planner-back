@@ -17,7 +17,6 @@ import {
   Fixtures,
   resolveFixtures,
 } from '../scripts/perf/measure/fixtures';
-import { RECIPES } from '../scripts/perf/measure/recipes';
 import { applyBaseline, measureRequest } from '../scripts/perf/measure/runner';
 import { assertPerfRunAllowed } from '../scripts/perf/measure/safety';
 import { renderSummary, SummaryRow } from '../scripts/perf/measure/summary';
@@ -75,20 +74,16 @@ for (const name of modules) {
         const { method, template } = parseRegistryKey(key);
         const path = expandPath(template, entry.params ?? {}, fx);
         const query = expandScenario(entry.scenario, fx);
-        const prepared =
-          entry.kind === 'write' ? await RECIPES[entry.recipe ?? ''](client, fx) : undefined;
-        const request = prepared?.request ?? { method, path: query ? `${path}?${query}` : path };
+        const request = { method, path: query ? `${path}?${query}` : path };
         let measured = -1;
         try {
           ({ measured } = await measureRequest({
             baseUrl,
             key,
-            onResponse: prepared?.onResponse,
             request,
             token: client.accessToken ?? '',
           }));
         } finally {
-          await prepared?.cleanup();
           rows.push({
             budget: entry.maxQueries,
             key,

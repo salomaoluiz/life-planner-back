@@ -1,30 +1,30 @@
 {
   "DELETE /api/v1/finance/accounts/:id": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "account.delete",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "DELETE /api/v1/finance/categories/:id": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "category.delete",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "DELETE /api/v1/finance/credit-cards/:id": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "card.delete",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "DELETE /api/v1/finance/credit-cards/:id/early-payments/:earlyPaymentId": {
     "indexes": null,
@@ -73,12 +73,12 @@
   },
   "DELETE /api/v1/finance/recurrences/:id": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "recurrence.delete",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "DELETE /api/v1/finance/recurrences/:id/occurrences/:number": {
     "indexes": null,
@@ -91,21 +91,21 @@
   },
   "DELETE /api/v1/finance/tags/:id": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "tag.delete",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "DELETE /api/v1/finance/transactions/:id": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "transaction.delete",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "GET /api/v1/finance/accounts": {
     "indexes": null,
@@ -334,21 +334,21 @@
   },
   "PATCH /api/v1/finance/accounts/:id": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "account.patch",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "PATCH /api/v1/finance/categories/:id": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "category.patch",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "PATCH /api/v1/finance/categories/:id/appearance": {
     "indexes": null,
@@ -361,12 +361,12 @@
   },
   "PATCH /api/v1/finance/credit-cards/:id": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "card.patch",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "PATCH /api/v1/finance/credit-cards/:id/early-payments/:earlyPaymentId": {
     "indexes": null,
@@ -406,30 +406,30 @@
   },
   "PATCH /api/v1/finance/tags/:id": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "tag.patch",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "PATCH /api/v1/finance/transactions/:id": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "transaction.patch",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "POST /api/v1/finance/accounts": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "account.create",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "POST /api/v1/finance/accounts/:id/balance-adjustment": {
     "indexes": null,
@@ -442,21 +442,21 @@
   },
   "POST /api/v1/finance/categories": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "category.create",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "POST /api/v1/finance/credit-cards": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "card.create",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "POST /api/v1/finance/credit-cards/:id/early-payments": {
     "indexes": null,
@@ -505,12 +505,12 @@
   },
   "POST /api/v1/finance/recurrences": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "recurrence.create",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "POST /api/v1/finance/recurrences/:id/occurrences/:number": {
     "indexes": null,
@@ -532,21 +532,21 @@
   },
   "POST /api/v1/finance/tags": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "tag.create",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "POST /api/v1/finance/transactions": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "transaction.create",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "POST /api/v1/finance/transactions/import": {
     "indexes": null,
