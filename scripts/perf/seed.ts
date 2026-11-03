@@ -10,7 +10,11 @@ import { assertSeedAllowed, resolveApiUrl, SeedRefusal } from './seed/safety';
 export type SeedModule = 'family' | 'finance' | 'stock';
 const MODULES: SeedModule[] = ['family', 'stock', 'finance'];
 
+// The default base user: its data is pinned (anchorDate), so every perf run reads the same dataset.
+export const DEFAULT_PERF_EMAIL = 'perf-base-user@example.com';
+
 export interface SeedConfig {
+  anchorDate: string;
   family: { families: number; invitesPerFamily: number };
   finance: Record<string, number>;
   seed: number;
@@ -71,10 +75,10 @@ export async function runSeed(
 ): Promise<SeedManifest> {
   const args = parseArgs(argv);
   assertSeedAllowed(env, resolveApiUrl(env));
-  const email = env.PERF_USER_EMAIL;
+  const email = env.PERF_USER_EMAIL || DEFAULT_PERF_EMAIL;
   const password = env.PERF_USER_PASSWORD;
-  if (!email || !password) {
-    throw new SeedRefusal('perf seed refused: PERF_USER_EMAIL and PERF_USER_PASSWORD are required');
+  if (!password) {
+    throw new SeedRefusal('perf seed refused: PERF_USER_PASSWORD is required');
   }
 
   const startedAt = Date.now();
@@ -91,12 +95,13 @@ export async function runSeed(
     client,
     familyIds: [],
     rng: createRng(cfg.seed),
-    today: now.toISOString().slice(0, 10),
+    // Every date of the dataset hangs from the anchor, never from the run day.
+    today: cfg.anchorDate,
     userId: me.id,
   };
   const wanted = MODULES.filter((name) => !args.module || args.module === name);
   const counts: Record<string, number> = {};
-  let referenceMonth = ctx.today.slice(0, 7);
+  let referenceMonth = cfg.anchorDate.slice(0, 7);
 
   // Stock and finance need the family ids even when only they run (read only).
   const families = await client.get<{ id: string; name: string }[]>('/api/v1/families');

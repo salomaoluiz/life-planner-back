@@ -1,4 +1,4 @@
-import { parseArgs, runSeed } from './seed';
+import { DEFAULT_PERF_EMAIL, loadConfig, parseArgs, runSeed } from './seed';
 import { SeedRefusal } from './seed/safety';
 
 const env = {
@@ -71,6 +71,34 @@ describe('runSeed', () => {
       referenceMonth: '2026-10',
       userId: 'u1',
     });
+  });
+
+  it('uses the pinned anchorDate as today, whatever the real date is (spec 093)', async () => {
+    const run = runners();
+
+    await runSeed([], env, fakeClient() as never, run, () => undefined, new Date('2031-05-05'));
+
+    expect(run.stock.mock.calls[0][0].today).toBe(loadConfig().anchorDate);
+    expect(loadConfig().anchorDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it('logs in as the default base user WHEN PERF_USER_EMAIL is unset or empty', async () => {
+    for (const email of [undefined, '']) {
+      const client = fakeClient();
+      client.get.mockImplementation(async (path: string) =>
+        path === '/api/v1/user/me' ? { email: DEFAULT_PERF_EMAIL, id: 'u1' } : [],
+      );
+
+      await runSeed(
+        [],
+        { ...env, PERF_USER_EMAIL: email },
+        client as never,
+        runners(),
+        () => undefined,
+      );
+
+      expect(client.login).toHaveBeenCalledWith(DEFAULT_PERF_EMAIL, env.PERF_USER_PASSWORD);
+    }
   });
 
   it('--module stock runs only the stock runner', async () => {

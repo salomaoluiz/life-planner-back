@@ -1,4 +1,5 @@
 {
+  "anchorDate": "2026-01-15",
   "seed": 64,
   "stock": { "items": 1000 },
   "family": { "families": 3, "invitesPerFamily": 2 },

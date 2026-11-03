@@ -9,6 +9,7 @@ import { configureApp } from '@shared/infra/http/configure-app';
 import { AppModule } from '../src/modules/app.module';
 import { PERF_MODULES, PerfModule } from '../scripts/perf/modules';
 import { loadRegistry, parseRegistryKey } from '../scripts/perf/registry';
+import { DEFAULT_PERF_EMAIL } from '../scripts/perf/seed';
 import { ApiClient } from '../scripts/perf/seed/client';
 import type { SeedManifest } from '../scripts/perf/seed/manifest';
 import {
@@ -47,7 +48,10 @@ beforeAll(async () => {
   const { port } = app.getHttpServer().address() as { port: number };
   baseUrl = `http://127.0.0.1:${port}`;
   client = new ApiClient(baseUrl);
-  await client.login(process.env.PERF_USER_EMAIL ?? '', process.env.PERF_USER_PASSWORD ?? '');
+  await client.login(
+    process.env.PERF_USER_EMAIL || DEFAULT_PERF_EMAIL,
+    process.env.PERF_USER_PASSWORD ?? '',
+  );
   fx = await resolveFixtures(client, manifest);
 });
 
