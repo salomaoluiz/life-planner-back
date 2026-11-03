@@ -14,14 +14,15 @@ describe('UserController', () => {
     it('SHOULD return the current logged user', async () => {
       const result = await setup.findMe(mocks.request);
 
-      expect(result).toEqual(mocks.user);
+      expect(result).toEqual({ ...mocks.user, families: [] });
     });
 
-    it('SHOULD call userService.findById with the ID from request', async () => {
+    it('SHOULD call userService.findMe with the ID from request', async () => {
       await setup.findMe(mocks.request);
 
-      expect(mocks.userService.findById).toHaveBeenCalledTimes(1);
-      expect(mocks.userService.findById).toHaveBeenCalledWith(mocks.request.user.id);
+      expect(mocks.userService.findMe).toHaveBeenCalledTimes(1);
+      expect(mocks.userService.findMe).toHaveBeenCalledWith(mocks.request.user.id);
+      expect(mocks.userService.findById).not.toHaveBeenCalled();
     });
   });
 

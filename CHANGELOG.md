@@ -3,6 +3,12 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [1.4.0] - 2026-11-03
+
+### Added
+
+- `GET /api/v1/user/me` also returns the user's families (`families: [{ id, name, status }]`, same order as `GET /families`), so the app resolves its owners with one call (spec 074).
+
 ## [1.3.6] - 2026-11-03
 
 ### Changed

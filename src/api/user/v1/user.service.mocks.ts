@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 
 import { UpdateUserInput } from '@api/user/v1/dto/update-user.dto';
+import { GetUserFamiliesUseCase } from '@family/application/use-case/GetUserFamiliesUseCase';
 import { FindUserByIdUseCase } from '@user/application/use-case/FindUserByIdUseCase';
 import { UpdateUserUseCase } from '@user/application/use-case/UpdateUserUseCase';
 
@@ -33,6 +34,15 @@ const findUserByIdUseCaseMock = {
   execute: jest.fn().mockResolvedValue(userResultMock),
 };
 
+const familiesResultMock = [
+  { id: 'family-id-1', name: 'Test Family', status: 'ACTIVE' },
+  { id: 'family-id-2', name: 'Old Family', status: 'ARCHIVED' },
+];
+
+const getUserFamiliesUseCaseMock = {
+  execute: jest.fn().mockResolvedValue(familiesResultMock),
+};
+
 const updateUserUseCaseMock = {
   execute: jest.fn().mockResolvedValue(updatedUserResultMock),
 };
@@ -56,6 +66,10 @@ beforeEach(async () => {
         useValue: findUserByIdUseCaseMock,
       },
       {
+        provide: GetUserFamiliesUseCase,
+        useValue: getUserFamiliesUseCaseMock,
+      },
+      {
         provide: UpdateUserUseCase,
         useValue: updateUserUseCaseMock,
       },
@@ -66,7 +80,9 @@ beforeEach(async () => {
 });
 
 const mocks = {
+  families: familiesResultMock,
   findUserByIdUseCase: findUserByIdUseCaseMock,
+  getUserFamiliesUseCase: getUserFamiliesUseCaseMock,
   inputs: {
     id: userResultMock.id,
     update: updateUserInputMock,

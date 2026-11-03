@@ -36,6 +36,7 @@ const accountDeletionServiceMock = { deleteAccount: jest.fn() };
 
 const userServiceMock = {
   findById: jest.fn().mockResolvedValue(userMock),
+  findMe: jest.fn().mockResolvedValue({ ...userMock, families: [] }),
   update: jest.fn().mockResolvedValue(updatedUserMock),
 };
 
