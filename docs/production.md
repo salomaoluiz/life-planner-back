@@ -103,6 +103,8 @@ server {
 }
 ```
 
+Spec 072: the API compresses its own JSON responses (gzip/brotli from 1 KB), so the proxy must not compress them again: keep `gzip off;` in the API `location` (or `gzip_proxied off;`) and leave `proxy_buffering` at its default. Authenticated `GET`s answer `Cache-Control: private, no-cache`; do not add a proxy cache for the API.
+
 Add both names in AdGuard / Tailscale DNS the way the other subdomains are. Then `nginx -t` and reload.
 
 ## 5. Verify the API

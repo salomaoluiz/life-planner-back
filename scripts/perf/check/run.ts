@@ -119,7 +119,7 @@ export async function checkMain(
             if (round === 0) lines.push(`${name} | ${key} | skipped: ${(error as Error).message}`);
             continue;
           }
-          let measured: { bytes: number; p50: number };
+          let measured: { bytes: number; p50: number; wireBytes: number };
           try {
             measured = await measureRoute({ baseUrl, key, path, token });
           } catch (error) {
@@ -127,7 +127,7 @@ export async function checkMain(
             continue;
           }
           let { p50 } = measured;
-          const { bytes } = measured;
+          const { bytes, wireBytes } = measured;
           // A noisy machine or a remote database can spike one round: a suspected regression is measured once
           // more and the better of the two counts (a real slowdown stays slow).
           if (round === 0 && !update && isRegression(p50, entry.p50Ms)) {
@@ -152,7 +152,7 @@ export async function checkMain(
           });
           const slow = isRegression(p50, entry.p50Ms);
           lines.push(
-            `${name} | ${key} | p50 ${Math.round(p50)} ms (base ${entry.p50Ms ?? '-'}) | ${bytes} B`,
+            `${name} | ${key} | p50 ${Math.round(p50)} ms (base ${entry.p50Ms ?? '-'}) | ${bytes} B (wire ${wireBytes} B)`,
           );
           if (slow)
             failures.push(`${key}: p50 ${Math.round(p50)} ms over baseline ${entry.p50Ms} ms`);

@@ -22,6 +22,20 @@ function clock(step: number[]) {
 }
 
 describe('measureRoute', () => {
+  it('SHOULD return wireBytes as the gzip size of the body (spec 072)', async () => {
+    const result = await measureRoute({
+      baseUrl: 'http://x',
+      fetchFn: fakeFetch(200, 'a'.repeat(5000)),
+      key: 'GET /a',
+      path: '/a',
+      token: 't',
+    });
+
+    expect(result.bytes).toBe(5000);
+    expect(result.wireBytes).toBeGreaterThan(0);
+    expect(result.wireBytes).toBeLessThan(100);
+  });
+
   it('SHOULD warm up twice, measure 7 and return median and bytes', async () => {
     const fetchFn = fakeFetch();
     const result = await measureRoute({

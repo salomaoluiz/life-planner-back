@@ -3,6 +3,14 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [1.3.6] - 2026-11-03
+
+### Changed
+
+- JSON responses of 1 KB or more are compressed (gzip, or brotli when the client accepts it); the proxy must not compress the API again (spec 072).
+- Authenticated `GET` responses carry `Cache-Control: private, no-cache` (revalidated through the ETag, never stored by shared caches) (spec 072).
+- CORS preflights are cached for a day (`Access-Control-Max-Age: 86400`), so browsers send one `OPTIONS` per route per day (spec 072).
+
 ## [1.3.5] - 2026-11-03
 
 ### Changed

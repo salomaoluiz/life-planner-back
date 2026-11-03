@@ -1,3 +1,5 @@
+import { gzipSync } from 'node:zlib';
+
 import { p50 } from './stats';
 
 export interface TimingArgs {
@@ -54,20 +56,26 @@ export async function measureConcurrent(
 }
 
 // Errors name the key and the status only: bodies can carry personal data.
-export async function measureRoute(args: TimingArgs): Promise<{ bytes: number; p50: number }> {
+export async function measureRoute(
+  args: TimingArgs,
+): Promise<{ bytes: number; p50: number; wireBytes: number }> {
   const fetchFn = args.fetchFn ?? fetch;
   const now = args.now ?? (() => performance.now());
   const durations: number[] = [];
   let bytes = 0;
+  let wireBytes = 0;
   for (let i = 0; i < (args.warmups ?? 2) + (args.runs ?? 7); i += 1) {
     const start = now();
     const response = await fetchFn(`${args.baseUrl}${args.path}`, {
       headers: headers(args.token),
     });
     if (!response.ok) throw new Error(`${args.key} -> ${response.status}`);
-    bytes = (await response.arrayBuffer()).byteLength;
+    const body = Buffer.from(await response.arrayBuffer());
+    bytes = body.byteLength;
+    wireBytes = gzipSync(body).byteLength;
     if (i >= (args.warmups ?? 2)) durations.push(now() - start);
   }
 
-  return { bytes, p50: p50(durations) };
+  // wireBytes is informational (spec 072): `bytes` stays uncompressed because the budgets are in it.
+  return { bytes, p50: p50(durations), wireBytes };
 }

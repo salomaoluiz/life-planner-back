@@ -16,6 +16,8 @@ The only place allowed to import third-party libs directly (ESLint `no-restricte
 | `token/`           | `generateToken()` (32 CSPRNG bytes, base64url, 43 chars), `hashToken()` (SHA-256 hex), `TOKEN_REGEX`                            | import from `@shared/infra/token`                                                                                                                                                                                                                                                     |
 
 | `github/` | `IGithubReleases.listReleases(repo)` (axios, 3 s timeout, `per_page=10`, drafts/prereleases dropped, optional bearer token, throws on failure; spec 056) | `'IGithubReleases'` |
+| `http/compression/` | `buildCompression()` — the `compression` middleware (gzip level 5 / brotli, from 1 KB), registered in `configureApp` (spec 072) | `app.use(buildCompression())` |
+| `http/cache-control/` | `CacheControlInterceptor` — `Cache-Control: private, no-cache` on successful non-public `GET`s (spec 072) | `APP_INTERCEPTOR` in `SharedModule` |
 | `build-info/` | `IBuildInfo.read()` → `{ version, releasedAt, builtAt }` from `package.json`, the first `CHANGELOG.md` entry and the `build-time` file | `'IBuildInfo'` |
 
 ## Environment variables (`env/env.schema.ts`)

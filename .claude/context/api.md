@@ -111,6 +111,8 @@ Transactions: POST/PATCH answer `422 Account is archived` (create, or a PATCH th
 Errors come out of `AllExceptionsFilter` as `{ message, path, statusCode, timestamp }` (5xx hidden behind "Internal Server Error", validation failures are 400 "Validation Failed").
 **CORS:** enabled in `main.ts` only when `CORS_ORIGINS` (comma-separated origins) is non-empty; methods `GET, POST, PATCH, PUT, DELETE, OPTIONS`, headers `Authorization, Content-Type`, no credentials (the token travels in `Authorization`). Empty = disabled.
 
+**Response headers (spec 072):** JSON bodies of 1 KB or more are compressed (gzip, or brotli when accepted); every successful authenticated `GET` carries `Cache-Control: private, no-cache` (ETag revalidation, never `max-age` on money data), public routes (`/health`, `/version`, auth) keep their headers; the CORS preflight answers `Access-Control-Max-Age: 86400`.
+
 Keep this table updated when endpoints change, and mirror changes in `integration.md`.
 
 ### Card purchases and invoices (spec 029)
