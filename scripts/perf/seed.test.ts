@@ -73,6 +73,28 @@ describe('runSeed', () => {
     });
   });
 
+  it('reads the whole dataset twice AND stores the second reading as the fingerprint', async () => {
+    const client = fakeClient();
+    let reads = 0;
+    client.get.mockImplementation(async (path: string) => {
+      if (path === '/api/v1/user/me') return { email: 'perf@example.com', id: 'u1' };
+      if (path === '/api/v1/families') return [{ id: 'f1', name: 'Perf family 1' }];
+      if (path === '/api/v1/finance/transactions') {
+        reads += 1;
+
+        // The first read materializes one more row, as a lazy series would.
+        return Array.from({ length: reads === 1 ? 10 : 11 }, () => ({}));
+      }
+
+      return [];
+    });
+
+    const manifest = await runSeed([], env, client as never, runners(), () => undefined);
+
+    expect(reads).toBe(2);
+    expect(manifest.fingerprint).toMatchObject({ families: 1, transactions: 11 });
+  });
+
   it('uses the pinned anchorDate as today, whatever the real date is (spec 093)', async () => {
     const run = runners();
 

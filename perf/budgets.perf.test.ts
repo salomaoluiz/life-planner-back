@@ -12,6 +12,7 @@ import { loadRegistry, parseRegistryKey } from '../scripts/perf/registry';
 import { DEFAULT_PERF_EMAIL } from '../scripts/perf/seed';
 import { ApiClient } from '../scripts/perf/seed/client';
 import type { SeedManifest } from '../scripts/perf/seed/manifest';
+import { verifyDataset } from '../scripts/perf/measure/dataset';
 import {
   expandPath,
   expandScenario,
@@ -52,6 +53,7 @@ beforeAll(async () => {
     process.env.PERF_USER_EMAIL || DEFAULT_PERF_EMAIL,
     process.env.PERF_USER_PASSWORD ?? '',
   );
+  await verifyDataset(client, manifest);
   fx = await resolveFixtures(client, manifest);
 });
 

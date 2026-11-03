@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { ApiClient } from './seed/client';
+import { measureDataset } from './measure/dataset';
 import { hashConfig, SeedManifest, writeManifest } from './seed/manifest';
 import { createRng, Rng } from './seed/random';
 import { resetPerfAccount } from './seed/reset';
@@ -115,10 +116,15 @@ export async function runSeed(
     log(`${name}: ${JSON.stringify(result.counts)}`);
   }
 
+  // The first read triggers any lazy materialization; the second one is the pinned fingerprint.
+  await measureDataset(client);
+  const fingerprint = await measureDataset(client);
+
   const manifest: SeedManifest = {
     configHash: hashConfig(cfg),
     counts,
     familyIds: ctx.familyIds,
+    fingerprint,
     referenceMonth,
     seededAt: now.toISOString(),
     userId: me.id,

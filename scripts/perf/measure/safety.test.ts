@@ -5,6 +5,7 @@ import { assertPerfRunAllowed, manifestStatus, seedModuleFor } from './safety';
 const good = { DB_HOST: 'localhost', NODE_ENV: 'development', PERF_SEED_ALLOW: 'staging' };
 const manifest = {
   configHash: 'abc',
+  fingerprint: {},
   counts: { families: 3, stockCreated: 0, transactions: 10 },
   familyIds: [],
   referenceMonth: '2026-02',

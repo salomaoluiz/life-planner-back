@@ -7,6 +7,7 @@ import { Test } from '@nestjs/testing';
 import { configureApp } from '@shared/infra/http/configure-app';
 
 import { AppModule } from '../../../src/modules/app.module';
+import { verifyDataset } from '../measure/dataset';
 import { Fixtures, resolveFixtures } from '../measure/fixtures';
 import { DEFAULT_PERF_EMAIL } from '../seed';
 import { ApiClient } from '../seed/client';
@@ -48,6 +49,8 @@ export async function loginPerfUser(
     process.env.PERF_USER_EMAIL || DEFAULT_PERF_EMAIL,
     process.env.PERF_USER_PASSWORD ?? '',
   );
+
+  await verifyDataset(client, manifest);
 
   return { fixtures: await resolveFixtures(client, manifest), token: client.accessToken ?? '' };
 }
