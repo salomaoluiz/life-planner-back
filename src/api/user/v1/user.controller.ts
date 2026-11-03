@@ -18,6 +18,7 @@ import { DeleteAccountApiSchema, DeleteAccountInput } from '@api/user/v1/dto/del
 import { JwtPayload } from '@shared/infra/jwt/types';
 import { validate } from '@shared/infra/validation';
 
+import { FindMeOutput } from './dto/find-me.dto';
 import { FindUserByIdOutput } from './dto/find-user-by-id.dto';
 import { UpdateUserInput, UpdateUserOutput } from './dto/update-user.dto';
 import { UserService } from './user.service';
@@ -44,10 +45,9 @@ export class UserController {
   }
 
   @Get('/me')
-  @ZodResponse({ status: 200, type: FindUserByIdOutput })
+  @ZodResponse({ status: 200, type: FindMeOutput })
   async findMe(@Request() req: JwtPayload & Request) {
-    const userId = req.user.id;
-    return this.findById(userId);
+    return this.userService.findMe(req.user.id);
   }
 
   // Find user by ID
