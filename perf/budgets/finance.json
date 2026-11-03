@@ -199,7 +199,7 @@
     "kind": "read",
     "maxBytes": 341,
     "maxQueries": 14,
-    "p50Ms": 164,
+    "p50Ms": 142,
     "scenario": "currency=BRL&from={monthStart}&to={monthEnd}"
   },
   "GET /api/v1/finance/dashboard/totals": {
@@ -207,7 +207,7 @@
     "kind": "read",
     "maxBytes": 1893,
     "maxQueries": 8,
-    "p50Ms": 123,
+    "p50Ms": 111,
     "scenario": "currency=BRL&from={monthStart}&to={monthEnd}&groupBy=CATEGORY&type=EXPENSE"
   },
   "GET /api/v1/finance/installment-plans/:id": {
@@ -271,7 +271,7 @@
     "knownException": "Unbounded list, removed by spec 078 (period required and keyset pagination)",
     "maxBytes": 4063133,
     "maxQueries": 7,
-    "p50Ms": 564,
+    "p50Ms": 424,
     "scenario": "source=CARD",
     "seqScanException": "Full scan until spec 078",
     "table": "financial_transactions"
