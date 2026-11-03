@@ -9,9 +9,39 @@ const LISTS: Record<string, string> = {
   recurrences: '/api/v1/finance/recurrences',
   stock: '/api/v1/stock/items',
   tags: '/api/v1/finance/tags',
-  // Unbounded on purpose: it counts every row, including any a read materialized.
-  transactions: '/api/v1/finance/transactions',
 };
+
+// The transactions list needs a period of at most 2 years (spec 078): the windows tile 2015..2034, so every row counts
+// once, including any a read materialized.
+const TRANSACTION_WINDOWS = Array.from({ length: 10 }, (_, i) => ({
+  from: `${2015 + i * 2}-01-01`,
+  to: `${2016 + i * 2}-12-31`,
+}));
+const TRANSACTIONS_PATH = '/api/v1/finance/transactions';
+const PAGE_LIMIT = 500;
+
+interface TransactionsPage {
+  items: unknown[];
+  nextCursor: null | string;
+}
+
+async function countTransactions(client: Pick<ApiClient, 'get'>): Promise<number> {
+  let total = 0;
+  for (const { from, to } of TRANSACTION_WINDOWS) {
+    let cursor: null | string = null;
+    do {
+      const page: TransactionsPage = await client.get<TransactionsPage>(
+        `${TRANSACTIONS_PATH}?from=${from}&to=${to}&limit=${PAGE_LIMIT}${
+          cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''
+        }`,
+      );
+      total += page.items.length;
+      cursor = page.nextCursor;
+    } while (cursor);
+  }
+
+  return total;
+}
 
 // Size of every list of the base user. Reads only.
 export async function measureDataset(
@@ -21,6 +51,7 @@ export async function measureDataset(
   for (const [name, path] of Object.entries(LISTS)) {
     sizes[name] = (await client.get<unknown[]>(path)).length;
   }
+  sizes.transactions = await countTransactions(client);
 
   return sizes;
 }
