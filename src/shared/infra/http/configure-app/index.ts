@@ -4,6 +4,7 @@ import type { NextFunction, Request, Response } from 'express';
 
 import { QueryCounter } from '@shared/infra/db/QueryCounter';
 import { EnvService } from '@shared/infra/env/env.service';
+import { buildCompression } from '@shared/infra/http/compression';
 import { buildCorsOptions } from '@shared/infra/http/cors';
 import { setupSwagger } from '@shared/infra/http/swagger';
 
@@ -15,6 +16,9 @@ export function configureApp(app: NestExpressApplication): void {
   if (corsOptions) {
     app.enableCors(corsOptions);
   }
+
+  // Spec 072: gzip/brotli for responses of 1 KB or more.
+  app.use(buildCompression());
 
   // Spec 047: an import of 2,000 rows is about 1 MB of JSON (the default limit is 100 kb).
   app.useBodyParser('json', { limit: '1mb' });

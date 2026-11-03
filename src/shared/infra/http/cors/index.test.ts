@@ -37,4 +37,8 @@ describe('GIVEN buildCorsOptions', () => {
     expect(options.allowedHeaders).toEqual(['Authorization', 'Content-Type']);
     expect(options.credentials).toBe(false);
   });
+
+  it('SHOULD let browsers cache the preflight for a day (spec 072)', () => {
+    expect(buildCorsOptions('http://localhost:8081')!.maxAge).toBe(86400);
+  });
 });

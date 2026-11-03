@@ -46,3 +46,5 @@ A route without an entry fails `yarn test` (`scripts/perf/registry.coverage.test
 ## PR block
 
 Copy into the PR description (template: `.github/pull_request_template.md`): modules checked, the final summary line, and before/after of any changed budget.
+
+The runner measures `bytes` uncompressed (`Accept-Encoding: identity`; budgets are in it) and prints an informational `wireBytes` (gzip size of the same body, spec 072).

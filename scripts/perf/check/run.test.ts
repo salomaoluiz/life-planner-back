@@ -58,7 +58,7 @@ describe('checkMain', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     registryWith();
-    (measureRoute as jest.Mock).mockResolvedValue({ bytes: 1000, p50: 100 });
+    (measureRoute as jest.Mock).mockResolvedValue({ bytes: 1000, p50: 100, wireBytes: 100 });
     (measureConcurrent as jest.Mock).mockResolvedValue({ wallMs: 10 });
   });
 
@@ -90,7 +90,7 @@ describe('checkMain', () => {
   });
 
   it('SHOULD fail naming the route WHEN p50 regresses', async () => {
-    (measureRoute as jest.Mock).mockResolvedValue({ bytes: 1000, p50: 300 });
+    (measureRoute as jest.Mock).mockResolvedValue({ bytes: 1000, p50: 300, wireBytes: 100 });
     const { deps } = makeDeps();
     expect(await checkMain(['--module', 'stock'], ENV, deps)).toBe(1);
     expect(deps.log).toHaveBeenCalledWith(expect.stringContaining(KEY));
@@ -98,26 +98,26 @@ describe('checkMain', () => {
 
   it('SHOULD re-measure a suspected regression once and keep the better p50', async () => {
     (measureRoute as jest.Mock)
-      .mockResolvedValueOnce({ bytes: 1000, p50: 300 })
-      .mockResolvedValueOnce({ bytes: 1000, p50: 105 });
+      .mockResolvedValueOnce({ bytes: 1000, p50: 300, wireBytes: 100 })
+      .mockResolvedValueOnce({ bytes: 1000, p50: 105, wireBytes: 100 });
     expect(await checkMain(['--module', 'stock'], ENV, makeDeps().deps)).toBe(0);
     expect(measureRoute).toHaveBeenCalledTimes(2);
   });
 
   it('SHOULD still fail WHEN the slowdown repeats', async () => {
-    (measureRoute as jest.Mock).mockResolvedValue({ bytes: 1000, p50: 300 });
+    (measureRoute as jest.Mock).mockResolvedValue({ bytes: 1000, p50: 300, wireBytes: 100 });
     expect(await checkMain(['--module', 'stock'], ENV, makeDeps().deps)).toBe(1);
   });
 
   it('SHOULD pass WHEN the baseline is null', async () => {
     registryWith({ p50Ms: null });
-    (measureRoute as jest.Mock).mockResolvedValue({ bytes: 1000, p50: 900 });
+    (measureRoute as jest.Mock).mockResolvedValue({ bytes: 1000, p50: 900, wireBytes: 100 });
     const { deps } = makeDeps();
     expect(await checkMain(['--module', 'stock'], ENV, deps)).toBe(0);
   });
 
   it('SHOULD fail a list over 256 KB without exception and pass with one', async () => {
-    (measureRoute as jest.Mock).mockResolvedValue({ bytes: 300000, p50: 100 });
+    (measureRoute as jest.Mock).mockResolvedValue({ bytes: 300000, p50: 100, wireBytes: 100 });
     registryWith({ maxBytes: 300000 });
     const first = makeDeps();
     expect(await checkMain(['--module', 'stock'], ENV, first.deps)).toBe(1);
@@ -182,7 +182,7 @@ describe('checkMain', () => {
   });
 
   it('SHOULD write baselines and exit 0 WHEN --update-baseline', async () => {
-    (measureRoute as jest.Mock).mockResolvedValue({ bytes: 1000, p50: 300 });
+    (measureRoute as jest.Mock).mockResolvedValue({ bytes: 1000, p50: 300, wireBytes: 100 });
     const { deps } = makeDeps();
     expect(await checkMain(['--module', 'stock', '--update-baseline'], ENV, deps)).toBe(0);
     expect(deps.applyBaseline).toHaveBeenCalledWith('stock', {
@@ -203,7 +203,7 @@ describe('checkMain', () => {
 
   it('SHOULD store the median of 5 rounds WHEN --update-baseline', async () => {
     for (const p50 of [100, 900, 120, 110, 130]) {
-      (measureRoute as jest.Mock).mockResolvedValueOnce({ bytes: 1000, p50 });
+      (measureRoute as jest.Mock).mockResolvedValueOnce({ bytes: 1000, p50, wireBytes: 100 });
     }
     const { deps } = makeDeps();
     expect(await checkMain(['--module', 'stock', '--update-baseline'], ENV, deps)).toBe(0);

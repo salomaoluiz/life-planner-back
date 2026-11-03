@@ -1,6 +1,6 @@
 {
   "name": "life-planner-back",
-  "version": "1.3.5",
+  "version": "1.3.6",
   "description": "",
   "author": "",
   "private": true,
@@ -43,6 +43,7 @@
     "@prisma/client": "^7.1.0",
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
+    "compression": "^1.8.1",
     "date-fns": "^4.1.0",
     "jsonwebtoken": "^9.0.3",
     "nestjs-zod": "^5.0.1",
@@ -62,6 +63,7 @@
     "@nestjs/schematics": "^10.0.0",
     "@nestjs/testing": "^10.0.0",
     "@types/bcrypt": "^6.0.0",
+    "@types/compression": "^1.8.1",
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.2",
     "@types/node": "^24.10.1",
