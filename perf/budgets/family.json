@@ -1,12 +1,12 @@
 {
   "DELETE /api/v1/families/:familyId": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "family.delete",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "DELETE /api/v1/family-members/:memberId": {
     "indexes": null,
@@ -21,16 +21,16 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": 708,
-    "maxQueries": 0,
-    "p50Ms": 16,
+    "maxQueries": 2,
+    "p50Ms": 18,
     "scenario": ""
   },
   "GET /api/v1/families/:familyId": {
     "indexes": null,
     "kind": "read",
     "maxBytes": 235,
-    "maxQueries": 0,
-    "p50Ms": 27,
+    "maxQueries": 3,
+    "p50Ms": 26,
     "params": {
       "familyId": "family"
     },
@@ -40,7 +40,7 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": 865,
-    "maxQueries": 0,
+    "maxQueries": 5,
     "p50Ms": 43,
     "params": {
       "familyId": "family"
@@ -58,21 +58,21 @@
   },
   "PATCH /api/v1/families/:familyId": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "family.patch",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "POST /api/v1/families": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "family.create",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "POST /api/v1/families/:familyId/members": {
     "indexes": null,

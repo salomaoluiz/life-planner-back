@@ -10,6 +10,7 @@ describe('manifest', () => {
 
     writeManifest(path, {
       configHash: hashConfig({ a: 1 }),
+      fingerprint: { stock: 1 },
       counts: { stock: 1 },
       familyIds: ['f1'],
       referenceMonth: '2026-10',
@@ -22,6 +23,7 @@ describe('manifest', () => {
       'configHash',
       'counts',
       'familyIds',
+      'fingerprint',
       'referenceMonth',
       'seededAt',
       'userId',

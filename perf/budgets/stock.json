@@ -1,28 +1,28 @@
 {
   "DELETE /api/v1/stock/items/:id": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "stock.delete",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "GET /api/v1/stock/items": {
     "indexes": null,
     "kind": "read",
     "knownException": "Deferred, see perf-roadmap.md",
     "maxBytes": 454980,
-    "maxQueries": 0,
-    "p50Ms": 48,
+    "maxQueries": 3,
+    "p50Ms": 54,
     "scenario": ""
   },
   "GET /api/v1/stock/items/:id": {
     "indexes": null,
     "kind": "read",
     "maxBytes": 527,
-    "maxQueries": 0,
-    "p50Ms": 23,
+    "maxQueries": 3,
+    "p50Ms": 24,
     "params": {
       "id": "stockItem"
     },
@@ -30,20 +30,20 @@
   },
   "PATCH /api/v1/stock/items/:id": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "stock.patch",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "POST /api/v1/stock/items": {
     "indexes": null,
-    "kind": "write",
+    "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
     "p50Ms": null,
-    "recipe": "stock.create",
-    "scenario": ""
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   }
 }

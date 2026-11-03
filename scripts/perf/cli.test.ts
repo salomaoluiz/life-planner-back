@@ -5,6 +5,7 @@ const manifest = {
   configHash: 'h',
   counts: { families: 3, stockCreated: 0, transactions: 5 },
   familyIds: [],
+  fingerprint: {},
   referenceMonth: '2026-02',
   seededAt: '2026-02-01T00:00:00.000Z',
   userId: 'u',
@@ -98,15 +99,18 @@ describe('main', () => {
     expect(d.runJest).not.toHaveBeenCalled();
   });
 
-  it('SHOULD seed once before jest WHEN the manifest is stale', async () => {
+  it('SHOULD exit 2 without seeding or measuring WHEN the seed config changed (spec 093)', async () => {
     const d = deps({ configHash: () => 'other' });
 
     const code = await main(['--module', 'finance'], goodEnv, d);
 
-    expect(code).toBe(0);
-    expect(d.runSeed).toHaveBeenCalledTimes(1);
-    expect(d.runSeed).toHaveBeenCalledWith('finance');
-    expect(d.runJest).toHaveBeenCalledWith(expect.objectContaining({ PERF_MODULES: 'finance' }));
+    expect(code).toBe(2);
+    expect(d.lines).toEqual([
+      'perf modules: finance',
+      'perf seed config changed since the last seed: run yarn perf:seed --reset',
+    ]);
+    expect(d.runSeed).not.toHaveBeenCalled();
+    expect(d.runJest).not.toHaveBeenCalled();
   });
 
   it('SHOULD seed everything WHEN there is no manifest', async () => {

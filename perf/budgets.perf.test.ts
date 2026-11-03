@@ -9,15 +9,16 @@ import { configureApp } from '@shared/infra/http/configure-app';
 import { AppModule } from '../src/modules/app.module';
 import { PERF_MODULES, PerfModule } from '../scripts/perf/modules';
 import { loadRegistry, parseRegistryKey } from '../scripts/perf/registry';
+import { DEFAULT_PERF_EMAIL } from '../scripts/perf/seed';
 import { ApiClient } from '../scripts/perf/seed/client';
 import type { SeedManifest } from '../scripts/perf/seed/manifest';
+import { verifyDataset } from '../scripts/perf/measure/dataset';
 import {
   expandPath,
   expandScenario,
   Fixtures,
   resolveFixtures,
 } from '../scripts/perf/measure/fixtures';
-import { RECIPES } from '../scripts/perf/measure/recipes';
 import { applyBaseline, measureRequest } from '../scripts/perf/measure/runner';
 import { assertPerfRunAllowed } from '../scripts/perf/measure/safety';
 import { renderSummary, SummaryRow } from '../scripts/perf/measure/summary';
@@ -48,7 +49,11 @@ beforeAll(async () => {
   const { port } = app.getHttpServer().address() as { port: number };
   baseUrl = `http://127.0.0.1:${port}`;
   client = new ApiClient(baseUrl);
-  await client.login(process.env.PERF_USER_EMAIL ?? '', process.env.PERF_USER_PASSWORD ?? '');
+  await client.login(
+    process.env.PERF_USER_EMAIL || DEFAULT_PERF_EMAIL,
+    process.env.PERF_USER_PASSWORD ?? '',
+  );
+  await verifyDataset(client, manifest);
   fx = await resolveFixtures(client, manifest);
 });
 
@@ -75,20 +80,16 @@ for (const name of modules) {
         const { method, template } = parseRegistryKey(key);
         const path = expandPath(template, entry.params ?? {}, fx);
         const query = expandScenario(entry.scenario, fx);
-        const prepared =
-          entry.kind === 'write' ? await RECIPES[entry.recipe ?? ''](client, fx) : undefined;
-        const request = prepared?.request ?? { method, path: query ? `${path}?${query}` : path };
+        const request = { method, path: query ? `${path}?${query}` : path };
         let measured = -1;
         try {
           ({ measured } = await measureRequest({
             baseUrl,
             key,
-            onResponse: prepared?.onResponse,
             request,
             token: client.accessToken ?? '',
           }));
         } finally {
-          await prepared?.cleanup();
           rows.push({
             budget: entry.maxQueries,
             key,

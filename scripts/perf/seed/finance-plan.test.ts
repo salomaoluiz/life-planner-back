@@ -97,6 +97,7 @@ describe('buildFinancePlan', () => {
     expect(plan.recurrences.some((r) => r.frequency === 'WEEKLY')).toBe(true);
     expect(plan.recurrences.some((r) => r.frequency === 'MONTHLY')).toBe(true);
     expect(plan.recurrences.every((r) => r.date < today)).toBe(true);
+    expect(plan.recurrences.every((r) => r.endDate !== undefined && r.endDate <= today)).toBe(true);
     expect(plan.installmentPlans[0].prepay).toBe(true);
     expect(
       plan.installmentPlans.every((p) => p.installments >= 2 && p.value >= p.installments),

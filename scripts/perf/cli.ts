@@ -80,11 +80,14 @@ export async function main(
   const seeded = new Set<SeedModuleName>();
   for (const name of modules) {
     const seedModule = seedModuleFor(name);
-    if (
-      seedModule &&
-      !seeded.has(seedModule) &&
-      manifestStatus(deps.readManifest(), hash, name) !== 'ok'
-    ) {
+    const status = manifestStatus(deps.readManifest(), hash, name);
+    // A changed config would be topped up over the old data and pin a mixed dataset: only a reset is safe.
+    if (seedModule && status === 'stale') {
+      deps.log('perf seed config changed since the last seed: run yarn perf:seed --reset');
+
+      return 2;
+    }
+    if (seedModule && !seeded.has(seedModule) && status !== 'ok') {
       seeded.add(seedModule);
       deps.runSeed(seedModule);
     }

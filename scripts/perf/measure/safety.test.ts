@@ -5,6 +5,7 @@ import { assertPerfRunAllowed, manifestStatus, seedModuleFor } from './safety';
 const good = { DB_HOST: 'localhost', NODE_ENV: 'development', PERF_SEED_ALLOW: 'staging' };
 const manifest = {
   configHash: 'abc',
+  fingerprint: {},
   counts: { families: 3, stockCreated: 0, transactions: 10 },
   familyIds: [],
   referenceMonth: '2026-02',
@@ -44,6 +45,12 @@ describe('manifestStatus', () => {
     expect(manifestStatus({ ...manifest, counts: {} }, 'abc', 'finance')).toBe('missing');
     expect(manifestStatus({ ...manifest, counts: {} }, 'abc', 'family')).toBe('missing');
     expect(manifestStatus({ ...manifest, counts: {} }, 'abc', 'stock')).toBe('missing');
+  });
+
+  it('SHOULD see the stock as seeded WHEN the seed wrote the stock count (not only stockCreated)', () => {
+    const seeded = { ...manifest, counts: { families: 3, stock: 1000, transactions: 10 } };
+
+    expect(manifestStatus(seeded, 'abc', 'stock')).toBe('ok');
   });
 
   it('SHOULD be stale WHEN the config hash differs', () => {

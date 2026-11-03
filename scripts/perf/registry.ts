@@ -10,24 +10,21 @@ const KEY = /^(GET|POST|PUT|PATCH|DELETE) (\/\S*?)(?: #(\S+))?$/;
 const entrySchema = z
   .object({
     indexes: z.array(z.string()).nullable(),
-    kind: z.enum(['read', 'unmeasured', 'write']),
+    kind: z.enum(['read', 'unmeasured']),
     knownException: z.string().min(1).optional(),
     maxBytes: z.number().int().nonnegative().nullable(),
     maxQueries: z.number().int().nonnegative(),
     p50Ms: z.number().nonnegative().nullable(),
     params: z.record(z.string(), z.string()).optional(),
     reason: z.string().min(1).optional(),
-    recipe: z.string().min(1).optional(),
     scenario: z.string(),
     seqScanException: z.string().min(1).optional(),
     table: z.string().min(1).optional(),
   })
+  .strict()
   .superRefine((entry, ctx) => {
     if (entry.kind === 'unmeasured' && !entry.reason) {
       ctx.addIssue({ code: 'custom', message: 'unmeasured entries need a reason' });
-    }
-    if (entry.kind === 'write' && !entry.recipe) {
-      ctx.addIssue({ code: 'custom', message: 'write entries need a recipe' });
     }
   });
 

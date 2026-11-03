@@ -1,6 +1,13 @@
 # Performance guardrail (backend)
 
-Rule: `.claude/CLAUDE.md` rule 17. Specs: 065 (query counts), 066 (timing, payload, concurrency, EXPLAIN), 068 (rules), 069 (pool waiting in the concurrency scenario).
+Rule: `.claude/CLAUDE.md` rule 17. Specs: 065 (query counts), 066 (timing, payload, concurrency, EXPLAIN), 068 (rules), 069 (pool waiting in the concurrency scenario), 093 (read-only tests on a pinned dataset).
+
+## Read-only tests on a pinned dataset (spec 093)
+
+- Perf tests only read: no test creates, updates or deletes anything. Write routes stay in the registry as `unmeasured`.
+- `yarn perf:seed` builds the base user's dataset (default user `perf-base-user@example.com`, password from `PERF_USER_PASSWORD`). Every date hangs from `anchorDate` in `perf/seed.config.json` and every recurrence ends at the anchor, so reads never materialize rows. The seed stores a `fingerprint` (list sizes) in `perf/seed.manifest.json`.
+- Before measuring, `yarn perf` and `yarn perf:check` verify the fingerprint; a difference exits `2` (`perf dataset drifted (...): run yarn perf:seed --reset`). A changed `perf/seed.config.json` also exits `2` (`run yarn perf:seed --reset`): the seed never tops up over old data.
+- Changing the dataset (config, anchor, volumes) means `yarn perf:seed --reset` and a reviewed re-baseline of the budgets in the same PR.
 
 ## Commands
 
@@ -8,7 +15,7 @@ Rule: `.claude/CLAUDE.md` rule 17. Specs: 065 (query counts), 066 (timing, paylo
 - `yarn perf --all`, `yarn perf --module <family|finance|health|stock|user|version>`, `--dry-run` (shows the selection only).
 - `yarn perf --module <m> --update-baseline`: writes the measured numbers into the budgets (the ratchet, see below).
 - `yarn perf:check` runs only the timing, payload, concurrency and EXPLAIN part (`scripts/perf/check/*`).
-- `yarn perf:seed` fills the local perf data set (`perf/seed.config.json`); `yarn perf` seeds what is missing or stale on its own.
+- `yarn perf:seed` fills the local perf data set (`perf/seed.config.json`); `yarn perf` seeds what is missing on its own; a changed config needs `--reset`.
 - Exit codes: `0` passed, `1` a budget failed, `2` could not run (guard refused the environment, seed or build failed). On `2`, report its one-line reason and never claim the change was checked.
 
 ## Reading the result
@@ -21,7 +28,7 @@ Read only `perf-report/summary.md` (git-ignored). It ends with `PERF PASSED: N/N
 
 | Field                                  | Meaning                                                                                            |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `kind`                                 | `read`, `write` (needs `recipe`) or `unmeasured` (needs `reason`)                                  |
+| `kind`                                 | `read` or `unmeasured` (needs `reason`; every write route is `unmeasured`)                         |
 | `scenario`                             | name of the seeded scenario the measurement uses                                                   |
 | `maxQueries`                           | max Prisma queries for one request                                                                 |
 | `maxBytes`, `p50Ms`                    | payload and median latency budgets (`null` when not measured)                                      |

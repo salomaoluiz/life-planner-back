@@ -5,6 +5,8 @@ export interface SeedManifest {
   configHash: string;
   counts: Record<string, number>;
   familyIds: string[];
+  // Size of every list after the seed (spec 093); perf runs refuse to measure when it changed.
+  fingerprint: Record<string, number>;
   referenceMonth: string;
   seededAt: string;
   userId: string;

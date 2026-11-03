@@ -68,10 +68,12 @@ describe('loadRegistry', () => {
     expect(() => loadRegistry(dir, ['stock'])).toThrow('reason');
   });
 
-  it('SHOULD throw WHEN write has no recipe', () => {
-    const dir = dirWith({ stock: { 'POST /api/v1/stock/items': { ...base, kind: 'write' } } });
+  it('SHOULD reject the removed write kind AND the recipe field (spec 093)', () => {
+    const write = dirWith({ stock: { 'POST /api/v1/stock/items': { ...base, kind: 'write' } } });
+    const recipe = dirWith({ stock: { 'GET /api/v1/stock/items': { ...base, recipe: 'x' } } });
 
-    expect(() => loadRegistry(dir, ['stock'])).toThrow('recipe');
+    expect(() => loadRegistry(write, ['stock'])).toThrow('"read"|"unmeasured"');
+    expect(() => loadRegistry(recipe, ['stock'])).toThrow('recipe');
   });
 
   it('SHOULD throw WHEN a key does not match METHOD /path', () => {

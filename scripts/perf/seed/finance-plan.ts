@@ -240,7 +240,8 @@ export function buildFinancePlan(
         categoryIndex: pool[(i * 3) % pool.length],
         date,
         description: `Perf rec ${pad(i, 2)}`,
-        endDate: i % 6 === 5 ? dayOffset(today, -5) : undefined,
+        // Every series ends at the anchor: a read in a later month never materializes new rows (spec 093).
+        endDate: today,
         frequency: i % 5 === 4 ? 'WEEKLY' : 'MONTHLY',
         type,
         value: rng.faker.number.int({ max: 30_000, min: 500 }),

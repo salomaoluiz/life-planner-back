@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { ApiClient } from './seed/client';
+import { measureDataset } from './measure/dataset';
 import { hashConfig, SeedManifest, writeManifest } from './seed/manifest';
 import { createRng, Rng } from './seed/random';
 import { resetPerfAccount } from './seed/reset';
@@ -10,7 +11,11 @@ import { assertSeedAllowed, resolveApiUrl, SeedRefusal } from './seed/safety';
 export type SeedModule = 'family' | 'finance' | 'stock';
 const MODULES: SeedModule[] = ['family', 'stock', 'finance'];
 
+// The default base user: its data is pinned (anchorDate), so every perf run reads the same dataset.
+export const DEFAULT_PERF_EMAIL = 'perf-base-user@example.com';
+
 export interface SeedConfig {
+  anchorDate: string;
   family: { families: number; invitesPerFamily: number };
   finance: Record<string, number>;
   seed: number;
@@ -68,13 +73,14 @@ export async function runSeed(
   runners: Runners,
   log: (line: string) => void,
   now: Date = new Date(),
+  previous?: SeedManifest,
 ): Promise<SeedManifest> {
   const args = parseArgs(argv);
   assertSeedAllowed(env, resolveApiUrl(env));
-  const email = env.PERF_USER_EMAIL;
+  const email = env.PERF_USER_EMAIL || DEFAULT_PERF_EMAIL;
   const password = env.PERF_USER_PASSWORD;
-  if (!email || !password) {
-    throw new SeedRefusal('perf seed refused: PERF_USER_EMAIL and PERF_USER_PASSWORD are required');
+  if (!password) {
+    throw new SeedRefusal('perf seed refused: PERF_USER_PASSWORD is required');
   }
 
   const startedAt = Date.now();
@@ -91,12 +97,15 @@ export async function runSeed(
     client,
     familyIds: [],
     rng: createRng(cfg.seed),
-    today: now.toISOString().slice(0, 10),
+    // Every date of the dataset hangs from the anchor, never from the run day.
+    today: cfg.anchorDate,
     userId: me.id,
   };
   const wanted = MODULES.filter((name) => !args.module || args.module === name);
-  const counts: Record<string, number> = {};
-  let referenceMonth = ctx.today.slice(0, 7);
+  // A partial seed (--module) keeps what the previous manifest knew about the other modules.
+  const prior = args.module && !args.reset ? previous : undefined;
+  const counts: Record<string, number> = { ...prior?.counts };
+  let referenceMonth = prior?.referenceMonth ?? cfg.anchorDate.slice(0, 7);
 
   // Stock and finance need the family ids even when only they run (read only).
   const families = await client.get<{ id: string; name: string }[]>('/api/v1/families');
@@ -110,10 +119,15 @@ export async function runSeed(
     log(`${name}: ${JSON.stringify(result.counts)}`);
   }
 
+  // The first read triggers any lazy materialization; the second one is the pinned fingerprint.
+  await measureDataset(client);
+  const fingerprint = await measureDataset(client);
+
   const manifest: SeedManifest = {
     configHash: hashConfig(cfg),
     counts,
     familyIds: ctx.familyIds,
+    fingerprint,
     referenceMonth,
     seededAt: now.toISOString(),
     userId: me.id,
@@ -133,8 +147,23 @@ export async function main(argv: string[], env: NodeJS.ProcessEnv): Promise<numb
     }
     const { createRunners } = await import('./seed/runners');
     const client = new ApiClient(resolveApiUrl(process.env));
-    const manifest = await runSeed(argv, process.env, client, createRunners(), console.log);
-    writeManifest(resolve(__dirname, '../../perf/seed.manifest.json'), manifest);
+    const manifestPath = resolve(__dirname, '../../perf/seed.manifest.json');
+    let previous: SeedManifest | undefined;
+    try {
+      previous = JSON.parse(readFileSync(manifestPath, 'utf8')) as SeedManifest;
+    } catch {
+      // First seed: no manifest yet.
+    }
+    const manifest = await runSeed(
+      argv,
+      process.env,
+      client,
+      createRunners(),
+      console.log,
+      new Date(),
+      previous,
+    );
+    writeManifest(manifestPath, manifest);
 
     return 0;
   } catch (error) {

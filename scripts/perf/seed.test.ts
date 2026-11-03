@@ -1,4 +1,4 @@
-import { parseArgs, runSeed } from './seed';
+import { DEFAULT_PERF_EMAIL, loadConfig, parseArgs, runSeed } from './seed';
 import { SeedRefusal } from './seed/safety';
 
 const env = {
@@ -71,6 +71,81 @@ describe('runSeed', () => {
       referenceMonth: '2026-10',
       userId: 'u1',
     });
+  });
+
+  it('reads the whole dataset twice AND stores the second reading as the fingerprint', async () => {
+    const client = fakeClient();
+    let reads = 0;
+    client.get.mockImplementation(async (path: string) => {
+      if (path === '/api/v1/user/me') return { email: 'perf@example.com', id: 'u1' };
+      if (path === '/api/v1/families') return [{ id: 'f1', name: 'Perf family 1' }];
+      if (path === '/api/v1/finance/transactions') {
+        reads += 1;
+
+        // The first read materializes one more row, as a lazy series would.
+        return Array.from({ length: reads === 1 ? 10 : 11 }, () => ({}));
+      }
+
+      return [];
+    });
+
+    const manifest = await runSeed([], env, client as never, runners(), () => undefined);
+
+    expect(reads).toBe(2);
+    expect(manifest.fingerprint).toMatchObject({ families: 1, transactions: 11 });
+  });
+
+  it('--module keeps the reference month, counts and families of the previous manifest', async () => {
+    const previous = {
+      configHash: 'x',
+      counts: { families: 3, transactions: 11200 },
+      familyIds: ['f1'],
+      fingerprint: {},
+      referenceMonth: '2025-12',
+      seededAt: '2026-01-01T00:00:00.000Z',
+      userId: 'u1',
+    };
+
+    const manifest = await runSeed(
+      ['--module', 'stock'],
+      env,
+      fakeClient() as never,
+      runners(),
+      () => undefined,
+      new Date(),
+      previous,
+    );
+
+    expect(manifest.referenceMonth).toBe('2025-12');
+    expect(manifest.counts).toMatchObject({ families: 3, stock: 2, transactions: 11200 });
+  });
+
+  it('uses the pinned anchorDate as today, whatever the real date is (spec 093)', async () => {
+    const run = runners();
+
+    await runSeed([], env, fakeClient() as never, run, () => undefined, new Date('2031-05-05'));
+
+    expect(run.stock.mock.calls[0][0].today).toBe(loadConfig().anchorDate);
+    expect(loadConfig().anchorDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it('logs in as the default base user WHEN PERF_USER_EMAIL is unset or empty', async () => {
+    for (const email of [undefined, '']) {
+      const client = fakeClient();
+      client.get.mockImplementation(async (path: string) =>
+        path === '/api/v1/user/me' ? { email: DEFAULT_PERF_EMAIL, id: 'u1' } : [],
+      );
+
+      await runSeed(
+        [],
+        { ...env, PERF_USER_EMAIL: email },
+        client as never,
+        runners(),
+        () => undefined,
+      );
+
+      expect(client.login).toHaveBeenCalledWith(DEFAULT_PERF_EMAIL, env.PERF_USER_PASSWORD);
+    }
   });
 
   it('--module stock runs only the stock runner', async () => {
