@@ -61,6 +61,12 @@ export class FinanceCreditCardRepository implements IFinanceCreditCardRepository
     return result.map((row) => FinanceCreditCardMapper.toDomain(row));
   }
 
+  async findCreditCardsByIds(ids: string[]): Promise<CreditCardEntity[]> {
+    const result = await this.creditCardDatasource.findByIds(ids);
+
+    return result.map((row) => FinanceCreditCardMapper.toDomain(row));
+  }
+
   async updateCreditCard(params: UpdateCreditCardRepositoryParams): Promise<CreditCardEntity> {
     const result = await this.creditCardDatasource.update({
       archived_at: params.archivedAt,

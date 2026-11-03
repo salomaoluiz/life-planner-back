@@ -54,9 +54,10 @@ it('SHOULD mark a card row as paid WHEN its closed invoice has nothing to pay', 
   expect(result[0].paid).toBe(true);
 });
 
-it('SHOULD read each card once AND skip the lookups WHEN there are only account rows', async () => {
+it('SHOULD read all cards in ONE findCreditCardsByIds call AND skip the lookups WHEN there are only account rows', async () => {
   await setup.execute({ today: mocks.today, transactions: [mocks.openRow, mocks.closedRow] });
-  expect(mocks.creditCardRepository.findCreditCardById).toHaveBeenCalledTimes(1);
+  expect(mocks.creditCardRepository.findCreditCardsByIds).toHaveBeenCalledTimes(1);
+  expect(mocks.creditCardRepository.findCreditCardsByIds).toHaveBeenCalledWith([mocks.card.id]);
   expect(mocks.compute.execute).toHaveBeenCalledTimes(1);
 
   mocks.compute.execute.mockClear();

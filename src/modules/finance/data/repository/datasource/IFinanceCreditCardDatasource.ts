@@ -26,6 +26,7 @@ export interface IFinanceCreditCardDatasource {
   delete(id: string): Promise<void>;
   exists(params: ExistsCreditCardDatasourceParams): Promise<boolean>;
   findById(id: string): Promise<FinancialCreditCard | null>;
+  findByIds(ids: string[]): Promise<FinancialCreditCard[]>;
   findByOwners(owners: OwnerAccess[], status?: AccountStatus): Promise<FinancialCreditCard[]>;
   update(params: UpdateCreditCardDatasourceParams): Promise<FinancialCreditCard>;
 }

@@ -40,6 +40,14 @@ export class FinanceCreditCardDatasource implements IFinanceCreditCardDatasource
     return this.db.client.financialCreditCard.findUnique({ where: { id } });
   }
 
+  async findByIds(ids: string[]): Promise<FinancialCreditCard[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    return this.db.client.financialCreditCard.findMany({ where: { id: { in: ids } } });
+  }
+
   async findByOwners(
     owners: OwnerAccess[],
     status?: AccountStatus,

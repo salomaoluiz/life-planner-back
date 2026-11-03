@@ -8,7 +8,7 @@ import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/Comput
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { InvoiceStatus } from '@finance/domain/enum';
 import { IFinanceCreditCardRepository } from '@finance/domain/repository';
-import { buildInvoiceFor } from '@finance/domain/service/InvoiceCalculator';
+import { invoiceBuilderFor } from '@finance/domain/service/InvoiceCalculator';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -35,27 +35,23 @@ export class ResolveCardRowsPaidUseCase implements UseCaseWithParams<
       return input.transactions;
     }
 
-    const found = await Promise.all(
-      cardIds.map(async (id) => this.creditCardRepository.findCreditCardById(id)),
-    );
-    const cards = found.filter((card) => card !== undefined);
+    const cards = await this.creditCardRepository.findCreditCardsByIds(cardIds);
     const data = await this.computeCardInvoicesUseCase.execute({ cards, today: input.today });
-    const byCard = new Map(data.map((item) => [item.card.id, item]));
+    const byCard = new Map(
+      data.map((item) => [
+        item.card.id,
+        invoiceBuilderFor(item.card, item.totals, item.payments, input.today),
+      ]),
+    );
 
     const resolved = input.transactions.map((row) => {
-      const item = row.creditCardId ? byCard.get(row.creditCardId) : undefined;
+      const invoiceOf = row.creditCardId ? byCard.get(row.creditCardId) : undefined;
 
-      if (!item || !row.invoiceMonth) {
+      if (!invoiceOf || !row.invoiceMonth) {
         return row;
       }
 
-      const invoice = buildInvoiceFor(
-        item.card,
-        row.invoiceMonth,
-        item.totals,
-        item.payments,
-        input.today,
-      );
+      const invoice = invoiceOf(row.invoiceMonth);
 
       return { ...row, paid: invoice.status === InvoiceStatus.PAID };
     });

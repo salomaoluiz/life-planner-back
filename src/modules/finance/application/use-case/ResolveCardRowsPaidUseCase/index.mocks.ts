@@ -14,7 +14,7 @@ const accountRowMock = new TransactionEntityFixture().withPaid(false).build();
 const openRowMock = new TransactionEntityFixture().withCard(cardMock.id, '2026-10').build();
 const closedRowMock = new TransactionEntityFixture().withCard(cardMock.id, '2026-09').build();
 const computeMock = { execute: jest.fn() };
-const creditCardRepositoryMock = { findCreditCardById: jest.fn() };
+const creditCardRepositoryMock = { findCreditCardsByIds: jest.fn() };
 
 // endregion Mocks
 
@@ -22,7 +22,7 @@ let setup: ResolveCardRowsPaidUseCase;
 
 beforeEach(async () => {
   jest.clearAllMocks();
-  creditCardRepositoryMock.findCreditCardById.mockResolvedValue(cardMock);
+  creditCardRepositoryMock.findCreditCardsByIds.mockResolvedValue([cardMock]);
   computeMock.execute.mockResolvedValue([
     {
       card: cardMock,
