@@ -22,17 +22,23 @@ describe('configureApp', () => {
     expect(mocks.app.enableCors).not.toHaveBeenCalled();
   });
 
+  it('SHOULD register the compression middleware (spec 072)', () => {
+    setup();
+
+    expect(mocks.app.use).toHaveBeenCalledWith(mocks.compressionHandler);
+  });
+
   it('SHOULD NOT register the perf middleware WHEN the query counter is off', () => {
     setup();
 
-    expect(mocks.app.use).not.toHaveBeenCalled();
+    expect(mocks.app.use).toHaveBeenCalledTimes(1);
   });
 
   describe('perf pool header (spec 069)', () => {
     function run(headers: Record<string, string>) {
       mocks.env.perfCountQueries = true;
       setup();
-      const middleware = jest.mocked(mocks.app.use).mock.calls[0][0] as unknown as (
+      const middleware = jest.mocked(mocks.app.use).mock.calls[1][0] as unknown as (
         req: unknown,
         res: unknown,
         next: () => void,
