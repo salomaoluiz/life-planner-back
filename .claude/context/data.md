@@ -55,3 +55,5 @@ Purchase and payment writes lock the card row first (`lockCards`, `SELECT … FO
 ## Raw SQL: icon search (spec 058)
 
 `FinanceCategoryIconDatasource` uses `Prisma.sql` tagged templates (parameters only, like `sumDashboardRows`): `to_tsquery('simple', 'pas:* & fol:*')` over `search`, ordered by exact name/label match, `ts_rank`, `sort`; the fallback (FTS empty and 3+ characters) uses `strict_word_similarity(text, search_text) >= 0.2` (0.3 misses transpositions such as `psata` → `pasta`). The terms come from the pure `toSearchTerms` (only `[a-z0-9]` survive, so no tsquery operator reaches SQL).
+
+Transaction list keyset (spec 078): `findByOwners` takes `cursor` (`{ date, createdAt, id }`) and `limit`; it adds `date < d OR (date = d AND created_at < c) OR (date = d AND created_at = c AND id < i)` and reads `limit + 1` rows (the extra one tells a next page exists). Without `limit` it stays unbounded for the internal readers (family archive blockers, upcoming items). The cursor codec is the pure `TransactionCursor` domain service.
