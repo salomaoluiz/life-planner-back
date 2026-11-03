@@ -10,6 +10,7 @@ export type IFinanceCreditCardRepository = {
   existsByOwner(access: OwnerAccess): Promise<boolean>;
   findCreditCardById(id: string): Promise<CreditCardEntity | undefined>;
   findCreditCards(owners: OwnerAccess[], status?: AccountStatus): Promise<CreditCardEntity[]>;
+  findCreditCardsByIds(ids: string[]): Promise<CreditCardEntity[]>;
   updateCreditCard(params: UpdateCreditCardRepositoryParams): Promise<CreditCardEntity>;
 };
 

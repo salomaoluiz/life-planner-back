@@ -3,6 +3,13 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [1.3.4] - 2026-11-03
+
+### Changed
+
+- Card invoices build their chain once per card (`invoiceBuilderFor`) in the card list, invoice ranges, dashboard rows and daily balances (spec 070).
+- Cards are loaded with one query (`findCreditCardsByIds`) and materialization reads due recurrences as scalars, so every finance read runs fewer queries (spec 070).
+
 ## [1.3.3] - 2026-11-02
 
 ### Added

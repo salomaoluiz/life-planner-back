@@ -76,6 +76,16 @@ describe('findCreditCards', () => {
   });
 });
 
+describe('findCreditCardsByIds', () => {
+  it('SHOULD load the ids with one datasource call AND map every row', async () => {
+    const result = await setup.findCreditCardsByIds(['a', 'b']);
+
+    expect(mocks.datasource.findByIds).toHaveBeenCalledTimes(1);
+    expect(mocks.datasource.findByIds).toHaveBeenCalledWith(['a', 'b']);
+    expect(result).toEqual([mocks.entity]);
+  });
+});
+
 describe('updateCreditCard', () => {
   it('SHOULD translate camelCase to columns keeping null (clear) AND map the result', async () => {
     const result = await setup.updateCreditCard({

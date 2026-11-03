@@ -18,6 +18,7 @@ const datasourceMock = {
   delete: jest.fn().mockResolvedValue(undefined),
   exists: jest.fn().mockResolvedValue(true),
   findById: jest.fn().mockResolvedValue(persistenceMock),
+  findByIds: jest.fn().mockResolvedValue([persistenceMock]),
   findByOwners: jest.fn().mockResolvedValue([persistenceMock]),
   update: jest.fn().mockResolvedValue(persistenceMock),
 };

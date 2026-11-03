@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import { fromCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
+import { fromCalendarDate, toCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
 import { FinanceRecurrenceMapper } from '@finance/data/datasource/mapper/FinanceRecurrenceMapper';
 import { FinanceTransactionMapper } from '@finance/data/datasource/mapper/FinanceTransactionMapper';
 import {
@@ -12,10 +12,12 @@ import {
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
+import { RecurrenceFrequency } from '@finance/domain/enum';
 import {
   ApplyRecurrenceChangeRepositoryParams,
   CreateOccurrenceRepositoryParams,
   CreateRecurrenceRepositoryParams,
+  DueRecurrence,
   FindRecurrencesFilter,
   FutureOccurrenceNumber,
   IFinanceRecurrenceRepository,
@@ -130,10 +132,19 @@ export class FinanceRecurrenceRepository implements IFinanceRecurrenceRepository
     return result.map((row) => FinanceRecurrenceMapper.toDomain(row));
   }
 
-  async findDue(owners: OwnerAccess[], horizon: string): Promise<RecurrenceEntity[]> {
+  async findDue(owners: OwnerAccess[], horizon: string): Promise<DueRecurrence[]> {
     const result = await this.recurrenceDatasource.findDue(owners, fromCalendarDate(horizon));
 
-    return result.map((row) => FinanceRecurrenceMapper.toDomain(row));
+    return result.map((row) => ({
+      creditCardId: row.credit_card_id,
+      endDate: row.end_date ? toCalendarDate(row.end_date) : null,
+      firstNumber: row.first_number,
+      frequency: row.frequency as RecurrenceFrequency,
+      id: row.id,
+      lastGeneratedNumber: row.last_generated_number,
+      skippedNumbers: row.skipped_numbers,
+      startDate: toCalendarDate(row.start_date),
+    }));
   }
 
   async findFutureNumbers(

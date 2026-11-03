@@ -110,11 +110,48 @@ describe('MaterializeRecurrencesUseCase', () => {
     mocks.recurrenceRepository.findDue.mockResolvedValue([
       { ...mocks.weeklySeries, creditCardId: 'gone' },
     ]);
-    mocks.creditCardRepository.findCreditCardById.mockResolvedValue(undefined);
+    mocks.creditCardRepository.findCreditCardsByIds.mockResolvedValue([]);
 
     await setup.execute(base);
 
     expect(mocks.recurrenceRepository.materialize).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD load the cards of several due series with ONE findCreditCardsByIds call', async () => {
+    mocks.recurrenceRepository.findDue.mockResolvedValue([
+      { ...mocks.weeklySeries, creditCardId: mocks.card.id, id: 'series-1' },
+      { ...mocks.weeklySeries, creditCardId: mocks.card.id, id: 'series-2' },
+      { ...mocks.weeklySeries, creditCardId: null, id: 'series-3' },
+    ]);
+
+    await setup.execute(base);
+
+    expect(mocks.creditCardRepository.findCreditCardsByIds).toHaveBeenCalledTimes(1);
+    expect(mocks.creditCardRepository.findCreditCardsByIds).toHaveBeenCalledWith([mocks.card.id]);
+    expect(mocks.invoicePaymentRepository.findByCardIds).toHaveBeenCalledTimes(1);
+    expect(mocks.recurrenceRepository.materialize).toHaveBeenCalledTimes(3);
+  });
+
+  it('SHOULD NOT load cards WHEN only account series are due', async () => {
+    await setup.execute(base);
+
+    expect(mocks.creditCardRepository.findCreditCardsByIds).not.toHaveBeenCalled();
+    expect(mocks.recurrenceRepository.materialize).toHaveBeenCalledTimes(1);
+  });
+
+  it('SHOULD still materialize the other series WHEN one card is missing', async () => {
+    mocks.recurrenceRepository.findDue.mockResolvedValue([
+      { ...mocks.weeklySeries, creditCardId: 'gone', id: 'series-1' },
+      { ...mocks.weeklySeries, id: 'series-2' },
+    ]);
+    mocks.creditCardRepository.findCreditCardsByIds.mockResolvedValue([]);
+
+    await setup.execute(base);
+
+    expect(mocks.recurrenceRepository.materialize).toHaveBeenCalledTimes(1);
+    expect(mocks.recurrenceRepository.materialize).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'series-2' }),
+    );
   });
 
   it('SHOULD reject an invalid today', async () => {

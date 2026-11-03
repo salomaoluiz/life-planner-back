@@ -107,7 +107,22 @@ describe('reads', () => {
       owners,
       new Date('2026-10-31T00:00:00.000Z'),
     );
-    expect(spies.recurrenceMapper).toHaveBeenCalledTimes(1);
+  });
+
+  it('SHOULD map the due scalars to a DueRecurrence WITHOUT the entity mapper', async () => {
+    expect(await setup.findDue(owners, '2026-10-31')).toEqual([
+      {
+        creditCardId: 'card-1',
+        endDate: null,
+        firstNumber: 1,
+        frequency: 'MONTHLY',
+        id: 'recurrence-1',
+        lastGeneratedNumber: 2,
+        skippedNumbers: [3],
+        startDate: '2026-08-05',
+      },
+    ]);
+    expect(spies.recurrenceMapper).not.toHaveBeenCalled();
   });
 
   it('SHOULD return camelCase future numbers AND send them by number', async () => {

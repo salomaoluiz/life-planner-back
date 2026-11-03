@@ -57,6 +57,17 @@ export interface CreateRecurrenceDatasourceParams {
   type: TransactionType;
   value: number;
 }
+export type DueRecurrenceRow = Pick<
+  FinancialRecurrence,
+  | 'credit_card_id'
+  | 'end_date'
+  | 'first_number'
+  | 'frequency'
+  | 'id'
+  | 'last_generated_number'
+  | 'skipped_numbers'
+  | 'start_date'
+>;
 export type FinancialRecurrenceWithRelations = {
   account: null | Pick<FinancialAccount, 'icon' | 'id' | 'name'>;
   category: Pick<
@@ -88,7 +99,7 @@ export interface IFinanceRecurrenceDatasource {
     owners: OwnerAccess[],
     filter?: FindRecurrencesDatasourceFilter,
   ): Promise<FinancialRecurrenceWithRelations[]>;
-  findDue(owners: OwnerAccess[], horizon: Date): Promise<FinancialRecurrenceWithRelations[]>;
+  findDue(owners: OwnerAccess[], horizon: Date): Promise<DueRecurrenceRow[]>;
   findFutureNumbers(
     series: { after_number: number; recurrence_id: string }[],
   ): Promise<FutureOccurrenceNumberRow[]>;

@@ -61,6 +61,22 @@ describe('Method findById', () => {
   });
 });
 
+describe('Method findByIds', () => {
+  it('SHOULD query every id in ONE findMany', async () => {
+    spies.findMany.mockResolvedValue([mocks.card]);
+
+    await setup.findByIds(['a', 'b']);
+
+    expect(spies.findMany).toHaveBeenCalledTimes(1);
+    expect(spies.findMany).toHaveBeenCalledWith({ where: { id: { in: ['a', 'b'] } } });
+  });
+
+  it('SHOULD NOT query WHEN there are no ids', async () => {
+    expect(await setup.findByIds([])).toEqual([]);
+    expect(spies.findMany).not.toHaveBeenCalled();
+  });
+});
+
 describe('Method findByOwners', () => {
   it('SHOULD query every (owner, owner_id) pair in ONE findMany', async () => {
     spies.findMany.mockResolvedValue([mocks.card]);

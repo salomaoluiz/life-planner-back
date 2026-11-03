@@ -8,7 +8,7 @@ import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/Comput
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { narrowOwners } from '@finance/domain/entity/OwnerAccess';
 import { IFinanceCreditCardRepository } from '@finance/domain/repository';
-import { buildInvoiceFor, Invoice } from '@finance/domain/service/InvoiceCalculator';
+import { Invoice, invoiceBuilderFor } from '@finance/domain/service/InvoiceCalculator';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -50,8 +50,10 @@ export class FindInvoicesInRangeUseCase implements UseCaseWithParams<
         ...item.totals.map((total) => total.invoiceMonth),
       ]);
 
+      const invoiceOf = invoiceBuilderFor(item.card, item.totals, item.payments, input.today);
+
       return [...months]
-        .map((month) => buildInvoiceFor(item.card, month, item.totals, item.payments, input.today))
+        .map((month) => invoiceOf(month))
         .filter(
           (invoice) =>
             (invoice.amount > 0 || invoice.earlyPaid > 0) &&

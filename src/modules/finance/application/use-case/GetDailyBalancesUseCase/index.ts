@@ -20,7 +20,7 @@ import {
 import { buildDailyBalances, DatedAmount, DayBalance } from '@finance/domain/service/DailyBalance';
 import {
   addInvoiceMonths,
-  buildInvoiceFor,
+  invoiceBuilderFor,
   InvoiceTotal,
 } from '@finance/domain/service/InvoiceCalculator';
 import { lastDayOfMonth } from '@finance/domain/service/RecurrenceSchedule';
@@ -181,8 +181,10 @@ function invoicesDue(
       merged.set(item.invoiceMonth, { ...current, amount: current.amount - signed(item) });
     }
 
+    const invoiceOf = invoiceBuilderFor(card, [...merged.values()], payments, today);
+
     return [...merged.keys()].flatMap((month) => {
-      const invoice = buildInvoiceFor(card, month, [...merged.values()], payments, today);
+      const invoice = invoiceOf(month);
 
       return invoice.payment === null && invoice.amountDue > 0 && invoice.paymentDate <= monthEnd
         ? [

@@ -14,7 +14,7 @@ import {
   IFinanceCreditCardRepository,
   IFinanceTransactionRepository,
 } from '@finance/domain/repository';
-import { addInvoiceMonths, buildInvoiceFor } from '@finance/domain/service/InvoiceCalculator';
+import { addInvoiceMonths, invoiceBuilderFor } from '@finance/domain/service/InvoiceCalculator';
 import { lastDayOfMonth } from '@finance/domain/service/RecurrenceSchedule';
 import { parseAmountQuery } from '@finance/domain/service/TransactionSearch';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -223,8 +223,10 @@ export class GetDashboardRowsUseCase implements UseCaseWithParams<
         ...item.totals.map((total) => total.invoiceMonth),
       ]);
 
+      const invoiceOf = invoiceBuilderFor(item.card, item.totals, item.payments, params.today);
+
       for (const month of months) {
-        const invoice = buildInvoiceFor(item.card, month, item.totals, item.payments, params.today);
+        const invoice = invoiceOf(month);
         // A paid invoice counts on the day it was paid; one covered by credits and early payments on its due date.
         const realized = invoice.payment !== null || invoice.amountDue <= 0;
         const date = invoice.payment?.paidOn ?? (realized ? invoice.dueDate : invoice.paymentDate);
