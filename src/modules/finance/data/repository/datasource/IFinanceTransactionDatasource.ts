@@ -112,9 +112,12 @@ export interface FindTransactionsFilter {
   accountIds?: string[];
   categoryIds?: string[];
   creditCardIds?: string[];
+  // Spec 078: keyset position (rows strictly after it in the list order) and page size (`limit + 1` rows are read).
+  cursor?: { createdAt: Date; date: Date; id: string };
   from?: string;
   invoiceMonth?: string;
   invoiceRefs?: CardInvoiceKey[];
+  limit?: number;
   paid?: boolean;
   tagIds?: string[];
   to?: string;

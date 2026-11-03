@@ -21,6 +21,7 @@ import {
   CreateTransactionApiSchema,
   CreateTransactionBody,
   TransactionOutput,
+  TransactionPageOutput,
   UpdateTransactionApiSchema,
   UpdateTransactionBody,
 } from '@api/finance/v1/dto/transaction.dto';
@@ -35,18 +36,40 @@ import {
 import { TransactionService } from '@api/finance/v1/transaction.service';
 import { InvoiceMonthSchema } from '@finance/application/dto/FinanceCommon';
 import { InstallmentEditScope, TransactionSource } from '@finance/domain/enum';
+import {
+  decodeTransactionCursor,
+  TRANSACTION_PAGE_DEFAULT_LIMIT,
+  TRANSACTION_PAGE_MAX_LIMIT,
+} from '@finance/domain/service/TransactionCursor';
 import { JwtPayload } from '@shared/infra/jwt/types';
 import { validate } from '@shared/infra/validation';
 
-// Default source ACCOUNT keeps old app versions working: they never see a row without an account.
+// Spec 078: the list needs a period (`from` + `to`), or a card invoice month, and comes in keyset pages.
 const ListTransactionsQuerySchema = withPeriodRules(
   z.object({
     ...TransactionFilterQueryFields,
+    cursor: z
+      .string()
+      .refine((value) => decodeTransactionCursor(value) !== undefined, {
+        message: 'cursor is not valid',
+      })
+      .optional(),
     invoiceMonth: InvoiceMonthSchema.optional(),
+    limit: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(TRANSACTION_PAGE_MAX_LIMIT)
+      .default(TRANSACTION_PAGE_DEFAULT_LIMIT),
     ownerId: OwnerIdQuerySchema,
     source: z.enum(TransactionSource).optional(),
     today: CalendarDateApiSchema.optional(),
   }),
+).refine(
+  (value) =>
+    (value.from !== undefined && value.to !== undefined) ||
+    (value.source === TransactionSource.CARD && value.invoiceMonth !== undefined),
+  { message: 'from and to are required (or source CARD with invoiceMonth)' },
 );
 
 // `scope` is required (ONLY_THIS) to delete one occurrence of a recurring series (spec 034 FR 29).
@@ -87,9 +110,9 @@ export class TransactionController {
   }
 
   @Get()
-  @ZodResponse({ status: 200, type: [TransactionOutput] })
+  @ZodResponse({ status: 200, type: TransactionPageOutput })
   async findAll(@Request() req: JwtPayload & Request, @Query() query: Record<string, unknown>) {
-    const { invoiceMonth, ownerId, source, today, ...filterQuery } = validate(
+    const { cursor, invoiceMonth, limit, ownerId, source, today, ...filterQuery } = validate(
       ListTransactionsQuerySchema,
       query,
     );
@@ -97,7 +120,7 @@ export class TransactionController {
     return this.transactionService.findAll(
       req.user.id,
       toOwnerIds(ownerId),
-      { filter: toTransactionFilter(filterQuery), invoiceMonth, source },
+      { cursor, filter: toTransactionFilter(filterQuery), invoiceMonth, limit, source },
       today,
     );
   }

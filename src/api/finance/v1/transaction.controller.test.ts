@@ -21,41 +21,84 @@ it('SHOULD be served at /finance/transactions under URI version 1', () => {
   expect(Reflect.getMetadata(VERSION_METADATA, TransactionController)).toBe('1');
 });
 
+const month = { from: '2026-11-01', to: '2026-11-30' };
+
 describe('findAll', () => {
-  it('SHOULD list without filters, or with repeated ownerId params', async () => {
-    await setup.findAll(mocks.request, {});
-    await setup.findAll(mocks.request, { ownerId: [validBody.ownerId, validBody.accountId] });
+  it('SHOULD list a period, or with repeated ownerId params, with the default limit', async () => {
+    await setup.findAll(mocks.request, month);
+    await setup.findAll(mocks.request, {
+      ...month,
+      ownerId: [validBody.ownerId, validBody.accountId],
+    });
 
     expect(mocks.transactionService.findAll).toHaveBeenNthCalledWith(
       1,
       mocks.request.user.id,
       undefined,
-      {},
+      { filter: month, limit: 200 },
       undefined,
     );
     expect(mocks.transactionService.findAll).toHaveBeenNthCalledWith(
       2,
       mocks.request.user.id,
       [validBody.ownerId, validBody.accountId],
-      {},
+      { filter: month, limit: 200 },
       undefined,
     );
   });
 
   it('SHOULD forward the today query for the derived card status', async () => {
-    await setup.findAll(mocks.request, { today: '2026-10-15' });
+    await setup.findAll(mocks.request, { ...month, today: '2026-10-15' });
 
     expect(mocks.transactionService.findAll).toHaveBeenCalledWith(
       mocks.request.user.id,
       undefined,
-      {},
+      { filter: month, limit: 200 },
       '2026-10-15',
     );
   });
 
   it('SHOULD throw ValidationError WHEN an ownerId is not a uuid', async () => {
-    await expect(setup.findAll(mocks.request, { ownerId: ['abc'] })).rejects.toThrow(
+    await expect(setup.findAll(mocks.request, { ...month, ownerId: ['abc'] })).rejects.toThrow(
       ValidationError,
+    );
+  });
+
+  it.each([
+    ['no period', {}],
+    ['only to', { to: '2026-11-30' }],
+    ['CARD without invoiceMonth or period', { source: 'CARD' }],
+    ['limit 0', { ...month, limit: '0' }],
+    ['limit 501', { ...month, limit: '501' }],
+    ['limit abc', { ...month, limit: 'abc' }],
+    ['an invalid cursor', { ...month, cursor: 'garbage' }],
+  ])('SHOULD throw ValidationError (400) WHEN the list has %s', async (_label, query) => {
+    await expect(setup.findAll(mocks.request, query)).rejects.toThrow(ValidationError);
+  });
+
+  it('SHOULD accept source CARD with an invoiceMonth and no period', async () => {
+    await setup.findAll(mocks.request, { invoiceMonth: '2026-11', source: 'CARD' });
+
+    expect(mocks.transactionService.findAll).toHaveBeenCalledWith(
+      mocks.request.user.id,
+      undefined,
+      { filter: undefined, invoiceMonth: '2026-11', limit: 200, source: 'CARD' },
+      undefined,
+    );
+  });
+
+  it('SHOULD forward limit and a valid cursor', async () => {
+    const cursor = Buffer.from(
+      '2026-11-03|2026-11-03T10:00:00.000Z|6f1c2b9e-1d2a-4c55-9a7e-0b8e3c1f2a10',
+    ).toString('base64');
+
+    await setup.findAll(mocks.request, { ...month, cursor, limit: '50' });
+
+    expect(mocks.transactionService.findAll).toHaveBeenCalledWith(
+      mocks.request.user.id,
+      undefined,
+      { cursor, filter: month, limit: 50 },
+      undefined,
     );
   });
 });
@@ -86,18 +129,19 @@ describe('findAll filters (spec 045)', () => {
           tagIds: [tagId],
           to: '2025-12-31',
         },
+        limit: 200,
       },
       undefined,
     );
   });
 
   it('SHOULD treat a whitespace-only search as no filter', async () => {
-    await setup.findAll(mocks.request, { q: '   ' });
+    await setup.findAll(mocks.request, { ...month, q: '   ' });
 
     expect(mocks.transactionService.findAll).toHaveBeenCalledWith(
       mocks.request.user.id,
       undefined,
-      {},
+      { filter: month, limit: 200 },
       undefined,
     );
   });
@@ -107,9 +151,9 @@ describe('findAll filters (spec 045)', () => {
     ['only to', { to: '2025-01-01' }],
     ['to before from', { from: '2025-02-01', to: '2025-01-01' }],
     ['more than two years', { from: '2024-01-01', to: '2026-01-01' }],
-    ['a search over 100 characters', { q: 'a'.repeat(101) }],
-    ['a non-uuid category', { categoryId: 'abc' }],
-    ['paid maybe', { paid: 'maybe' }],
+    ['a search over 100 characters', { ...month, q: 'a'.repeat(101) }],
+    ['a non-uuid category', { ...month, categoryId: 'abc' }],
+    ['paid maybe', { ...month, paid: 'maybe' }],
   ])('SHOULD throw ValidationError (400) WHEN the query has %s', async (_label, query) => {
     await expect(setup.findAll(mocks.request, query)).rejects.toThrow(ValidationError);
   });
@@ -236,13 +280,14 @@ describe('card purchases (spec 029)', () => {
       {
         filter: { creditCardIds: [cardId] },
         invoiceMonth: '2026-10',
+        limit: 200,
         source: 'CARD',
       },
       undefined,
     );
-    await expect(setup.findAll(mocks.request, { invoiceMonth: '2026-13' })).rejects.toThrow(
-      ValidationError,
-    );
+    await expect(
+      setup.findAll(mocks.request, { ...month, invoiceMonth: '2026-13' }),
+    ).rejects.toThrow(ValidationError);
   });
 
   it('SHOULD reject a patch with both sources', async () => {

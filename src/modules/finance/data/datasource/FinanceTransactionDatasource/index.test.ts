@@ -189,6 +189,63 @@ describe('Method findByOwners', () => {
   });
 });
 
+describe('Method findByOwners keyset pages (spec 078)', () => {
+  const cursor = {
+    createdAt: new Date('2026-11-03T10:00:00.000Z'),
+    date: new Date('2026-11-03T00:00:00.000Z'),
+    id: 'row-2',
+  };
+
+  it('SHOULD read limit + 1 rows WHEN a limit is given', async () => {
+    spies.findMany.mockResolvedValue([]);
+
+    await setup.findByOwners(mocks.owners, TransactionSource.ACCOUNT, {
+      from: '2026-11-01',
+      limit: 2,
+      to: '2026-11-30',
+    });
+
+    expect(spies.findMany.mock.calls[0][0].take).toBe(3);
+  });
+
+  it('SHOULD NOT take WHEN there is no limit (internal readers stay unbounded)', async () => {
+    spies.findMany.mockResolvedValue([]);
+
+    await setup.findByOwners(mocks.owners);
+
+    expect(spies.findMany.mock.calls[0][0]).not.toHaveProperty('take');
+  });
+
+  it('SHOULD add the strictly-after condition on (date, created_at, id) WHEN a cursor is given', async () => {
+    spies.findMany.mockResolvedValue([]);
+
+    await setup.findByOwners(mocks.owners, TransactionSource.ACCOUNT, { cursor, limit: 2 });
+
+    const and = spies.findMany.mock.calls[0][0].where.AND;
+
+    expect(and[and.length - 1]).toEqual({
+      OR: [
+        { date: { lt: cursor.date } },
+        { created_at: { lt: cursor.createdAt }, date: cursor.date },
+        { created_at: cursor.createdAt, date: cursor.date, id: { lt: 'row-2' } },
+      ],
+    });
+  });
+
+  it('SHOULD apply the cursor to card rows too', async () => {
+    spies.findMany.mockResolvedValue([]);
+
+    await setup.findByOwners(mocks.owners, TransactionSource.CARD, {
+      cursor,
+      invoiceMonth: '2026-11',
+    });
+
+    const and = spies.findMany.mock.calls[0][0].where.AND;
+
+    expect(and[and.length - 1].OR).toHaveLength(3);
+  });
+});
+
 describe('Method findByOwners filters (spec 045)', () => {
   it('SHOULD add one AND condition per filter on account rows', async () => {
     spies.findMany.mockResolvedValue([]);
