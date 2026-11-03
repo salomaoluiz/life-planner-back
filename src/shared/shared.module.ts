@@ -1,5 +1,5 @@
 import { Global, Module } from '@nestjs/common';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 
 import { Database } from '@shared/infra/db/Database';
@@ -7,6 +7,7 @@ import { Database } from '@shared/infra/db/Database';
 import { BuildInfoReader } from './infra/build-info';
 import { EnvModule } from './infra/env/env.module';
 import { GithubReleases } from './infra/github';
+import { CacheControlInterceptor } from './infra/http/cache-control';
 import { AllExceptionsFilter } from './infra/http/filters/all-exception-filter';
 import { JwtAuthGuard } from './infra/http/guards/JwtAuthGuard';
 import { NestJwtProvider } from './infra/jwt/nest';
@@ -34,6 +35,7 @@ import { BcryptHasher } from './infra/password-hasher/bcrypt/BcryptHasher';
     { provide: 'IBuildInfo', useClass: BuildInfoReader },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_INTERCEPTOR, useClass: CacheControlInterceptor },
   ],
 })
 export class SharedModule {}
