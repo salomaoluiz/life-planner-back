@@ -1,6 +1,6 @@
 # Performance guardrail (backend)
 
-Rule: `.claude/CLAUDE.md` rule 17. Specs: 065 (query counts), 066 (timing, payload, concurrency, EXPLAIN), 068 (rules).
+Rule: `.claude/CLAUDE.md` rule 17. Specs: 065 (query counts), 066 (timing, payload, concurrency, EXPLAIN), 068 (rules), 069 (pool waiting in the concurrency scenario).
 
 ## Commands
 

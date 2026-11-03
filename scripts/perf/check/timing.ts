@@ -25,9 +25,19 @@ const headers = (token: string) => ({
   Authorization: `Bearer ${token}`,
 });
 
-export async function measureConcurrent(args: ConcurrentArgs): Promise<{ wallMs: number }> {
+// maxPoolWaiting comes from the x-perf-pool-max-waiting header the API sets when PERF_COUNT_QUERIES=1 (spec 069).
+export async function measureConcurrent(
+  args: ConcurrentArgs,
+): Promise<{ maxPoolWaiting?: number; wallMs: number }> {
   const fetchFn = args.fetchFn ?? fetch;
   const now = args.now ?? (() => performance.now());
+  // One call before the clock starts resets the server-side max, so the scenario is measured alone.
+  const first = args.calls[0].path;
+  const reset = await fetchFn(`${args.baseUrl}${first}`, {
+    headers: { ...headers(args.token), 'x-perf-reset-pool': '1' },
+  });
+  await reset.arrayBuffer();
+  let maxPoolWaiting: number | undefined;
   const start = now();
   const requests = Array.from({ length: args.repeat }, () => args.calls).flat();
   await Promise.all(
@@ -35,10 +45,12 @@ export async function measureConcurrent(args: ConcurrentArgs): Promise<{ wallMs:
       const response = await fetchFn(`${args.baseUrl}${path}`, { headers: headers(args.token) });
       if (!response.ok) throw new Error(`GET ${path} -> ${response.status}`);
       await response.arrayBuffer();
+      const header = response.headers?.get('x-perf-pool-max-waiting');
+      if (header != null) maxPoolWaiting = Math.max(maxPoolWaiting ?? 0, Number(header));
     }),
   );
 
-  return { wallMs: now() - start };
+  return { maxPoolWaiting, wallMs: now() - start };
 }
 
 // Errors name the key and the status only: bodies can carry personal data.

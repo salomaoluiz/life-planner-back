@@ -60,7 +60,32 @@ describe('measureConcurrent', () => {
       repeat: 3,
       token: 't',
     });
-    expect(fetchFn).toHaveBeenCalledTimes(12);
+    expect(fetchFn).toHaveBeenCalledTimes(13);
     expect(result.wallMs).toBeGreaterThanOrEqual(0);
+    expect(result.maxPoolWaiting).toBeUndefined();
+  });
+
+  it('SHOULD reset the pool max with the first call AND return the highest header value', async () => {
+    const waiting = ['0', '5', '2'];
+    const fetchFn = jest.fn(async (_url: unknown, _init?: unknown) => ({
+      arrayBuffer: async () => new ArrayBuffer(1),
+      headers: { get: () => waiting.shift() ?? '1' },
+      ok: true,
+      status: 200,
+    })) as unknown as jest.MockedFunction<typeof fetch>;
+
+    const result = await measureConcurrent({
+      baseUrl: 'http://x',
+      calls: [{ path: '/a' }, { path: '/b' }],
+      fetchFn,
+      repeat: 2,
+      token: 't',
+    });
+
+    expect(fetchFn.mock.calls[0][1]).toMatchObject({ headers: { 'x-perf-reset-pool': '1' } });
+    expect(fetchFn.mock.calls[1][1]).not.toMatchObject({
+      headers: { 'x-perf-reset-pool': '1' },
+    });
+    expect(result.maxPoolWaiting).toBe(5);
   });
 });

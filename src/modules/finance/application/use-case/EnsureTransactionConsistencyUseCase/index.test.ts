@@ -46,6 +46,31 @@ it.each([
   await expect(setup.execute(mocks.input)).rejects.toThrow(NotFoundException);
 });
 
+it('SHOULD read the category alongside the account AND report the account error first WHEN both are missing', async () => {
+  mocks.accountRepository.findAccountById.mockResolvedValueOnce(undefined);
+  mocks.categoryRepository.findCategoryById.mockResolvedValueOnce(undefined);
+
+  await expect(setup.execute(mocks.input)).rejects.toThrow(
+    new NotFoundException('Account not found'),
+  );
+  expect(mocks.categoryRepository.findCategoryById).toHaveBeenCalledTimes(1);
+});
+
+it('SHOULD report the card error first AND skip the account lookup WHEN the card and the category are missing', async () => {
+  mocks.creditCardRepository.findCreditCardById.mockResolvedValueOnce(undefined);
+  mocks.categoryRepository.findCategoryById.mockResolvedValueOnce(undefined);
+
+  await expect(setup.execute(mocks.cardInput)).rejects.toThrow(NotFoundException);
+  expect(mocks.accountRepository.findAccountById).not.toHaveBeenCalled();
+  expect(mocks.categoryRepository.findCategoryById).toHaveBeenCalledTimes(1);
+});
+
+it('SHOULD propagate the repository error WHEN the account lookup fails and the category resolves', async () => {
+  mocks.accountRepository.findAccountById.mockRejectedValueOnce(new Error('db down'));
+
+  await expect(setup.execute(mocks.input)).rejects.toThrow('db down');
+});
+
 it('SHOULD throw BadRequest (400) WHEN a USER account is used by a FAMILY transaction (both accessible)', async () => {
   await expect(
     setup.execute({ ...mocks.input, owner: OwnerType.FAMILY, ownerId: mocks.familyId }),
