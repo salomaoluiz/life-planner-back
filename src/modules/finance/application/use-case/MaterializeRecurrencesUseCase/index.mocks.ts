@@ -21,7 +21,7 @@ const weeklySeries = new RecurrenceEntityFixture()
   })
   .build();
 
-const creditCardRepositoryMock = { findCreditCardById: jest.fn() };
+const creditCardRepositoryMock = { findCreditCardsByIds: jest.fn() };
 const invoicePaymentRepositoryMock = { findByCardIds: jest.fn() };
 const recurrenceRepositoryMock = { findDue: jest.fn(), materialize: jest.fn() };
 
@@ -31,7 +31,9 @@ let setup: MaterializeRecurrencesUseCase;
 
 beforeEach(async () => {
   jest.clearAllMocks();
-  creditCardRepositoryMock.findCreditCardById.mockResolvedValue({ ...cardMock, closingDay: 10 });
+  creditCardRepositoryMock.findCreditCardsByIds.mockResolvedValue([
+    { ...cardMock, closingDay: 10 },
+  ]);
   invoicePaymentRepositoryMock.findByCardIds.mockResolvedValue([]);
   recurrenceRepositoryMock.findDue.mockResolvedValue([weeklySeries]);
   recurrenceRepositoryMock.materialize.mockResolvedValue(undefined);

@@ -28,6 +28,7 @@ import {
   ApplyRecurrenceChangeDatasourceParams,
   CreateOccurrenceDatasourceParams,
   CreateRecurrenceDatasourceParams,
+  DueRecurrenceRow,
   FinancialRecurrenceWithRelations,
   FindRecurrencesDatasourceFilter,
   FutureOccurrenceNumberRow,
@@ -574,9 +575,18 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
   }
 
   // One indexed query: `(owner, owner_id, status, next_occurrence_date)`.
-  async findDue(owners: OwnerAccess[], horizon: Date): Promise<FinancialRecurrenceWithRelations[]> {
+  async findDue(owners: OwnerAccess[], horizon: Date): Promise<DueRecurrenceRow[]> {
     return this.db.client.financialRecurrence.findMany({
-      include: RECURRENCE_RELATIONS,
+      select: {
+        credit_card_id: true,
+        end_date: true,
+        first_number: true,
+        frequency: true,
+        id: true,
+        last_generated_number: true,
+        skipped_numbers: true,
+        start_date: true,
+      },
       where: {
         AND: [toOwnerWhere(owners), { next_occurrence_date: { lte: horizon }, status: 'ACTIVE' }],
       },

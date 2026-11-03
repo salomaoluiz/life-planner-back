@@ -5,6 +5,17 @@ import { RecurrenceFrequency, RecurrenceStatus, TransactionType } from '@finance
 import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
+// The scalars materialization needs: no relations, no template (spec 070).
+export interface DueRecurrence {
+  creditCardId: null | string;
+  endDate: null | string;
+  firstNumber: number;
+  frequency: RecurrenceFrequency;
+  id: string;
+  lastGeneratedNumber: number;
+  skippedNumbers: number[];
+  startDate: string;
+}
 export type IFinanceRecurrenceRepository = {
   // One database transaction (spec 034 FR 20-25): patches the series and its rows from `fromNumber`, optionally
   // moving them to a new series, deleting rows after an end date or replacing them. Returns the id of the
@@ -19,7 +30,7 @@ export type IFinanceRecurrenceRepository = {
   existsByOwner(access: OwnerAccess): Promise<boolean>;
   findById(id: string): Promise<RecurrenceEntity | undefined>;
   // ACTIVE series whose `nextOccurrenceDate` is on or before `horizon`.
-  findDue(owners: OwnerAccess[], horizon: string): Promise<RecurrenceEntity[]>;
+  findDue(owners: OwnerAccess[], horizon: string): Promise<DueRecurrence[]>;
   // Numbers above `afterNumber` that already have a real row (they hide the matching projected occurrences).
   findFutureNumbers(
     series: { afterNumber: number; recurrenceId: string }[],

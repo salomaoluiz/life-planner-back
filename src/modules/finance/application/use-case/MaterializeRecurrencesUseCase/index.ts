@@ -5,8 +5,8 @@ import {
   MaterializeRecurrencesSchema,
 } from '@finance/application/dto/MaterializeRecurrences';
 import { narrowOwners } from '@finance/domain/entity/OwnerAccess';
-import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
 import {
+  DueRecurrence,
   IFinanceCreditCardRepository,
   IFinanceInvoicePaymentRepository,
   IFinanceRecurrenceRepository,
@@ -53,17 +53,25 @@ export class MaterializeRecurrencesUseCase implements UseCaseWithParams<
     }
 
     const cardIds = [...new Set(due.flatMap((series) => series.creditCardId ?? []))];
-    const payments = await this.invoicePaymentRepository.findByCardIds(cardIds);
+    const [payments, cards] =
+      cardIds.length === 0
+        ? [[], []]
+        : await Promise.all([
+            this.invoicePaymentRepository.findByCardIds(cardIds),
+            this.creditCardRepository.findCreditCardsByIds(cardIds),
+          ]);
+    const closingDayOf = new Map(cards.map((card) => [card.id, card.closingDay]));
 
     for (const series of due) {
-      await this.materialize(series, horizon, payments);
+      await this.materialize(series, horizon, payments, closingDayOf);
     }
   }
 
   private async materialize(
-    series: RecurrenceEntity,
+    series: DueRecurrence,
     horizon: string,
     payments: { creditCardId: string; invoiceMonth: string }[],
+    closingDayOf: Map<string, number>,
   ): Promise<void> {
     const plan = planMaterialization({
       firstNumber: series.firstNumber,
@@ -75,14 +83,14 @@ export class MaterializeRecurrencesUseCase implements UseCaseWithParams<
     let card: Parameters<typeof toOccurrenceRows>[1];
 
     if (series.creditCardId) {
-      const found = await this.creditCardRepository.findCreditCardById(series.creditCardId);
+      const closingDay = closingDayOf.get(series.creditCardId);
 
-      if (!found) {
+      if (closingDay === undefined) {
         return;
       }
 
       card = {
-        closingDay: found.closingDay,
+        closingDay,
         paidMonths: new Set(
           payments
             .filter((payment) => payment.creditCardId === series.creditCardId)

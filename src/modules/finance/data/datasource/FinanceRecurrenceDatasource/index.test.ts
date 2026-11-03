@@ -109,6 +109,26 @@ describe('reads', () => {
     });
   });
 
+  it('SHOULD select only the scalar columns of the due series (no relations)', async () => {
+    spies.recurrenceFindMany.mockResolvedValue([]);
+
+    await setup.findDue(owners, new Date('2026-10-31T00:00:00.000Z'));
+
+    const args = spies.recurrenceFindMany.mock.calls[0][0];
+
+    expect(args.include).toBeUndefined();
+    expect(Object.keys(args.select).sort()).toEqual([
+      'credit_card_id',
+      'end_date',
+      'first_number',
+      'frequency',
+      'id',
+      'last_generated_number',
+      'skipped_numbers',
+      'start_date',
+    ]);
+  });
+
   it('SHOULD return no future numbers without querying WHEN there is no series', async () => {
     expect(await setup.findFutureNumbers([])).toEqual([]);
     expect(spies.rowFindMany).not.toHaveBeenCalled();
