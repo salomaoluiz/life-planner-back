@@ -22,8 +22,8 @@
   "GET /api/v1/user/me": {
     "indexes": null,
     "kind": "read",
-    "maxBytes": 113,
-    "maxQueries": 2,
+    "maxBytes": 376,
+    "maxQueries": 3,
     "p50Ms": 16,
     "scenario": ""
   },
