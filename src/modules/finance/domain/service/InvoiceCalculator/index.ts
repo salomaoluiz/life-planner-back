@@ -112,9 +112,7 @@ export function calculateInvoices(
   const used = [...chain.entries()]
     .filter(([month]) => !paidMonths.has(month))
     .reduce((sum, [, entry]) => sum + Math.max(0, entry.total), 0);
-  function build(month: string): Invoice {
-    return buildInvoiceFor(card, month, totals, payments, today);
-  }
+  const build = invoiceBuilderFor(card, totals, payments, today);
 
   const closedUnpaid = unpaidMonths.filter((month) => month < openKey).map(build);
   const windowStart = formatMonth(addMonths(openReference, -CLOSED_PAID_WINDOW));
@@ -137,8 +135,52 @@ export function calculateInvoices(
     used,
   };
 }
+// Memoizes the chain per card: `(referenceMonth) => Invoice` equals `buildInvoiceFor` for every month (spec 070).
 export function effectiveDay(day: number, year: number, month: number): number {
   return Math.min(day, daysInMonth(year, month));
+}
+export function invoiceBuilderFor(
+  card: BillingCard,
+  totals: InvoiceTotal[],
+  payments: InvoicePaymentInfo[],
+  today: string,
+): (referenceMonth: string) => Invoice {
+  const paidMonths = new Set(payments.map((item) => item.referenceMonth));
+  const paymentOf = new Map<string, InvoicePaymentInfo>();
+
+  for (const payment of payments) {
+    if (!paymentOf.has(payment.referenceMonth)) {
+      paymentOf.set(payment.referenceMonth, payment);
+    }
+  }
+
+  const earlyPaidOf = new Map<string, number>();
+
+  for (const total of totals) {
+    if (!earlyPaidOf.has(total.invoiceMonth)) {
+      earlyPaidOf.set(total.invoiceMonth, total.earlyPaid ?? 0);
+    }
+  }
+
+  let chain = chainOf(totals, paidMonths, '');
+  let chainEnd = [...chain.keys()].pop() ?? '';
+
+  return (referenceMonth) => {
+    // The chain walks to the last month with a total; a later month extends it once.
+    if (totals.length > 0 && referenceMonth > chainEnd) {
+      chain = chainOf(totals, paidMonths, referenceMonth);
+      chainEnd = referenceMonth;
+    }
+
+    return buildInvoice(
+      card,
+      parseMonth(referenceMonth),
+      chain.get(referenceMonth) ?? EMPTY_ENTRY,
+      earlyPaidOf.get(referenceMonth) ?? 0,
+      paymentOf.get(referenceMonth) ?? null,
+      today,
+    );
+  };
 }
 // The invoice a purchase dated `date` lands on: on the closing day it is still that invoice, the day after it is the next one.
 // Spec 034 FR 11: the month itself, or the first later one that has no payment record.

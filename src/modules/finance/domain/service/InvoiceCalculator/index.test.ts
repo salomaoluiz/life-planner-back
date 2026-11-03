@@ -5,6 +5,7 @@ import {
   calculateInvoices,
   effectiveDay,
   firstUnpaidInvoiceMonth,
+  invoiceBuilderFor,
   invoiceMonthOf,
   InvoicePaymentInfo,
   isInvoiceAssignable,
@@ -386,5 +387,52 @@ describe('firstUnpaidInvoiceMonth', () => {
 
   it('SHOULD skip consecutive paid months, crossing the year', () => {
     expect(firstUnpaidInvoiceMonth('2026-11', new Set(['2026-11', '2026-12']))).toBe('2027-01');
+  });
+});
+
+describe('invoiceBuilderFor', () => {
+  const card = buildCard({ closingDay: 10 });
+  const today = '2028-06-15';
+  const months = Array.from({ length: 40 }, (_, index) => {
+    const position = 2025 * 12 + 11 + index;
+
+    return `${Math.floor(position / 12)}-${String((position % 12) + 1).padStart(2, '0')}`;
+  });
+  const totals = months.slice(0, 38).map((invoiceMonth, index) => ({
+    amount: index % 7 === 3 ? -5000 : 10000 + index * 100,
+    earlyPaid: index % 11 === 5 ? 2000 : undefined,
+    invoiceMonth,
+  }));
+  const payments: InvoicePaymentInfo[] = [months[2], months[10], months[20]].map(
+    (referenceMonth) => ({
+      accountId: 'account-1',
+      accountName: 'Account',
+      amount: 12345,
+      method: InvoicePaymentMethod.ACCOUNT,
+      paidOn: '2026-01-05',
+      referenceMonth,
+    }),
+  );
+
+  it('SHOULD equal buildInvoiceFor for every month of a 40-month fixture (carry, early payments, payments)', () => {
+    const builder = invoiceBuilderFor(card, totals, payments, today);
+
+    for (const month of ['2025-10', ...months, '2029-03']) {
+      expect(builder(month)).toEqual(buildInvoiceFor(card, month, totals, payments, today));
+    }
+  });
+
+  it('SHOULD equal buildInvoiceFor WHEN months are asked in descending order', () => {
+    const builder = invoiceBuilderFor(card, totals, payments, today);
+
+    for (const month of [...months, '2029-03'].reverse()) {
+      expect(builder(month)).toEqual(buildInvoiceFor(card, month, totals, payments, today));
+    }
+  });
+
+  it('SHOULD equal buildInvoiceFor WHEN the card has no totals and no payments', () => {
+    const builder = invoiceBuilderFor(card, [], [], today);
+
+    expect(builder('2026-09')).toEqual(buildInvoiceFor(card, '2026-09', [], [], today));
   });
 });
