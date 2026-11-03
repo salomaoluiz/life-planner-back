@@ -2,17 +2,17 @@ import { Prisma } from '@db/client';
 import { FindTransactionsFilter } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
 import { TransactionSource } from '@finance/domain/enum';
 
-// 'join' answers a bounded list (a period, an invoice) in ONE statement. Postgres then builds the JSON of every row,
-// which costs more database CPU than the per-relation queries on a whole history (~245 ms per call, 12 concurrent
-// calls 2,420 → 5,136 ms), so the unbounded list keeps the default strategy.
+// A bounded list (a period, an invoice) pins 'join': ONE statement, whatever Prisma's default is. The unbounded list
+// (a whole history) leaves the strategy unset: forcing per-relation queries there raised its p50 from 624 to 788 ms
+// (Prisma 7's default is already 'join'), and spec 078 removes that list.
 export function relationLoadStrategyFor(
   source: TransactionSource,
   filter: FindTransactionsFilter,
-): Prisma.RelationLoadStrategy {
+): Prisma.RelationLoadStrategy | undefined {
   const bounded =
     source === TransactionSource.CARD
       ? filter.invoiceMonth !== undefined || filter.invoiceRefs !== undefined
       : Boolean(filter.from && filter.to);
 
-  return bounded ? 'join' : 'query';
+  return bounded ? 'join' : undefined;
 }

@@ -138,17 +138,17 @@ describe('Method findById', () => {
 });
 
 describe('Method findByOwners', () => {
-  it('SHOULD query every owner in ONE findMany, sorted by date, created_at and id desc, per-relation WHEN unbounded', async () => {
+  it('SHOULD query every owner in ONE findMany, sorted by date, created_at and id desc, the default strategy WHEN unbounded', async () => {
     spies.findMany.mockResolvedValue([mocks.transaction]);
 
     const result = await setup.findByOwners(mocks.owners);
 
     expect(result).toEqual([mocks.transaction]);
     expect(spies.findMany).toHaveBeenCalledTimes(1);
+    expect(spies.findMany.mock.calls[0][0].relationLoadStrategy).toBeUndefined();
     expect(spies.findMany).toHaveBeenCalledWith({
       include: mocks.include,
       orderBy: [{ date: 'desc' }, { created_at: 'desc' }, { id: 'desc' }],
-      relationLoadStrategy: 'query',
       where: {
         AND: [
           { OR: [{ owner: 'USER', owner_id: mocks.owners[0].ownerId }] },

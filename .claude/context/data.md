@@ -16,7 +16,7 @@ Object keys sorted alphabetically (`data` before `where`). Prisma returns `null`
 
 Relations and performance (spec 071): with the default strategy every `include` adds one SQL query per relation (one bind parameter per parent row), even when the parent returns nothing.
 
-- A bounded read with relations (one row, one invoice, a period) passes `relationLoadStrategy: 'join'` (preview `relationJoins`): one statement. An unbounded list (whole history) and the CSV export keep `'query'`: the joined JSON costs Postgres more CPU and was slower under concurrency. `relationLoadStrategyFor(source, filter)` (`data/datasource/relationLoadStrategy`) decides for the transaction list; `findById` and `findCardPurchases` are always `'join'`.
+- A bounded read with relations (one row, one invoice, a period) passes `relationLoadStrategy: 'join'` (preview `relationJoins`): one statement. An unbounded list (whole history) and the CSV export leave it unset (Prisma 7's default is already `join`; forcing per-relation queries raised the unbounded p50 by ~25% on the perf dataset, spec 071). `relationLoadStrategyFor(source, filter)` (`data/datasource/relationLoadStrategy`) decides for the transaction list; `findById` and `findCardPurchases` always pin `'join'`.
 - Lists ordered by date end with `id` as tie-breaker, so the order is stable whatever the strategy.
 
 ## Mapper (`data/datasource/mapper/<Name>Mapper/index.ts`)

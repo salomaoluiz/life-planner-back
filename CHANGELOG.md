@@ -7,7 +7,7 @@ Format: [Keep a Changelog](https://keepachangelog.com).
 
 ### Changed
 
-- Bounded transaction reads (one transaction, a period, an invoice, card purchases) load their relations in one joined query (Prisma `relationJoins` preview) instead of one query per relation (spec 071).
+- Bounded transaction reads (one transaction, a period, an invoice, card purchases) pin the joined relation strategy (Prisma `relationJoins` preview) so they stay one query whatever Prisma's default is (spec 071).
 - Transaction lists, the CSV export and card purchases end their sort with `id`: rows with the same date and creation time now keep a fixed order (it may change once for existing ties) (spec 071).
 
 ## [1.3.4] - 2026-11-03
