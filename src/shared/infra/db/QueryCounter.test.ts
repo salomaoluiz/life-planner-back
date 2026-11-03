@@ -1,6 +1,6 @@
-import { Client } from 'pg';
+import { Client, Pool } from 'pg';
 
-import { mocks, QueryCounter, runQuery } from './QueryCounter.mocks';
+import { connectWithWaiting, mocks, QueryCounter, runQuery } from './QueryCounter.mocks';
 
 describe('QueryCounter', () => {
   it('SHOULD not patch pg WHEN never enabled', () => {
@@ -70,5 +70,27 @@ describe('QueryCounter', () => {
 
     expect(QueryCounter.isEnabled()).toBe(false);
     expect(Client.prototype.query).toBe(mocks.queryStub);
+  });
+
+  it('SHOULD track the highest pool waiting count AND reset it', () => {
+    QueryCounter.enable();
+
+    connectWithWaiting(3);
+    connectWithWaiting(1);
+
+    expect(QueryCounter.poolMaxWaiting()).toBe(3);
+    expect(mocks.connectStub).toHaveBeenCalledTimes(2);
+
+    QueryCounter.resetPool();
+
+    expect(QueryCounter.poolMaxWaiting()).toBe(0);
+  });
+
+  it('SHOULD restore pool.connect on disable', () => {
+    QueryCounter.enable();
+    QueryCounter.disable();
+
+    expect(Pool.prototype.connect).toBe(mocks.connectStub);
+    expect(QueryCounter.poolMaxWaiting()).toBe(0);
   });
 });

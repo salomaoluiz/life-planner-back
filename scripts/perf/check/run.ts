@@ -8,7 +8,7 @@ import { assertPerfRunAllowed } from '../measure/safety';
 import { loadRegistry, parseRegistryKey } from '../registry';
 import { loadConcurrency } from './concurrency';
 import { ExplainEntry } from './explain';
-import { checkSize, isRegression, p50 as median } from './stats';
+import { checkSize, isPoolRegression, isRegression, p50 as median } from './stats';
 import { measureConcurrent, measureRoute } from './timing';
 import { RunningServer, startServer, waitHealthy } from './server';
 
@@ -22,7 +22,7 @@ export interface CheckDeps {
     module: PerfModule,
     updates: Record<string, { maxBytes: number; p50Ms: number }>,
   ): void;
-  applyWall(scenario: string, wallMs: number): void;
+  applyWall(scenario: string, wallMs: number, maxPoolWaiting?: number): void;
   build(): number;
   explain(entries: ExplainEntry[]): Promise<{ key: string; violations: string[] }[]>;
   log(line: string): void;
@@ -91,6 +91,7 @@ export async function checkMain(
   const scenarios = loadConcurrency(join(ROOT, 'perf/concurrency.json'));
   const samples = new Map<string, { bytes: number; module: PerfModule; p50s: number[] }>();
   const walls = new Map<PerfModule, number[]>();
+  const pools = new Map<PerfModule, number[]>();
   let checked = 0;
 
   try {
@@ -166,16 +167,32 @@ export async function checkMain(
             repeat: scenario.repeat,
             token,
           };
-          let { wallMs } = await measureConcurrent(concurrent);
+          let { maxPoolWaiting, wallMs } = await measureConcurrent(concurrent);
           if (round === 0 && !update && isRegression(wallMs, scenario.wallMs)) {
-            wallMs = Math.min(wallMs, (await measureConcurrent(concurrent)).wallMs);
+            const again = await measureConcurrent(concurrent);
+            wallMs = Math.min(wallMs, again.wallMs);
+            maxPoolWaiting =
+              maxPoolWaiting === undefined || again.maxPoolWaiting === undefined
+                ? undefined
+                : Math.min(maxPoolWaiting, again.maxPoolWaiting);
           }
           walls.set(name, [...(walls.get(name) ?? []), wallMs]);
+          if (maxPoolWaiting !== undefined) {
+            pools.set(name, [...(pools.get(name) ?? []), maxPoolWaiting]);
+          }
           if (round > 0) continue;
           checked += 1;
           lines.push(
-            `${name} | concurrency x${scenario.repeat} | wall ${Math.round(wallMs)} ms (base ${scenario.wallMs ?? '-'})`,
+            `${name} | concurrency x${scenario.repeat} | wall ${Math.round(wallMs)} ms (base ${scenario.wallMs ?? '-'}) | pool waiting ${maxPoolWaiting ?? '-'} (base ${scenario.maxPoolWaiting ?? '-'})`,
           );
+          if (
+            maxPoolWaiting !== undefined &&
+            isPoolRegression(maxPoolWaiting, scenario.maxPoolWaiting)
+          ) {
+            failures.push(
+              `${name} concurrency: pool waiting ${maxPoolWaiting} over baseline ${scenario.maxPoolWaiting}`,
+            );
+          }
           if (isRegression(wallMs, scenario.wallMs)) {
             failures.push(
               `${name} concurrency: wall ${Math.round(wallMs)} ms over baseline ${scenario.wallMs} ms`,
@@ -219,7 +236,10 @@ export async function checkMain(
         [key]: { maxBytes: Math.ceil(sample.bytes * 1.1), p50Ms: Math.round(median(sample.p50s)) },
       });
     }
-    for (const [name, values] of walls) deps.applyWall(name, Math.round(median(values)));
+    for (const [name, values] of walls) {
+      const waiting = pools.get(name);
+      deps.applyWall(name, Math.round(median(values)), waiting && median(waiting));
+    }
     for (const [name, updates] of baselines) deps.applyBaseline(name, updates);
   }
   failures.push(...errors);
@@ -243,13 +263,14 @@ function defaultDeps(): CheckDeps {
 
   return {
     applyBaseline: (module, updates) => applyCheckBaseline(budgets(module), updates),
-    applyWall: (scenario, wallMs) => {
+    applyWall: (scenario, wallMs, maxPoolWaiting) => {
       const file = join(ROOT, 'perf/concurrency.json');
       const data = JSON.parse(readFileSync(file, 'utf8')) as Record<
         string,
-        { wallMs: number | null }
+        { maxPoolWaiting: number | null; wallMs: number | null }
       >;
       data[scenario].wallMs = wallMs;
+      if (maxPoolWaiting !== undefined) data[scenario].maxPoolWaiting = maxPoolWaiting;
       writeFileSync(file, `${JSON.stringify(data, null, 2)}\n`);
     },
     build: () => spawnSync('yarn', ['build'], { cwd: ROOT, stdio: 'inherit' }).status ?? 1,
@@ -263,7 +284,8 @@ function defaultDeps(): CheckDeps {
 
       return (await import('./explain-boot')).loginPerfUser(baseUrl);
     },
-    startServer: (port) => startServer({ env: process.env, port }),
+    // The counter makes the API expose its pool pressure (spec 069); recording is off until a request asks.
+    startServer: (port) => startServer({ env: { ...process.env, PERF_COUNT_QUERIES: '1' }, port }),
     waitHealthy: (baseUrl, timeoutMs) => waitHealthy(baseUrl, timeoutMs),
     writeSummary: (text) => {
       mkdirSync(join(ROOT, 'perf-report'), { recursive: true });

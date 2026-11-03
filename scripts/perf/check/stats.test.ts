@@ -1,4 +1,4 @@
-import { checkSize, isRegression, p50 } from './stats';
+import { checkSize, isPoolRegression, isRegression, p50 } from './stats';
 
 describe('p50', () => {
   it('SHOULD return the middle value', () => expect(p50([5, 1, 3])).toBe(3));
@@ -28,4 +28,15 @@ describe('checkSize', () => {
   });
   it('SHOULD pass WHEN maxBytes is null', () =>
     expect(checkSize({ bytes: 2000, kind: 'other', maxBytes: null })).toBeUndefined());
+});
+
+describe('isPoolRegression', () => {
+  it('SHOULD ignore a null baseline', () => expect(isPoolRegression(40, null)).toBe(false));
+  it('SHOULD allow a 1-connection wobble over a zero baseline', () =>
+    expect(isPoolRegression(1, 0)).toBe(false));
+  it('SHOULD flag more than 1.25x AND 2 over the baseline', () => {
+    expect(isPoolRegression(8, 4)).toBe(true);
+    expect(isPoolRegression(5, 4)).toBe(false);
+    expect(isPoolRegression(2, 0)).toBe(true);
+  });
 });

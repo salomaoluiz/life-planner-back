@@ -38,8 +38,24 @@ export class EnvService {
     return this.nestConfigService.get('DB_PASSWORD');
   }
 
+  get dbPoolConnectionTimeoutMs(): Env['DB_POOL_CONNECTION_TIMEOUT_MS'] {
+    return this.nestConfigService.get('DB_POOL_CONNECTION_TIMEOUT_MS');
+  }
+
+  get dbPoolIdleTimeoutMs(): Env['DB_POOL_IDLE_TIMEOUT_MS'] {
+    return this.nestConfigService.get('DB_POOL_IDLE_TIMEOUT_MS');
+  }
+
+  get dbPoolMax(): Env['DB_POOL_MAX'] {
+    return this.nestConfigService.get('DB_POOL_MAX');
+  }
+
   get dbPort(): Env['DB_PORT'] {
     return this.nestConfigService.get('DB_PORT');
+  }
+
+  get dbStatementTimeoutMs(): Env['DB_STATEMENT_TIMEOUT_MS'] {
+    return this.nestConfigService.get('DB_STATEMENT_TIMEOUT_MS');
   }
 
   get dbUser(): Env['DB_USER'] {

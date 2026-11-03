@@ -24,6 +24,13 @@ export function isRegression(measured: number, baseline: number | null): boolean
   return measured > baseline * RATIO && measured - baseline > FLOOR_MS;
 }
 
+// Waiting counts are small integers: the floor keeps a one-connection wobble from failing the check.
+export function isPoolRegression(measured: number, baseline: number | null): boolean {
+  if (baseline === null) return false;
+
+  return measured > baseline * RATIO && measured - baseline >= 2;
+}
+
 export function p50(values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
 

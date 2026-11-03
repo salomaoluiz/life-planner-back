@@ -24,6 +24,8 @@ The only place allowed to import third-party libs directly (ESLint `no-restricte
 
 `CORS_ORIGINS` (optional, default empty) feeds `http/cors` `buildCorsOptions()`, called from `main.ts`. `validation/email.ts` exports `emailSchema` (trim → lowercase → email, max 254) used by all auth schemas.
 
+Pool of the pg driver behind Prisma (`Database`, spec 069): `DB_POOL_MAX` (default 20; pg's own default is 10), `DB_POOL_IDLE_TIMEOUT_MS` (default 30000), `DB_POOL_CONNECTION_TIMEOUT_MS` (wait for a free connection, default 0 = no limit), `DB_STATEMENT_TIMEOUT_MS` (default 0 = off; sent as `statement_timeout` only when > 0). Empty strings fall back to the defaults. Keep `DB_POOL_MAX` × API instances under the server's `max_connections`. With `PERF_COUNT_QUERIES=1`, `QueryCounter` also records the highest `waitingCount` of the pool and `configure-app` exposes it as the `x-perf-pool-max-waiting` response header (a request with `x-perf-reset-pool: 1` zeroes it first); `perf:check` reads it for `maxPoolWaiting`.
+
 Spec 056 adds `APP_ENVIRONMENT` (`production|staging|development`, default `development`), `VERSION_REPO_API`, `VERSION_REPO_APP` (`owner/name`, optional; empty disables the check), `GITHUB_TOKEN` (optional, read-only, never logged) and `VERSION_CHECK_TTL_SECONDS` (default 600).
 
 `PERF_COUNT_QUERIES` (`'1'` enables, default off; spec 065): `Database` then calls `QueryCounter.enable()` (`db/QueryCounter.ts`, patches `pg.Client.prototype.query`, `begin()`/`end()` return the statements counted in between). Only the perf runner sets it. `http/configure-app` holds the app setup (CORS, body limit, URI versioning, `api` prefix, swagger) shared by `main.ts` and the perf runner.
