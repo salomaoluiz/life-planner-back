@@ -16,6 +16,13 @@ export type Fixtures = { referenceMonth: string; userId: string } & Record<
 >;
 
 const FINANCE = '/api/v1/finance';
+const PLAN_LOOKBACK_MONTHS = 12;
+
+function shiftMonth(month: string, delta: number): string {
+  const [year, number] = month.split('-').map(Number);
+
+  return new Date(Date.UTC(year, number - 1 + delta, 1)).toISOString().slice(0, 7);
+}
 
 export function expandPath(template: string, params: Record<string, string>, fx: Fixtures): string {
   return template.replace(/:(\w+)/g, (_match, name: string) => {
@@ -52,12 +59,18 @@ export async function resolveFixtures(
   const first = async (path: string): Promise<string | undefined> =>
     (await client.get<{ id: string }[]>(path))[0]?.id;
   const base = { referenceMonth: manifest.referenceMonth, userId: manifest.userId };
-  const month = expandScenario('from={monthStart}&to={monthEnd}', {
-    ...base,
-  } as Fixtures);
-  const rows = await client.get<{ installmentPlanId: null | string }[]>(
-    `${FINANCE}/transactions?${month}`,
-  );
+  // The pinned dataset (spec 093) does not guarantee an installment row in the reference month: look back a year.
+  let plan: string | undefined;
+  for (let back = 0; back <= PLAN_LOOKBACK_MONTHS && !plan; back += 1) {
+    const month = expandScenario('from={monthStart}&to={monthEnd}', {
+      ...base,
+      referenceMonth: shiftMonth(base.referenceMonth, -back),
+    } as Fixtures);
+    const rows = await client.get<{ installmentPlanId: null | string }[]>(
+      `${FINANCE}/transactions?source=CARD&${month}`,
+    );
+    plan = rows.find((row) => row.installmentPlanId)?.installmentPlanId ?? undefined;
+  }
 
   return {
     ...base,
@@ -65,7 +78,7 @@ export async function resolveFixtures(
     card: await first(`${FINANCE}/credit-cards`),
     category: await first(`${FINANCE}/categories`),
     family: await first('/api/v1/families'),
-    plan: rows.find((row) => row.installmentPlanId)?.installmentPlanId ?? undefined,
+    plan,
     recurrence: await first(`${FINANCE}/recurrences`),
     stockItem: await first('/api/v1/stock/items'),
     tag: await first(`${FINANCE}/tags`),

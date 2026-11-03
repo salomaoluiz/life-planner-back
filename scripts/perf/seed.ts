@@ -73,6 +73,7 @@ export async function runSeed(
   runners: Runners,
   log: (line: string) => void,
   now: Date = new Date(),
+  previous?: SeedManifest,
 ): Promise<SeedManifest> {
   const args = parseArgs(argv);
   assertSeedAllowed(env, resolveApiUrl(env));
@@ -101,8 +102,10 @@ export async function runSeed(
     userId: me.id,
   };
   const wanted = MODULES.filter((name) => !args.module || args.module === name);
-  const counts: Record<string, number> = {};
-  let referenceMonth = cfg.anchorDate.slice(0, 7);
+  // A partial seed (--module) keeps what the previous manifest knew about the other modules.
+  const prior = args.module && !args.reset ? previous : undefined;
+  const counts: Record<string, number> = { ...prior?.counts };
+  let referenceMonth = prior?.referenceMonth ?? cfg.anchorDate.slice(0, 7);
 
   // Stock and finance need the family ids even when only they run (read only).
   const families = await client.get<{ id: string; name: string }[]>('/api/v1/families');
@@ -144,8 +147,23 @@ export async function main(argv: string[], env: NodeJS.ProcessEnv): Promise<numb
     }
     const { createRunners } = await import('./seed/runners');
     const client = new ApiClient(resolveApiUrl(process.env));
-    const manifest = await runSeed(argv, process.env, client, createRunners(), console.log);
-    writeManifest(resolve(__dirname, '../../perf/seed.manifest.json'), manifest);
+    const manifestPath = resolve(__dirname, '../../perf/seed.manifest.json');
+    let previous: SeedManifest | undefined;
+    try {
+      previous = JSON.parse(readFileSync(manifestPath, 'utf8')) as SeedManifest;
+    } catch {
+      // First seed: no manifest yet.
+    }
+    const manifest = await runSeed(
+      argv,
+      process.env,
+      client,
+      createRunners(),
+      console.log,
+      new Date(),
+      previous,
+    );
+    writeManifest(manifestPath, manifest);
 
     return 0;
   } catch (error) {

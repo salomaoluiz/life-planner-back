@@ -36,7 +36,7 @@ export function manifestStatus(
   const seeded =
     (module === 'finance' && (counts.transactions ?? 0) > 0) ||
     (module === 'family' && (counts.families ?? 0) > 0) ||
-    (module === 'stock' && 'stockCreated' in counts) ||
+    (module === 'stock' && ('stock' in counts || 'stockCreated' in counts)) ||
     seedModuleFor(module) === undefined;
   if (!seeded) return 'missing';
 

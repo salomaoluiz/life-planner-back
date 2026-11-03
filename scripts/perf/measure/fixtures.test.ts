@@ -52,6 +52,43 @@ describe('expandPath', () => {
   });
 });
 
+describe('resolveFixtures plan lookup (spec 093)', () => {
+  function clientWithPlanIn(month: string) {
+    return {
+      get: jest.fn(async (path: string) => {
+        if (path.includes('/transactions?')) {
+          // Installment rows are card rows: the default list only has account rows.
+          return path.includes('source=CARD') && path.includes(`from=${month}-01`)
+            ? [{ installmentPlanId: 'plan-3' }]
+            : [];
+        }
+
+        return [{ id: 'x' }];
+      }),
+    };
+  }
+
+  it('SHOULD look back from the reference month until an installment row is found', async () => {
+    const client = clientWithPlanIn('2025-11');
+
+    const result = await resolveFixtures(
+      client as never,
+      { referenceMonth: '2026-02', userId: 'user-1' } as never,
+    );
+
+    expect(result.plan).toBe('plan-3');
+  });
+
+  it('SHOULD leave the plan undefined WHEN no month of the last year has one', async () => {
+    const result = await resolveFixtures(
+      clientWithPlanIn('2019-01') as never,
+      { referenceMonth: '2026-02', userId: 'user-1' } as never,
+    );
+
+    expect(result.plan).toBeUndefined();
+  });
+});
+
 describe('resolveFixtures', () => {
   it('SHOULD take the first element of each list endpoint', async () => {
     const client = {

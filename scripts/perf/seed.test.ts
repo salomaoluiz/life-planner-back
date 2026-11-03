@@ -95,6 +95,31 @@ describe('runSeed', () => {
     expect(manifest.fingerprint).toMatchObject({ families: 1, transactions: 11 });
   });
 
+  it('--module keeps the reference month, counts and families of the previous manifest', async () => {
+    const previous = {
+      configHash: 'x',
+      counts: { families: 3, transactions: 11200 },
+      familyIds: ['f1'],
+      fingerprint: {},
+      referenceMonth: '2025-12',
+      seededAt: '2026-01-01T00:00:00.000Z',
+      userId: 'u1',
+    };
+
+    const manifest = await runSeed(
+      ['--module', 'stock'],
+      env,
+      fakeClient() as never,
+      runners(),
+      () => undefined,
+      new Date(),
+      previous,
+    );
+
+    expect(manifest.referenceMonth).toBe('2025-12');
+    expect(manifest.counts).toMatchObject({ families: 3, stock: 2, transactions: 11200 });
+  });
+
   it('uses the pinned anchorDate as today, whatever the real date is (spec 093)', async () => {
     const run = runners();
 
