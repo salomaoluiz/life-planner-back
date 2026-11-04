@@ -68,6 +68,38 @@ describe('findAll', () => {
   });
 });
 
+describe('findById (spec 077)', () => {
+  it('SHOULD read the row with the accessible owners AND map it to the API shape', async () => {
+    const result = await setup.findById(mocks.userId, mocks.transactionResult.id, '2026-10-15');
+
+    expect(mocks.getTransactionByIdUseCase.execute).toHaveBeenCalledWith({
+      accessibleOwners: mocks.accessibleOwners,
+      id: mocks.transactionResult.id,
+    });
+    expect(result).toEqual(mocks.transactionApi);
+  });
+
+  it('SHOULD return the resolved paid status of a card row', async () => {
+    mocks.resolveCardRowsPaidUseCase.execute.mockResolvedValueOnce([
+      { ...mocks.transactionResult, paid: false },
+    ]);
+
+    const result = await setup.findById(mocks.userId, mocks.transactionResult.id, '2026-10-15');
+
+    expect(mocks.resolveCardRowsPaidUseCase.execute).toHaveBeenCalledWith({
+      today: '2026-10-15',
+      transactions: [mocks.transactionResult],
+    });
+    expect(result.paid).toBe(false);
+  });
+
+  it('SHOULD propagate the not found of the use case', async () => {
+    mocks.getTransactionByIdUseCase.execute.mockRejectedValueOnce(new Error('404'));
+
+    await expect(setup.findById(mocks.userId, 'x')).rejects.toThrow('404');
+  });
+});
+
 describe('update', () => {
   it('SHOULD forward the id and the patch', async () => {
     await setup.update(mocks.userId, 'tx-1', { value: 100 }, '2026-10-15');

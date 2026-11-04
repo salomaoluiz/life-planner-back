@@ -125,6 +125,18 @@ export class TransactionController {
     );
   }
 
+  @Get(':id')
+  @ZodResponse({ status: 200, type: TransactionOutput })
+  async findById(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: Record<string, unknown>,
+  ) {
+    const { today } = validate(TodayQuerySchema, query);
+
+    return this.transactionService.findById(req.user.id, id, today);
+  }
+
   @Patch(':id')
   @ZodResponse({ status: 200, type: TransactionOutput })
   async update(
