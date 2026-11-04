@@ -38,8 +38,8 @@ export type IFinanceTransactionRepository = {
   ): Promise<TransactionEntity[]>;
   // Spec 046: grouped sums for the dashboard (system categories that only move money are left out).
   sumDashboardRows(query: DashboardSumsQuery): Promise<DashboardSum[]>;
-  // One grouped query: the sum of every (card, invoice month).
-  sumCardInvoices(creditCardIds: string[]): Promise<CardInvoiceTotal[]>;
+  // Spec 091: the stored net of every (card, invoice month), read from the totals table.
+  findInvoiceTotals(creditCardIds: string[]): Promise<CardInvoiceTotal[]>;
   updateTransaction(params: UpdateTransactionRepositoryParams): Promise<TransactionEntity>;
 };
 

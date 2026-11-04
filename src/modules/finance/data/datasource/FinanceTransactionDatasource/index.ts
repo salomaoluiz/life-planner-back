@@ -41,7 +41,6 @@ import {
   UpdateTransactionDatasourceParams,
 } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
-import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
 import { SystemCategoryKey, TransactionSource, TransactionType } from '@finance/domain/enum';
 import { ledgerDeltas } from '@finance/domain/service/LedgerBalance';
 import { SearchTerms } from '@finance/domain/service/TransactionSearch';
@@ -403,34 +402,31 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
 
     return rows.map((row) => row.id);
   }
-  // One grouped query for every card: the sum of each (card, invoice month).
-  async sumCardInvoices(creditCardIds: string[]): Promise<CardInvoiceSum[]> {
+  // Spec 091: the stored totals of each (card, invoice month) from `financial_card_invoice_totals` (one row per invoice
+  // with purchases, kept by every card-row write, spec 090), never a grouping of the card history.
+  // NET = purchases (EXPENSE) minus every credit (INCOME); early payments are also counted apart.
+  async findInvoiceTotals(creditCardIds: string[]): Promise<CardInvoiceSum[]> {
     if (creditCardIds.length === 0) {
       return [];
     }
-    const rows = await this.db.client.financialTransaction.groupBy({
-      _sum: { value: true },
-      by: ['credit_card_id', 'invoice_month', 'type', 'category_id'],
+    const rows = await this.db.client.financialCardInvoiceTotal.findMany({
+      orderBy: [{ credit_card_id: 'asc' }, { invoice_month: 'asc' }],
+      select: {
+        credit_card_id: true,
+        early_paid: true,
+        expense: true,
+        income: true,
+        invoice_month: true,
+      },
       where: { credit_card_id: { in: creditCardIds } },
     });
-    const sums = new Map<string, CardInvoiceSum>();
-    // Net = purchases (EXPENSE) minus every credit (INCOME); early payments are also counted apart.
-    for (const row of rows) {
-      const key = `${row.credit_card_id}|${row.invoice_month}`;
-      const sum = sums.get(key) ?? {
-        amount: 0,
-        credit_card_id: row.credit_card_id as string,
-        early_paid: 0,
-        invoice_month: row.invoice_month as string,
-      };
-      const value = row._sum.value ?? 0;
-      sum.amount += row.type === TransactionType.INCOME ? -value : value;
-      if (row.category_id === SYSTEM_CATEGORY_IDS[SystemCategoryKey.CARD_EARLY_PAYMENT]) {
-        sum.early_paid += value;
-      }
-      sums.set(key, sum);
-    }
-    return [...sums.values()];
+
+    return rows.map((row) => ({
+      amount: row.expense - row.income,
+      credit_card_id: row.credit_card_id,
+      early_paid: row.early_paid,
+      invoice_month: row.invoice_month,
+    }));
   }
   // Spec 046: one grouped query for the dashboard, in the database (never the rows in memory).
   async sumDashboardRows(params: DashboardSumsParams): Promise<DashboardSumRow[]> {

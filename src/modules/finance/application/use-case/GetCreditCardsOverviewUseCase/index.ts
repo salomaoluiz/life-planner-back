@@ -9,9 +9,11 @@ import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { narrowOwners } from '@finance/domain/entity/OwnerAccess';
 import { AccountStatus } from '@finance/domain/enum';
 import { IFinanceCreditCardRepository } from '@finance/domain/repository';
-import { Invoice } from '@finance/domain/service/InvoiceCalculator';
+import { addInvoiceMonths, Invoice } from '@finance/domain/service/InvoiceCalculator';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
+
+const OVERVIEW_PAID_WINDOW_MONTHS = 3;
 
 export interface CreditCardOverviewItem {
   available: number;
@@ -51,6 +53,8 @@ export class GetCreditCardsOverviewUseCase implements UseCaseWithParams<
     );
     const data = await this.computeCardInvoicesUseCase.execute({
       cards: sorted,
+      // Spec 091: the overview lists the open invoice, the unpaid ones and the recent-paid window (3 months back).
+      fromMonth: addInvoiceMonths(input.today.slice(0, 7), -OVERVIEW_PAID_WINDOW_MONTHS),
       today: input.today,
     });
     const items = data.map(({ card, invoices }) => ({

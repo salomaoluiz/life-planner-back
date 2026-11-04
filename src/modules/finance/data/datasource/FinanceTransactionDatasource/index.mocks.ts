@@ -105,6 +105,7 @@ const deleteManySpy = jest.fn();
 const findFirstSpy = jest.fn();
 const findManySpy = jest.fn();
 const groupBySpy = jest.fn();
+const invoiceTotalsFindManySpy = jest.fn();
 const findUniqueSpy = jest.fn();
 const recurrenceCountSpy = jest.fn();
 const queryRawSpy = jest.fn();
@@ -124,6 +125,7 @@ const clientMock = {
   $queryRaw: queryRawSpy,
   $transaction: transactionSpy,
   financialAccount: { update: accountUpdateSpy },
+  financialCardInvoiceTotal: { findMany: invoiceTotalsFindManySpy },
   financialInstallmentPlan: { count: planCountSpy },
   financialInvoicePayment: { findFirst: paymentFindFirstSpy },
   financialRecurrence: { count: recurrenceCountSpy },
@@ -177,6 +179,7 @@ const spies = {
   findUnique: findUniqueSpy,
   findUniqueOrThrow: findUniqueOrThrowSpy,
   groupBy: groupBySpy,
+  invoiceTotalsFindMany: invoiceTotalsFindManySpy,
   invoiceTotalsKeysWhere: jest.mocked(invoiceTotalsKeysWhere),
   paymentFindFirst: paymentFindFirstSpy,
   planCount: planCountSpy,

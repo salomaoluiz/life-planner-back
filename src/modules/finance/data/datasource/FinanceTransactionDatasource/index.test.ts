@@ -1,7 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 
-import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
-import { SystemCategoryKey, TransactionSource } from '@finance/domain/enum';
+import { TransactionSource } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { mocks, setup, spies } from './index.mocks';
@@ -621,36 +620,23 @@ describe('Card purchases', () => {
     expect(spies.deleteMany).not.toHaveBeenCalled();
   });
 
-  it('SHOULD sum the NET of each invoice (purchases minus credits) AND the early payments apart', async () => {
-    spies.groupBy.mockResolvedValue([
+  it('SHOULD read the NET of each invoice (purchases minus credits) AND the early payments from the stored totals', async () => {
+    spies.invoiceTotalsFindMany.mockResolvedValue([
       {
-        _sum: { value: 1000 },
-        category_id: 'c1',
         credit_card_id: 'card-1',
+        early_paid: 600,
+        expense: 1000,
+        income: 700,
         invoice_month: '2026-10',
-        type: 'EXPENSE',
-      },
-      {
-        _sum: { value: 600 },
-        category_id: SYSTEM_CATEGORY_IDS[SystemCategoryKey.CARD_EARLY_PAYMENT],
-        credit_card_id: 'card-1',
-        invoice_month: '2026-10',
-        type: 'INCOME',
-      },
-      {
-        _sum: { value: 100 },
-        category_id: SYSTEM_CATEGORY_IDS[SystemCategoryKey.CARD_REFUND],
-        credit_card_id: 'card-1',
-        invoice_month: '2026-10',
-        type: 'INCOME',
       },
     ]);
 
-    expect(await setup.sumCardInvoices(['card-1'])).toEqual([
+    expect(await setup.findInvoiceTotals(['card-1'])).toEqual([
       { amount: 300, credit_card_id: 'card-1', early_paid: 600, invoice_month: '2026-10' },
     ]);
-    expect(await setup.sumCardInvoices([])).toEqual([]);
-    expect(spies.groupBy).toHaveBeenCalledTimes(1);
+    expect(await setup.findInvoiceTotals([])).toEqual([]);
+    expect(spies.invoiceTotalsFindMany).toHaveBeenCalledTimes(1);
+    expect(spies.groupBy).not.toHaveBeenCalled();
   });
 
   it('SHOULD return no purchases without keys AND count by card', async () => {

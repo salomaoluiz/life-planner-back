@@ -3,7 +3,7 @@ import { Client } from 'pg';
 
 import { compareInvoiceTotals, InvoiceTotalsRow } from './compare';
 
-// Spec 090 FR 4: read-only comparison of the stored invoice totals with `sumCardInvoices` (every card row, no
+// Spec 090 FR 4: read-only comparison of the stored invoice totals with the aggregation of the card rows (every card row, no
 // exclusions) over the whole development database. Exit 0 = in sync, 1 = mismatches, 2 = could not run.
 const EARLY_PAYMENT_CATEGORY_ID = '00000000-0000-4000-8000-000000000005';
 const MAX_LINES = 30;

@@ -1,4 +1,4 @@
-// Spec 090: the stored totals of `financial_card_invoice_totals` against the aggregation of `sumCardInvoices`.
+// Spec 090: the stored totals of `financial_card_invoice_totals` against the aggregation of the card rows.
 export interface InvoiceTotalsRow {
   creditCardId: string;
   earlyPaid: number;

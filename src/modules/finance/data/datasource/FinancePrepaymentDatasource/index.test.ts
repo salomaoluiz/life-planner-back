@@ -37,6 +37,11 @@ describe('Method prepay', () => {
     expect(spies.prepaymentUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ data: { discount_transaction_id: 'discount-1' } }),
     );
+    // Spec 091: the discount row (INCOME on the target invoice) is counted AFTER it is created.
+    expect(spies.refreshInvoiceTotals).toHaveBeenCalledTimes(2);
+    expect(spies.refreshInvoiceTotals.mock.invocationCallOrder[1]).toBeGreaterThan(
+      spies.transactionCreate.mock.invocationCallOrder[0],
+    );
   });
 
   it('SHOULD NOT create a discount row WHEN the discount is 0', async () => {

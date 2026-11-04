@@ -9,7 +9,7 @@ import { ComputeCardInvoicesUseCase } from './index';
 
 const cardMock = new CreditCardEntityFixture().build();
 const paymentRepositoryMock = { findByCardIds: jest.fn() };
-const transactionRepositoryMock = { sumCardInvoices: jest.fn() };
+const transactionRepositoryMock = { findInvoiceTotals: jest.fn() };
 const paymentMock = {
   accountId: 'acc-1',
   accountName: 'Bank',
@@ -27,7 +27,7 @@ let setup: ComputeCardInvoicesUseCase;
 beforeEach(async () => {
   jest.clearAllMocks();
   paymentRepositoryMock.findByCardIds.mockResolvedValue([paymentMock]);
-  transactionRepositoryMock.sumCardInvoices.mockResolvedValue([
+  transactionRepositoryMock.findInvoiceTotals.mockResolvedValue([
     { amount: 2000, creditCardId: cardMock.id, invoiceMonth: '2026-09' },
     { amount: 45000, creditCardId: cardMock.id, invoiceMonth: '2026-10' },
     { amount: 999, creditCardId: 'other-card', invoiceMonth: '2026-10' },

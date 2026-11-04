@@ -3,6 +3,12 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.1.8] - 2026-11-04
+
+### Changed
+
+- Card screens (list, invoices, dashboard, daily balances, upcoming and the month view) now read the stored invoice totals instead of adding up the whole card history, so they stay fast as history grows. The credit card overview also skips old, fully paid invoices when it walks the invoice chain. Responses do not change (spec 091).
+
 ## [3.1.7] - 2026-11-04
 
 ### Changed

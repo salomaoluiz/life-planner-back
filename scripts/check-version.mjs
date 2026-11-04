@@ -1,5 +1,5 @@
 // Version and changelog guardrail (spec 056). No dependencies.
-// Usage: node scripts/check-version.mjs   (diffs against origin/main; PR_TITLE env adds the type check)
+// Usage: node scripts/check-version.mjs   (diffs against origin/main, or the ref in VERSION_BASE_REF for a batch / integration branch; PR_TITLE env adds the type check)
 // Tests feed CHECK_VERSION_INPUT (JSON) instead of git.
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -120,13 +120,14 @@ function dependenciesOf(json) {
 }
 
 function fromGit() {
-  const files = git('diff', '--name-only', 'origin/main...HEAD').split('\n').filter(Boolean);
-  const basePackage = git('show', 'origin/main:package.json');
+  const baseRef = process.env.VERSION_BASE_REF || 'origin/main';
+  const files = git('diff', '--name-only', `${baseRef}...HEAD`).split('\n').filter(Boolean);
+  const basePackage = git('show', `${baseRef}:package.json`);
   const currentPackage = readFileSync('package.json', 'utf8');
   const depsChanged = dependenciesOf(basePackage) !== dependenciesOf(currentPackage);
   let baseChangelog = '';
   try {
-    baseChangelog = git('show', 'origin/main:CHANGELOG.md');
+    baseChangelog = git('show', `${baseRef}:CHANGELOG.md`);
   } catch {
     // main has no changelog yet
   }

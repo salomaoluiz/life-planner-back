@@ -2,7 +2,7 @@ import { Prisma } from '@db/client';
 import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
 import { SystemCategoryKey } from '@finance/domain/enum';
 
-// Spec 090: the stored totals of `financial_card_invoice_totals` (shadow mode: written, not read until spec 091).
+// Spec 090: the stored totals of `financial_card_invoice_totals` (written by every card-row write, read by `findInvoiceTotals` since spec 091).
 // EVERY write of a card row (create, update, delete, move between invoices or cards, import, refund, early payment,
 // prepayment, installment, recurrence) calls `refreshCardInvoiceTotals` with the (card, invoice month) pairs it
 // touched, BEFORE and AFTER the write, inside the same database transaction and after the card locks.
