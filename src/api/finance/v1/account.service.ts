@@ -11,7 +11,10 @@ import { AdjustAccountBalanceUseCase } from '@finance/application/use-case/Adjus
 import { CreateAccountUseCase } from '@finance/application/use-case/CreateAccountUseCase';
 import { DeleteAccountUseCase } from '@finance/application/use-case/DeleteAccountUseCase';
 import { GetAccountsUseCase } from '@finance/application/use-case/GetAccountsUseCase';
-import { GetDailyBalancesUseCase } from '@finance/application/use-case/GetDailyBalancesUseCase';
+import {
+  DailyBalances,
+  GetDailyBalancesUseCase,
+} from '@finance/application/use-case/GetDailyBalancesUseCase';
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { UpdateAccountUseCase } from '@finance/application/use-case/UpdateAccountUseCase';
 import { AccountWithBalances } from '@finance/domain/service/AccountBalance';
@@ -38,6 +41,21 @@ function toAccountOutput({
     updatedAt: account.updatedAt.toISOString(),
   };
 }
+function toDailyBalancesOutput(result: DailyBalances): DailyBalancesOutput {
+  return {
+    accounts: result.accounts.map((account) => ({
+      icon: account.icon,
+      id: account.id,
+      name: account.name,
+      owner: account.owner,
+      ownerId: account.ownerId,
+    })),
+    days: result.days,
+    month: result.month,
+  };
+}
+
+export { toDailyBalancesOutput };
 
 @Injectable()
 export class AccountService {
@@ -121,17 +139,7 @@ export class AccountService {
       today,
     });
 
-    return {
-      accounts: result.accounts.map((account) => ({
-        icon: account.icon,
-        id: account.id,
-        name: account.name,
-        owner: account.owner,
-        ownerId: account.ownerId,
-      })),
-      days: result.days,
-      month: result.month,
-    };
+    return toDailyBalancesOutput(result);
   }
 
   async update(

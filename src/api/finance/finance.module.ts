@@ -17,6 +17,8 @@ import { InstallmentPlanController } from '@api/finance/v1/installment-plan.cont
 import { InstallmentPlanService } from '@api/finance/v1/installment-plan.service';
 import { InvoiceController } from '@api/finance/v1/invoice.controller';
 import { InvoiceService } from '@api/finance/v1/invoice.service';
+import { MonthController } from '@api/finance/v1/month.controller';
+import { MonthService } from '@api/finance/v1/month.service';
 import { RecurrenceProjectionController } from '@api/finance/v1/recurrence-projection.controller';
 import { RecurrenceController } from '@api/finance/v1/recurrence.controller';
 import { RecurrenceService } from '@api/finance/v1/recurrence.service';
@@ -40,6 +42,7 @@ import { FinanceModule } from '@finance/finance.module';
     CategoryController,
     CategoryIconController,
     InvoiceController,
+    MonthController,
     CreditCardController,
     DashboardController,
     InstallmentPlanController,
@@ -61,6 +64,7 @@ import { FinanceModule } from '@finance/finance.module';
     FinanceAccessService,
     InstallmentPlanService,
     InvoiceService,
+    MonthService,
     RecurrenceService,
     TagService,
     TransactionCsvService,

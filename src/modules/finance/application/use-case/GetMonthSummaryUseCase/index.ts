@@ -7,7 +7,11 @@ import { UseCaseWithParams } from '@shared/application/use-case/types';
 export interface GetMonthSummaryInput {
   // Every account row of the month that matches the filter (not only the first page).
   accountRows: TransactionEntity[];
-  invoices: { invoice: Pick<Invoice, 'amount' | 'amountDue' | 'earlyPaid' | 'status'> }[];
+  // `filtered` is set when the list was filtered (spec 045): only the matching purchases count then.
+  invoices: {
+    filtered?: { filteredTotal: number };
+    invoice: Pick<Invoice, 'amount' | 'amountDue' | 'earlyPaid' | 'status'>;
+  }[];
   // `YYYY-MM`
   month: string;
   projections: ProjectedOccurrence[];
@@ -60,7 +64,13 @@ export class GetMonthSummaryUseCase implements UseCaseWithParams<
       }
     }
 
-    for (const { invoice } of params.invoices) {
+    for (const { filtered, invoice } of params.invoices) {
+      if (filtered) {
+        summary.expense += filtered.filteredTotal;
+        summary.toPay += invoice.status === InvoiceStatus.PAID ? 0 : filtered.filteredTotal;
+        continue;
+      }
+
       // What is due plus what was paid early: credits lower the expense, early payments only move money (spec 032 FR 9).
       summary.expense += invoice.amount + invoice.earlyPaid;
 

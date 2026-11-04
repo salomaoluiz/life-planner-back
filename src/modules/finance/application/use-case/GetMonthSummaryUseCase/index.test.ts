@@ -90,3 +90,18 @@ it('SHOULD split the projections: account ones by date, card ones by the invoice
   expect(result.projectedExpense).toBe(400);
   expect(result.income).toBe(0);
 });
+
+it('SHOULD count only the matching purchases of a filtered invoice', async () => {
+  const result = await setup.execute({
+    accountRows: [],
+    invoices: [
+      { ...mocks.invoice(900, 900, 0, InvoiceStatus.CLOSED), filtered: { filteredTotal: 250 } },
+      { ...mocks.invoice(400, 0, 0, InvoiceStatus.PAID), filtered: { filteredTotal: 100 } },
+    ],
+    month: mocks.month,
+    projections: [],
+  });
+
+  expect(result.expense).toBe(350);
+  expect(result.toPay).toBe(250);
+});
