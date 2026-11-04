@@ -102,6 +102,12 @@ export class EnvService {
     return this.nestConfigService.get('VERSION_REPO_APP');
   }
 
+  // Finance
+
+  get financeMaterializationGateTtlMs(): Env['FINANCE_MATERIALIZATION_GATE_TTL_MS'] {
+    return this.nestConfigService.get('FINANCE_MATERIALIZATION_GATE_TTL_MS');
+  }
+
   // Docs
 
   get swaggerEnabled(): Env['SWAGGER_ENABLED'] {

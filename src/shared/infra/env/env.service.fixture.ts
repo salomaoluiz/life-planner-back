@@ -29,6 +29,7 @@ class EnvServiceFixture {
       dbStatementTimeoutMs: 0,
       dbUser: faker.internet.username(),
       environment: faker.helpers.arrayElement(['development', 'production', 'test']),
+      financeMaterializationGateTtlMs: 60000,
       githubToken: undefined,
       jwtExpiresIn: faker.number.int({ max: 86400, min: 3600 }),
       jwtSecret: faker.string.alphanumeric(64),
