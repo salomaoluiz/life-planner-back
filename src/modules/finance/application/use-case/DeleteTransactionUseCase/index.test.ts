@@ -134,3 +134,24 @@ it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)'
     status: 422,
   });
 });
+
+it('SHOULD invalidate the gate of the series owner WHEN a recurrence row is deleted (spec 081)', async () => {
+  mocks.transactionRepository.findTransactionById.mockResolvedValue({
+    ...mocks.recurring,
+    occurrenceNumber: 9,
+  });
+
+  await setup.execute({
+    accessibleOwners: [{ owner: mocks.recurring.owner, ownerId: mocks.recurring.ownerId }],
+    id: mocks.recurring.id,
+    scope: 'ONLY_THIS',
+  } as never);
+
+  expect(mocks.gate.invalidate).toHaveBeenCalledWith(['user-id']);
+});
+
+it('SHOULD not invalidate WHEN the row is not part of a series (spec 081)', async () => {
+  await setup.execute({ accessibleOwners: mocks.accessibleOwners, id: mocks.transaction.id });
+
+  expect(mocks.gate.invalidate).not.toHaveBeenCalled();
+});

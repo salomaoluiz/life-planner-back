@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 
+import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import TransactionEntityFixture from '@finance/domain/entity/mocks/TransactionEntity.fixture';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
@@ -25,6 +26,8 @@ const transactionRepositoryMock = {
 
 // endregion Mocks
 
+const gateMock = { invalidate: jest.fn() };
+
 let setup: DeleteTransactionUseCase;
 
 beforeEach(async () => {
@@ -35,11 +38,13 @@ beforeEach(async () => {
     firstNumber: 1,
     id: 'series-1',
     lastGeneratedNumber: 6,
+    ownerId: 'user-id',
   });
   recurrenceRepositoryMock.skipNumber.mockResolvedValue(undefined);
 
   const module = await Test.createTestingModule({
     providers: [
+      { provide: MaterializationGate, useValue: gateMock },
       DeleteTransactionUseCase,
       { provide: 'IFinanceCardCreditRepository', useValue: cardCreditRepositoryMock },
       { provide: 'IFinanceRecurrenceRepository', useValue: recurrenceRepositoryMock },
@@ -53,6 +58,7 @@ beforeEach(async () => {
 const mocks = {
   accessibleOwners,
   cardCreditRepository: cardCreditRepositoryMock,
+  gate: gateMock,
   recurrenceRepository: recurrenceRepositoryMock,
   recurring: recurringMock,
   transaction: transactionMock,

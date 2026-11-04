@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 
+import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import RecurrenceEntityFixture from '@finance/domain/entity/mocks/RecurrenceEntity.fixture';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
@@ -15,6 +16,8 @@ const recurrenceRepositoryMock = { applyChange: jest.fn(), findByOwners: jest.fn
 
 // endregion Mocks
 
+const gateMock = { invalidate: jest.fn() };
+
 let setup: EndRecurrencesBySourceUseCase;
 
 beforeEach(async () => {
@@ -24,6 +27,7 @@ beforeEach(async () => {
 
   const module = await Test.createTestingModule({
     providers: [
+      { provide: MaterializationGate, useValue: gateMock },
       EndRecurrencesBySourceUseCase,
       { provide: 'IFinanceRecurrenceRepository', useValue: recurrenceRepositoryMock },
     ],
@@ -34,6 +38,7 @@ beforeEach(async () => {
 
 const mocks = {
   accessibleOwners,
+  gate: gateMock,
   recurrenceRepository: recurrenceRepositoryMock,
   series: seriesMock,
 };

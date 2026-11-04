@@ -57,3 +57,9 @@ it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)'
     status: 422,
   });
 });
+
+it('SHOULD invalidate the gate of the series owner after the removal (spec 081)', async () => {
+  await setup.execute({ accessibleOwners: mocks.accessibleOwners, id: 'series-1' });
+
+  expect(mocks.gate.invalidate).toHaveBeenCalledWith([mocks.series.ownerId]);
+});

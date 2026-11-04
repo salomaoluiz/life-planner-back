@@ -4,6 +4,7 @@ import {
   EndRecurrencesBySourceInput,
   EndRecurrencesBySourceSchema,
 } from '@finance/application/dto/EndRecurrencesBySource';
+import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import { RecurrenceStatus } from '@finance/domain/enum';
 import { IFinanceRecurrenceRepository } from '@finance/domain/repository';
 import { occurrenceDate } from '@finance/domain/service/RecurrenceSchedule';
@@ -17,6 +18,8 @@ export class EndRecurrencesBySourceUseCase implements UseCaseWithParams<
   number
 > {
   constructor(
+    @Inject(MaterializationGate)
+    private readonly materializationGate: MaterializationGate,
     @Inject('IFinanceRecurrenceRepository')
     private readonly recurrenceRepository: IFinanceRecurrenceRepository,
   ) {}
@@ -44,6 +47,10 @@ export class EndRecurrencesBySourceUseCase implements UseCaseWithParams<
         },
         sourceId: series.id,
       });
+    }
+
+    if (active.length > 0) {
+      this.materializationGate.invalidate(active.map((series) => series.ownerId));
     }
 
     return active.length;

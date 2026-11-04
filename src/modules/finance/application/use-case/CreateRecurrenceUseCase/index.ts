@@ -4,6 +4,7 @@ import {
   CreateRecurrenceInput,
   CreateRecurrenceSchema,
 } from '@finance/application/dto/CreateRecurrence';
+import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
@@ -31,6 +32,8 @@ export class CreateRecurrenceUseCase implements UseCaseWithParams<
   RecurrenceWithOccurrences
 > {
   constructor(
+    @Inject(MaterializationGate)
+    private readonly materializationGate: MaterializationGate,
     @Inject(ComputeCardInvoicesUseCase)
     private readonly computeCardInvoicesUseCase: ComputeCardInvoicesUseCase,
     @Inject(EnsureTransactionConsistencyUseCase)
@@ -101,6 +104,8 @@ export class CreateRecurrenceUseCase implements UseCaseWithParams<
       type: input.type,
       value: input.value,
     });
+
+    this.materializationGate.invalidate([input.ownerId]);
 
     const [recurrence, occurrences] = await Promise.all([
       this.recurrenceRepository.findById(id) as Promise<RecurrenceEntity>,

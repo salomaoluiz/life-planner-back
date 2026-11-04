@@ -27,3 +27,9 @@ it('SHOULD propagate a repository failure (the API answers 500 and the user row 
 
   await expect(setup.execute(mocks.input)).rejects.toThrow('db down');
 });
+
+it('SHOULD invalidate the gate of the purged owner (spec 081)', async () => {
+  await setup.execute(mocks.input);
+
+  expect(mocks.gate.invalidate).toHaveBeenCalledWith(['user-id']);
+});

@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 
+import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { DeleteFinanceDataByOwnerUseCase } from './index';
@@ -11,6 +12,8 @@ const ownerDataRepositoryMock = { deleteAllByOwner: jest.fn() };
 
 // endregion Mocks
 
+const gateMock = { invalidate: jest.fn() };
+
 let setup: DeleteFinanceDataByOwnerUseCase;
 
 beforeEach(async () => {
@@ -19,6 +22,7 @@ beforeEach(async () => {
 
   const module = await Test.createTestingModule({
     providers: [
+      { provide: MaterializationGate, useValue: gateMock },
       DeleteFinanceDataByOwnerUseCase,
       { provide: 'IFinanceOwnerDataRepository', useValue: ownerDataRepositoryMock },
     ],
@@ -27,7 +31,7 @@ beforeEach(async () => {
   setup = module.get(DeleteFinanceDataByOwnerUseCase);
 });
 
-const mocks = { input: inputMock, ownerDataRepository: ownerDataRepositoryMock };
+const mocks = { gate: gateMock, input: inputMock, ownerDataRepository: ownerDataRepositoryMock };
 const spies = {};
 
 export { mocks, setup, spies };

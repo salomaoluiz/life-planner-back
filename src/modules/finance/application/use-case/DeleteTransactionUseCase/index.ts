@@ -4,6 +4,7 @@ import {
   DeleteTransactionInput,
   DeleteTransactionSchema,
 } from '@finance/application/dto/DeleteTransaction';
+import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { CARD_CREDIT_KEYS } from '@finance/domain/entity/SystemCategory';
@@ -18,6 +19,8 @@ import { validate } from '@shared/infra/validation';
 
 export class DeleteTransactionUseCase implements UseCaseWithParams<DeleteTransactionInput, void> {
   constructor(
+    @Inject(MaterializationGate)
+    private readonly materializationGate: MaterializationGate,
     @Inject('IFinanceCardCreditRepository')
     private readonly cardCreditRepository: IFinanceCardCreditRepository,
     @Inject('IFinanceRecurrenceRepository')
@@ -83,6 +86,10 @@ export class DeleteTransactionUseCase implements UseCaseWithParams<DeleteTransac
 
     if (series && occurrenceNumber > series.firstNumber - 1 + series.lastGeneratedNumber) {
       await this.recurrenceRepository.skipNumber(series.id, occurrenceNumber);
+    }
+
+    if (series) {
+      this.materializationGate.invalidate([series.ownerId]);
     }
   }
 }

@@ -45,3 +45,17 @@ describe('EndRecurrencesBySourceUseCase', () => {
     await expect(setup.execute({ ...base, creditCardId: 'card-1' })).rejects.toThrow();
   });
 });
+
+it('SHOULD invalidate the gate of the ended series owners (spec 081)', async () => {
+  await setup.execute(base);
+
+  expect(mocks.gate.invalidate).toHaveBeenCalledWith([mocks.series.ownerId]);
+});
+
+it('SHOULD not invalidate WHEN no series was ended (spec 081)', async () => {
+  mocks.recurrenceRepository.findByOwners.mockResolvedValue([]);
+
+  await setup.execute(base);
+
+  expect(mocks.gate.invalidate).not.toHaveBeenCalled();
+});

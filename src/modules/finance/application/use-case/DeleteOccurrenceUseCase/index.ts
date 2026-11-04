@@ -4,6 +4,7 @@ import {
   DeleteOccurrenceInput,
   DeleteOccurrenceSchema,
 } from '@finance/application/dto/DeleteRecurrence';
+import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { DeleteRecurrenceUseCase } from '@finance/application/use-case/DeleteRecurrenceUseCase';
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
@@ -18,6 +19,8 @@ import { validate } from '@shared/infra/validation';
 // Spec 034 FR 29-30 for an occurrence that may be real or still projected.
 export class DeleteOccurrenceUseCase implements UseCaseWithParams<DeleteOccurrenceInput, void> {
   constructor(
+    @Inject(MaterializationGate)
+    private readonly materializationGate: MaterializationGate,
     @Inject(DeleteRecurrenceUseCase)
     private readonly deleteRecurrenceUseCase: DeleteRecurrenceUseCase,
     @Inject(DeleteTransactionUseCase)
@@ -83,6 +86,7 @@ export class DeleteOccurrenceUseCase implements UseCaseWithParams<DeleteOccurren
         status: pending ? RecurrenceStatus.ACTIVE : RecurrenceStatus.ENDED,
       },
     });
+    this.materializationGate.invalidate([series.ownerId]);
   }
 
   private async deleteOne(
@@ -111,5 +115,6 @@ export class DeleteOccurrenceUseCase implements UseCaseWithParams<DeleteOccurren
     }
 
     await this.recurrenceRepository.skipNumber(series.id, input.occurrenceNumber);
+    this.materializationGate.invalidate([series.ownerId]);
   }
 }

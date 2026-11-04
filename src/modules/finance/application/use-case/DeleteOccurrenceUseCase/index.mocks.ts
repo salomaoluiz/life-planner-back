@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 
+import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import { DeleteRecurrenceUseCase } from '@finance/application/use-case/DeleteRecurrenceUseCase';
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
 import RecurrenceEntityFixture from '@finance/domain/entity/mocks/RecurrenceEntity.fixture';
@@ -32,6 +33,8 @@ const recurrenceRepositoryMock = {
 
 // endregion Mocks
 
+const gateMock = { invalidate: jest.fn() };
+
 let setup: DeleteOccurrenceUseCase;
 
 beforeEach(async () => {
@@ -50,6 +53,7 @@ beforeEach(async () => {
 
   const module = await Test.createTestingModule({
     providers: [
+      { provide: MaterializationGate, useValue: gateMock },
       DeleteOccurrenceUseCase,
       { provide: DeleteRecurrenceUseCase, useValue: deleteRecurrenceMock },
       { provide: DeleteTransactionUseCase, useValue: deleteTransactionMock },
@@ -64,6 +68,7 @@ const mocks = {
   accessibleOwners,
   deleteRecurrence: deleteRecurrenceMock,
   deleteTransaction: deleteTransactionMock,
+  gate: gateMock,
   recurrenceRepository: recurrenceRepositoryMock,
   series: seriesMock,
 };

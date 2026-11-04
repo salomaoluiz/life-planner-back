@@ -4,6 +4,7 @@ import {
   DeleteRecurrenceInput,
   DeleteRecurrenceSchema,
 } from '@finance/application/dto/DeleteRecurrence';
+import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { IFinanceRecurrenceRepository, RemoveRecurrenceResult } from '@finance/domain/repository';
@@ -17,6 +18,8 @@ export class DeleteRecurrenceUseCase implements UseCaseWithParams<
   RemoveRecurrenceResult
 > {
   constructor(
+    @Inject(MaterializationGate)
+    private readonly materializationGate: MaterializationGate,
     @Inject('IFinanceRecurrenceRepository')
     private readonly recurrenceRepository: IFinanceRecurrenceRepository,
   ) {}
@@ -31,12 +34,16 @@ export class DeleteRecurrenceUseCase implements UseCaseWithParams<
 
     ensureOwnerWritable(input.accessibleOwners, series);
 
-    return this.recurrenceRepository.removeFrom({
+    const result = await this.recurrenceRepository.removeFrom({
       confirmPaid: input.confirmPaid ?? false,
       deleteSeries: true,
       detachLocked: true,
       fromNumber: 0,
       id: series.id,
     });
+
+    this.materializationGate.invalidate([series.ownerId]);
+
+    return result;
   }
 }
