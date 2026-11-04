@@ -29,6 +29,23 @@ describe('Method create', () => {
     });
   });
 
+  it('SHOULD apply ONE ledger increment per account for many paid rows', async () => {
+    await setup.create({
+      ...mocks.accountParams,
+      rows: [1, 2, 3].map((number) => ({
+        date: new Date(`2026-0${number}-05T00:00:00.000Z`),
+        number,
+        paid: true,
+      })),
+    });
+
+    expect(spies.accountUpdate).toHaveBeenCalledTimes(1);
+    expect(spies.accountUpdate).toHaveBeenCalledWith({
+      data: { ledger_balance: { increment: -600000 } },
+      where: { id: 'account-1' },
+    });
+  });
+
   it('SHOULD store unpaid account rows without touching the ledger', async () => {
     await setup.create({ ...mocks.accountParams, rows: [{ date: new Date(), number: 1 }] });
 

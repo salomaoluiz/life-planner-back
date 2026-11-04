@@ -1056,6 +1056,26 @@ describe('Method createMany (spec 047)', () => {
     expect(spies.transaction).not.toHaveBeenCalled();
   });
 
+  it('SHOULD update the ledger of an import of 500 rows with ONE statement (spec 086)', async () => {
+    spies.createManyAndReturn.mockImplementationOnce(async ({ data }) => data);
+
+    await setup.createMany(Array.from({ length: 500 }, () => row({ value: 10 })));
+
+    expect(spies.accountUpdate).toHaveBeenCalledTimes(1);
+    expect(spies.accountUpdate).toHaveBeenCalledWith({
+      data: { ledger_balance: { increment: -5000 } },
+      where: { id: 'acc-b' },
+    });
+  });
+
+  it('SHOULD NOT touch an account whose rows net to zero (spec 086)', async () => {
+    spies.createManyAndReturn.mockImplementationOnce(async ({ data }) => data);
+
+    await setup.createMany([row({ value: 100 }), row({ type: 'INCOME', value: 100 })]);
+
+    expect(spies.accountUpdate).not.toHaveBeenCalled();
+  });
+
   it('SHOULD write all rows, sum the ledger per account in id order, and skip unpaid rows', async () => {
     spies.createManyAndReturn.mockImplementationOnce(async ({ data }) => data);
 

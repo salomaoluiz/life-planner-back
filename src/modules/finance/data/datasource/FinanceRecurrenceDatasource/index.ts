@@ -13,6 +13,7 @@ import {
   assertInvoiceNotPaid,
   assertInvoicesNotPaid,
   lockCards,
+  sumLedgerDeltas,
   toLedgerEntry,
 } from '@finance/data/datasource/ledger';
 import { toOwnerWhere } from '@finance/data/datasource/mapper/OwnerWhere';
@@ -465,16 +466,22 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
       if (rows.length > 0) {
         await tx.financialTransaction.createMany({ data: rows });
         await copyRecurrenceTagsToRows(tx, series.id);
-        for (const row of rows) {
-          const entry = toLedgerEntry({
-            account_id: row.account_id ?? null,
-            paid: row.paid ?? null,
-            type: row.type,
-            value: row.value,
-          });
-
-          await applyLedgerDeltas(tx, ledgerDeltas(undefined, entry));
-        }
+        await applyLedgerDeltas(
+          tx,
+          sumLedgerDeltas(
+            rows.flatMap((row) =>
+              ledgerDeltas(
+                undefined,
+                toLedgerEntry({
+                  account_id: row.account_id ?? null,
+                  paid: row.paid ?? null,
+                  type: row.type,
+                  value: row.value,
+                }),
+              ),
+            ),
+          ),
+        );
       }
 
       return series.id;
@@ -750,16 +757,5 @@ function templateOf(
 function reversalOf(
   rows: { account_id: null | string; paid: boolean | null; type: string; value: number }[],
 ): LedgerDelta[] {
-  const totals = new Map<string, number>();
-
-  for (const row of rows) {
-    for (const { accountId, delta } of ledgerDeltas(toLedgerEntry(row), undefined)) {
-      totals.set(accountId, (totals.get(accountId) ?? 0) + delta);
-    }
-  }
-
-  return [...totals.entries()]
-    .filter(([, delta]) => delta !== 0)
-    .map(([accountId, delta]) => ({ accountId, delta }))
-    .sort((a, b) => a.accountId.localeCompare(b.accountId));
+  return sumLedgerDeltas(rows.flatMap((row) => ledgerDeltas(toLedgerEntry(row), undefined)));
 }
