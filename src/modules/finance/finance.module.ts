@@ -55,6 +55,7 @@ import { GetProjectionsUseCase } from '@finance/application/use-case/GetProjecti
 import { GetRecurrencesUseCase } from '@finance/application/use-case/GetRecurrencesUseCase';
 import { GetRecurrenceUseCase } from '@finance/application/use-case/GetRecurrenceUseCase';
 import { GetTagsUseCase } from '@finance/application/use-case/GetTagsUseCase';
+import { GetTransactionByIdUseCase } from '@finance/application/use-case/GetTransactionByIdUseCase';
 import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransactionsUseCase';
 import { GetUpcomingItemsUseCase } from '@finance/application/use-case/GetUpcomingItemsUseCase';
 import { HasFinanceDataByOwnerUseCase } from '@finance/application/use-case/HasFinanceDataByOwnerUseCase';
@@ -167,6 +168,7 @@ const useCases = [
   GetPrepaymentPreviewUseCase,
   CountExportTransactionsUseCase,
   ExportTransactionsUseCase,
+  GetTransactionByIdUseCase,
   GetTransactionsUseCase,
   ImportTransactionsUseCase,
   HasFinanceDataByOwnerUseCase,
