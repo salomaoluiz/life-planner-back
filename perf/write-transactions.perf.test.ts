@@ -12,6 +12,7 @@ import { AppModule } from '../src/modules/app.module';
 import { assertPerfRunAllowed } from '../scripts/perf/measure/safety';
 import { loadRegistry } from '../scripts/perf/registry';
 import { ApiClient } from '../scripts/perf/seed/client';
+import { measure } from './support/measure';
 
 // Spec 085: statements held under lock by the transaction writes, and 10 parallel writes on one card and one account.
 // Exception to spec 093 ("perf tests only read"): it writes only under a throwaway user it signs up itself (never the
@@ -30,25 +31,6 @@ let accountId: string;
 let cardId: string;
 let categoryId: string;
 const today = new Date().toISOString().slice(0, 10);
-
-interface Measured {
-  inTx: number;
-  statements: string[];
-  total: number;
-}
-
-// Statements strictly between the first BEGIN and the COMMIT that closes it, for one request.
-async function measure<T>(run: () => Promise<T>): Promise<Measured & { result: T }> {
-  QueryCounter.begin();
-  const result = await run();
-  const { statements, total } = QueryCounter.end();
-  const begin = statements.findIndex((sql) => /^\s*BEGIN\b/i.test(sql));
-  const commit = statements.findIndex((sql, index) => index > begin && /^\s*COMMIT\b/i.test(sql));
-
-  const inside = begin < 0 || commit < 0 ? [] : statements.slice(begin + 1, commit);
-
-  return { inTx: begin < 0 || commit < 0 ? -1 : inside.length, result, statements: inside, total };
-}
 
 // The relation read of the response is a join (spec 071); under lock only scalars are selected (spec 085 FR 1).
 const joinReads = (statements: string[]): number =>

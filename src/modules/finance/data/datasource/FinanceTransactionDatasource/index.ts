@@ -6,6 +6,7 @@ import {
   assertInvoiceNotPaid,
   lockCards,
   lockWriteScope,
+  sumLedgerDeltas,
   toLedgerEntry,
 } from '@finance/data/datasource/ledger';
 import { fromCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
@@ -799,19 +800,10 @@ export async function insertRows(
     data: entries.map((entry) => entry.data),
     select: { account_id: true, paid: true, type: true, value: true },
   });
-  const deltas = new Map<string, number>();
-
-  for (const row of created) {
-    for (const { accountId, delta } of ledgerDeltas(undefined, toLedgerEntry(row))) {
-      deltas.set(accountId, (deltas.get(accountId) ?? 0) + delta);
-    }
-  }
 
   await applyLedgerDeltas(
     tx,
-    [...deltas.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([accountId, delta]) => ({ accountId, delta })),
+    sumLedgerDeltas(created.flatMap((row) => ledgerDeltas(undefined, toLedgerEntry(row)))),
   );
   // Tags belong to the owner of their rows: one resolution per owner (spec 047, owner per row).
   const byOwner = new Map<string, typeof entries>();

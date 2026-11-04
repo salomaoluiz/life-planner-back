@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 
 import { Prisma, TransactionType } from '@db/client';
+import { batchUpdate } from '@finance/data/datasource/batchUpdate';
 import { assertInvoicesNotPaid, lockCards } from '@finance/data/datasource/ledger';
 import {
   FinancialPrepaymentWithDiscount,
@@ -151,12 +152,17 @@ export class FinancePrepaymentDatasource implements IFinancePrepaymentDatasource
         ...Object.values(original),
       ]);
 
-      for (const [id, month] of Object.entries(original)) {
-        await tx.financialTransaction.update({
-          data: { invoice_month: month, prepayment_id: null },
-          where: { id },
-        });
-      }
+      // Spec 086: every installment goes back in one statement.
+      await batchUpdate(
+        tx,
+        'financial_transactions',
+        'id',
+        [
+          { cast: 'char(7)', name: 'invoice_month' },
+          { cast: 'text', name: 'prepayment_id' },
+        ],
+        Object.entries(original).map(([id, month]) => ({ key: id, values: [month, null] })),
+      );
 
       // The record points at the discount row and the row points back at the record: break the cycle first.
       await tx.financialInstallmentPrepayment.update({

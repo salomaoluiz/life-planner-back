@@ -49,12 +49,14 @@ const transactionSpy = jest.fn();
 const paymentFindManySpy = jest.fn();
 const planFindManySpy = jest.fn();
 const txUpdateSpy = jest.fn();
+const executeRawSpy = jest.fn();
 const txFindManySpy = jest.fn();
 const txUpdateManySpy = jest.fn();
 
 // endregion Spies
 
 const clientMock = {
+  $executeRaw: executeRawSpy,
   $queryRaw: queryRawSpy,
   $transaction: transactionSpy,
   financialCreditCard: {
@@ -95,6 +97,7 @@ const mocks = { card: cardMock, owners: ownersMock };
 const spies = {
   create: createSpy,
   deleteMany: deleteManySpy,
+  executeRaw: executeRawSpy,
   findFirst: findFirstSpy,
   findMany: findManySpy,
   findUnique: findUniqueSpy,

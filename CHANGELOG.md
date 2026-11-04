@@ -3,6 +3,12 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.1.6] - 2026-11-04
+
+### Changed
+
+- Editing a long recurring series onto another card, changing a card's closing day and undoing an installment prepayment now update their rows in one step instead of one by one, so they finish faster. Creating a long series with many paid occurrences also touches the account balance once. Responses do not change (spec 086).
+
 ## [3.1.5] - 2026-11-04
 
 ### Changed

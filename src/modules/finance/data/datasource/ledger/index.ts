@@ -42,6 +42,21 @@ export async function applyLedgerDeltas(
   }
 }
 
+// Spec 086: the net delta of each account, zero totals dropped, ascending by account id (the lock order of
+// `financial_accounts`). Per-row loops sum first and apply once.
+export function sumLedgerDeltas(deltas: LedgerDelta[]): LedgerDelta[] {
+  const totals = new Map<string, number>();
+
+  for (const { accountId, delta } of deltas) {
+    totals.set(accountId, (totals.get(accountId) ?? 0) + delta);
+  }
+
+  return [...totals.entries()]
+    .filter(([, delta]) => delta !== 0)
+    .map(([accountId, delta]) => ({ accountId, delta }))
+    .sort((a, b) => a.accountId.localeCompare(b.accountId));
+}
+
 // A purchase can't be written into (or out of) an invoice that already has a payment (spec 029 FR 7).
 export async function assertInvoiceNotPaid(
   tx: Prisma.TransactionClient,

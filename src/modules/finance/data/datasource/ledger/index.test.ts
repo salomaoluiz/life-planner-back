@@ -6,6 +6,7 @@ import {
   assertNoPaidInstallment,
   lockTransactionRow,
   lockWriteScope,
+  sumLedgerDeltas,
   toLedgerEntry,
 } from './index';
 import { mocks, spies } from './index.mocks';
@@ -156,5 +157,26 @@ describe('assertInvoicesNotPaid / assertNoPaidInstallment', () => {
     await expect(assertNoPaidInstallment(mocks.tx, 'card-1', ['2026-10'])).rejects.toThrow(
       'An installment is in a paid invoice',
     );
+  });
+});
+
+describe('sumLedgerDeltas (spec 086)', () => {
+  it('SHOULD sum per account, drop zero totals AND sort ascending by account id', () => {
+    expect(
+      sumLedgerDeltas([
+        { accountId: 'acc-b', delta: -100 },
+        { accountId: 'acc-a', delta: 50 },
+        { accountId: 'acc-b', delta: -200 },
+        { accountId: 'acc-c', delta: 70 },
+        { accountId: 'acc-c', delta: -70 },
+      ]),
+    ).toEqual([
+      { accountId: 'acc-a', delta: 50 },
+      { accountId: 'acc-b', delta: -300 },
+    ]);
+  });
+
+  it('SHOULD return nothing for no deltas', () => {
+    expect(sumLedgerDeltas([])).toEqual([]);
   });
 });

@@ -67,6 +67,7 @@
     "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
+    "maxQueriesInTx": 8,
     "p50Ms": null,
     "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
     "scenario": ""
@@ -380,6 +381,7 @@
     "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
+    "maxQueriesInTx": 6,
     "p50Ms": null,
     "scenario": "",
     "reason": "Writes are not measured: perf tests only read (spec 093)."
@@ -543,6 +545,7 @@
     "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
+    "maxQueriesInTx": 8,
     "p50Ms": null,
     "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
     "scenario": ""

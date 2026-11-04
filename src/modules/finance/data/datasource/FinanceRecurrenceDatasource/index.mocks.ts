@@ -7,6 +7,7 @@ import { FinanceRecurrenceDatasource } from './index';
 // region Spies
 
 const accountUpdateSpy = jest.fn();
+const executeRawSpy = jest.fn();
 const paymentFindFirstSpy = jest.fn();
 const paymentFindManySpy = jest.fn();
 const queryRawSpy = jest.fn();
@@ -37,6 +38,7 @@ const transactionSpy = jest.fn();
 // endregion Spies
 
 const clientMock = {
+  $executeRaw: executeRawSpy,
   $queryRaw: queryRawSpy,
   $transaction: transactionSpy,
   financialAccount: { update: accountUpdateSpy },
@@ -127,6 +129,7 @@ const mocks = {
 };
 const spies = {
   accountUpdate: accountUpdateSpy,
+  executeRaw: executeRawSpy,
   paymentFindFirst: paymentFindFirstSpy,
   paymentFindMany: paymentFindManySpy,
   queryRaw: queryRawSpy,

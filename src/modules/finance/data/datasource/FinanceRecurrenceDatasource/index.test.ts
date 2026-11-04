@@ -29,6 +29,23 @@ describe('Method create', () => {
     });
   });
 
+  it('SHOULD apply ONE ledger increment per account for many paid rows', async () => {
+    await setup.create({
+      ...mocks.accountParams,
+      rows: [1, 2, 3].map((number) => ({
+        date: new Date(`2026-0${number}-05T00:00:00.000Z`),
+        number,
+        paid: true,
+      })),
+    });
+
+    expect(spies.accountUpdate).toHaveBeenCalledTimes(1);
+    expect(spies.accountUpdate).toHaveBeenCalledWith({
+      data: { ledger_balance: { increment: -600000 } },
+      where: { id: 'account-1' },
+    });
+  });
+
   it('SHOULD store unpaid account rows without touching the ledger', async () => {
     await setup.create({ ...mocks.accountParams, rows: [{ date: new Date(), number: 1 }] });
 
@@ -328,11 +345,60 @@ describe('Method apply', () => {
       },
     });
 
-    expect(spies.rowUpdate).toHaveBeenCalledTimes(1);
-    expect(spies.rowUpdate).toHaveBeenCalledWith({
-      data: { invoice_month: '2026-11' },
-      where: { id: 'open' },
+    expect(spies.rowUpdate).not.toHaveBeenCalled();
+    expect(spies.executeRaw).toHaveBeenCalledTimes(1);
+    expect(spies.executeRaw.mock.calls[0][0].values).toEqual(['open', '2026-11']);
+    expect(spies.executeRaw.mock.calls[0][0].strings.join('?')).toContain(
+      'UPDATE "financial_transactions" AS t SET "invoice_month" = v."invoice_month"',
+    );
+  });
+
+  it('SHOULD update the invoice months of many editable rows in ONE statement', async () => {
+    spies.queryRaw.mockResolvedValue([]);
+    spies.recurrenceFindUnique.mockResolvedValue({
+      ...mocks.source,
+      account_id: null,
+      credit_card_id: 'card-1',
     });
+    const rows = Array.from({ length: 60 }, (_, index) => ({
+      credit_card_id: 'card-1',
+      id: `row-${index}`,
+      invoice_month: '2026-10',
+      paid: null,
+    }));
+    spies.rowFindMany.mockResolvedValue(rows);
+
+    await setup.apply({
+      ...base,
+      row_patch: {
+        invoice_months: rows.map((row) => ({ id: row.id, invoice_month: '2026-11' })),
+      },
+    });
+
+    expect(spies.executeRaw).toHaveBeenCalledTimes(1);
+    expect(spies.rowUpdate).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD NOT run a statement WHEN no invoice month is editable', async () => {
+    spies.queryRaw.mockResolvedValue([]);
+    spies.recurrenceFindUnique.mockResolvedValue({
+      ...mocks.source,
+      account_id: null,
+      credit_card_id: 'card-1',
+    });
+    spies.paymentFindMany.mockResolvedValue([
+      { credit_card_id: 'card-1', invoice_month: '2026-09' },
+    ]);
+    spies.rowFindMany.mockResolvedValue([
+      { credit_card_id: 'card-1', id: 'closed', invoice_month: '2026-09', paid: null },
+    ]);
+
+    await setup.apply({
+      ...base,
+      row_patch: { invoice_months: [{ id: 'closed', invoice_month: '2026-11' }] },
+    });
+
+    expect(spies.executeRaw).not.toHaveBeenCalled();
   });
 
   it('SHOULD delete the rows after the new end date', async () => {

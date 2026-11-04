@@ -1,5 +1,15 @@
 import { mocks, setup, spies } from './index.mocks';
 
+// The [id, invoice month] pairs the (single) batch statement of the update was given.
+function batchedPairs(): [string, string][] {
+  const { values } = spies.executeRaw.mock.calls[0][0] as { values: string[] };
+
+  return Array.from({ length: values.length / 2 }, (_, index) => [
+    values[index * 2],
+    values[index * 2 + 1],
+  ]);
+}
+
 describe('Method create', () => {
   it('SHOULD insert the card AND return the row', async () => {
     spies.create.mockResolvedValue(mocks.card);
@@ -152,11 +162,52 @@ describe('Method update with a new closing day (spec 029 FR 9)', () => {
         type: 'EXPENSE',
       },
     });
-    expect(spies.txUpdateMany).toHaveBeenCalledTimes(1);
-    expect(spies.txUpdateMany).toHaveBeenCalledWith({
-      data: { invoice_month: '2026-11' },
-      where: { id: { in: ['moves'] } },
-    });
+    expect(spies.txUpdateMany).not.toHaveBeenCalled();
+    expect(spies.executeRaw).toHaveBeenCalledTimes(1);
+    expect(batchedPairs()).toEqual([['moves', '2026-11']]);
+  });
+
+  it('SHOULD move purchases of several months AND installments in ONE statement', async () => {
+    spies.update.mockResolvedValue(mocks.card);
+    spies.paymentFindMany.mockResolvedValue([]);
+    spies.txFindMany.mockResolvedValue([
+      { date: new Date('2026-10-20T00:00:00.000Z'), id: 'a', invoice_month: '2026-10' },
+      { date: new Date('2026-11-20T00:00:00.000Z'), id: 'b', invoice_month: '2026-11' },
+    ]);
+    spies.planFindMany.mockResolvedValue([
+      {
+        date: new Date('2026-10-20T00:00:00.000Z'),
+        id: 'plan-1',
+        transactions: [
+          { id: 'r1', invoice_month: '2026-10' },
+          { id: 'r2', invoice_month: '2026-11' },
+        ],
+      },
+    ]);
+
+    await setup.update({ closing_day: 15, id: mocks.card.id });
+
+    expect(spies.executeRaw).toHaveBeenCalledTimes(1);
+    expect(spies.txUpdate).not.toHaveBeenCalled();
+    expect(spies.txUpdateMany).not.toHaveBeenCalled();
+    expect(batchedPairs()).toEqual([
+      ['a', '2026-11'],
+      ['b', '2026-12'],
+      ['r1', '2026-11'],
+      ['r2', '2026-12'],
+    ]);
+  });
+
+  it('SHOULD NOT run a statement WHEN no row moves', async () => {
+    spies.update.mockResolvedValue(mocks.card);
+    spies.paymentFindMany.mockResolvedValue([]);
+    spies.txFindMany.mockResolvedValue([
+      { date: new Date('2026-10-05T00:00:00.000Z'), id: 'stays', invoice_month: '2026-10' },
+    ]);
+
+    await setup.update({ closing_day: 15, id: mocks.card.id });
+
+    expect(spies.executeRaw).not.toHaveBeenCalled();
   });
 
   it('SHOULD NOT move a purchase into an invoice that is already paid', async () => {
@@ -169,6 +220,7 @@ describe('Method update with a new closing day (spec 029 FR 9)', () => {
     await setup.update({ closing_day: 15, id: mocks.card.id });
 
     expect(spies.txUpdateMany).not.toHaveBeenCalled();
+    expect(spies.executeRaw).not.toHaveBeenCalled();
   });
 });
 
@@ -199,15 +251,13 @@ describe('Method update with a new closing day: installments (spec 030 FR 18)', 
     // Purchase on 2026-10-20 with closing day 15 → first invoice 2026-11.
     await setup.update({ closing_day: 15, id: mocks.card.id });
 
-    expect(spies.txUpdate).toHaveBeenCalledTimes(3);
-    expect(spies.txUpdate).toHaveBeenNthCalledWith(1, {
-      data: { invoice_month: '2026-11' },
-      where: { id: 'r1' },
-    });
-    expect(spies.txUpdate).toHaveBeenNthCalledWith(3, {
-      data: { invoice_month: '2027-01' },
-      where: { id: 'r3' },
-    });
+    expect(spies.txUpdate).not.toHaveBeenCalled();
+    expect(spies.executeRaw).toHaveBeenCalledTimes(1);
+    expect(batchedPairs()).toEqual([
+      ['r1', '2026-11'],
+      ['r2', '2026-12'],
+      ['r3', '2027-01'],
+    ]);
   });
 
   it('SHOULD keep a paid installment AND push the later ones after it (never onto a paid month)', async () => {
@@ -224,6 +274,7 @@ describe('Method update with a new closing day: installments (spec 030 FR 18)', 
     await setup.update({ closing_day: 31, id: mocks.card.id });
 
     expect(spies.txUpdate).not.toHaveBeenCalled();
+    expect(spies.executeRaw).not.toHaveBeenCalled();
   });
 
   it('SHOULD move later unpaid rows past a paid one WHEN the new rule would collide with it', async () => {
@@ -239,9 +290,6 @@ describe('Method update with a new closing day: installments (spec 030 FR 18)', 
     // New first invoice is 2026-11, which row 2 (paid) already holds: row 1 can't fit before it.
     await setup.update({ closing_day: 15, id: mocks.card.id });
 
-    expect(spies.txUpdate).toHaveBeenCalledWith({
-      data: { invoice_month: '2026-12' },
-      where: { id: 'r1' },
-    });
+    expect(batchedPairs()).toContainEqual(['r1', '2026-12']);
   });
 });
