@@ -19,6 +19,7 @@ import {
   uniqueNames,
 } from '@finance/data/datasource/tags';
 import {
+  CardInvoiceCount,
   CardInvoiceKey,
   CardInvoiceSum,
   CreateTransactionDatasourceParams,
@@ -30,6 +31,7 @@ import {
   FinancialTransactionWithRelations,
   FindTransactionsFilter,
   IFinanceTransactionDatasource,
+  UnpaidAccountRowRecord,
   UpdateTransactionDatasourceParams,
 } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
@@ -232,15 +234,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
               : { not: null },
             invoice_month: filter.invoiceMonth,
           }
-        : {
-            // The account row of an early payment (it has a card row pointing at it) stays in the list.
-            credit_card_id: null,
-            OR: [
-              { category: { system_key: null } },
-              { category: { system_key: { not: SystemCategoryKey.INVOICE_PAYMENT } } },
-              { early_payment: { isNot: null } },
-            ],
-          };
+        : ACCOUNT_SOURCE_WHERE;
     return this.db.client.financialTransaction.findMany({
       include: TRANSACTION_RELATIONS,
       // `id` breaks ties (rows imported or materialized together share date and created_at): a stable order.
@@ -256,6 +250,59 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
         ],
       },
     });
+  }
+
+  // Spec 082: the unpaid account rows up to `to` (no lower bound) with scalars only, for /finance/upcoming.
+  async findUnpaidAccountRows(
+    owners: OwnerAccess[],
+    to: string,
+  ): Promise<UnpaidAccountRowRecord[]> {
+    return this.db.client.financialTransaction.findMany({
+      orderBy: [{ date: 'desc' }, { created_at: 'desc' }, { id: 'desc' }],
+      select: {
+        account_id: true,
+        category_id: true,
+        currency: true,
+        date: true,
+        description: true,
+        id: true,
+        occurrence_number: true,
+        owner: true,
+        owner_id: true,
+        recurrence_id: true,
+        type: true,
+        value: true,
+      },
+      where: {
+        AND: [
+          toOwnerWhere(owners),
+          ACCOUNT_SOURCE_WHERE,
+          {
+            category: { exclude_from_totals: false },
+            date: { lte: fromCalendarDate(to) },
+            paid: false,
+          },
+        ],
+      },
+    });
+  }
+
+  // Spec 082: how many rows (any type) each (card, invoice month) holds, without loading them.
+  async countCardPurchases(keys: CardInvoiceKey[]): Promise<CardInvoiceCount[]> {
+    if (keys.length === 0) {
+      return [];
+    }
+    const rows = await this.db.client.financialTransaction.groupBy({
+      _count: { _all: true },
+      by: ['credit_card_id', 'invoice_month'],
+      where: { OR: keys.map((key) => ({ ...key })) },
+    });
+
+    return rows.map((row) => ({
+      count: row._count._all,
+      credit_card_id: row.credit_card_id as string,
+      invoice_month: row.invoice_month as string,
+    }));
   }
 
   async findCardPurchases(keys: CardInvoiceKey[]): Promise<FinancialTransactionWithRelations[]> {
@@ -529,6 +576,15 @@ function exportWhere(
     ],
   };
 }
+// The account side of the list: an early payment's account row (it has a card row pointing at it) stays in.
+const ACCOUNT_SOURCE_WHERE = {
+  credit_card_id: null,
+  OR: [
+    { category: { system_key: null } },
+    { category: { system_key: { not: SystemCategoryKey.INVOICE_PAYMENT } } },
+    { early_payment: { isNot: null } },
+  ],
+};
 // Rows strictly after the cursor in the (date, created_at, id) descending order.
 function afterCursorWhere(cursor: NonNullable<FindTransactionsFilter['cursor']>) {
   return {

@@ -12,6 +12,9 @@ import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { TransactionSource } from '@finance/domain/enum';
 import { CurrencyCode } from '@finance/domain/enum/Currency';
 
+export interface CardInvoiceCount extends CardInvoiceKey {
+  count: number;
+}
 export interface CardInvoiceKey {
   credit_card_id: string;
   invoice_month: string;
@@ -108,6 +111,7 @@ export type FinancialTransactionWithRelations = {
   // Spec 043: present on every read through TRANSACTION_RELATIONS, in the stored order.
   tags?: { tag: { id: string; name: string } }[];
 } & FinancialTransaction;
+// Spec 082: the scalars /finance/upcoming needs from an unpaid account row.
 export interface FindTransactionsFilter {
   accountIds?: string[];
   categoryIds?: string[];
@@ -129,6 +133,7 @@ export interface IFinanceTransactionDatasource {
   countForExport(params: ExportTransactionsDatasourceParams): Promise<number>;
   create(params: CreateTransactionDatasourceParams): Promise<FinancialTransactionWithRelations>;
   // Spec 047: all rows in ONE database transaction (ledger and tags included); returns how many were written.
+  countCardPurchases(keys: CardInvoiceKey[]): Promise<CardInvoiceCount[]>;
   createMany(rows: CreateTransactionDatasourceParams[]): Promise<number>;
   delete(id: string): Promise<void>;
   exists(params: ExistsTransactionDatasourceParams): Promise<boolean>;
@@ -148,10 +153,26 @@ export interface IFinanceTransactionDatasource {
   findForExport(
     params: ExportTransactionsDatasourceParams,
   ): Promise<FinancialTransactionWithRelations[]>;
+  findUnpaidAccountRows(owners: OwnerAccess[], to: string): Promise<UnpaidAccountRowRecord[]>;
   sumCardInvoices(creditCardIds: string[]): Promise<CardInvoiceSum[]>;
   sumDashboardRows(params: DashboardSumsParams): Promise<DashboardSumRow[]>;
   update(params: UpdateTransactionDatasourceParams): Promise<FinancialTransactionWithRelations>;
 }
+export type UnpaidAccountRowRecord = Pick<
+  FinancialTransaction,
+  | 'account_id'
+  | 'category_id'
+  | 'currency'
+  | 'date'
+  | 'description'
+  | 'id'
+  | 'occurrence_number'
+  | 'owner_id'
+  | 'owner'
+  | 'recurrence_id'
+  | 'type'
+  | 'value'
+>;
 export interface UpdateTransactionDatasourceParams {
   account_id?: null | string;
   category_id?: string;

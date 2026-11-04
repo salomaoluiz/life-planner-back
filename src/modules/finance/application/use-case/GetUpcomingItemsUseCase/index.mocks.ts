@@ -3,8 +3,8 @@ import { Test } from '@nestjs/testing';
 import { FindInvoicesInRangeUseCase } from '@finance/application/use-case/FindInvoicesInRangeUseCase';
 import { GetProjectionsUseCase } from '@finance/application/use-case/GetProjectionsUseCase';
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
-import TransactionEntityFixture from '@finance/domain/entity/mocks/TransactionEntity.fixture';
-import { InvoiceStatus } from '@finance/domain/enum';
+import { InvoiceStatus, TransactionType } from '@finance/domain/enum';
+import { UnpaidAccountRow } from '@finance/domain/repository';
 import { Invoice } from '@finance/domain/service/InvoiceCalculator';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
@@ -33,20 +33,27 @@ function invoiceMock(overrides: Partial<Invoice> = {}): Invoice {
     ...overrides,
   } as Invoice;
 }
-function rowMock(date: string, overrides: { id?: string; paid?: boolean; value?: number } = {}) {
-  const row = new TransactionEntityFixture()
-    .withOwner(OwnerType.USER)
-    .withOwnerId(ownerId)
-    .withAccountId('account-a')
-    .withDate(date)
-    .withPaid(overrides.paid ?? false)
-    .withValue(overrides.value ?? 1000)
-    .build();
-
-  return overrides.id ? { ...row, id: overrides.id } : row;
+function rowMock(date: string, overrides: { id?: string; value?: number } = {}): UnpaidAccountRow {
+  return {
+    accountId: 'account-a',
+    categoryId: 'category-a',
+    currency: 'BRL',
+    date,
+    description: 'Rent',
+    id: overrides.id ?? `row-${date}`,
+    occurrenceNumber: null,
+    owner: OwnerType.USER,
+    ownerId,
+    recurrenceId: null,
+    type: TransactionType.EXPENSE,
+    value: overrides.value ?? 1000,
+  };
 }
 
-const transactionRepositoryMock = { findCardPurchases: jest.fn(), findTransactions: jest.fn() };
+const transactionRepositoryMock = {
+  countCardPurchasesByInvoice: jest.fn(),
+  findUnpaidAccountRows: jest.fn(),
+};
 const findInvoicesMock = { execute: jest.fn() };
 const projectionsMock = { execute: jest.fn() };
 
@@ -56,8 +63,8 @@ let setup: GetUpcomingItemsUseCase;
 
 beforeEach(async () => {
   jest.resetAllMocks();
-  transactionRepositoryMock.findTransactions.mockResolvedValue([]);
-  transactionRepositoryMock.findCardPurchases.mockResolvedValue([]);
+  transactionRepositoryMock.findUnpaidAccountRows.mockResolvedValue([]);
+  transactionRepositoryMock.countCardPurchasesByInvoice.mockResolvedValue([]);
   findInvoicesMock.execute.mockResolvedValue([]);
   projectionsMock.execute.mockResolvedValue([]);
 
