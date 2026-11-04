@@ -11,15 +11,25 @@ export class FinanceAccessService {
   constructor(private readonly getUserFamilyAccessUseCase: GetUserFamilyAccessUseCase) {}
 
   async resolve(userId: string): Promise<OwnerAccess[]> {
+    return (await this.resolveWithNames(userId)).accessibleOwners;
+  }
+
+  // Spec 083: the family names come from the same read, for callers that print them (CSV export).
+  async resolveWithNames(
+    userId: string,
+  ): Promise<{ accessibleOwners: OwnerAccess[]; familyNames: Record<string, string> }> {
     const families = await this.getUserFamilyAccessUseCase.execute(userId);
 
-    return [
-      { owner: OwnerType.USER, ownerId: userId },
-      ...families.map(({ archived, familyId }) => ({
-        archived,
-        owner: OwnerType.FAMILY,
-        ownerId: familyId,
-      })),
-    ];
+    return {
+      accessibleOwners: [
+        { owner: OwnerType.USER, ownerId: userId },
+        ...families.map(({ archived, familyId }) => ({
+          archived,
+          owner: OwnerType.FAMILY,
+          ownerId: familyId,
+        })),
+      ],
+      familyNames: Object.fromEntries(families.map(({ familyId, name }) => [familyId, name])),
+    };
   }
 }

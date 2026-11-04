@@ -176,12 +176,13 @@ export class TransactionService {
   ): Promise<TransactionWithLookups> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
-    const { overLimit, transaction } = await this.createTransactionUseCase.execute({
+    const { invoiceData, overLimit, transaction } = await this.createTransactionUseCase.execute({
       ...input,
       accessibleOwners,
       today: resolveToday(today),
     });
     const [resolved] = await this.resolveCardRowsPaidUseCase.execute({
+      invoiceData,
       today: resolveToday(today),
       transactions: [transaction],
     });
@@ -216,7 +217,11 @@ export class TransactionService {
       today: resolveToday(today),
     });
 
-    const { items: transactions, nextCursor } = await this.getTransactionsUseCase.execute({
+    const {
+      invoiceData,
+      items: transactions,
+      nextCursor,
+    } = await this.getTransactionsUseCase.execute({
       accessibleOwners,
       ownerIds,
       ...filter,
@@ -224,6 +229,7 @@ export class TransactionService {
     });
 
     const resolved = await this.resolveCardRowsPaidUseCase.execute({
+      invoiceData,
       paid: filter.filter?.paid,
       today: resolveToday(today),
       transactions,
@@ -257,13 +263,14 @@ export class TransactionService {
   ): Promise<TransactionWithLookups> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
-    const { overLimit, transaction } = await this.updateTransactionUseCase.execute({
+    const { invoiceData, overLimit, transaction } = await this.updateTransactionUseCase.execute({
       ...input,
       accessibleOwners,
       id,
       today: resolveToday(today),
     });
     const [resolved] = await this.resolveCardRowsPaidUseCase.execute({
+      invoiceData,
       today: resolveToday(today),
       transactions: [transaction],
     });

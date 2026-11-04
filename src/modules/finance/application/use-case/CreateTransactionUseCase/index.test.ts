@@ -147,6 +147,7 @@ describe('card purchases (spec 029)', () => {
     const result = await setup.execute(cardInput());
 
     expect(result.overLimit).toBe(true);
+    expect(result.invoiceData).toEqual([{ invoices: { used: 10_001 } }]);
     expect(mocks.transactionRepository.createTransaction).toHaveBeenCalledTimes(1);
   });
 

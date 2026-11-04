@@ -27,3 +27,10 @@ it('SHOULD return [] WITHOUT reading cards WHEN no requested owner is accessible
   expect(await setup.execute({ ...mocks.input, ownerIds: ['stranger'] })).toEqual([]);
   expect(mocks.creditCardRepository.findCreditCards).not.toHaveBeenCalled();
 });
+
+it('SHOULD return the computed invoice data next to the matches WHEN called through executeWithData (spec 083)', async () => {
+  const { data, matches } = await setup.executeWithData(mocks.input);
+
+  expect(matches).toEqual(await setup.execute(mocks.input));
+  expect(data.map((item) => item.card.id)).toEqual([mocks.card.id]);
+});

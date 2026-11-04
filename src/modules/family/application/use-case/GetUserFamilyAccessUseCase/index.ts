@@ -7,6 +7,8 @@ import { UseCaseWithParams } from '@shared/application/use-case/types';
 export interface FamilyAccess {
   archived: boolean;
   familyId: string;
+  // Spec 083: lets a caller that needs the names (CSV export) skip a second family read.
+  name: string;
 }
 
 // Spec 042: the families the user belongs to with their archived flag, resolved once per request.
@@ -19,6 +21,7 @@ export class GetUserFamilyAccessUseCase implements UseCaseWithParams<string, Fam
     return families.map((family) => ({
       archived: family.status === FamilyStatus.ARCHIVED,
       familyId: family.id,
+      name: family.name,
     }));
   }
 }

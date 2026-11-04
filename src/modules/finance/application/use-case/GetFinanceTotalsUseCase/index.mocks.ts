@@ -4,6 +4,7 @@ import {
   DashboardRow,
   GetDashboardRowsUseCase,
 } from '@finance/application/use-case/GetDashboardRowsUseCase';
+import { LoadFilterCategoriesUseCase } from '@finance/application/use-case/LoadFilterCategoriesUseCase';
 import CategoryEntityFixture from '@finance/domain/entity/mocks/CategoryEntity.fixture';
 import TagEntityFixture from '@finance/domain/entity/mocks/TagEntity.fixture';
 import { TransactionType } from '@finance/domain/enum';
@@ -32,6 +33,7 @@ const food = new CategoryEntityFixture().withId('food').withName('Food').build()
 const tagFixed = new TagEntityFixture().withId('tag-fixed').withName('fixed').build();
 
 const categoryRepositoryMock = { findCategories: jest.fn() };
+const loadCategoriesMock = { execute: jest.fn() };
 const rowsMock = { execute: jest.fn() };
 const tagRepositoryMock = { findTags: jest.fn() };
 
@@ -55,6 +57,7 @@ let setup: GetFinanceTotalsUseCase;
 beforeEach(async () => {
   jest.resetAllMocks();
   categoryRepositoryMock.findCategories.mockResolvedValue([housing, rent, food]);
+  loadCategoriesMock.execute.mockResolvedValue(undefined);
   rowsMock.execute.mockResolvedValue([]);
   tagRepositoryMock.findTags.mockResolvedValue([tagFixed]);
 
@@ -64,12 +67,19 @@ beforeEach(async () => {
       { provide: 'IFinanceCategoryRepository', useValue: categoryRepositoryMock },
       { provide: 'IFinanceTagRepository', useValue: tagRepositoryMock },
       { provide: GetDashboardRowsUseCase, useValue: rowsMock },
+      { provide: LoadFilterCategoriesUseCase, useValue: loadCategoriesMock },
     ],
   }).compile();
 
   setup = module.get(GetFinanceTotalsUseCase);
 });
 
-const mocks = { input: inputMock, rowOf, rows: rowsMock };
+const mocks = {
+  categoryRepository: categoryRepositoryMock,
+  input: inputMock,
+  loadCategories: loadCategoriesMock,
+  rowOf,
+  rows: rowsMock,
+};
 
 export { mocks, setup };

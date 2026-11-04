@@ -7,6 +7,7 @@ import {
 } from '@finance/application/dto/GetTransactions';
 import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
 import { FindInvoicesInRangeUseCase } from '@finance/application/use-case/FindInvoicesInRangeUseCase';
+import { LoadFilterCategoriesUseCase } from '@finance/application/use-case/LoadFilterCategoriesUseCase';
 import { ResolveSearchCategoryIdsUseCase } from '@finance/application/use-case/ResolveSearchCategoryIdsUseCase';
 import { narrowOwners } from '@finance/domain/entity/OwnerAccess';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
@@ -32,6 +33,8 @@ export class GetTransactionsUseCase implements UseCaseWithParams<
     private readonly expandCategoryIdsUseCase: ExpandCategoryIdsUseCase,
     @Inject(FindInvoicesInRangeUseCase)
     private readonly findInvoicesInRangeUseCase: FindInvoicesInRangeUseCase,
+    @Inject(LoadFilterCategoriesUseCase)
+    private readonly loadFilterCategoriesUseCase: LoadFilterCategoriesUseCase,
     @Inject(ResolveSearchCategoryIdsUseCase)
     private readonly resolveSearchCategoryIdsUseCase: ResolveSearchCategoryIdsUseCase,
     @Inject('IFinanceTransactionRepository')
@@ -51,17 +54,25 @@ export class GetTransactionsUseCase implements UseCaseWithParams<
       ...(filter.creditCardIds ?? []),
       ...(input.creditCardId ? [input.creditCardId] : []),
     ];
+    const categories =
+      input.preloaded?.categories ??
+      (await this.loadFilterCategoriesUseCase.execute({
+        accessibleOwners: input.accessibleOwners,
+        filter,
+      }));
     const categoryIds = filter.categoryIds?.length
       ? await this.expandCategoryIdsUseCase.execute({
           accessibleOwners: input.accessibleOwners,
           categoryIds: filter.categoryIds,
+          preloaded: { categories },
         })
       : undefined;
+    let invoiceData;
     let invoiceRefs;
 
     // Card rows belong to a period through the list date of their invoice, not their own date.
     if (input.source === TransactionSource.CARD && filter.from && filter.to) {
-      const matches = await this.findInvoicesInRangeUseCase.execute({
+      const found = await this.findInvoicesInRangeUseCase.executeWithData({
         accessibleOwners: input.accessibleOwners,
         creditCardIds,
         from: filter.from,
@@ -70,11 +81,12 @@ export class GetTransactionsUseCase implements UseCaseWithParams<
         today: input.today ?? new Date().toISOString().slice(0, 10),
       });
 
-      if (matches.length === 0) {
+      if (found.matches.length === 0) {
         return EMPTY_PAGE;
       }
 
-      invoiceRefs = matches.map(({ card, invoice }) => ({
+      invoiceData = found.data;
+      invoiceRefs = found.matches.map(({ card, invoice }) => ({
         creditCardId: card.id,
         invoiceMonth: invoice.referenceMonth,
       }));
@@ -100,13 +112,14 @@ export class GetTransactionsUseCase implements UseCaseWithParams<
     });
 
     if (!query) {
-      return toPage(rows, input.limit);
+      return { ...toPage(rows, input.limit), invoiceData };
     }
 
     // Spec 059 FR 14: description, notes, category (and its ancestors) or amount.
     const matchingCategoryIds = new Set(
       await this.resolveSearchCategoryIdsUseCase.execute({
         accessibleOwners: input.accessibleOwners,
+        preloaded: { categories },
         q: query,
       }),
     );
@@ -126,7 +139,7 @@ export class GetTransactionsUseCase implements UseCaseWithParams<
         (!cursor || isAfter(row, cursor)),
     );
 
-    return toPage(matching, input.limit);
+    return { ...toPage(matching, input.limit), invoiceData };
   }
 }
 

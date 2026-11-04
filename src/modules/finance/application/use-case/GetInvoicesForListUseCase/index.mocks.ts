@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
 import { FindInvoicesInRangeUseCase } from '@finance/application/use-case/FindInvoicesInRangeUseCase';
+import { LoadFilterCategoriesUseCase } from '@finance/application/use-case/LoadFilterCategoriesUseCase';
 import { ResolveSearchCategoryIdsUseCase } from '@finance/application/use-case/ResolveSearchCategoryIdsUseCase';
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
 import TransactionEntityFixture from '@finance/domain/entity/mocks/TransactionEntity.fixture';
@@ -27,6 +28,7 @@ const totalsMock = [
 ];
 const computeMock = { execute: jest.fn() };
 const expandMock = { execute: jest.fn() };
+const loadCategoriesMock = { execute: jest.fn() };
 const resolveSearchMock = { execute: jest.fn() };
 const creditCardRepositoryMock = { findCreditCards: jest.fn() };
 const transactionRepositoryMock = { findCardPurchases: jest.fn() };
@@ -50,6 +52,7 @@ beforeEach(async () => {
       GetInvoicesForListUseCase,
       FindInvoicesInRangeUseCase,
       { provide: ExpandCategoryIdsUseCase, useValue: expandMock },
+      { provide: LoadFilterCategoriesUseCase, useValue: loadCategoriesMock },
       { provide: ResolveSearchCategoryIdsUseCase, useValue: resolveSearchMock },
       { provide: ComputeCardInvoicesUseCase, useValue: computeMock },
       { provide: 'IFinanceCreditCardRepository', useValue: creditCardRepositoryMock },
@@ -74,6 +77,7 @@ const mocks = {
   creditCardRepository: creditCardRepositoryMock,
   expand: expandMock,
   input: inputMock,
+  loadCategories: loadCategoriesMock,
   payment,
   purchase: purchaseMock,
   resolveSearch: resolveSearchMock,

@@ -100,11 +100,12 @@ describe('filters (spec 045)', () => {
   });
 
   it('SHOULD place CARD rows in the period by the invoices listed in it', async () => {
-    mocks.findInvoices.execute.mockResolvedValue([
-      { card: { id: 'card-1' }, invoice: { referenceMonth: '2026-10' } },
-    ]);
+    mocks.findInvoices.executeWithData.mockResolvedValue({
+      data: [{ card: { id: 'card-1' } }],
+      matches: [{ card: { id: 'card-1' }, invoice: { referenceMonth: '2026-10' } }],
+    });
 
-    await setup.execute({
+    const page = await setup.execute({
       accessibleOwners: mocks.accessibleOwners,
       filter: { from: '2026-11-01', to: '2026-11-30' },
       source: 'CARD' as never,
@@ -118,6 +119,8 @@ describe('filters (spec 045)', () => {
         invoiceRefs: [{ creditCardId: 'card-1', invoiceMonth: '2026-10' }],
       }),
     );
+    // Spec 083: the invoices computed to place the rows travel with the page.
+    expect(page.invoiceData).toEqual([{ card: { id: 'card-1' } }]);
   });
 
   it('SHOULD return [] WHEN no invoice is listed in the period', async () => {
@@ -160,10 +163,9 @@ describe('search by notes, category and amount (spec 059)', () => {
       filter: { q: 'alimentacao' },
     });
 
-    expect(mocks.resolveSearch.execute).toHaveBeenCalledWith({
-      accessibleOwners: mocks.accessibleOwners,
-      q: 'alimentacao',
-    });
+    expect(mocks.resolveSearch.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ accessibleOwners: mocks.accessibleOwners, q: 'alimentacao' }),
+    );
     expect(result.items).toEqual([rows[1], rows[2]]);
   });
 
@@ -266,5 +268,39 @@ describe('keyset pages (spec 078)', () => {
     expect(first.items.map((item) => item.id)).toEqual(['mercado-3', 'mercado-2']);
     expect(second.items.map((item) => item.id)).toEqual(['mercado-1']);
     expect(second.nextCursor).toBeNull();
+  });
+});
+
+describe('categories read once (spec 083)', () => {
+  const categories = [{ id: 'market' }, { id: 'greens', parentId: 'market' }] as never;
+
+  it('SHOULD load the categories ONCE AND hand them to the expansion AND the search', async () => {
+    mocks.loadCategories.execute.mockResolvedValue(categories);
+
+    await setup.execute({
+      accessibleOwners: mocks.accessibleOwners,
+      filter: { categoryIds: ['market'], q: 'rent' },
+    });
+
+    expect(mocks.loadCategories.execute).toHaveBeenCalledTimes(1);
+    expect(mocks.expand.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ preloaded: { categories } }),
+    );
+    expect(mocks.resolveSearch.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ preloaded: { categories } }),
+    );
+  });
+
+  it('SHOULD NOT load them WHEN the caller passes them preloaded', async () => {
+    await setup.execute({
+      accessibleOwners: mocks.accessibleOwners,
+      filter: { categoryIds: ['market'], q: 'rent' },
+      preloaded: { categories },
+    });
+
+    expect(mocks.loadCategories.execute).not.toHaveBeenCalled();
+    expect(mocks.expand.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ preloaded: { categories } }),
+    );
   });
 });

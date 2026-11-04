@@ -9,7 +9,9 @@ import {
   DashboardRow,
   GetDashboardRowsUseCase,
 } from '@finance/application/use-case/GetDashboardRowsUseCase';
+import { LoadFilterCategoriesUseCase } from '@finance/application/use-case/LoadFilterCategoriesUseCase';
 import AccountEntity from '@finance/domain/entity/AccountEntity';
+import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { narrowOwners } from '@finance/domain/entity/OwnerAccess';
 import { AccountStatus, TransactionType } from '@finance/domain/enum';
 import { CurrencyCode, SUPPORTED_CURRENCIES } from '@finance/domain/enum/Currency';
@@ -51,17 +53,27 @@ export class GetDashboardSummaryUseCase implements UseCaseWithParams<
     private readonly getDailyBalancesUseCase: GetDailyBalancesUseCase,
     @Inject(GetDashboardRowsUseCase)
     private readonly getDashboardRowsUseCase: GetDashboardRowsUseCase,
+    @Inject(LoadFilterCategoriesUseCase)
+    private readonly loadFilterCategoriesUseCase: LoadFilterCategoriesUseCase,
   ) {}
 
   async execute(params: GetDashboardSummaryInput): Promise<DashboardSummary> {
     const input = validate(GetDashboardSummarySchema, params);
     const owners = narrowOwners(input.accessibleOwners, input.ownerIds);
     const previous = previousPeriod(input.from, input.to);
-    const [rows, previousRows, allAccounts, cards] = await Promise.all([
-      this.getDashboardRowsUseCase.execute({ ...input, byTag: false }),
-      this.getDashboardRowsUseCase.execute({ ...input, ...previous, byTag: false }),
+    // Spec 083: accounts, cards and categories are read once and shared with the period reads and the planned balance.
+    const [allAccounts, cards, categories] = await Promise.all([
       owners.length === 0 ? [] : this.accountRepository.findAccounts(owners),
       owners.length === 0 ? [] : this.creditCardRepository.findCreditCards(owners),
+      this.loadFilterCategoriesUseCase.execute({
+        accessibleOwners: input.accessibleOwners,
+        filter: input.filter,
+      }),
+    ]);
+    const preloaded = { cards, categories };
+    const [rows, previousRows] = await Promise.all([
+      this.getDashboardRowsUseCase.execute({ ...input, byTag: false, preloaded }),
+      this.getDashboardRowsUseCase.execute({ ...input, ...previous, byTag: false, preloaded }),
     ]);
     const accountFilter = input.filter?.accountIds?.length
       ? new Set(input.filter.accountIds)
@@ -92,7 +104,10 @@ export class GetDashboardSummaryUseCase implements UseCaseWithParams<
       projectedEnd =
         accounts.length === 0
           ? 0
-          : await this.plannedBalanceOn(input, new Set(accounts.map((account) => account.id)));
+          : await this.plannedBalanceOn(input, new Set(accounts.map((account) => account.id)), {
+              accounts: allAccounts,
+              cards,
+            });
     }
 
     return {
@@ -112,11 +127,13 @@ export class GetDashboardSummaryUseCase implements UseCaseWithParams<
       today: string;
     },
     ids: Set<string>,
+    preloaded: { accounts: AccountEntity[]; cards: CreditCardEntity[] },
   ): Promise<number> {
     const planned = await this.getDailyBalancesUseCase.execute({
       accessibleOwners: input.accessibleOwners,
       month: input.to.slice(0, 7),
       ownerIds: input.ownerIds,
+      preloaded,
       today: input.today,
     });
     const day = planned.days.find((item) => item.date === input.to);

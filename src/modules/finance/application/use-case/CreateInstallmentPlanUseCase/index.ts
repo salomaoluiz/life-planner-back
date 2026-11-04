@@ -85,7 +85,9 @@ export class CreateInstallmentPlanUseCase implements UseCaseWithParams<
     });
     const details = await this.getInstallmentPlanUseCase.execute({
       accessibleOwners: input.accessibleOwners,
+      card,
       id,
+      invoiceData: data,
       today: input.today,
     });
 

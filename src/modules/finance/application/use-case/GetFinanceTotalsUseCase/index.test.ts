@@ -117,3 +117,45 @@ describe('GetFinanceTotalsUseCase TAG', () => {
     });
   });
 });
+
+describe('categories read once (spec 083)', () => {
+  const filter = { categoryIds: ['food'] };
+
+  it('SHOULD reuse the categories loaded for the filter in the CATEGORY grouping', async () => {
+    const categories = [{ id: 'food' }] as never;
+
+    mocks.loadCategories.execute.mockResolvedValue(categories);
+
+    await setup.execute({
+      ...mocks.input,
+      filter,
+      groupBy: 'CATEGORY',
+      type: TransactionType.EXPENSE,
+    });
+
+    expect(mocks.categoryRepository.findCategories).not.toHaveBeenCalled();
+    expect(mocks.rows.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ preloaded: { categories } }),
+    );
+  });
+
+  it('SHOULD read the categories once WHEN the filter needs none', async () => {
+    await setup.execute({ ...mocks.input, groupBy: 'CATEGORY', type: TransactionType.EXPENSE });
+
+    expect(mocks.categoryRepository.findCategories).toHaveBeenCalledTimes(1);
+  });
+
+  it('SHOULD hand the loaded categories to both reads of the TAG grouping', async () => {
+    const categories = [{ id: 'food' }] as never;
+
+    mocks.loadCategories.execute.mockResolvedValue(categories);
+
+    await setup.execute({ ...mocks.input, filter, groupBy: 'TAG', type: TransactionType.EXPENSE });
+
+    expect(mocks.loadCategories.execute).toHaveBeenCalledTimes(1);
+
+    for (const [call] of mocks.rows.execute.mock.calls) {
+      expect(call.preloaded).toEqual({ categories });
+    }
+  });
+});

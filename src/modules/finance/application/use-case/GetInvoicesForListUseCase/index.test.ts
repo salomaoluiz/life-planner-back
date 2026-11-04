@@ -168,3 +168,39 @@ describe('filters (spec 045)', () => {
     expect(byAmount[0].purchases).toEqual([noted]);
   });
 });
+
+describe('categories read once (spec 083)', () => {
+  const categories = [{ id: 'market' }, { id: 'greens', parentId: 'market' }] as never;
+
+  it('SHOULD load the categories ONCE AND hand them to the expansion AND the search', async () => {
+    mocks.loadCategories.execute.mockResolvedValue(categories);
+
+    await setup.execute({
+      accessibleOwners: mocks.input.accessibleOwners,
+      filter: { categoryIds: ['market'], from: '2026-11-01', q: 'rent', to: '2026-11-30' },
+      today: mocks.input.today,
+    });
+
+    expect(mocks.loadCategories.execute).toHaveBeenCalledTimes(1);
+    expect(mocks.expand.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ preloaded: { categories } }),
+    );
+    expect(mocks.resolveSearch.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ preloaded: { categories } }),
+    );
+  });
+
+  it('SHOULD NOT load them WHEN the caller passes them preloaded', async () => {
+    await setup.execute({
+      accessibleOwners: mocks.input.accessibleOwners,
+      filter: { categoryIds: ['market'], from: '2026-11-01', q: 'rent', to: '2026-11-30' },
+      preloaded: { categories },
+      today: mocks.input.today,
+    });
+
+    expect(mocks.loadCategories.execute).not.toHaveBeenCalled();
+    expect(mocks.expand.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ preloaded: { categories } }),
+    );
+  });
+});

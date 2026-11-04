@@ -2,7 +2,6 @@ import { Test } from '@nestjs/testing';
 
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { TransactionCsvService } from '@api/finance/v1/transaction-csv.service';
-import { GetUserFamiliesUseCase } from '@family/application/use-case/GetUserFamiliesUseCase';
 import { CountExportTransactionsUseCase } from '@finance/application/use-case/CountExportTransactionsUseCase';
 import { ExportTransactionsUseCase } from '@finance/application/use-case/ExportTransactionsUseCase';
 import { ImportTransactionsUseCase } from '@finance/application/use-case/ImportTransactionsUseCase';
@@ -11,10 +10,15 @@ import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 const owners = [{ owner: OwnerType.USER, ownerId: 'user-1' }];
 const mocks = {
-  access: { resolve: jest.fn().mockResolvedValue(owners) },
+  access: {
+    resolve: jest.fn().mockResolvedValue(owners),
+    resolveWithNames: jest.fn().mockResolvedValue({
+      accessibleOwners: owners,
+      familyNames: { 'family-1': 'Família Exemplo' },
+    }),
+  },
   count: { execute: jest.fn().mockResolvedValue({ count: 3 }) },
   export: { execute: jest.fn().mockResolvedValue({ csv: 'x', filename: 'f.csv' }) },
-  families: { execute: jest.fn().mockResolvedValue([{ id: 'family-1', name: 'Família Exemplo' }]) },
   importRows: { execute: jest.fn().mockResolvedValue({ created: 2, duplicates: [], errors: [] }) },
   materialize: { execute: jest.fn().mockResolvedValue(undefined) },
 };
@@ -32,7 +36,6 @@ async function build() {
       { provide: CountExportTransactionsUseCase, useValue: mocks.count },
       { provide: ExportTransactionsUseCase, useValue: mocks.export },
       { provide: FinanceAccessService, useValue: mocks.access },
-      { provide: GetUserFamiliesUseCase, useValue: mocks.families },
       { provide: ImportTransactionsUseCase, useValue: mocks.importRows },
       { provide: MaterializeRecurrencesUseCase, useValue: mocks.materialize },
     ],
@@ -59,6 +62,8 @@ it('SHOULD materialize recurrences, then count with the repeated ids as lists', 
 it('SHOULD export with the family names resolved here, not by the finance module', async () => {
   const setup = await build();
 
+  mocks.access.resolveWithNames.mockClear();
+
   await setup.export('user-1', { ...request, format: 'BR', lang: 'pt-BR' });
 
   expect(mocks.export.execute).toHaveBeenCalledWith(
@@ -68,6 +73,8 @@ it('SHOULD export with the family names resolved here, not by the finance module
       today: '2026-10-21',
     }),
   );
+  // Spec 083: the owners and the names come from one family read.
+  expect(mocks.access.resolveWithNames).toHaveBeenCalledTimes(1);
 });
 
 it('SHOULD import with the owners of the caller and the client day', async () => {

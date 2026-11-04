@@ -3,6 +3,12 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.1.3] - 2026-11-04
+
+### Changed
+
+- Dashboard, lists, card invoices and CSV export do less repeated work inside one request: card invoices, categories, accounts, cards and families are computed or read once and reused. Responses do not change (spec 083).
+
 ## [3.1.2] - 2026-11-04
 
 ### Changed

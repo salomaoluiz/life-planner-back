@@ -42,3 +42,15 @@ it('SHOULD mark an unpaid invoice that already closed as CLOSED', async () => {
 
   expect(result.installments[1].invoiceStatus).toBe(InvoiceStatus.CLOSED);
 });
+
+it('SHOULD skip the card and invoice reads WHEN the caller passes the card and its invoice data (spec 083)', async () => {
+  const [data] = await mocks.compute.execute();
+
+  mocks.compute.execute.mockClear();
+
+  const result = await setup.execute({ ...mocks.input, card: mocks.card, invoiceData: data });
+
+  expect(result.installments).toHaveLength(3);
+  expect(mocks.creditCardRepository.findCreditCardById).not.toHaveBeenCalled();
+  expect(mocks.compute.execute).not.toHaveBeenCalled();
+});

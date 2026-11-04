@@ -306,3 +306,43 @@ describe('lean payload (spec 079)', () => {
     expect(lookups).toEqual({ accounts: {}, categories: {}, creditCards: {}, tags: {} });
   });
 });
+
+describe('invoices computed once (spec 083)', () => {
+  const invoiceData = [{ card: { id: 'card-1' } }] as never;
+
+  it('SHOULD hand the invoices of create AND update to the card resolver', async () => {
+    mocks.createTransactionUseCase.execute.mockResolvedValueOnce({
+      invoiceData,
+      overLimit: false,
+      transaction: mocks.transactionResult,
+    });
+    await setup.create(mocks.userId, {} as never, '2026-10-15');
+    expect(mocks.resolveCardRowsPaidUseCase.execute).toHaveBeenLastCalledWith(
+      expect.objectContaining({ invoiceData }),
+    );
+
+    mocks.updateTransactionUseCase.execute.mockResolvedValueOnce({
+      invoiceData,
+      overLimit: false,
+      transaction: mocks.transactionResult,
+    });
+    await setup.update(mocks.userId, mocks.transactionResult.id, {} as never, '2026-10-15');
+    expect(mocks.resolveCardRowsPaidUseCase.execute).toHaveBeenLastCalledWith(
+      expect.objectContaining({ invoiceData }),
+    );
+  });
+
+  it('SHOULD hand the invoices of the page to the card resolver', async () => {
+    mocks.getTransactionsUseCase.execute.mockResolvedValueOnce({
+      invoiceData,
+      items: [mocks.transactionResult],
+      nextCursor: null,
+    });
+
+    await setup.findAll(mocks.userId, undefined, {}, '2026-10-15');
+
+    expect(mocks.resolveCardRowsPaidUseCase.execute).toHaveBeenLastCalledWith(
+      expect.objectContaining({ invoiceData }),
+    );
+  });
+});

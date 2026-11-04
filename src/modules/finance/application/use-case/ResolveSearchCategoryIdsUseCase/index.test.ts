@@ -59,3 +59,21 @@ describe('execute', () => {
     );
   });
 });
+
+describe('preloaded categories (spec 083)', () => {
+  it('SHOULD NOT read the repository WHEN the categories come preloaded', async () => {
+    const result = await setup.execute({
+      accessibleOwners: mocks.accessibleOwners,
+      preloaded: {
+        categories: [
+          mocks.category('transport', 'Transporte'),
+          mocks.category('uber', 'Uber', 'transport'),
+        ] as never,
+      },
+      q: 'transporte',
+    });
+
+    expect(result.sort()).toEqual(['transport', 'uber']);
+    expect(mocks.categoryRepository.findCategories).not.toHaveBeenCalled();
+  });
+});

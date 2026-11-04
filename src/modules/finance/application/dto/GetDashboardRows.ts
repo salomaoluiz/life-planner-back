@@ -4,6 +4,7 @@ import {
   AccessibleOwnersSchema,
   CalendarDateSchema,
   CurrencySchema,
+  PreloadedSchema,
 } from '@finance/application/dto/FinanceCommon';
 import { TransactionSource } from '@finance/domain/enum';
 
@@ -24,6 +25,7 @@ export const DashboardCommonSchema = z.object({
     .optional(),
   from: CalendarDateSchema,
   ownerIds: z.array(z.string()).optional(),
+  preloaded: PreloadedSchema,
   to: CalendarDateSchema,
   today: CalendarDateSchema,
 });

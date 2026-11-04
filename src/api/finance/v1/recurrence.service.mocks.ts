@@ -120,6 +120,7 @@ const mocks = {
   materializeOccurrence: materializeOccurrenceMock,
   materializeRecurrences: materializeRecurrencesMock,
   projected: projectedMock,
+  resolveCardRowsPaid: resolveCardRowsPaidMock,
   row: rowMock,
   series: seriesMock,
   split: splitMock,

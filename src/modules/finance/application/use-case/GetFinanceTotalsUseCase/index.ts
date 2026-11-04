@@ -9,6 +9,7 @@ import {
   DashboardRow,
   GetDashboardRowsUseCase,
 } from '@finance/application/use-case/GetDashboardRowsUseCase';
+import { LoadFilterCategoriesUseCase } from '@finance/application/use-case/LoadFilterCategoriesUseCase';
 import CategoryEntity from '@finance/domain/entity/CategoryEntity';
 import { narrowOwners } from '@finance/domain/entity/OwnerAccess';
 import { AccountStatus, TransactionType } from '@finance/domain/enum';
@@ -65,6 +66,8 @@ export class GetFinanceTotalsUseCase implements UseCaseWithParams<
     private readonly categoryRepository: IFinanceCategoryRepository,
     @Inject(GetDashboardRowsUseCase)
     private readonly getDashboardRowsUseCase: GetDashboardRowsUseCase,
+    @Inject(LoadFilterCategoriesUseCase)
+    private readonly loadFilterCategoriesUseCase: LoadFilterCategoriesUseCase,
     @Inject('IFinanceTagRepository')
     private readonly tagRepository: IFinanceTagRepository,
   ) {}
@@ -94,7 +97,13 @@ export class GetFinanceTotalsUseCase implements UseCaseWithParams<
   }
 
   async execute(params: GetFinanceTotalsInput): Promise<TotalsResult> {
-    const { groupBy, parentId, type, ...common } = validate(GetFinanceTotalsSchema, params);
+    const { groupBy, parentId, type, ...validated } = validate(GetFinanceTotalsSchema, params);
+    // Spec 083: the categories a filter needs are read once and shared with every dashboard read below.
+    const categories = await this.loadFilterCategoriesUseCase.execute({
+      accessibleOwners: validated.accessibleOwners,
+      filter: validated.filter,
+    });
+    const common = { ...validated, preloaded: { ...validated.preloaded, categories } };
 
     if (groupBy === TotalsGroupBy.PERIOD) {
       return this.byPeriod(
@@ -106,14 +115,14 @@ export class GetFinanceTotalsUseCase implements UseCaseWithParams<
     const owners = narrowOwners(common.accessibleOwners, common.ownerIds);
 
     if (groupBy === TotalsGroupBy.CATEGORY) {
-      const [rows, categories] = await Promise.all([
+      const [rows, allCategories] = await Promise.all([
         this.getDashboardRowsUseCase.execute({ ...common, byTag: false }),
-        this.categoryRepository.findCategories({ owners: common.accessibleOwners }),
+        categories ?? this.categoryRepository.findCategories({ owners: common.accessibleOwners }),
       ]);
 
       return byCategory(
         rows.filter((row) => row.type === type),
-        categories,
+        allCategories,
         parentId,
       );
     }

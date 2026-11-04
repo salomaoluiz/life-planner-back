@@ -7,7 +7,10 @@ import {
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
 import { GetProjectionsUseCase } from '@finance/application/use-case/GetProjectionsUseCase';
+import { LoadFilterCategoriesUseCase } from '@finance/application/use-case/LoadFilterCategoriesUseCase';
 import { ResolveSearchCategoryIdsUseCase } from '@finance/application/use-case/ResolveSearchCategoryIdsUseCase';
+import CategoryEntity from '@finance/domain/entity/CategoryEntity';
+import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { narrowOwners } from '@finance/domain/entity/OwnerAccess';
 import { TransactionSource, TransactionType } from '@finance/domain/enum';
 import {
@@ -52,6 +55,8 @@ export class GetDashboardRowsUseCase implements UseCaseWithParams<
     private readonly expandCategoryIdsUseCase: ExpandCategoryIdsUseCase,
     @Inject(GetProjectionsUseCase)
     private readonly getProjectionsUseCase: GetProjectionsUseCase,
+    @Inject(LoadFilterCategoriesUseCase)
+    private readonly loadFilterCategoriesUseCase: LoadFilterCategoriesUseCase,
     @Inject(ResolveSearchCategoryIdsUseCase)
     private readonly resolveSearchCategoryIdsUseCase: ResolveSearchCategoryIdsUseCase,
     @Inject('IFinanceTransactionRepository')
@@ -69,10 +74,17 @@ export class GetDashboardRowsUseCase implements UseCaseWithParams<
     const filter = input.filter ?? {};
     const source = effectiveSource(filter);
     const monthStart = `${input.today.slice(0, 7)}-01`;
+    const categories =
+      input.preloaded?.categories ??
+      (await this.loadFilterCategoriesUseCase.execute({
+        accessibleOwners: input.accessibleOwners,
+        filter,
+      }));
     const categoryIds = filter.categoryIds?.length
       ? await this.expandCategoryIdsUseCase.execute({
           accessibleOwners: input.accessibleOwners,
           categoryIds: filter.categoryIds,
+          preloaded: { categories },
         })
       : undefined;
     const invoices =
@@ -83,6 +95,7 @@ export class GetDashboardRowsUseCase implements UseCaseWithParams<
             from: input.from,
             owners,
             paid: filter.paid,
+            preloadedCards: input.preloaded?.cards,
             to: input.to,
             today: input.today,
           });
@@ -90,6 +103,7 @@ export class GetDashboardRowsUseCase implements UseCaseWithParams<
     const searchCategoryIds = filter.q
       ? await this.resolveSearchCategoryIdsUseCase.execute({
           accessibleOwners: input.accessibleOwners,
+          preloaded: { categories },
           q: filter.q,
         })
       : undefined;
@@ -137,7 +151,7 @@ export class GetDashboardRowsUseCase implements UseCaseWithParams<
       ];
     });
 
-    return [...stored, ...(await this.projectedRows(input, source))];
+    return [...stored, ...(await this.projectedRows(input, source, categories))];
   }
 
   // Spec 053 FR 11: the recurrence occurrences after the end of the current month exist only as projections.
@@ -145,6 +159,7 @@ export class GetDashboardRowsUseCase implements UseCaseWithParams<
   private async projectedRows(
     input: GetDashboardRowsInput,
     source: TransactionSource | undefined,
+    categories: CategoryEntity[] | undefined,
   ): Promise<DashboardRow[]> {
     const filter = input.filter ?? {};
     const horizon = lastDayOfMonth(input.today);
@@ -167,6 +182,7 @@ export class GetDashboardRowsUseCase implements UseCaseWithParams<
       },
       from: fromMonth,
       ownerIds: input.ownerIds,
+      preloaded: { categories },
       to: input.to.slice(0, 7),
       today: input.today,
     });
@@ -206,13 +222,14 @@ export class GetDashboardRowsUseCase implements UseCaseWithParams<
     from: string;
     owners: ReturnType<typeof narrowOwners>;
     paid?: boolean;
+    preloadedCards?: CreditCardEntity[];
     to: string;
     today: string;
   }): Promise<Map<string, CountedInvoice>> {
     const wanted = params.creditCardIds?.length ? new Set(params.creditCardIds) : undefined;
-    const cards = (await this.creditCardRepository.findCreditCards(params.owners)).filter(
-      (card) => !wanted || wanted.has(card.id),
-    );
+    const cards = (
+      params.preloadedCards ?? (await this.creditCardRepository.findCreditCards(params.owners))
+    ).filter((card) => !wanted || wanted.has(card.id));
     const data = await this.computeCardInvoicesUseCase.execute({ cards, today: params.today });
     const monthStart = `${params.today.slice(0, 7)}-01`;
     const counted = new Map<string, CountedInvoice>();

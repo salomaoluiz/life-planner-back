@@ -224,3 +224,21 @@ describe('GetDailyBalancesUseCase', () => {
     );
   });
 });
+
+describe('preloaded accounts and cards (spec 083)', () => {
+  it('SHOULD NOT read accounts and cards WHEN the caller passes them AND return the same days', async () => {
+    const expected = await setup.execute(mocks.input);
+
+    mocks.accountRepository.findAccounts.mockClear();
+    mocks.creditCardRepository.findCreditCards.mockClear();
+
+    const result = await setup.execute({
+      ...mocks.input,
+      preloaded: { accounts: [mocks.account], cards: [] },
+    });
+
+    expect(result).toEqual(expected);
+    expect(mocks.accountRepository.findAccounts).not.toHaveBeenCalled();
+    expect(mocks.creditCardRepository.findCreditCards).not.toHaveBeenCalled();
+  });
+});

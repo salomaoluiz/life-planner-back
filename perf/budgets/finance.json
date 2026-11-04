@@ -198,7 +198,7 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": 341,
-    "maxQueries": 13,
+    "maxQueries": 11,
     "p50Ms": 142,
     "scenario": "currency=BRL&from={monthStart}&to={monthEnd}"
   },
@@ -277,7 +277,7 @@
     "indexes": ["financial_transactions_credit_card_id_invoice_month_idx"],
     "kind": "read",
     "maxBytes": 30007,
-    "maxQueries": 9,
+    "maxQueries": 6,
     "p50Ms": 162,
     "scenario": "source=CARD&from={monthStart}&to={monthEnd}",
     "table": "financial_transactions"
@@ -307,7 +307,7 @@
     "kind": "read",
     "knownException": "CSV export, unbounded by design",
     "maxBytes": 62309,
-    "maxQueries": 8,
+    "maxQueries": 7,
     "p50Ms": 205,
     "scenario": "from={monthStart}&to={monthEnd}&format=BR"
   },

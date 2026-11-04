@@ -4,7 +4,10 @@ import {
   FindInvoicesInRangeInput,
   FindInvoicesInRangeSchema,
 } from '@finance/application/dto/FindInvoicesInRange';
-import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
+import {
+  CardInvoiceData,
+  ComputeCardInvoicesUseCase,
+} from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { narrowOwners } from '@finance/domain/entity/OwnerAccess';
 import { IFinanceCreditCardRepository } from '@finance/domain/repository';
@@ -31,11 +34,18 @@ export class FindInvoicesInRangeUseCase implements UseCaseWithParams<
   ) {}
 
   async execute(params: FindInvoicesInRangeInput): Promise<InvoiceMatch[]> {
+    return (await this.executeWithData(params)).matches;
+  }
+
+  // Spec 083: the computed invoice data too, so a caller does not compute the same invoices again.
+  async executeWithData(
+    params: FindInvoicesInRangeInput,
+  ): Promise<{ data: CardInvoiceData[]; matches: InvoiceMatch[] }> {
     const input = validate(FindInvoicesInRangeSchema, params);
     const owners = narrowOwners(input.accessibleOwners, input.ownerIds);
 
     if (owners.length === 0) {
-      return [];
+      return { data: [], matches: [] };
     }
 
     const wanted = input.creditCardIds?.length ? new Set(input.creditCardIds) : undefined;
@@ -44,7 +54,7 @@ export class FindInvoicesInRangeUseCase implements UseCaseWithParams<
     );
     const data = await this.computeCardInvoicesUseCase.execute({ cards, today: input.today });
 
-    return data.flatMap((item) => {
+    const matches = data.flatMap((item) => {
       const months = new Set([
         ...item.payments.map((payment) => payment.referenceMonth),
         ...item.totals.map((total) => total.invoiceMonth),
@@ -62,5 +72,7 @@ export class FindInvoicesInRangeUseCase implements UseCaseWithParams<
         )
         .map((invoice) => ({ card: item.card, invoice }));
     });
+
+    return { data, matches };
   }
 }

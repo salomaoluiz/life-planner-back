@@ -182,6 +182,22 @@ describe('writes', () => {
       (await setup.materializeOccurrence(mocks.userId, mocks.series.id, 2, {})).overLimit,
     ).toBe(true);
   });
+
+  it('SHOULD hand the invoices of the use case to the card resolver (spec 083)', async () => {
+    const invoiceData = [{ card: { id: 'card-1' } }];
+
+    mocks.materializeOccurrence.execute.mockResolvedValue({
+      invoiceData,
+      overLimit: false,
+      transaction: { ...mocks.row, creditCardId: 'card-1' },
+    });
+
+    await setup.materializeOccurrence(mocks.userId, mocks.series.id, 2, {});
+
+    expect(mocks.resolveCardRowsPaid.execute).toHaveBeenLastCalledWith(
+      expect.objectContaining({ invoiceData }),
+    );
+  });
 });
 
 describe('deletes', () => {

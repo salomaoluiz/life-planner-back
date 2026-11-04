@@ -2,6 +2,7 @@ import { BadRequestException, Inject } from '@nestjs/common';
 
 import { GetProjectionsInput, GetProjectionsSchema } from '@finance/application/dto/GetRecurrences';
 import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
+import { LoadFilterCategoriesUseCase } from '@finance/application/use-case/LoadFilterCategoriesUseCase';
 import { ResolveSearchCategoryIdsUseCase } from '@finance/application/use-case/ResolveSearchCategoryIdsUseCase';
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { narrowOwners } from '@finance/domain/entity/OwnerAccess';
@@ -39,6 +40,8 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
     private readonly expandCategoryIdsUseCase: ExpandCategoryIdsUseCase,
     @Inject('IFinanceCreditCardRepository')
     private readonly creditCardRepository: IFinanceCreditCardRepository,
+    @Inject(LoadFilterCategoriesUseCase)
+    private readonly loadFilterCategoriesUseCase: LoadFilterCategoriesUseCase,
     @Inject(ResolveSearchCategoryIdsUseCase)
     private readonly resolveSearchCategoryIdsUseCase: ResolveSearchCategoryIdsUseCase,
     @Inject('IFinanceRecurrenceRepository')
@@ -63,11 +66,19 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
     const from = max(`${input.from}-01`, addDays(horizon, 1));
     const to = lastDayOfMonth(`${input.to}-01`);
     const filter = input.filter ?? {};
+    const categories =
+      input.preloaded?.categories ??
+      (await this.loadFilterCategoriesUseCase.execute({
+        accessibleOwners: input.accessibleOwners,
+        filter,
+      }));
+    const preloaded = { categories };
     const categoryIds = filter.categoryIds?.length
       ? new Set(
           await this.expandCategoryIdsUseCase.execute({
             accessibleOwners: input.accessibleOwners,
             categoryIds: filter.categoryIds,
+            preloaded,
           }),
         )
       : undefined;
@@ -75,6 +86,7 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
       filter.q
         ? await this.resolveSearchCategoryIdsUseCase.execute({
             accessibleOwners: input.accessibleOwners,
+            preloaded,
             q: filter.q,
           })
         : [],
@@ -130,12 +142,26 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
   async executeChunked(params: GetProjectionsInput): Promise<ProjectedOccurrence[]> {
     const { from, to } = validate(GetProjectionsSchema, params);
     const result: ProjectedOccurrence[] = [];
+    // Spec 083: the categories are read once for all the windows.
+    const categories =
+      params.preloaded?.categories ??
+      (await this.loadFilterCategoriesUseCase.execute({
+        accessibleOwners: params.accessibleOwners,
+        filter: params.filter,
+      }));
     let start = from;
 
     do {
       const end = addInvoiceMonths(start, MAX_PROJECTION_MONTHS - 1);
 
-      result.push(...(await this.execute({ ...params, from: start, to: to < end ? to : end })));
+      result.push(
+        ...(await this.execute({
+          ...params,
+          from: start,
+          preloaded: { ...params.preloaded, categories },
+          to: to < end ? to : end,
+        })),
+      );
       start = addInvoiceMonths(start, MAX_PROJECTION_MONTHS);
     } while (start <= to);
 

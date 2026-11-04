@@ -97,11 +97,11 @@ export class MaterializeOccurrenceUseCase implements UseCaseWithParams<
       return { overLimit: false, transaction };
     }
 
-    const [data] = await this.computeCardInvoicesUseCase.execute({
+    const invoiceData = await this.computeCardInvoicesUseCase.execute({
       cards: [card],
       today: input.today,
     });
 
-    return { overLimit: data.invoices.used > card.limit, transaction };
+    return { invoiceData, overLimit: invoiceData[0].invoices.used > card.limit, transaction };
   }
 }

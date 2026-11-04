@@ -104,3 +104,14 @@ it('SHOULD quote notes with separator, quotes and line breaks as ONE cell (spec 
 
   expect(csv.endsWith(';"Rota; ""ida"", volta\r\nTerminal 2"\r\n')).toBe(true);
 });
+
+it('SHOULD read the categories ONCE and the rows once, whatever the number of rows (spec 083)', async () => {
+  await setup.execute({
+    ...base,
+    accessibleOwners: mocks.accessibleOwners,
+    ownerNames: { 'family-id': 'Família Exemplo' },
+  });
+
+  expect(mocks.categoryRepository.findCategories).toHaveBeenCalledTimes(1);
+  expect(mocks.resolvePaid.execute).toHaveBeenCalledTimes(1);
+});

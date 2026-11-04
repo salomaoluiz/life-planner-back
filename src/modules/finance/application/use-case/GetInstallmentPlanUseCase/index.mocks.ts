@@ -65,6 +65,7 @@ beforeEach(async () => {
 
 const mocks = {
   card: cardMock,
+  compute: computeMock,
   creditCardRepository: creditCardRepositoryMock,
   input: inputMock,
   plan: planMock,

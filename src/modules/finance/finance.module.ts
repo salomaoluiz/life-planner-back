@@ -62,6 +62,7 @@ import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransac
 import { GetUpcomingItemsUseCase } from '@finance/application/use-case/GetUpcomingItemsUseCase';
 import { HasFinanceDataByOwnerUseCase } from '@finance/application/use-case/HasFinanceDataByOwnerUseCase';
 import { ImportTransactionsUseCase } from '@finance/application/use-case/ImportTransactionsUseCase';
+import { LoadFilterCategoriesUseCase } from '@finance/application/use-case/LoadFilterCategoriesUseCase';
 import { MaterializeOccurrenceUseCase } from '@finance/application/use-case/MaterializeOccurrenceUseCase';
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { PayInvoiceUseCase } from '@finance/application/use-case/PayInvoiceUseCase';
@@ -150,6 +151,7 @@ const useCases = [
   GetAccountsUseCase,
   GetCategoriesUseCase,
   ExpandCategoryIdsUseCase,
+  LoadFilterCategoriesUseCase,
   ResolveSearchCategoryIdsUseCase,
   FindInvoicesInRangeUseCase,
   GetCategoryArchiveBlockersUseCase,

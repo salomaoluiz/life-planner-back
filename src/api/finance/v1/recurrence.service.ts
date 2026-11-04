@@ -9,6 +9,7 @@ import {
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { resolveToday } from '@api/finance/v1/finance-query';
 import { toTransactionOutput } from '@api/finance/v1/transaction.service';
+import { CardInvoiceData } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { CreateRecurrenceUseCase } from '@finance/application/use-case/CreateRecurrenceUseCase';
 import { DeleteOccurrenceUseCase } from '@finance/application/use-case/DeleteOccurrenceUseCase';
 import { DeleteRecurrenceUseCase } from '@finance/application/use-case/DeleteRecurrenceUseCase';
@@ -103,7 +104,7 @@ export class RecurrenceService {
     });
 
     return {
-      occurrences: await this.toOccurrences(result.occurrences, today),
+      occurrences: await this.toOccurrences(result.occurrences, today, result.invoiceData),
       overLimit: result.overLimit,
       recurrence: toRecurrenceOutput(result.recurrence),
     };
@@ -203,14 +204,16 @@ export class RecurrenceService {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
     const { scope, ...fields } = input;
     void scope;
-    const { overLimit, transaction } = await this.materializeOccurrenceUseCase.execute({
-      ...fields,
-      accessibleOwners,
-      occurrenceNumber,
-      recurrenceId: id,
-      today: resolveToday(today),
-    });
-    const [resolved] = await this.toOccurrences([transaction], today);
+    const { invoiceData, overLimit, transaction } = await this.materializeOccurrenceUseCase.execute(
+      {
+        ...fields,
+        accessibleOwners,
+        occurrenceNumber,
+        recurrenceId: id,
+        today: resolveToday(today),
+      },
+    );
+    const [resolved] = await this.toOccurrences([transaction], today, invoiceData);
 
     return { ...resolved, overLimit: transaction.creditCardId ? overLimit : undefined };
   }
@@ -244,8 +247,13 @@ export class RecurrenceService {
   }
 
   // Card rows derive `paid` from their invoice (spec 033).
-  private async toOccurrences(rows: TransactionEntity[], today?: string) {
+  private async toOccurrences(
+    rows: TransactionEntity[],
+    today?: string,
+    invoiceData?: CardInvoiceData[],
+  ) {
     const resolved = await this.resolveCardRowsPaidUseCase.execute({
+      invoiceData,
       today: resolveToday(today),
       transactions: rows,
     });

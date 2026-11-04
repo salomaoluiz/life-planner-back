@@ -2,6 +2,7 @@ import { Inject } from '@nestjs/common';
 import { z } from 'zod';
 
 import { AccessibleOwnersSchema } from '@finance/application/dto/FinanceCommon';
+import CategoryEntity from '@finance/domain/entity/CategoryEntity';
 import { IFinanceCategoryRepository } from '@finance/domain/repository';
 import { collectDescendants } from '@finance/domain/service/CategoryTree';
 import { normalizeText } from '@finance/domain/service/TextMatch';
@@ -10,6 +11,8 @@ import { validate } from '@shared/infra/validation';
 
 const ResolveSearchCategoryIdsSchema = z.object({
   accessibleOwners: AccessibleOwnersSchema,
+  // Spec 083: the categories the caller already read in this request.
+  preloaded: z.object({ categories: z.array(z.custom<CategoryEntity>()).optional() }).optional(),
   q: z.string(),
 });
 
@@ -34,9 +37,9 @@ export class ResolveSearchCategoryIdsUseCase implements UseCaseWithParams<
       return [];
     }
 
-    const categories = await this.categoryRepository.findCategories({
-      owners: input.accessibleOwners,
-    });
+    const categories =
+      input.preloaded?.categories ??
+      (await this.categoryRepository.findCategories({ owners: input.accessibleOwners }));
     const ids = new Set<string>();
 
     for (const category of categories) {

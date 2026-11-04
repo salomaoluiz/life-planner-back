@@ -15,6 +15,7 @@ import { GetInvoicesForListUseCase } from '@finance/application/use-case/GetInvo
 import { GetMonthSummaryUseCase } from '@finance/application/use-case/GetMonthSummaryUseCase';
 import { GetProjectionsUseCase } from '@finance/application/use-case/GetProjectionsUseCase';
 import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransactionsUseCase';
+import { LoadFilterCategoriesUseCase } from '@finance/application/use-case/LoadFilterCategoriesUseCase';
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { TransactionFilter } from '@finance/domain/entity/TransactionFilter';
@@ -33,6 +34,7 @@ export class MonthService {
     private readonly getMonthSummaryUseCase: GetMonthSummaryUseCase,
     private readonly getProjectionsUseCase: GetProjectionsUseCase,
     private readonly getTransactionsUseCase: GetTransactionsUseCase,
+    private readonly loadFilterCategoriesUseCase: LoadFilterCategoriesUseCase,
     private readonly materializeRecurrencesUseCase: MaterializeRecurrencesUseCase,
   ) {}
 
@@ -52,6 +54,10 @@ export class MonthService {
       to: lastDayOfMonth(`${month}-01`),
     };
 
+    // Spec 083: the categories a filter needs are read once for the rows, the invoices and the projections.
+    const categories = await this.loadFilterCategoriesUseCase.execute({ accessibleOwners, filter });
+    const preloaded = categories ? { categories } : undefined;
+
     // Once per request, not once per part (spec 080 FR 2).
     await this.materializeRecurrencesUseCase.execute({
       accessibleOwners,
@@ -65,6 +71,7 @@ export class MonthService {
         filter: monthFilter,
         limit: MONTH_ROWS_LIMIT,
         ownerIds,
+        preloaded,
         today: resolvedToday,
       }),
       this.getInvoicesForListUseCase.execute({
@@ -72,6 +79,7 @@ export class MonthService {
         filter,
         month,
         ownerIds,
+        preloaded,
         today: resolvedToday,
       }),
       // Past the balance horizon the screen simply has no balances; it must not fail as a whole.
@@ -91,6 +99,7 @@ export class MonthService {
             filter,
             from: laterMonth(addInvoiceMonths(month, -2), addInvoiceMonths(currentMonth, 1)),
             ownerIds,
+            preloaded,
             to: month,
             today: resolvedToday,
           })
@@ -107,6 +116,7 @@ export class MonthService {
         filter: monthFilter,
         limit: MONTH_ROWS_LIMIT,
         ownerIds,
+        preloaded,
         today: resolvedToday,
       });
 

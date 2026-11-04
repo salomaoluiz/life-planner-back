@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+import AccountEntity from '@finance/domain/entity/AccountEntity';
+import CategoryEntity from '@finance/domain/entity/CategoryEntity';
+import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { isPeriodValid } from '@finance/domain/entity/TransactionFilter';
 import { TransactionType } from '@finance/domain/enum';
 import { SUPPORTED_CURRENCIES } from '@finance/domain/enum/Currency';
@@ -72,3 +75,12 @@ export const TransactionFilterSchema = z
   .refine((value) => !value.from || !value.to || isPeriodValid(value.from, value.to), {
     message: 'The period can be at most 2 years',
   });
+
+// Spec 083: data the caller already read in this request, so a use case does not read it again.
+export const PreloadedSchema = z
+  .object({
+    accounts: z.array(z.custom<AccountEntity>()).optional(),
+    cards: z.array(z.custom<CreditCardEntity>()).optional(),
+    categories: z.array(z.custom<CategoryEntity>()).optional(),
+  })
+  .optional();

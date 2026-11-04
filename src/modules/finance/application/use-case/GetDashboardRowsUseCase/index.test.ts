@@ -235,3 +235,42 @@ describe('search by notes, category and amount (spec 059)', () => {
     );
   });
 });
+
+describe('categories read once (spec 083)', () => {
+  const categories = [{ id: 'market' }, { id: 'greens', parentId: 'market' }] as never;
+
+  it('SHOULD load the categories ONCE AND hand them to the expansion AND the search', async () => {
+    mocks.loadCategories.execute.mockResolvedValue(categories);
+
+    await setup.execute({ ...mocks.input, filter: { categoryIds: ['market'], q: 'rent' } });
+
+    expect(mocks.loadCategories.execute).toHaveBeenCalledTimes(1);
+    expect(mocks.expand.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ preloaded: { categories } }),
+    );
+    expect(mocks.resolveSearch.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ preloaded: { categories } }),
+    );
+  });
+
+  it('SHOULD NOT load them WHEN the caller passes them preloaded', async () => {
+    await setup.execute({
+      ...mocks.input,
+      filter: { categoryIds: ['market'], q: 'rent' },
+      preloaded: { categories },
+    });
+
+    expect(mocks.loadCategories.execute).not.toHaveBeenCalled();
+    expect(mocks.expand.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ preloaded: { categories } }),
+    );
+  });
+});
+
+describe('preloaded cards (spec 083)', () => {
+  it('SHOULD NOT read the cards WHEN the caller passes them', async () => {
+    await setup.execute({ ...mocks.input, preloaded: { cards: [mocks.card] } });
+
+    expect(mocks.creditCardRepository.findCreditCards).not.toHaveBeenCalled();
+  });
+});

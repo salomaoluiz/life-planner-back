@@ -7,7 +7,9 @@ import {
 import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
 import { FindInvoicesInRangeUseCase } from '@finance/application/use-case/FindInvoicesInRangeUseCase';
 import { InvoiceDetail, splitInvoiceRows } from '@finance/application/use-case/GetInvoiceUseCase';
+import { LoadFilterCategoriesUseCase } from '@finance/application/use-case/LoadFilterCategoriesUseCase';
 import { ResolveSearchCategoryIdsUseCase } from '@finance/application/use-case/ResolveSearchCategoryIdsUseCase';
+import CategoryEntity from '@finance/domain/entity/CategoryEntity';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { hasFilter, TransactionFilter } from '@finance/domain/entity/TransactionFilter';
 import { InvoiceStatus, TransactionType } from '@finance/domain/enum';
@@ -29,6 +31,8 @@ export class GetInvoicesForListUseCase implements UseCaseWithParams<
     private readonly expandCategoryIdsUseCase: ExpandCategoryIdsUseCase,
     @Inject(FindInvoicesInRangeUseCase)
     private readonly findInvoicesInRangeUseCase: FindInvoicesInRangeUseCase,
+    @Inject(LoadFilterCategoriesUseCase)
+    private readonly loadFilterCategoriesUseCase: LoadFilterCategoriesUseCase,
     @Inject(ResolveSearchCategoryIdsUseCase)
     private readonly resolveSearchCategoryIdsUseCase: ResolveSearchCategoryIdsUseCase,
     @Inject('IFinanceTransactionRepository')
@@ -64,7 +68,11 @@ export class GetInvoicesForListUseCase implements UseCaseWithParams<
         invoiceMonth: invoice.referenceMonth,
       })),
     );
-    const rowMatcher = await this.buildRowMatcher(input.accessibleOwners, filter);
+    const rowMatcher = await this.buildRowMatcher(
+      input.accessibleOwners,
+      filter,
+      input.preloaded?.categories,
+    );
     const details = matches.map(({ card, invoice }): InvoiceDetail => {
       const invoiceRows = rows.filter(
         (row) => row.creditCardId === card.id && row.invoiceMonth === invoice.referenceMonth,
@@ -104,12 +112,17 @@ export class GetInvoicesForListUseCase implements UseCaseWithParams<
   private async buildRowMatcher(
     accessibleOwners: GetInvoicesForListInput['accessibleOwners'],
     filter: TransactionFilter,
+    preloadedCategories?: CategoryEntity[],
   ) {
+    const categories =
+      preloadedCategories ??
+      (await this.loadFilterCategoriesUseCase.execute({ accessibleOwners, filter }));
     const categoryIds = filter.categoryIds?.length
       ? new Set(
           await this.expandCategoryIdsUseCase.execute({
             accessibleOwners,
             categoryIds: filter.categoryIds,
+            preloaded: { categories },
           }),
         )
       : undefined;
@@ -117,7 +130,11 @@ export class GetInvoicesForListUseCase implements UseCaseWithParams<
     const query = filter.q;
     const searchCategoryIds = new Set(
       query
-        ? await this.resolveSearchCategoryIdsUseCase.execute({ accessibleOwners, q: query })
+        ? await this.resolveSearchCategoryIdsUseCase.execute({
+            accessibleOwners,
+            preloaded: { categories },
+            q: query,
+          })
         : [],
     );
 

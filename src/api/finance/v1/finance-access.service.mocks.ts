@@ -9,8 +9,8 @@ import { GetUserFamilyAccessUseCase } from '@family/application/use-case/GetUser
 const userId = faker.string.uuid();
 const familyIds = [faker.string.uuid(), faker.string.uuid()];
 const families = [
-  { archived: false, familyId: familyIds[0] },
-  { archived: true, familyId: familyIds[1] },
+  { archived: false, familyId: familyIds[0], name: 'Casa' },
+  { archived: true, familyId: familyIds[1], name: 'Sítio' },
 ];
 
 const getUserFamilyAccessUseCaseMock = { execute: jest.fn().mockResolvedValue(families) };
