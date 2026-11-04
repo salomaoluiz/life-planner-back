@@ -64,7 +64,27 @@ describe('GetProjectionsUseCase', () => {
     expect(result[0].invoiceMonth).toBe('2026-11');
     // Closing day 10, due day of the fixture card: the planned payment day of that invoice.
     expect(result[0].invoiceListDate).toMatch(/^2026-1[12]-\d{2}$/);
-    expect(mocks.creditCardRepository.findCreditCardById).toHaveBeenCalledWith(mocks.card.id);
+    expect(mocks.creditCardRepository.findCreditCardsByIds).toHaveBeenCalledWith([mocks.card.id]);
+  });
+
+  it('SHOULD load the cards of all series once AND never one by one (spec 082)', async () => {
+    mocks.recurrenceRepository.findByOwners.mockResolvedValue([
+      { ...mocks.series, creditCardId: mocks.card.id, id: 'a' },
+      { ...mocks.series, creditCardId: mocks.card.id, id: 'b' },
+      { ...mocks.series, creditCardId: null, id: 'c' },
+    ]);
+
+    await setup.execute({ ...base, to: '2026-11' });
+
+    expect(mocks.creditCardRepository.findCreditCardsByIds).toHaveBeenCalledTimes(1);
+    expect(mocks.creditCardRepository.findCreditCardsByIds).toHaveBeenCalledWith([mocks.card.id]);
+    expect(mocks.creditCardRepository.findCreditCardById).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD NOT read cards WHEN no series has a card', async () => {
+    await setup.execute({ ...base, to: '2026-11' });
+
+    expect(mocks.creditCardRepository.findCreditCardsByIds).not.toHaveBeenCalled();
   });
 
   it('SHOULD sort by date across series', async () => {
