@@ -291,8 +291,8 @@ model FinancialInvoicePayment {
   @@map("financial_credit_card_invoice_payments")
 }
 
-// Spec 090: stored totals of the card rows of each (card, invoice month), kept by the write transactions and not read yet
-// (shadow mode until spec 091). Same aggregation as `sumCardInvoices`: every card row, no exclusions.
+// Spec 090: stored totals of the card rows of each (card, invoice month), kept by the write transactions and read by every
+// card invoice computation (spec 091). Aggregation: every card row, no exclusions.
 model FinancialCardInvoiceTotal {
   credit_card_id String
   invoice_month  String   @db.Char(7)

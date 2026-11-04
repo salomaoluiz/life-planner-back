@@ -1,6 +1,7 @@
 import { InvoicePaymentMethod, InvoiceStatus } from '@finance/domain/enum';
 
 import {
+  addInvoiceMonths,
   buildInvoiceFor,
   calculateInvoices,
   effectiveDay,
@@ -8,7 +9,9 @@ import {
   invoiceBuilderFor,
   invoiceMonthOf,
   InvoicePaymentInfo,
+  InvoiceTotal,
   isInvoiceAssignable,
+  trimSettledPrefix,
 } from './index';
 import { mocks } from './index.mocks';
 
@@ -435,4 +438,90 @@ describe('invoiceBuilderFor', () => {
 
     expect(builder('2026-09')).toEqual(buildInvoiceFor(card, '2026-09', [], [], today));
   });
+});
+
+describe('trimSettledPrefix (spec 091)', () => {
+  const card = buildCard({ closingDay: 10 });
+  const today = '2026-11-20';
+  const beforeMonth = addInvoiceMonths('2026-11', -3);
+  const months = Array.from({ length: 30 }, (_, index) => addInvoiceMonths('2024-06', index));
+  function payment(referenceMonth: string): InvoicePaymentInfo {
+    return {
+      accountId: null,
+      accountName: null,
+      amount: 100,
+      method: InvoicePaymentMethod.EXTERNAL,
+      paidOn: '2026-10-25',
+      referenceMonth,
+    };
+  }
+
+  // Deterministic pseudo-random fixtures (negative carries, early payments, unpaid gaps).
+  function fixture(seed: number): { payments: InvoicePaymentInfo[]; totals: InvoiceTotal[] } {
+    let state = seed;
+    function next(): number {
+      state = (state * 1103515245 + 12345) % 2147483648;
+
+      return state / 2147483648;
+    }
+    const totals = months
+      .filter(() => next() > 0.15)
+      .map((invoiceMonth) => ({
+        amount: Math.round((next() - 0.3) * 80000),
+        earlyPaid: next() > 0.85 ? 500 : 0,
+        invoiceMonth,
+      }));
+    const settledUntil = Math.floor(next() * months.length);
+    const payments = months
+      .filter((month, index) => index <= settledUntil || next() > 0.7)
+      .filter(() => next() > 0.05)
+      .map(payment);
+
+    return { payments, totals };
+  }
+
+  it('SHOULD keep every total WHEN no prefix is fully paid', () => {
+    const totals = [{ amount: 100, invoiceMonth: '2026-01' }];
+
+    expect(trimSettledPrefix(totals, [], beforeMonth)).toBe(totals);
+    expect(trimSettledPrefix(totals, [payment('2026-02')], beforeMonth)).toBe(totals);
+  });
+
+  it('SHOULD stop at the first unpaid month AND at the boundary', () => {
+    const totals = [
+      { amount: 100, invoiceMonth: '2026-01' },
+      { amount: 100, invoiceMonth: '2026-02' },
+      { amount: 100, invoiceMonth: '2026-03' },
+    ];
+
+    expect(
+      trimSettledPrefix(totals, [payment('2026-01'), payment('2026-03')], beforeMonth),
+    ).toEqual(totals.slice(1));
+    expect(
+      trimSettledPrefix(
+        totals,
+        totals.map((total) => payment(total.invoiceMonth)),
+        '2026-03',
+      ),
+    ).toEqual(totals.slice(2));
+  });
+
+  it.each(Array.from({ length: 200 }, (_, index) => index + 1))(
+    'SHOULD give the same invoices as the full chain (fixture %i)',
+    (seed) => {
+      const { payments, totals } = fixture(seed);
+      const trimmed = trimSettledPrefix(totals, payments, beforeMonth);
+
+      expect(calculateInvoices(card, trimmed, payments, today)).toEqual(
+        calculateInvoices(card, totals, payments, today),
+      );
+
+      const full = invoiceBuilderFor(card, totals, payments, today);
+      const lean = invoiceBuilderFor(card, trimmed, payments, today);
+
+      for (const month of months.filter((item) => item >= beforeMonth)) {
+        expect(lean(month)).toEqual(full(month));
+      }
+    },
+  );
 });
