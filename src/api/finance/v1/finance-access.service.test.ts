@@ -26,3 +26,20 @@ it('SHOULD fail the whole request WHEN the family lookup fails (no partial resul
 
   await expect(setup.resolve(mocks.userId)).rejects.toThrow('db down');
 });
+
+it('SHOULD return the owners AND the family names from ONE family read (spec 083)', async () => {
+  const result = await setup.resolveWithNames(mocks.userId);
+
+  expect(mocks.getUserFamilyAccessUseCase.execute).toHaveBeenCalledTimes(1);
+  expect(result.accessibleOwners).toHaveLength(3);
+  expect(result.familyNames).toEqual({
+    [mocks.familyIds[0]]: 'Casa',
+    [mocks.familyIds[1]]: 'Sítio',
+  });
+});
+
+it('SHOULD return no family names WHEN the caller has no family', async () => {
+  mocks.getUserFamilyAccessUseCase.execute.mockResolvedValueOnce([]);
+
+  expect((await setup.resolveWithNames(mocks.userId)).familyNames).toEqual({});
+});

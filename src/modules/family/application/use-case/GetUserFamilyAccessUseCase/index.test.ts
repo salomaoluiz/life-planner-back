@@ -1,12 +1,12 @@
 import { mocks, setup } from './index.mocks';
 
-it('SHOULD return every family of the user with its archived flag', async () => {
+it('SHOULD return every family of the user with its archived flag AND its name (spec 083)', async () => {
   const result = await setup.execute(mocks.userId);
 
   expect(mocks.familyRepository.getFamilies).toHaveBeenCalledWith(mocks.userId);
   expect(result).toEqual([
-    { archived: false, familyId: mocks.families[0].id },
-    { archived: true, familyId: mocks.families[1].id },
+    { archived: false, familyId: mocks.families[0].id, name: mocks.families[0].name },
+    { archived: true, familyId: mocks.families[1].id, name: mocks.families[1].name },
   ]);
 });
 
