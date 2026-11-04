@@ -294,18 +294,18 @@
   "GET /api/v1/finance/transactions #search-2y": {
     "indexes": ["financial_transactions_account_list_idx"],
     "kind": "read",
-    "maxBytes": 93119,
+    "maxBytes": 64588,
     "maxQueries": 5,
-    "p50Ms": 95,
+    "p50Ms": 46,
     "scenario": "from={twoYearsStart}&to={monthEnd}&q=perf%20tx%2001",
     "table": "financial_transactions"
   },
   "GET /api/v1/finance/transactions #search-month": {
     "indexes": ["financial_transactions_account_list_idx"],
     "kind": "read",
-    "maxBytes": 93119,
+    "maxBytes": 3986,
     "maxQueries": 5,
-    "p50Ms": 95,
+    "p50Ms": 22,
     "scenario": "from={monthStart}&to={monthEnd}&q=perf%20tx%2001",
     "table": "financial_transactions"
   },
