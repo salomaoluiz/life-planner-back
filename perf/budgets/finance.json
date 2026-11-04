@@ -287,9 +287,9 @@
   "GET /api/v1/finance/transactions/:id": {
     "indexes": null,
     "kind": "read",
-    "maxBytes": 2000,
+    "maxBytes": 1000,
     "maxQueries": 3,
-    "p50Ms": 60,
+    "p50Ms": 40,
     "params": {
       "id": "transaction"
     },
