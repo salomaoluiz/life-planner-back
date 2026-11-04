@@ -4,6 +4,7 @@ import {
   UpdateRecurrenceInput,
   UpdateRecurrenceSchema,
 } from '@finance/application/dto/UpdateRecurrence';
+import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
@@ -23,6 +24,8 @@ export class UpdateRecurrenceUseCase implements UseCaseWithParams<
   RecurrenceEntity
 > {
   constructor(
+    @Inject(MaterializationGate)
+    private readonly materializationGate: MaterializationGate,
     @Inject(EnsureTransactionConsistencyUseCase)
     private readonly ensureTransactionConsistencyUseCase: EnsureTransactionConsistencyUseCase,
     @Inject('IFinanceRecurrenceRepository')
@@ -83,6 +86,8 @@ export class UpdateRecurrenceUseCase implements UseCaseWithParams<
       sourceId: series.id,
       tags: input.tags,
     });
+
+    this.materializationGate.invalidate([series.ownerId]);
 
     return (await this.recurrenceRepository.findById(series.id)) as RecurrenceEntity;
   }

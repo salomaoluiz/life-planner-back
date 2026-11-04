@@ -5,6 +5,32 @@ import { mocks, setup } from './index.mocks';
 const base = { accessibleOwners: mocks.accessibleOwners, today: '2026-10-17' };
 
 describe('MaterializeRecurrencesUseCase', () => {
+  it('SHOULD run through the gate with the non-archived owner ids AND today (spec 081)', async () => {
+    await setup.execute(base);
+
+    expect(mocks.gate.runOnce).toHaveBeenCalledWith(
+      ['user-id'],
+      '2026-10-17',
+      expect.any(Function),
+    );
+  });
+
+  it('SHOULD not query WHEN the gate skips the run (spec 081)', async () => {
+    mocks.gate.runOnce.mockResolvedValue(undefined);
+
+    await setup.execute(base);
+
+    expect(mocks.recurrenceRepository.findDue).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD not touch the gate WHEN every owner is archived (spec 081)', async () => {
+    const archived = mocks.accessibleOwners.map((access) => ({ ...access, archived: true }));
+
+    await setup.execute({ ...base, accessibleOwners: archived });
+
+    expect(mocks.gate.runOnce).not.toHaveBeenCalled();
+  });
+
   it('SHOULD create the missing weekly rows up to the end of the month, not paid, AND advance the series', async () => {
     await setup.execute(base);
 

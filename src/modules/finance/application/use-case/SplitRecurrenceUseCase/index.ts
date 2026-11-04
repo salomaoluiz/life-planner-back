@@ -9,6 +9,7 @@ import {
   SplitRecurrenceInput,
   SplitRecurrenceSchema,
 } from '@finance/application/dto/UpdateRecurrence';
+import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
@@ -46,6 +47,8 @@ export class SplitRecurrenceUseCase implements UseCaseWithParams<
   SplitRecurrenceResult
 > {
   constructor(
+    @Inject(MaterializationGate)
+    private readonly materializationGate: MaterializationGate,
     @Inject(EnsureTransactionConsistencyUseCase)
     private readonly ensureTransactionConsistencyUseCase: EnsureTransactionConsistencyUseCase,
     @Inject('IFinanceInvoicePaymentRepository')
@@ -211,6 +214,8 @@ export class SplitRecurrenceUseCase implements UseCaseWithParams<
       sourceId,
       tags: input.tags,
     });
+
+    this.materializationGate.invalidate([series.ownerId]);
 
     const [recurrence, ended, occurrences] = await Promise.all([
       this.recurrenceRepository.findById(targetId) as Promise<RecurrenceEntity>,

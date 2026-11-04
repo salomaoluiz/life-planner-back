@@ -170,3 +170,12 @@ describe('notes (spec 059)', () => {
     );
   });
 });
+
+it('SHOULD invalidate the gate of the owner after the series is written (spec 081)', async () => {
+  await setup.execute(mocks.input);
+
+  expect(mocks.gate.invalidate).toHaveBeenCalledWith(['user-id']);
+  expect(mocks.gate.invalidate.mock.invocationCallOrder[0]).toBeGreaterThan(
+    mocks.recurrenceRepository.create.mock.invocationCallOrder[0],
+  );
+});

@@ -3,6 +3,12 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.1.1] - 2026-11-04
+
+### Changed
+
+- Finance reads skip the recurrence materialization check for 60 s per owner and concurrent reads share one run; recurrence writes reset it. New optional `FINANCE_MATERIALIZATION_GATE_TTL_MS` (`0` turns it off) (spec 081).
+
 ## [3.1.0] - 2026-11-04
 
 ### Added

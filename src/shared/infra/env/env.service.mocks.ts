@@ -17,6 +17,7 @@ const envVarsMock = {
   DB_PORT: 5432,
   DB_STATEMENT_TIMEOUT_MS: 10000,
   DB_USER: 'user',
+  FINANCE_MATERIALIZATION_GATE_TTL_MS: 60000,
   GITHUB_TOKEN: 'your-token',
   JWT_EXPIRES_IN: '1d',
   JWT_SECRET: 'secret',

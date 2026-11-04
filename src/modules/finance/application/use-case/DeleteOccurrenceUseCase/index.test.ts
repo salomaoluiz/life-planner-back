@@ -134,3 +134,17 @@ it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)'
     status: 422,
   });
 });
+
+describe('gate invalidation (spec 081)', () => {
+  it('SHOULD invalidate the series owner WHEN a projected occurrence is hidden', async () => {
+    await setup.execute({ ...base, occurrenceNumber: 12 });
+
+    expect(mocks.gate.invalidate).toHaveBeenCalledWith(['user-id']);
+  });
+
+  it('SHOULD invalidate the series owner WHEN the series is cut at an occurrence', async () => {
+    await setup.execute({ ...base, scope: InstallmentEditScope.THIS_AND_NEXT });
+
+    expect(mocks.gate.invalidate).toHaveBeenCalledWith(['user-id']);
+  });
+});

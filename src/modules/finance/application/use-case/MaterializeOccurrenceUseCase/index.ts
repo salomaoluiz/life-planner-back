@@ -9,6 +9,7 @@ import {
   MaterializeOccurrenceInput,
   MaterializeOccurrenceSchema,
 } from '@finance/application/dto/MaterializeOccurrence';
+import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { TransactionWithLimit } from '@finance/application/use-case/CreateTransactionUseCase';
@@ -27,6 +28,8 @@ export class MaterializeOccurrenceUseCase implements UseCaseWithParams<
   TransactionWithLimit
 > {
   constructor(
+    @Inject(MaterializationGate)
+    private readonly materializationGate: MaterializationGate,
     @Inject(ComputeCardInvoicesUseCase)
     private readonly computeCardInvoicesUseCase: ComputeCardInvoicesUseCase,
     @Inject(EnsureTransactionConsistencyUseCase)
@@ -87,6 +90,8 @@ export class MaterializeOccurrenceUseCase implements UseCaseWithParams<
       tags: input.tags,
       value: input.value,
     });
+
+    this.materializationGate.invalidate([series.ownerId]);
 
     if (!card) {
       return { overLimit: false, transaction };

@@ -39,6 +39,9 @@ export const envSchema = z.object({
   DB_POOL_MAX: optionalInt(1, 20),
   DB_STATEMENT_TIMEOUT_MS: optionalInt(0, 0),
 
+  // Finance (spec 081): seconds-scale cache of the recurrence materialization check, 0 disables it
+  FINANCE_MATERIALIZATION_GATE_TTL_MS: optionalInt(0, 60000),
+
   // JWT
   JWT_EXPIRES_IN: z.coerce.number().default(3600),
   JWT_SECRET: z.string().min(10),

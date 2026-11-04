@@ -111,7 +111,7 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": 6998,
-    "maxQueries": 5,
+    "maxQueries": 4,
     "p50Ms": 46,
     "scenario": ""
   },
@@ -119,7 +119,7 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": 41828,
-    "maxQueries": 6,
+    "maxQueries": 5,
     "p50Ms": 53,
     "scenario": "month={referenceMonth}"
   },
@@ -162,7 +162,7 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": 8027,
-    "maxQueries": 7,
+    "maxQueries": 6,
     "p50Ms": 62,
     "params": {
       "id": "card",
@@ -174,7 +174,7 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": 24467,
-    "maxQueries": 7,
+    "maxQueries": 6,
     "p50Ms": 116,
     "scenario": "month={referenceMonth}"
   },
@@ -182,7 +182,7 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": 98646,
-    "maxQueries": 6,
+    "maxQueries": 5,
     "p50Ms": 81,
     "scenario": ""
   },
@@ -190,7 +190,7 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": 42850,
-    "maxQueries": 5,
+    "maxQueries": 4,
     "p50Ms": 52,
     "scenario": "currency=BRL&from={monthStart}&to={monthEnd}&granularity=DAY"
   },
@@ -198,7 +198,7 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": 341,
-    "maxQueries": 14,
+    "maxQueries": 13,
     "p50Ms": 142,
     "scenario": "currency=BRL&from={monthStart}&to={monthEnd}"
   },
@@ -206,7 +206,7 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": 1893,
-    "maxQueries": 8,
+    "maxQueries": 7,
     "p50Ms": 111,
     "scenario": "currency=BRL&from={monthStart}&to={monthEnd}&groupBy=CATEGORY&type=EXPENSE"
   },
@@ -234,7 +234,7 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": 198367,
-    "maxQueries": 11,
+    "maxQueries": 10,
     "p50Ms": 110,
     "scenario": "month={referenceMonth}"
   },
@@ -261,7 +261,7 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": 3,
-    "maxQueries": 4,
+    "maxQueries": 3,
     "p50Ms": 41,
     "scenario": "from={referenceMonth}&to={nextMonth}"
   },
@@ -277,7 +277,7 @@
     "indexes": ["financial_transactions_credit_card_id_invoice_month_idx"],
     "kind": "read",
     "maxBytes": 30007,
-    "maxQueries": 10,
+    "maxQueries": 9,
     "p50Ms": 162,
     "scenario": "source=CARD&from={monthStart}&to={monthEnd}",
     "table": "financial_transactions"
@@ -286,7 +286,7 @@
     "indexes": ["financial_transactions_account_list_idx"],
     "kind": "read",
     "maxBytes": 93119,
-    "maxQueries": 4,
+    "maxQueries": 3,
     "p50Ms": 95,
     "scenario": "from={monthStart}&to={monthEnd}",
     "table": "financial_transactions"
@@ -307,7 +307,7 @@
     "kind": "read",
     "knownException": "CSV export, unbounded by design",
     "maxBytes": 62309,
-    "maxQueries": 9,
+    "maxQueries": 8,
     "p50Ms": 205,
     "scenario": "from={monthStart}&to={monthEnd}&format=BR"
   },
@@ -315,7 +315,7 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": 15,
-    "maxQueries": 4,
+    "maxQueries": 3,
     "p50Ms": 41,
     "scenario": "from={monthStart}&to={monthEnd}"
   },
@@ -324,7 +324,7 @@
     "kind": "read",
     "knownException": "Oversized payload; removed by spec 082 (upcoming endpoint slimming)",
     "maxBytes": 511948,
-    "maxQueries": 8,
+    "maxQueries": 7,
     "p50Ms": 412,
     "scenario": "ownerId={userId}"
   },

@@ -4,6 +4,7 @@ import {
   DeleteFinanceDataByOwnerInput,
   DeleteFinanceDataByOwnerSchema,
 } from '@finance/application/dto/DeleteFinanceDataByOwner';
+import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import { IFinanceOwnerDataRepository } from '@finance/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
@@ -14,6 +15,8 @@ export class DeleteFinanceDataByOwnerUseCase implements UseCaseWithParams<
   number
 > {
   constructor(
+    @Inject(MaterializationGate)
+    private readonly materializationGate: MaterializationGate,
     @Inject('IFinanceOwnerDataRepository')
     private readonly ownerDataRepository: IFinanceOwnerDataRepository,
   ) {}
@@ -21,6 +24,10 @@ export class DeleteFinanceDataByOwnerUseCase implements UseCaseWithParams<
   async execute(params: DeleteFinanceDataByOwnerInput): Promise<number> {
     const input = validate(DeleteFinanceDataByOwnerSchema, params);
 
-    return this.ownerDataRepository.deleteAllByOwner(input);
+    const deleted = await this.ownerDataRepository.deleteAllByOwner(input);
+
+    this.materializationGate.invalidate([input.ownerId]);
+
+    return deleted;
   }
 }

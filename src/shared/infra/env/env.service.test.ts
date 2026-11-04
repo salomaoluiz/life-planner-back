@@ -24,6 +24,7 @@ const testCases: { key: EnvVarKey; method: EnvServiceKey }[] = [
   { key: 'DB_PORT', method: 'dbPort' },
   { key: 'DB_STATEMENT_TIMEOUT_MS', method: 'dbStatementTimeoutMs' },
   { key: 'DB_USER', method: 'dbUser' },
+  { key: 'FINANCE_MATERIALIZATION_GATE_TTL_MS', method: 'financeMaterializationGateTtlMs' },
   { key: 'JWT_EXPIRES_IN', method: 'jwtExpiresIn' },
   { key: 'JWT_SECRET', method: 'jwtSecret' },
   { key: 'SESSION_IDLE_TTL_SECONDS', method: 'sessionIdleTtlSeconds' },

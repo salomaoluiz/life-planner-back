@@ -12,6 +12,7 @@ describe('validateEnvironment', () => {
       DB_POOL_IDLE_TIMEOUT_MS: 30000,
       DB_POOL_MAX: 20,
       DB_STATEMENT_TIMEOUT_MS: 0,
+      FINANCE_MATERIALIZATION_GATE_TTL_MS: 60000,
       JWT_EXPIRES_IN: 7200, // Coerced
       PERF_COUNT_QUERIES: false,
       PORT: 4000, // Coerced
@@ -53,6 +54,20 @@ describe('validateEnvironment', () => {
       PORT: 3000,
       SESSION_IDLE_TTL_SECONDS: 172800,
     });
+  });
+
+  it('SHOULD coerce the materialization gate TTL AND reject negative values (spec 081)', () => {
+    expect(
+      setup({ ...mocks.validConfig, FINANCE_MATERIALIZATION_GATE_TTL_MS: '0' })
+        .FINANCE_MATERIALIZATION_GATE_TTL_MS,
+    ).toBe(0);
+    expect(
+      setup({ ...mocks.validConfig, FINANCE_MATERIALIZATION_GATE_TTL_MS: '' })
+        .FINANCE_MATERIALIZATION_GATE_TTL_MS,
+    ).toBe(60000);
+    expect(
+      throwableSetup({ ...mocks.validConfig, FINANCE_MATERIALIZATION_GATE_TTL_MS: '-1' }),
+    ).toBeInstanceOf(Error);
   });
 
   it('SHOULD coerce the pool variables AND reject invalid values', () => {

@@ -288,3 +288,9 @@ describe('notes (spec 059)', () => {
     );
   });
 });
+
+it('SHOULD invalidate the gate of the series owner after the split (spec 081)', async () => {
+  await setup.execute({ ...base, value: 220000 });
+
+  expect(mocks.gate.invalidate).toHaveBeenCalledWith([mocks.series.ownerId]);
+});

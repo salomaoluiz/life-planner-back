@@ -123,3 +123,9 @@ describe('notes (spec 059)', () => {
     );
   });
 });
+
+it('SHOULD invalidate the gate of the series owner after the row is created (spec 081)', async () => {
+  await setup.execute(base);
+
+  expect(mocks.gate.invalidate).toHaveBeenCalledWith(['user-id']);
+});

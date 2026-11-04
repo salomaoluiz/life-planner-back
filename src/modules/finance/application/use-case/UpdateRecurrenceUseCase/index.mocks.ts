@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 
+import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import RecurrenceEntityFixture from '@finance/domain/entity/mocks/RecurrenceEntity.fixture';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -25,6 +26,8 @@ const recurrenceRepositoryMock = { applyChange: jest.fn(), findById: jest.fn() }
 
 // endregion Mocks
 
+const gateMock = { invalidate: jest.fn() };
+
 let setup: UpdateRecurrenceUseCase;
 
 beforeEach(async () => {
@@ -37,6 +40,7 @@ beforeEach(async () => {
 
   const module = await Test.createTestingModule({
     providers: [
+      { provide: MaterializationGate, useValue: gateMock },
       UpdateRecurrenceUseCase,
       { provide: 'IFinanceAccountRepository', useValue: accountRepositoryMock },
       { provide: 'IFinanceCreditCardRepository', useValue: creditCardRepositoryMock },
@@ -53,6 +57,7 @@ const mocks = {
   accountRepository: accountRepositoryMock,
   creditCardRepository: creditCardRepositoryMock,
   ensureConsistency: ensureConsistencyMock,
+  gate: gateMock,
   recurrenceRepository: recurrenceRepositoryMock,
   series: seriesMock,
 };
