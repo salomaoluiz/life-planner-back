@@ -9,7 +9,8 @@ export type FixtureName =
   | 'plan'
   | 'recurrence'
   | 'stockItem'
-  | 'tag';
+  | 'tag'
+  | 'transaction';
 export type Fixtures = { referenceMonth: string; userId: string } & Record<
   FixtureName,
   string | undefined
@@ -72,6 +73,11 @@ export async function resolveFixtures(
     plan = rows.find((row) => row.installmentPlanId)?.installmentPlanId ?? undefined;
   }
 
+  // Spec 077: one account row of the reference month, for `GET /transactions/:id`.
+  const { items: monthRows } = await client.get<{ items: { id: string }[] }>(
+    `${FINANCE}/transactions?limit=1&${expandScenario('from={monthStart}&to={monthEnd}', base as Fixtures)}`,
+  );
+
   return {
     ...base,
     account: await first(`${FINANCE}/accounts`),
@@ -82,5 +88,6 @@ export async function resolveFixtures(
     recurrence: await first(`${FINANCE}/recurrences`),
     stockItem: await first('/api/v1/stock/items'),
     tag: await first(`${FINANCE}/tags`),
+    transaction: monthRows[0]?.id,
   };
 }

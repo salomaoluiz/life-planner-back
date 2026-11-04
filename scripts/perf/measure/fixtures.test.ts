@@ -10,6 +10,7 @@ const fx: Fixtures = {
   referenceMonth: '2026-02',
   stockItem: 'stock-1',
   tag: 'tag-1',
+  transaction: 'tx-1',
   userId: 'user-1',
 };
 
@@ -94,6 +95,8 @@ describe('resolveFixtures', () => {
     const client = {
       get: jest.fn(async (path: string) => {
         if (path.endsWith('/transactions?source=ACCOUNT&limit=1')) return [];
+        if (path.includes('/transactions') && path.includes('limit=1&'))
+          return { items: [{ id: 'tx-1' }], nextCursor: null };
         if (path.includes('/transactions'))
           return {
             items: [{ installmentPlanId: null }, { installmentPlanId: 'plan-9' }],
@@ -117,6 +120,7 @@ describe('resolveFixtures', () => {
     expect(result.stockItem).toBe('first:/api/v1/stock/items');
     expect(result.family).toBe('first:/api/v1/families');
     expect(result.plan).toBe('plan-9');
+    expect(result.transaction).toBe('tx-1');
     expect(result.userId).toBe('user-1');
     expect(result.referenceMonth).toBe('2026-02');
   });

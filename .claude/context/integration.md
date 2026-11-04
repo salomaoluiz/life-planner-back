@@ -127,3 +127,7 @@ CSV: export gains a last column `Notes` / `Notas` (RFC 4180 quoting keeps line b
 Upcoming items (spec 062, additive): `GET /finance/upcoming?ownerId=…&today=YYYY-MM-DD&days=7&limit=5` (`ownerId` required, `days` 1-31, `limit` 1-20) returns `{ overdue, next, nextTotal, overdueTotals: { expenseCents, incomeCents } }`. Items are `{ kind: TRANSACTION | INVOICE | PROJECTION, id, date, description, type, valueCents, currency, owner, ownerId, categoryId, accountId, creditCardId, invoiceMonth, purchaseCount, recurrenceId, occurrenceNumber }`. Overdue (date before `today`, no limit, oldest first) and next (`today` to `today + days`, date ascending, cut to `limit`, `nextTotal` counts before the cut) come from unpaid account rows, unpaid card invoices with something due (one item per card and month, `valueCents` = amount due) and account recurrence projections. Owner ids the caller cannot read are dropped like in the other finance lists (empty result, no 403). Due recurrences are materialized first.
 
 Breaking (spec 078): `GET /finance/transactions` returns `{ items, nextCursor }` and requires a period (`from`+`to`, or `source=CARD` + `invoiceMonth`); the app loads every page of its window. The CSV export stays unbounded.
+
+## Transaction by id (spec 077)
+
+Additive: `GET /api/v1/finance/transactions/:id` (see `api.md`). The app opens a row that is not in a loaded month (Home upcoming, invoice, installment edit) with it instead of reading a list. Deploy the backend first.
