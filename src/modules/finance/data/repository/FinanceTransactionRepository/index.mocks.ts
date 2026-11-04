@@ -19,6 +19,9 @@ const transactionDatasourceMock = {
   countByAccountId: jest.fn().mockResolvedValue(2),
   countByCategoryIds: jest.fn().mockResolvedValue(0),
   countByCreditCardId: jest.fn().mockResolvedValue(0),
+  countCardPurchases: jest
+    .fn()
+    .mockResolvedValue([{ count: 4, credit_card_id: 'card-1', invoice_month: '2026-10' }]),
   countForExport: jest.fn().mockResolvedValue(9),
   create: jest.fn().mockResolvedValue(transactionPersistenceMock),
   createMany: jest.fn().mockResolvedValue(2),
@@ -38,6 +41,22 @@ const transactionDatasourceMock = {
     },
   ]),
   findForExport: jest.fn().mockResolvedValue([transactionPersistenceMock]),
+  findUnpaidAccountRows: jest.fn().mockResolvedValue([
+    {
+      account_id: 'a1',
+      category_id: 'c1',
+      currency: 'BRL',
+      date: new Date('2026-10-02T00:00:00.000Z'),
+      description: 'Rent',
+      id: 't1',
+      occurrence_number: null,
+      owner: 'USER',
+      owner_id: 'u1',
+      recurrence_id: null,
+      type: 'EXPENSE',
+      value: 1000,
+    },
+  ]),
   sumCardInvoices: jest
     .fn()
     .mockResolvedValue([{ amount: 450, credit_card_id: 'card-1', invoice_month: '2026-10' }]),

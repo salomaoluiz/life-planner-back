@@ -23,7 +23,7 @@ const seriesMock = new RecurrenceEntityFixture()
 
 const expandMock = { execute: jest.fn() };
 const resolveSearchMock = { execute: jest.fn() };
-const creditCardRepositoryMock = { findCreditCardById: jest.fn() };
+const creditCardRepositoryMock = { findCreditCardById: jest.fn(), findCreditCardsByIds: jest.fn() };
 const recurrenceRepositoryMock = { findByOwners: jest.fn(), findFutureNumbers: jest.fn() };
 
 // endregion Mocks
@@ -33,6 +33,9 @@ let setup: GetProjectionsUseCase;
 beforeEach(async () => {
   jest.clearAllMocks();
   creditCardRepositoryMock.findCreditCardById.mockResolvedValue({ ...cardMock, closingDay: 10 });
+  creditCardRepositoryMock.findCreditCardsByIds.mockResolvedValue([
+    { ...cardMock, closingDay: 10 },
+  ]);
   recurrenceRepositoryMock.findByOwners.mockResolvedValue([seriesMock]);
   recurrenceRepositoryMock.findFutureNumbers.mockResolvedValue([]);
   expandMock.execute.mockImplementation(async ({ categoryIds }) => categoryIds);

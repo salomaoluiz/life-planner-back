@@ -3,6 +3,12 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.1.2] - 2026-11-04
+
+### Changed
+
+- `GET /finance/upcoming` is faster: unpaid rows are read without their relations, invoice purchases are counted in the database, projection cards are loaded once, and a new partial index serves the unpaid read. The response does not change (spec 082).
+
 ## [3.1.1] - 2026-11-04
 
 ### Changed

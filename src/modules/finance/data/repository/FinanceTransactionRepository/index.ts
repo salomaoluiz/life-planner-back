@@ -1,12 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import { fromCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
+import { fromCalendarDate, toCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
 import { FinanceTransactionMapper } from '@finance/data/datasource/mapper/FinanceTransactionMapper';
 import { IFinanceTransactionDatasource } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { TransactionSource, TransactionType } from '@finance/domain/enum';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 import {
+  CardInvoicePurchaseCount,
   CardInvoiceRef,
   CardInvoiceTotal,
   CreateTransactionRepositoryParams,
@@ -17,8 +19,10 @@ import {
   ExportQuery,
   IFinanceTransactionRepository,
   TransactionQuery,
+  UnpaidAccountRow,
   UpdateTransactionRepositoryParams,
 } from '@finance/domain/repository';
+import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 @Injectable()
 export class FinanceTransactionRepository implements IFinanceTransactionRepository {
@@ -37,6 +41,18 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
 
   async countByCreditCardId(creditCardId: string): Promise<number> {
     return this.transactionDatasource.countByCreditCardId(creditCardId);
+  }
+
+  async countCardPurchasesByInvoice(keys: CardInvoiceRef[]): Promise<CardInvoicePurchaseCount[]> {
+    const rows = await this.transactionDatasource.countCardPurchases(
+      keys.map((key) => ({ credit_card_id: key.creditCardId, invoice_month: key.invoiceMonth })),
+    );
+
+    return rows.map((row) => ({
+      count: row.count,
+      creditCardId: row.credit_card_id,
+      invoiceMonth: row.invoice_month,
+    }));
   }
 
   async countTransactionsForExport(query: ExportQuery): Promise<number> {
@@ -113,6 +129,25 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
     const result = await this.transactionDatasource.findForExport(toExportParams(query));
 
     return result.map((row) => FinanceTransactionMapper.toDomain(row));
+  }
+
+  async findUnpaidAccountRows(owners: OwnerAccess[], to: string): Promise<UnpaidAccountRow[]> {
+    const rows = await this.transactionDatasource.findUnpaidAccountRows(owners, to);
+
+    return rows.map((row) => ({
+      accountId: row.account_id,
+      categoryId: row.category_id,
+      currency: row.currency as CurrencyCode,
+      date: toCalendarDate(row.date),
+      description: row.description,
+      id: row.id,
+      occurrenceNumber: row.occurrence_number,
+      owner: OwnerType[row.owner],
+      ownerId: row.owner_id,
+      recurrenceId: row.recurrence_id,
+      type: TransactionType[row.type],
+      value: row.value,
+    }));
   }
 
   async sumCardInvoices(creditCardIds: string[]): Promise<CardInvoiceTotal[]> {

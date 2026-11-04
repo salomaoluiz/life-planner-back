@@ -1,4 +1,4 @@
-import { InvoiceStatus, TransactionSource } from '@finance/domain/enum';
+import { InvoiceStatus } from '@finance/domain/enum';
 
 import { mocks, setup } from './index.mocks';
 
@@ -7,34 +7,21 @@ describe('GetUpcomingItemsUseCase', () => {
     it('SHOULD ask for unpaid account rows from the beginning to today + days', async () => {
       await setup.execute(mocks.input);
 
-      expect(mocks.transactionRepository.findTransactions).toHaveBeenCalledWith(
+      expect(mocks.transactionRepository.findUnpaidAccountRows).toHaveBeenCalledWith(
         mocks.input.accessibleOwners,
-        TransactionSource.ACCOUNT,
-        { from: '1900-01-01', paid: false, to: '2026-11-19' },
+        '2026-11-19',
       );
     });
 
     it('SHOULD return a three-year-old unpaid row as overdue', async () => {
-      mocks.transactionRepository.findTransactions.mockResolvedValue([mocks.row('2023-05-01')]);
+      mocks.transactionRepository.findUnpaidAccountRows.mockResolvedValue([
+        mocks.row('2023-05-01'),
+      ]);
 
       const result = await setup.execute(mocks.input);
 
       expect(result.overdue).toHaveLength(1);
       expect(result.overdue[0]).toMatchObject({ kind: 'TRANSACTION', valueCents: 1000 });
-    });
-
-    it('SHOULD skip paid rows and rows of categories that are not totals', async () => {
-      const adjustment = mocks.row('2026-11-10');
-
-      adjustment.category = { ...adjustment.category, excludeFromTotals: true };
-      mocks.transactionRepository.findTransactions.mockResolvedValue([
-        mocks.row('2026-11-10', { paid: true }),
-        adjustment,
-      ]);
-
-      const result = await setup.execute(mocks.input);
-
-      expect(result.overdue).toHaveLength(0);
     });
   });
 
@@ -43,10 +30,9 @@ describe('GetUpcomingItemsUseCase', () => {
       mocks.findInvoices.execute.mockResolvedValue([
         { card: mocks.card, invoice: mocks.invoice() },
       ]);
-      mocks.transactionRepository.findCardPurchases.mockResolvedValue([
-        { creditCardId: mocks.card.id, invoiceMonth: '2026-11' },
-        { creditCardId: mocks.card.id, invoiceMonth: '2026-11' },
-        { creditCardId: mocks.card.id, invoiceMonth: '2026-10' },
+      mocks.transactionRepository.countCardPurchasesByInvoice.mockResolvedValue([
+        { count: 2, creditCardId: mocks.card.id, invoiceMonth: '2026-11' },
+        { count: 7, creditCardId: mocks.card.id, invoiceMonth: '2026-10' },
       ]);
 
       const result = await setup.execute(mocks.input);
@@ -64,6 +50,19 @@ describe('GetUpcomingItemsUseCase', () => {
       ]);
     });
 
+    it('SHOULD count 0 purchases WHEN the invoice key has no rows in the grouped result', async () => {
+      mocks.findInvoices.execute.mockResolvedValue([
+        { card: mocks.card, invoice: mocks.invoice() },
+      ]);
+
+      const result = await setup.execute(mocks.input);
+
+      expect(mocks.transactionRepository.countCardPurchasesByInvoice).toHaveBeenCalledWith([
+        { creditCardId: mocks.card.id, invoiceMonth: '2026-11' },
+      ]);
+      expect(result.next[0]).toMatchObject({ purchaseCount: 0 });
+    });
+
     it('SHOULD leave out paid invoices and invoices with nothing due', async () => {
       mocks.findInvoices.execute.mockResolvedValue([
         { card: mocks.card, invoice: mocks.invoice({ status: InvoiceStatus.PAID }) },
@@ -73,7 +72,7 @@ describe('GetUpcomingItemsUseCase', () => {
       const result = await setup.execute(mocks.input);
 
       expect(result.next).toHaveLength(0);
-      expect(mocks.transactionRepository.findCardPurchases).not.toHaveBeenCalled();
+      expect(mocks.transactionRepository.countCardPurchasesByInvoice).not.toHaveBeenCalled();
     });
 
     it('SHOULD look for invoices over the whole past up to today + days', async () => {
@@ -132,11 +131,11 @@ describe('GetUpcomingItemsUseCase', () => {
       overdue: [],
       overdueTotals: { expenseCents: 0, incomeCents: 0 },
     });
-    expect(mocks.transactionRepository.findTransactions).not.toHaveBeenCalled();
+    expect(mocks.transactionRepository.findUnpaidAccountRows).not.toHaveBeenCalled();
   });
 
   it('SHOULD cut next to the limit and keep every overdue item', async () => {
-    mocks.transactionRepository.findTransactions.mockResolvedValue([
+    mocks.transactionRepository.findUnpaidAccountRows.mockResolvedValue([
       mocks.row('2026-11-01', { id: 'o1' }),
       mocks.row('2026-11-02', { id: 'o2' }),
       ...['12', '13', '14'].map((day) => mocks.row(`2026-11-${day}`, { id: `n${day}` })),

@@ -8,6 +8,8 @@ export type IFinanceTransactionRepository = {
   countByAccountId(accountId: string): Promise<number>;
   countByCategoryIds(categoryIds: string[]): Promise<number>;
   countByCreditCardId(creditCardId: string): Promise<number>;
+  // Spec 082: rows per (card, invoice month); a key with no rows is absent from the result.
+  countCardPurchasesByInvoice(keys: CardInvoiceRef[]): Promise<CardInvoicePurchaseCount[]>;
   countTransactionsForExport(query: ExportQuery): Promise<number>;
   // Spec 047: every row in ONE database transaction (all or none); returns how many were written.
   createManyTransactions(rows: CreateTransactionRepositoryParams[]): Promise<number>;
@@ -20,6 +22,8 @@ export type IFinanceTransactionRepository = {
   findTransactionsForExport(query: ExportQuery): Promise<TransactionEntity[]>;
   // Sorted by `date` descending, then `createdAt` descending.
   findCardPurchases(keys: CardInvoiceRef[]): Promise<TransactionEntity[]>;
+  // Spec 082: unpaid account rows up to `to` (no lower bound), scalars only, date descending.
+  findUnpaidAccountRows(owners: OwnerAccess[], to: string): Promise<UnpaidAccountRow[]>;
   // Default source ACCOUNT: account rows only, without the invoice payment transactions.
   findTransactions(
     owners: OwnerAccess[],
@@ -53,7 +57,25 @@ interface DuplicateQuery {
   owner: OwnerAccess;
   to: string;
 }
+interface UnpaidAccountRow {
+  accountId: null | string;
+  categoryId: string;
+  currency: CurrencyCode;
+  // `YYYY-MM-DD`
+  date: string;
+  description: string;
+  id: string;
+  occurrenceNumber: null | number;
+  owner: OwnerType;
+  ownerId: string;
+  recurrenceId: null | string;
+  type: TransactionType;
+  value: number;
+}
 // A row matches when its account OR card is in the lists; with neither list every row of the owners matches.
+interface CardInvoicePurchaseCount extends CardInvoiceRef {
+  count: number;
+}
 interface CardInvoiceTotal extends CardInvoiceRef {
   // NET: purchases minus credits.
   amount: number;
@@ -153,6 +175,7 @@ interface UpdateTransactionRepositoryParams {
 }
 
 export {
+  CardInvoicePurchaseCount,
   CardInvoiceRef,
   CardInvoiceTotal,
   CreateTransactionRepositoryParams,
@@ -162,5 +185,6 @@ export {
   DuplicateQuery,
   ExportQuery,
   TransactionQuery,
+  UnpaidAccountRow,
   UpdateTransactionRepositoryParams,
 };

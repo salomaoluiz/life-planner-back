@@ -3,6 +3,7 @@ import { BadRequestException, Inject } from '@nestjs/common';
 import { GetProjectionsInput, GetProjectionsSchema } from '@finance/application/dto/GetRecurrences';
 import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
 import { ResolveSearchCategoryIdsUseCase } from '@finance/application/use-case/ResolveSearchCategoryIdsUseCase';
+import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { narrowOwners } from '@finance/domain/entity/OwnerAccess';
 import { ProjectedOccurrence } from '@finance/domain/entity/ProjectedOccurrence';
 import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
@@ -92,18 +93,32 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
         recurrenceId: item.id,
       })),
     );
+    const planned = series
+      .map((item) => {
+        const hidden = new Set([
+          ...item.skippedNumbers,
+          ...real.filter((row) => row.recurrenceId === item.id).map((row) => row.occurrenceNumber),
+        ]);
+        const scheduled = occurrencesBetween(item, from, to).filter(
+          (occurrence) => !hidden.has(item.firstNumber - 1 + occurrence.k),
+        );
+
+        return { item, scheduled };
+      })
+      .filter(({ scheduled }) => scheduled.length > 0);
+    // Spec 082: the cards of every series that projects, read once.
+    const cardIds = [
+      ...new Set(planned.flatMap(({ item }) => (item.creditCardId ? [item.creditCardId] : []))),
+    ];
+    const cards = new Map(
+      (cardIds.length > 0 ? await this.creditCardRepository.findCreditCardsByIds(cardIds) : []).map(
+        (card) => [card.id, card],
+      ),
+    );
     const result: ProjectedOccurrence[] = [];
 
-    for (const item of series) {
-      const hidden = new Set([
-        ...item.skippedNumbers,
-        ...real.filter((row) => row.recurrenceId === item.id).map((row) => row.occurrenceNumber),
-      ]);
-      const scheduled = occurrencesBetween(item, from, to).filter(
-        (occurrence) => !hidden.has(item.firstNumber - 1 + occurrence.k),
-      );
-
-      result.push(...(await this.project(item, scheduled, input.today)));
+    for (const { item, scheduled } of planned) {
+      result.push(...(await this.project(item, scheduled, input.today, cards)));
     }
 
     return result.sort(
@@ -129,15 +144,28 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
     );
   }
 
+  // The preloaded card when the caller has the map (spec 082), else one read by id.
+  private async cardOf(
+    series: RecurrenceEntity,
+    cards?: Map<string, CreditCardEntity>,
+  ): Promise<CreditCardEntity | undefined> {
+    if (!series.creditCardId) {
+      return undefined;
+    }
+
+    return cards
+      ? cards.get(series.creditCardId)
+      : this.creditCardRepository.findCreditCardById(series.creditCardId);
+  }
+
   // Shared with `GetRecurrenceUseCase`: the card's CURRENT closing rule decides the invoice.
   async project(
     series: RecurrenceEntity,
     scheduled: ScheduledOccurrence[],
     today: string,
+    cards?: Map<string, CreditCardEntity>,
   ): Promise<ProjectedOccurrence[]> {
-    const card = series.creditCardId
-      ? await this.creditCardRepository.findCreditCardById(series.creditCardId)
-      : undefined;
+    const card = await this.cardOf(series, cards);
 
     return scheduled.map((occurrence) => {
       const invoiceMonth = card ? invoiceMonthOf(occurrence.date, card.closingDay) : null;

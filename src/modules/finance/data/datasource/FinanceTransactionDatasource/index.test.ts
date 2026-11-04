@@ -910,3 +910,74 @@ describe('Method createMany (spec 047)', () => {
     ]);
   });
 });
+
+describe('Method findUnpaidAccountRows (spec 082)', () => {
+  it('SHOULD select scalars only, unpaid, up to the date, without totals-excluded categories', async () => {
+    spies.findMany.mockResolvedValue([mocks.transaction]);
+
+    const result = await setup.findUnpaidAccountRows(mocks.owners, '2026-11-19');
+
+    expect(result).toEqual([mocks.transaction]);
+    expect(spies.findMany).toHaveBeenCalledTimes(1);
+    expect(spies.findMany).toHaveBeenCalledWith({
+      orderBy: [{ date: 'desc' }, { created_at: 'desc' }, { id: 'desc' }],
+      select: {
+        account_id: true,
+        category_id: true,
+        currency: true,
+        date: true,
+        description: true,
+        id: true,
+        occurrence_number: true,
+        owner: true,
+        owner_id: true,
+        recurrence_id: true,
+        type: true,
+        value: true,
+      },
+      where: {
+        AND: [
+          { OR: [{ owner: 'USER', owner_id: mocks.owners[0].ownerId }] },
+          {
+            credit_card_id: null,
+            OR: [
+              { category: { system_key: null } },
+              { category: { system_key: { not: 'INVOICE_PAYMENT' } } },
+              { early_payment: { isNot: null } },
+            ],
+          },
+          {
+            category: { exclude_from_totals: false },
+            date: { lte: new Date('2026-11-19T00:00:00.000Z') },
+            paid: false,
+          },
+        ],
+      },
+    });
+    expect(spies.findMany.mock.calls[0][0].include).toBeUndefined();
+  });
+});
+
+describe('Method countCardPurchases (spec 082)', () => {
+  it('SHOULD group the rows by card and invoice month in ONE query', async () => {
+    spies.groupBy.mockResolvedValue([
+      { _count: { _all: 3 }, credit_card_id: 'card-1', invoice_month: '2026-11' },
+    ]);
+
+    const keys = [{ credit_card_id: 'card-1', invoice_month: '2026-11' }];
+
+    expect(await setup.countCardPurchases(keys)).toEqual([
+      { count: 3, credit_card_id: 'card-1', invoice_month: '2026-11' },
+    ]);
+    expect(spies.groupBy).toHaveBeenCalledWith({
+      _count: { _all: true },
+      by: ['credit_card_id', 'invoice_month'],
+      where: { OR: keys },
+    });
+  });
+
+  it('SHOULD NOT query WHEN there are no keys', async () => {
+    expect(await setup.countCardPurchases([])).toEqual([]);
+    expect(spies.groupBy).not.toHaveBeenCalled();
+  });
+});

@@ -249,3 +249,41 @@ describe('csv import and export (spec 047)', () => {
     ]);
   });
 });
+
+describe('spec 082 reads', () => {
+  it('SHOULD map the unpaid scalar rows to the domain shape', async () => {
+    const owners = [{ owner: OwnerType.USER, ownerId: 'u1' }];
+
+    expect(await setup.findUnpaidAccountRows(owners, '2026-11-19')).toEqual([
+      {
+        accountId: 'a1',
+        categoryId: 'c1',
+        currency: 'BRL',
+        date: '2026-10-02',
+        description: 'Rent',
+        id: 't1',
+        occurrenceNumber: null,
+        owner: OwnerType.USER,
+        ownerId: 'u1',
+        recurrenceId: null,
+        type: TransactionType.EXPENSE,
+        value: 1000,
+      },
+    ]);
+    expect(mocks.transactionDatasource.findUnpaidAccountRows).toHaveBeenCalledWith(
+      owners,
+      '2026-11-19',
+    );
+  });
+
+  it('SHOULD map the grouped purchase counts', async () => {
+    expect(
+      await setup.countCardPurchasesByInvoice([
+        { creditCardId: 'card-1', invoiceMonth: '2026-10' },
+      ]),
+    ).toEqual([{ count: 4, creditCardId: 'card-1', invoiceMonth: '2026-10' }]);
+    expect(mocks.transactionDatasource.countCardPurchases).toHaveBeenCalledWith([
+      { credit_card_id: 'card-1', invoice_month: '2026-10' },
+    ]);
+  });
+});

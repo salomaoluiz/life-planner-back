@@ -320,13 +320,14 @@
     "scenario": "from={monthStart}&to={monthEnd}"
   },
   "GET /api/v1/finance/upcoming": {
-    "indexes": null,
+    "indexes": ["financial_transactions_owner_unpaid_idx"],
     "kind": "read",
-    "knownException": "Oversized payload; removed by spec 082 (upcoming endpoint slimming)",
+    "knownException": "Oversized payload: the overdue list is unlimited and the contract is unchanged (spec 082 keeps the response byte-identical)",
     "maxBytes": 511948,
     "maxQueries": 7,
-    "p50Ms": 412,
-    "scenario": "ownerId={userId}"
+    "p50Ms": 63,
+    "scenario": "ownerId={userId}",
+    "table": "financial_transactions"
   },
   "PATCH /api/v1/finance/accounts/:id": {
     "indexes": null,

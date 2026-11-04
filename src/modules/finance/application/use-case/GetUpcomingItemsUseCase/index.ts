@@ -9,7 +9,7 @@ import { FindInvoicesInRangeUseCase } from '@finance/application/use-case/FindIn
 import { GetProjectionsUseCase } from '@finance/application/use-case/GetProjectionsUseCase';
 import { narrowOwners, OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { UpcomingItem } from '@finance/domain/entity/UpcomingItem';
-import { InvoiceStatus, TransactionSource, TransactionType } from '@finance/domain/enum';
+import { InvoiceStatus, TransactionType } from '@finance/domain/enum';
 import { IFinanceTransactionRepository } from '@finance/domain/repository';
 import { addDays, lastDayOfMonth } from '@finance/domain/service/RecurrenceSchedule';
 import { splitUpcoming, UpcomingSplit } from '@finance/domain/service/UpcomingItems';
@@ -60,38 +60,28 @@ export class GetUpcomingItemsUseCase implements UseCaseWithParams<
     );
   }
 
-  // Unpaid account rows; the categories that only move money are not bills.
+  // Unpaid account rows; the repository already leaves out card rows and the categories that only move money.
   private async findRows(owners: OwnerAccess[], last: string): Promise<UpcomingItem[]> {
-    const rows = await this.transactionRepository.findTransactions(
-      owners,
-      TransactionSource.ACCOUNT,
-      {
-        from: BEGINNING,
-        paid: false,
-        to: last,
-      },
-    );
+    const rows = await this.transactionRepository.findUnpaidAccountRows(owners, last);
 
-    return rows
-      .filter((row) => !row.creditCardId && !row.paid && !row.category.excludeFromTotals)
-      .map((row) => ({
-        accountId: row.accountId,
-        categoryId: row.categoryId,
-        creditCardId: null,
-        currency: row.currency,
-        date: row.date,
-        description: row.description,
-        id: row.id,
-        invoiceMonth: null,
-        kind: 'TRANSACTION',
-        occurrenceNumber: row.occurrenceNumber,
-        owner: row.owner,
-        ownerId: row.ownerId,
-        purchaseCount: null,
-        recurrenceId: row.recurrenceId ?? null,
-        type: row.type,
-        valueCents: row.value,
-      }));
+    return rows.map((row) => ({
+      accountId: row.accountId,
+      categoryId: row.categoryId,
+      creditCardId: null,
+      currency: row.currency,
+      date: row.date,
+      description: row.description,
+      id: row.id,
+      invoiceMonth: null,
+      kind: 'TRANSACTION',
+      occurrenceNumber: row.occurrenceNumber,
+      owner: row.owner,
+      ownerId: row.ownerId,
+      purchaseCount: null,
+      recurrenceId: row.recurrenceId,
+      type: row.type,
+      valueCents: row.value,
+    }));
   }
 
   // One item per card and invoice month: not paid and with something left to pay.
@@ -111,7 +101,7 @@ export class GetUpcomingItemsUseCase implements UseCaseWithParams<
       return [];
     }
 
-    const purchases = await this.transactionRepository.findCardPurchases(
+    const counts = await this.transactionRepository.countCardPurchasesByInvoice(
       open.map(({ card, invoice }) => ({
         creditCardId: card.id,
         invoiceMonth: invoice.referenceMonth,
@@ -131,9 +121,10 @@ export class GetUpcomingItemsUseCase implements UseCaseWithParams<
       occurrenceNumber: null,
       owner: card.owner,
       ownerId: card.ownerId,
-      purchaseCount: purchases.filter(
-        (row) => row.creditCardId === card.id && row.invoiceMonth === invoice.referenceMonth,
-      ).length,
+      purchaseCount:
+        counts.find(
+          (row) => row.creditCardId === card.id && row.invoiceMonth === invoice.referenceMonth,
+        )?.count ?? 0,
       recurrenceId: null,
       type: TransactionType.EXPENSE,
       valueCents: invoice.amountDue,
