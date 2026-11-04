@@ -120,7 +120,7 @@ it.each([
 ])(
   'SHOULD throw NotFound (404) AND update nothing WHEN the transaction is %s',
   async (_label, found) => {
-    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce(found);
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce(found);
 
     await expect(run({ value: 1 })).rejects.toThrow(NotFoundException);
     expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
@@ -171,7 +171,7 @@ describe('archived accounts and balance adjustments (spec 028)', () => {
   });
 
   it('SHOULD throw Unprocessable (422) "Balance adjustments cannot be edited" AND update nothing for a system-category transaction', async () => {
-    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce(
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce(
       new TransactionEntityFixture()
         .withOwnerId(mocks.transaction.ownerId)
         .withBalanceAdjustment()
@@ -188,7 +188,7 @@ describe('archived accounts and balance adjustments (spec 028)', () => {
 
 describe('card purchases and the invoice payment (spec 029)', () => {
   it('SHOULD refuse to edit the INVOICE_PAYMENT transaction (422) AND update nothing', async () => {
-    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce({
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce({
       ...mocks.transaction,
       category: { ...mocks.transaction.category, systemKey: SystemCategoryKey.INVOICE_PAYMENT },
     });
@@ -222,7 +222,7 @@ describe('card purchases and the invoice payment (spec 029)', () => {
   });
 
   it('SHOULD switch a card purchase back to an account: clears card and invoice month', async () => {
-    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce({
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce({
       ...mocks.transaction,
       accountId: null,
       creditCardId: mocks.card.id,
@@ -241,7 +241,7 @@ describe('card purchases and the invoice payment (spec 029)', () => {
   });
 
   it('SHOULD recompute the invoice month WHEN only the date of a card purchase changes, AND flag overLimit', async () => {
-    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce({
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce({
       ...mocks.transaction,
       accountId: null,
       creditCardId: mocks.card.id,
@@ -275,7 +275,7 @@ describe('installments (spec 030)', () => {
   }
 
   beforeEach(() => {
-    mocks.transactionRepository.findTransactionById.mockResolvedValue(mocks.installment);
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValue(mocks.installment);
     mocks.ensureConsistency.execute.mockResolvedValue({ card: mocks.card });
   });
 
@@ -303,7 +303,8 @@ describe('installments (spec 030)', () => {
       value: 500,
     });
     expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
-    expect(mocks.transactionRepository.findTransactionById).toHaveBeenCalledTimes(2);
+    expect(mocks.transactionRepository.findTransactionScalarsById).toHaveBeenCalledTimes(1);
+    expect(mocks.transactionRepository.findTransactionById).toHaveBeenCalledTimes(1);
   });
 
   it('SHOULD flag overLimit WHEN the new value leaves the card above its limit', async () => {
@@ -340,7 +341,7 @@ describe('installments (spec 030)', () => {
   );
 
   it('SHOULD answer 400 WHEN scope is sent for a plain transaction', async () => {
-    mocks.transactionRepository.findTransactionById.mockResolvedValue(mocks.transaction);
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValue(mocks.transaction);
     await expect(run({ scope: 'ONLY_THIS', value: 5 })).rejects.toThrow(BadRequestException);
   });
 });
@@ -351,7 +352,7 @@ describe('paid status (spec 033)', () => {
   }
 
   it('SHOULD move the date to today WHEN an unpaid row is paid without a date', async () => {
-    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce(unpaid());
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce(unpaid());
 
     await run({ paid: true });
 
@@ -361,7 +362,7 @@ describe('paid status (spec 033)', () => {
   });
 
   it('SHOULD keep the date sent with the payment', async () => {
-    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce(unpaid());
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce(unpaid());
 
     await run({ date: '2026-10-11', paid: true });
 
@@ -371,7 +372,7 @@ describe('paid status (spec 033)', () => {
   });
 
   it('SHOULD keep the date WHEN unpaying AND leave paid alone WHEN only the date changes', async () => {
-    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce({
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce({
       ...mocks.transaction,
       paid: true,
     });
@@ -402,7 +403,7 @@ describe('paid status (spec 033)', () => {
   });
 
   it('SHOULD give a paid value WHEN a card row moves back to an account', async () => {
-    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce({
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce({
       ...mocks.transaction,
       accountId: null,
       creditCardId: mocks.card.id,
@@ -418,7 +419,7 @@ describe('paid status (spec 033)', () => {
   });
 
   it('SHOULD refuse paid on an installment (422)', async () => {
-    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce(mocks.installment);
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce(mocks.installment);
 
     await expect(run({ paid: true, scope: 'ONLY_THIS' })).rejects.toThrow(
       UnprocessableEntityException,
@@ -437,7 +438,7 @@ describe('recurring occurrences (spec 034)', () => {
   }
 
   beforeEach(() => {
-    mocks.transactionRepository.findTransactionById.mockResolvedValue(mocks.recurring);
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValue(mocks.recurring);
   });
 
   it('SHOULD change only that row with scope ONLY_THIS', async () => {

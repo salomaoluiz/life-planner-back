@@ -5,7 +5,7 @@ import {
   applyLedgerDeltas,
   assertInvoiceNotPaid,
   lockCards,
-  lockTransactionRow,
+  lockWriteScope,
   toLedgerEntry,
 } from '@finance/data/datasource/ledger';
 import { fromCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
@@ -31,6 +31,7 @@ import {
   FinancialTransactionWithRelations,
   FindTransactionsFilter,
   IFinanceTransactionDatasource,
+  TransactionScalarsRecord,
   UnpaidAccountRowRecord,
   UpdateTransactionDatasourceParams,
 } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
@@ -68,6 +69,17 @@ export const TRANSACTION_RELATIONS = {
   tags: TAG_INCLUDE.tags,
 };
 
+// Spec 085: what the ledger and the tags need inside a write transaction; the full row (relations) is read after commit.
+const WRITE_SELECT = {
+  account_id: true,
+  id: true,
+  owner: true,
+  owner_id: true,
+  paid: true,
+  type: true,
+  value: true,
+} as const;
+
 @Injectable()
 export class FinanceTransactionDatasource implements IFinanceTransactionDatasource {
   constructor(private readonly db: Database) {}
@@ -96,33 +108,30 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
     return this.db.client.financialTransaction.count({ where: exportWhere(params) });
   }
 
-  // The row and the ledger of its account change in ONE database transaction (spec 028).
+  // The row and the ledger of its account change in ONE database transaction (spec 028); the response row is read
+  // after the commit, so the locks are not held across its relation reads (spec 085).
   async create(
     params: CreateTransactionDatasourceParams,
   ): Promise<FinancialTransactionWithRelations> {
-    return this.db.client.$transaction(async (tx) => {
+    const id = await this.db.client.$transaction(async (tx) => {
       await lockCards(tx, params.credit_card_id ? [params.credit_card_id] : []);
       await assertInvoiceNotPaid(tx, params.credit_card_id, params.invoice_month);
       const { tag_names: tagNames, ...data } = params;
-      const created = await tx.financialTransaction.create({
-        data,
-        include: TRANSACTION_RELATIONS,
-      });
+      const created = await tx.financialTransaction.create({ data, select: WRITE_SELECT });
       await applyLedgerDeltas(tx, ledgerDeltas(undefined, toLedgerEntry(created)));
-      if (tagNames === undefined || tagNames.length === 0) {
-        return created;
+      if (tagNames !== undefined && tagNames.length > 0) {
+        await applyTagNames(tx, {
+          names: tagNames,
+          owner: created.owner,
+          ownerId: created.owner_id,
+          where: { id: created.id },
+        });
       }
-      await applyTagNames(tx, {
-        names: tagNames,
-        owner: created.owner,
-        ownerId: created.owner_id,
-        where: { id: created.id },
-      });
-      return tx.financialTransaction.findUniqueOrThrow({
-        include: TRANSACTION_RELATIONS,
-        where: { id: created.id },
-      });
+
+      return created.id;
     });
+
+    return this.readAfterCommit(id);
   }
 
   // Spec 047: every row, the ledger deltas (summed per account, ordered by id) and the tags in ONE database transaction.
@@ -161,8 +170,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
 
   async delete(id: string): Promise<void> {
     await this.db.client.$transaction(async (tx) => {
-      await lockCards(tx, await this.cardsOf(tx, id));
-      const stored = await lockTransactionRow(tx, id);
+      const stored = await lockWriteScope(tx, { extraCardIds: [], rowId: id });
       if (!stored) {
         return;
       }
@@ -219,6 +227,31 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
       include: TRANSACTION_RELATIONS,
       orderBy: [{ date: 'asc' }, { created_at: 'asc' }, { id: 'asc' }],
       where: exportWhere(params),
+    });
+  }
+
+  async findScalarsById(id: string): Promise<null | TransactionScalarsRecord> {
+    return this.db.client.financialTransaction.findUnique({
+      relationLoadStrategy: 'join',
+      select: {
+        account_id: true,
+        category: { select: { system_key: true } },
+        category_id: true,
+        credit_card_id: true,
+        currency: true,
+        date: true,
+        id: true,
+        installment_number: true,
+        installment_plan_id: true,
+        invoice_month: true,
+        occurrence_number: true,
+        owner: true,
+        owner_id: true,
+        paid: true,
+        recurrence_id: true,
+        type: true,
+      },
+      where: { id },
     });
   }
   // Default source ACCOUNT: account rows without the invoice payment transactions (the paid invoice line stands for them).
@@ -413,25 +446,15 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
     }));
   }
 
-  // The old values come from the row locked INSIDE this transaction, never from an earlier read.
-  private async cardsOf(tx: Parameters<typeof lockCards>[0], id: string): Promise<string[]> {
-    const row = await tx.financialTransaction.findUnique({
-      select: { credit_card_id: true },
-      where: { id },
-    });
-    return row?.credit_card_id ? [row.credit_card_id] : [];
-  }
-
   async update(
     params: UpdateTransactionDatasourceParams,
   ): Promise<FinancialTransactionWithRelations> {
-    return this.db.client.$transaction(async (tx) => {
-      // Cards first, rows second: the same order as the invoice payment, so the two never deadlock.
-      await lockCards(tx, [
-        ...(await this.cardsOf(tx, params.id)),
-        ...(params.credit_card_id ? [params.credit_card_id] : []),
-      ]);
-      const stored = await lockTransactionRow(tx, params.id);
+    await this.db.client.$transaction(async (tx) => {
+      // Cards first, the row second (one statement): the same order as the invoice payment, so the two never deadlock.
+      const stored = await lockWriteScope(tx, {
+        extraCardIds: params.credit_card_id ? [params.credit_card_id] : [],
+        rowId: params.id,
+      });
       if (!stored) {
         throw new NotFoundException();
       }
@@ -444,13 +467,6 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
           params.invoice_month === undefined ? stored.invoiceMonth : params.invoice_month,
         );
       }
-      const previousOwner =
-        params.owner === undefined && params.owner_id === undefined
-          ? undefined
-          : await tx.financialTransaction.findUnique({
-              select: { owner: true, owner_id: true },
-              where: { id: params.id },
-            });
       const updated = await tx.financialTransaction.update({
         data: {
           account_id: params.account_id,
@@ -466,18 +482,16 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
           type: params.type,
           value: params.value,
         },
-        include: TRANSACTION_RELATIONS,
+        select: WRITE_SELECT,
         where: { id: params.id },
       });
       await applyLedgerDeltas(tx, ledgerDeltas(stored, toLedgerEntry(updated)));
       // Spec 043 FR 9/12: names replace the set; a new owner re-resolves the current names in that owner.
-      const ownerChanged =
-        Boolean(previousOwner) &&
-        (updated.owner !== previousOwner?.owner || updated.owner_id !== previousOwner?.owner_id);
+      const ownerChanged = updated.owner !== stored.owner || updated.owner_id !== stored.ownerId;
       const names =
         params.tag_names ?? (ownerChanged ? await tagNamesOfRow(tx, updated.id) : undefined);
       if (names === undefined) {
-        return updated;
+        return;
       }
       await applyTagNames(tx, {
         names,
@@ -485,11 +499,19 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
         ownerId: updated.owner_id,
         where: { id: updated.id },
       });
-      return tx.financialTransaction.findUniqueOrThrow({
-        include: TRANSACTION_RELATIONS,
-        where: { id: updated.id },
-      });
     });
+
+    return this.readAfterCommit(params.id);
+  }
+
+  // The response of a write: the row with its relations (one join read), after the locks were released.
+  private async readAfterCommit(id: string): Promise<FinancialTransactionWithRelations> {
+    const row = await this.findById(id);
+    if (!row) {
+      throw new NotFoundException();
+    }
+
+    return row;
   }
 }
 const ACCENTS = 'áàâãäéèêëíìîïóòôõöúùûüçñ';

@@ -21,6 +21,7 @@ import { InstallmentEditScope, SystemCategoryKey, TransactionType } from '@finan
 import {
   IFinanceInstallmentPlanRepository,
   IFinanceTransactionRepository,
+  TransactionScalars,
 } from '@finance/domain/repository';
 import { invoiceMonthOf } from '@finance/domain/service/InvoiceCalculator';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -48,7 +49,7 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
   async execute(params: UpdateTransactionInput): Promise<TransactionWithLimit> {
     const input = validate(UpdateTransactionSchema, params);
 
-    const transaction = await this.transactionRepository.findTransactionById(input.id);
+    const transaction = await this.transactionRepository.findTransactionScalarsById(input.id);
 
     if (!transaction || !hasOwnerAccess(input.accessibleOwners, transaction)) {
       throw new NotFoundException();
@@ -165,7 +166,7 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
   // Spec 030 FR 11-17: an installment changes only value, description and category, for the rows `scope` names.
   private async updateInstallment(
     input: ParsedUpdateInput,
-    transaction: TransactionEntity,
+    transaction: TransactionScalars,
   ): Promise<TransactionWithLimit> {
     if (input.paid !== undefined) {
       throw new UnprocessableEntityException(CARD_FOLLOWS_INVOICE);
@@ -278,7 +279,7 @@ function assertRecurringEdit(input: ParsedUpdateInput): void {
 // Moving to a card clears the status; coming back from a card needs one (CHECK paid IS NOT NULL).
 function paidFor(
   input: ParsedUpdateInput,
-  transaction: TransactionEntity,
+  transaction: TransactionScalars,
   toCard: boolean,
 ): boolean | null | undefined {
   if (toCard) {

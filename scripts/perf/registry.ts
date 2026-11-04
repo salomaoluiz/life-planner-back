@@ -14,6 +14,8 @@ const entrySchema = z
     knownException: z.string().min(1).optional(),
     maxBytes: z.number().int().nonnegative().nullable(),
     maxQueries: z.number().int().nonnegative(),
+    // Spec 085: most statements a write holds between BEGIN and COMMIT (checked by perf/write-transactions.perf.test.ts).
+    maxQueriesInTx: z.number().int().positive().optional(),
     p50Ms: z.number().nonnegative().nullable(),
     params: z.record(z.string(), z.string()).optional(),
     reason: z.string().min(1).optional(),

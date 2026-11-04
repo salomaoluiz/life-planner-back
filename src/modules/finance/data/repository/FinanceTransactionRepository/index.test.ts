@@ -56,6 +56,52 @@ describe('deleteTransaction / existsByOwner', () => {
   });
 });
 
+describe('findTransactionScalarsById (spec 085)', () => {
+  it('SHOULD map the scalar row, or return undefined WHEN not found', async () => {
+    mocks.transactionDatasource.findScalarsById.mockResolvedValueOnce({
+      account_id: 'account-1',
+      category: { system_key: 'INVOICE_PAYMENT' },
+      category_id: 'category-1',
+      credit_card_id: null,
+      currency: 'BRL',
+      date: new Date('2026-10-03T00:00:00.000Z'),
+      id: 'id-1',
+      installment_number: null,
+      installment_plan_id: null,
+      invoice_month: null,
+      occurrence_number: 4,
+      owner: 'USER',
+      owner_id: 'owner-1',
+      paid: true,
+      recurrence_id: 'series-1',
+      type: 'EXPENSE',
+    });
+
+    expect(await setup.findTransactionScalarsById('id-1')).toEqual({
+      accountId: 'account-1',
+      category: { systemKey: 'INVOICE_PAYMENT' },
+      categoryId: 'category-1',
+      creditCardId: null,
+      currency: 'BRL',
+      date: '2026-10-03',
+      id: 'id-1',
+      installmentNumber: null,
+      installmentPlanId: null,
+      invoiceMonth: null,
+      occurrenceNumber: 4,
+      owner: 'USER',
+      ownerId: 'owner-1',
+      paid: true,
+      recurrenceId: 'series-1',
+      type: 'EXPENSE',
+    });
+
+    mocks.transactionDatasource.findScalarsById.mockResolvedValueOnce(null);
+
+    expect(await setup.findTransactionScalarsById('id-1')).toBeUndefined();
+  });
+});
+
 describe('findTransactionById / findTransactions', () => {
   it('SHOULD map the row, or return undefined WHEN not found', async () => {
     expect(await setup.findTransactionById('id-1')).toBe(mocks.transactionEntity);

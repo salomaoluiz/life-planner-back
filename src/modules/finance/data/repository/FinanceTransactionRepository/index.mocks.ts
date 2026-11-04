@@ -41,6 +41,7 @@ const transactionDatasourceMock = {
     },
   ]),
   findForExport: jest.fn().mockResolvedValue([transactionPersistenceMock]),
+  findScalarsById: jest.fn(),
   findUnpaidAccountRows: jest.fn().mockResolvedValue([
     {
       account_id: 'a1',

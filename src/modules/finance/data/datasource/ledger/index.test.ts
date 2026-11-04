@@ -5,9 +5,62 @@ import {
   assertInvoicesNotPaid,
   assertNoPaidInstallment,
   lockTransactionRow,
+  lockWriteScope,
   toLedgerEntry,
 } from './index';
 import { mocks, spies } from './index.mocks';
+
+describe('lockWriteScope (spec 085)', () => {
+  const raw = {
+    account_id: 'acc-1',
+    credit_card_id: 'card-1',
+    invoice_month: '2026-10',
+    owner: 'USER',
+    owner_id: 'owner-1',
+    paid: null,
+    type: 'EXPENSE',
+    value: 1000,
+  };
+
+  it('SHOULD lock the cards and THEN the row in ONE statement AND return the row with its owner', async () => {
+    spies.queryRaw.mockResolvedValue([raw]);
+
+    const result = await lockWriteScope(mocks.tx, { extraCardIds: [], rowId: 'tx-1' });
+
+    expect(result).toEqual({
+      accountId: 'acc-1',
+      creditCardId: 'card-1',
+      invoiceMonth: '2026-10',
+      owner: 'USER',
+      ownerId: 'owner-1',
+      paid: false,
+      type: TransactionType.EXPENSE,
+      value: 1000,
+    });
+    expect(spies.queryRaw).toHaveBeenCalledTimes(1);
+    const query = spies.queryRaw.mock.calls[0][0];
+    const locks = [...query.sql.matchAll(/FOR UPDATE/g)].map((match) => match.index as number);
+    expect(locks).toHaveLength(2);
+    expect(query.sql.indexOf('"financial_credit_cards"')).toBeLessThan(locks[0]);
+    expect(locks[0]).toBeLessThan(query.sql.lastIndexOf('"financial_transactions" t'));
+    expect(query.sql).toContain('ORDER BY c."id" FOR UPDATE');
+    expect(query.values).toEqual(['tx-1', 'tx-1']);
+  });
+
+  it('SHOULD also lock the cards the row is moving to, once and ordered by the database', async () => {
+    spies.queryRaw.mockResolvedValue([raw]);
+
+    await lockWriteScope(mocks.tx, { extraCardIds: ['card-b', 'card-a', 'card-b'], rowId: 'tx-1' });
+
+    expect(spies.queryRaw.mock.calls[0][0].values).toEqual(['tx-1', 'card-a', 'card-b', 'tx-1']);
+  });
+
+  it('SHOULD return undefined WHEN the row does not exist', async () => {
+    spies.queryRaw.mockResolvedValue([]);
+
+    expect(await lockWriteScope(mocks.tx, { extraCardIds: [], rowId: 'gone' })).toBeUndefined();
+  });
+});
 
 describe('toLedgerEntry', () => {
   it('SHOULD map a raw row to the domain entry', () => {

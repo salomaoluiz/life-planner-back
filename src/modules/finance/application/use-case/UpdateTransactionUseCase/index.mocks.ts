@@ -35,7 +35,8 @@ const recurringMock = {
   paid: false,
 };
 const transactionRepositoryMock = {
-  findTransactionById: jest.fn().mockResolvedValue(transactionMock),
+  findTransactionById: jest.fn().mockResolvedValue(updatedMock),
+  findTransactionScalarsById: jest.fn().mockResolvedValue(transactionMock),
   updateTransaction: jest.fn().mockResolvedValue(updatedMock),
 };
 
@@ -47,7 +48,8 @@ beforeEach(async () => {
   jest.clearAllMocks();
   ensureConsistencyMock.execute.mockResolvedValue({});
   computeMock.execute.mockResolvedValue([{ invoices: { used: 5000 } }]);
-  transactionRepositoryMock.findTransactionById.mockResolvedValue(transactionMock);
+  transactionRepositoryMock.findTransactionById.mockResolvedValue(updatedMock);
+  transactionRepositoryMock.findTransactionScalarsById.mockResolvedValue(transactionMock);
   installmentPlanRepositoryMock.updateFromNumber.mockResolvedValue(undefined);
 
   const module = await Test.createTestingModule({

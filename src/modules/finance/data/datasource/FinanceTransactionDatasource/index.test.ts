@@ -6,6 +6,18 @@ import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { mocks, setup, spies } from './index.mocks';
 
+// Spec 085: inside the database transaction only the columns the ledger and the tags need are selected.
+const WRITE_SELECT = {
+  account_id: true,
+  id: true,
+  owner: true,
+  owner_id: true,
+  paid: true,
+  type: true,
+  value: true,
+};
+const OWNER = { owner: 'USER', owner_id: mocks.transaction.owner_id };
+
 describe('Method countByAccountId / countByCategoryIds', () => {
   it('SHOULD count the transactions of an account', async () => {
     spies.count.mockResolvedValue(3);
@@ -41,15 +53,50 @@ describe('Method create', () => {
     value: 23490,
   };
 
+  beforeEach(() => {
+    spies.findUnique.mockResolvedValue(mocks.transaction);
+  });
+
   it('SHOULD insert the row AND move the ledger of its account in the SAME database transaction', async () => {
     spies.create.mockResolvedValue(mocks.transaction);
 
     expect(await setup.create(params)).toEqual(mocks.transaction);
     expect(spies.transaction).toHaveBeenCalledTimes(1);
-    expect(spies.create).toHaveBeenCalledWith({ data: params, include: mocks.include });
+    expect(spies.create).toHaveBeenCalledWith({ data: params, select: WRITE_SELECT });
     expect(spies.accountUpdate).toHaveBeenCalledWith({
       data: { ledger_balance: { increment: -23490 } },
       where: { id: mocks.transaction.account_id },
+    });
+  });
+
+  it('SHOULD read the row with its relations only AFTER the database transaction committed', async () => {
+    let committed = false;
+    spies.create.mockResolvedValue(mocks.transaction);
+    spies.transaction.mockImplementationOnce(
+      async (callback: (tx: unknown) => Promise<unknown>) => {
+        const result = await callback({
+          $queryRaw: spies.queryRaw,
+          financialAccount: { update: spies.accountUpdate },
+          financialInvoicePayment: { findFirst: spies.paymentFindFirst },
+          financialTransaction: { create: spies.create },
+        });
+        committed = true;
+
+        return result;
+      },
+    );
+    spies.findUnique.mockImplementation(async () => {
+      expect(committed).toBe(true);
+
+      return mocks.transaction;
+    });
+
+    await setup.create(params);
+
+    expect(spies.findUnique).toHaveBeenCalledWith({
+      include: mocks.include,
+      relationLoadStrategy: 'join',
+      where: { id: mocks.transaction.id },
     });
   });
 
@@ -83,12 +130,14 @@ describe('Method create', () => {
 describe('Method delete', () => {
   it('SHOULD lock the row, delete it AND reverse its signed value on the ledger', async () => {
     spies.queryRaw.mockResolvedValue([
-      { account_id: 'acc-1', paid: true, type: 'EXPENSE', value: 1000 },
+      { account_id: 'acc-1', paid: true, ...OWNER, type: 'EXPENSE', value: 1000 },
     ]);
     spies.deleteMany.mockResolvedValue({ count: 1 });
 
     await expect(setup.delete(mocks.transaction.id)).resolves.toBeUndefined();
 
+    expect(spies.queryRaw).toHaveBeenCalledTimes(1);
+    expect(spies.findUnique).not.toHaveBeenCalled();
     expect(spies.queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
       spies.deleteMany.mock.invocationCallOrder[0],
     );
@@ -132,6 +181,37 @@ describe('Method findById', () => {
     expect(spies.findUnique).toHaveBeenCalledWith({
       include: mocks.include,
       relationLoadStrategy: 'join',
+      where: { id: mocks.transaction.id },
+    });
+  });
+});
+
+describe('Method findScalarsById (spec 085)', () => {
+  it('SHOULD select the scalar columns and the category system key in ONE join read, or null WHEN not found', async () => {
+    spies.findUnique.mockResolvedValueOnce(mocks.transaction).mockResolvedValueOnce(null);
+
+    expect(await setup.findScalarsById(mocks.transaction.id)).toEqual(mocks.transaction);
+    expect(await setup.findScalarsById('missing')).toBeNull();
+    expect(spies.findUnique).toHaveBeenCalledWith({
+      relationLoadStrategy: 'join',
+      select: {
+        account_id: true,
+        category: { select: { system_key: true } },
+        category_id: true,
+        credit_card_id: true,
+        currency: true,
+        date: true,
+        id: true,
+        installment_number: true,
+        installment_plan_id: true,
+        invoice_month: true,
+        occurrence_number: true,
+        owner: true,
+        owner_id: true,
+        paid: true,
+        recurrence_id: true,
+        type: true,
+      },
       where: { id: mocks.transaction.id },
     });
   });
@@ -289,11 +369,19 @@ describe('Method findByOwners filters (spec 045)', () => {
 });
 
 describe('Method update', () => {
-  const lockedRow = [{ account_id: 'acc-1', paid: true, type: 'EXPENSE', value: 1000 }];
+  const lockedRow = [{ account_id: 'acc-1', paid: true, ...OWNER, type: 'EXPENSE', value: 1000 }];
 
-  it('SHOULD update only the sent columns AND return the row with relations', async () => {
+  beforeEach(() => {
+    spies.findUnique.mockResolvedValue({ ...mocks.transaction, account_id: 'acc-1', value: 100 });
+  });
+
+  it('SHOULD update only the sent columns AND return the row with relations read after the commit', async () => {
     spies.queryRaw.mockResolvedValue(lockedRow);
-    spies.update.mockResolvedValue({ ...mocks.transaction, account_id: 'acc-1', value: 100 });
+    spies.update.mockResolvedValue({
+      ...mocks.transaction,
+      account_id: 'acc-1',
+      value: 100,
+    });
 
     const result = await setup.update({ description: 'New', id: mocks.transaction.id, value: 100 });
 
@@ -309,9 +397,10 @@ describe('Method update', () => {
         type: undefined,
         value: 100,
       },
-      include: mocks.include,
+      select: WRITE_SELECT,
       where: { id: mocks.transaction.id },
     });
+    expect(spies.queryRaw).toHaveBeenCalledTimes(1);
   });
 
   it('SHOULD lock the stored row BEFORE updating AND compute the delta from the LOCKED row (not from an earlier read)', async () => {
@@ -338,7 +427,7 @@ describe('Method update', () => {
 
   it('SHOULD reverse the old account AND apply the new one WHEN the account changes (ascending id order)', async () => {
     spies.queryRaw.mockResolvedValue([
-      { account_id: 'acc-b', paid: true, type: 'EXPENSE', value: 200 },
+      { account_id: 'acc-b', paid: true, ...OWNER, type: 'EXPENSE', value: 200 },
     ]);
     spies.update.mockResolvedValue({
       ...mocks.transaction,
@@ -373,6 +462,39 @@ describe('Method update', () => {
     expect(spies.accountUpdate).not.toHaveBeenCalled();
   });
 
+  it('SHOULD throw NotFound WHEN the row vanished between the commit and the read of the response', async () => {
+    spies.queryRaw.mockResolvedValue(lockedRow);
+    spies.update.mockResolvedValue({ ...mocks.transaction, account_id: 'acc-1' });
+    spies.findUnique.mockResolvedValue(null);
+
+    await expect(setup.update({ id: mocks.transaction.id, value: 1000 })).rejects.toThrow(
+      NotFoundException,
+    );
+  });
+
+  it('SHOULD lock the card the row moves to together with its stored card, in the same statement as the row', async () => {
+    spies.queryRaw.mockResolvedValue([
+      { ...lockedRow[0], account_id: null, credit_card_id: 'card-a', invoice_month: '2026-10' },
+    ]);
+    spies.paymentFindFirst.mockResolvedValue(null);
+    spies.update.mockResolvedValue({ ...mocks.transaction, account_id: null });
+
+    await setup.update({
+      credit_card_id: 'card-b',
+      id: mocks.transaction.id,
+      invoice_month: '2026-11',
+    });
+
+    expect(spies.queryRaw).toHaveBeenCalledTimes(1);
+    expect(spies.queryRaw.mock.calls[0][0].values).toEqual([
+      mocks.transaction.id,
+      'card-b',
+      mocks.transaction.id,
+    ]);
+    expect(spies.paymentFindFirst).toHaveBeenCalledTimes(2);
+    expect(spies.findUnique).toHaveBeenCalledTimes(1);
+  });
+
   it('SHOULD throw NotFound AND write nothing WHEN the row vanished before the lock', async () => {
     spies.queryRaw.mockResolvedValue([]);
 
@@ -401,6 +523,7 @@ describe('Card purchases', () => {
 
   it('SHOULD lock the card, create the row and NOT touch any account ledger', async () => {
     spies.paymentFindFirst.mockResolvedValue(null);
+    spies.findUnique.mockResolvedValue({ ...mocks.transaction, account_id: null });
     spies.create.mockResolvedValue({ ...mocks.transaction, account_id: null });
 
     await setup.create(cardParams);
@@ -417,12 +540,12 @@ describe('Card purchases', () => {
   });
 
   it('SHOULD refuse to delete a purchase of a paid invoice', async () => {
-    spies.findUnique.mockResolvedValue({ credit_card_id: 'card-1' });
-    spies.queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([
+    spies.queryRaw.mockResolvedValueOnce([
       {
         account_id: null,
         credit_card_id: 'card-1',
         invoice_month: '2026-10',
+        ...OWNER,
         type: 'EXPENSE',
         value: 1000,
       },
@@ -574,10 +697,15 @@ describe('Method update on a paid invoice (spec 030 FR 16)', () => {
       account_id: null,
       credit_card_id: 'card-1',
       invoice_month: '2026-10',
+      ...OWNER,
       type: 'EXPENSE',
       value: 1000,
     },
   ];
+
+  beforeEach(() => {
+    spies.findUnique.mockResolvedValue(mocks.transaction);
+  });
 
   it('SHOULD allow description and category WITHOUT looking at the payments', async () => {
     spies.queryRaw.mockResolvedValue(lockedRow);
@@ -630,14 +758,14 @@ describe('tags (spec 043)', () => {
 
   it('SHOULD resolve the names in the owner, link them AND return the row with its tags on create', async () => {
     spies.create.mockResolvedValue(mocks.transaction);
+    spies.findUnique.mockResolvedValue(withTags);
     spies.findMany.mockResolvedValue([mocks.transaction.id].map((id) => ({ id })));
     spies.tagFindMany.mockResolvedValue([{ all_scopes: false, id: 'tag-1', name: 'Fixo' }]);
     spies.tagCreate.mockResolvedValue({ id: 'tag-2' });
-    spies.findUniqueOrThrow.mockResolvedValue(withTags);
 
     const result = await setup.create({ ...createParams, tag_names: ['fixo', 'novo'] });
 
-    expect(spies.create).toHaveBeenCalledWith({ data: createParams, include: mocks.include });
+    expect(spies.create).toHaveBeenCalledWith({ data: createParams, select: WRITE_SELECT });
     expect(spies.tagLinkCreateMany).toHaveBeenCalledWith({
       data: [
         { position: 0, tag_id: 'tag-1', transaction_id: mocks.transaction.id },
@@ -649,19 +777,20 @@ describe('tags (spec 043)', () => {
 
   it('SHOULD skip the tag work WHEN no names are sent on create', async () => {
     spies.create.mockResolvedValue(mocks.transaction);
+    spies.findUnique.mockResolvedValue(mocks.transaction);
 
     expect(await setup.create({ ...createParams, tag_names: [] })).toBe(mocks.transaction);
     expect(spies.tagLinkCreateMany).not.toHaveBeenCalled();
   });
 
   describe('update', () => {
-    const lockedRow = [{ account_id: 'acc-1', paid: true, type: 'EXPENSE', value: 1000 }];
+    const lockedRow = [{ account_id: 'acc-1', paid: true, ...OWNER, type: 'EXPENSE', value: 1000 }];
 
     beforeEach(() => {
       spies.queryRaw.mockResolvedValue(lockedRow);
       spies.update.mockResolvedValue({ ...mocks.transaction, account_id: 'acc-1' });
       spies.findMany.mockResolvedValue([{ id: mocks.transaction.id }]);
-      spies.findUniqueOrThrow.mockResolvedValue(withTags);
+      spies.findUnique.mockResolvedValue(withTags);
     });
 
     it('SHOULD replace the tags WHEN names are sent (and remove all for [])', async () => {
@@ -682,12 +811,13 @@ describe('tags (spec 043)', () => {
     it('SHOULD leave the tags alone WHEN no names are sent and the owner is the same', async () => {
       const result = await setup.update({ id: mocks.transaction.id, value: 5 });
 
-      expect(result).toEqual({ ...mocks.transaction, account_id: 'acc-1' });
+      expect(result).toBe(withTags);
       expect(spies.tagLinkCreateMany).not.toHaveBeenCalled();
+      expect(spies.tagLinkFindMany).not.toHaveBeenCalled();
     });
 
     it('SHOULD re-resolve the current tag names in the NEW owner WHEN the owner changes', async () => {
-      spies.findUnique.mockResolvedValue({ owner: 'USER', owner_id: 'owner-a' });
+      spies.queryRaw.mockResolvedValue([{ ...lockedRow[0], owner: 'USER', owner_id: 'owner-a' }]);
       spies.update.mockResolvedValue({
         ...mocks.transaction,
         account_id: 'acc-1',

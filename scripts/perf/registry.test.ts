@@ -76,6 +76,24 @@ describe('loadRegistry', () => {
     expect(() => loadRegistry(recipe, ['stock'])).toThrow('recipe');
   });
 
+  it('SHOULD accept maxQueriesInTx on an unmeasured write AND reject a non-positive one (spec 085)', () => {
+    const write = {
+      ...base,
+      kind: 'unmeasured',
+      maxQueries: 0,
+      reason: 'Writes are not measured.',
+    };
+    const ok = dirWith({
+      stock: { 'POST /api/v1/stock/items': { ...write, maxQueriesInTx: 15 } },
+    });
+    const bad = dirWith({
+      stock: { 'POST /api/v1/stock/items': { ...write, maxQueriesInTx: 0 } },
+    });
+
+    expect(loadRegistry(ok, ['stock']).stock['POST /api/v1/stock/items'].maxQueriesInTx).toBe(15);
+    expect(() => loadRegistry(bad, ['stock'])).toThrow(/Too small/);
+  });
+
   it('SHOULD throw WHEN a key does not match METHOD /path', () => {
     const dir = dirWith({ stock: { items: base } });
 

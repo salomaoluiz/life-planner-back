@@ -21,7 +21,7 @@ const recurrenceRepositoryMock = {
 const recurringMock = new TransactionEntityFixture().withRecurrence('series-1', 4, 10).build();
 const transactionRepositoryMock = {
   deleteTransaction: jest.fn().mockResolvedValue(undefined),
-  findTransactionById: jest.fn().mockResolvedValue(transactionMock),
+  findTransactionScalarsById: jest.fn().mockResolvedValue(transactionMock),
 };
 
 // endregion Mocks
@@ -33,7 +33,7 @@ let setup: DeleteTransactionUseCase;
 beforeEach(async () => {
   jest.clearAllMocks();
   cardCreditRepositoryMock.countRefundsByTransactionId.mockResolvedValue(0);
-  transactionRepositoryMock.findTransactionById.mockResolvedValue(transactionMock);
+  transactionRepositoryMock.findTransactionScalarsById.mockResolvedValue(transactionMock);
   recurrenceRepositoryMock.findById.mockResolvedValue({
     firstNumber: 1,
     id: 'series-1',

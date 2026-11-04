@@ -5,7 +5,7 @@ import { FinanceTransactionMapper } from '@finance/data/datasource/mapper/Financ
 import { IFinanceTransactionDatasource } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
-import { TransactionSource, TransactionType } from '@finance/domain/enum';
+import { SystemCategoryKey, TransactionSource, TransactionType } from '@finance/domain/enum';
 import { CurrencyCode } from '@finance/domain/enum/Currency';
 import {
   CardInvoicePurchaseCount,
@@ -19,6 +19,7 @@ import {
   ExportQuery,
   IFinanceTransactionRepository,
   TransactionQuery,
+  TransactionScalars,
   UnpaidAccountRow,
   UpdateTransactionRepositoryParams,
 } from '@finance/domain/repository';
@@ -128,6 +129,37 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
     });
 
     return result.map((row) => FinanceTransactionMapper.toDomain(row));
+  }
+
+  async findTransactionScalarsById(id: string): Promise<TransactionScalars | undefined> {
+    const row = await this.transactionDatasource.findScalarsById(id);
+
+    if (!row) {
+      return undefined;
+    }
+
+    return {
+      accountId: row.account_id,
+      category: {
+        systemKey: row.category.system_key
+          ? SystemCategoryKey[row.category.system_key as keyof typeof SystemCategoryKey]
+          : null,
+      },
+      categoryId: row.category_id,
+      creditCardId: row.credit_card_id,
+      currency: row.currency as CurrencyCode,
+      date: toCalendarDate(row.date),
+      id: row.id,
+      installmentNumber: row.installment_number,
+      installmentPlanId: row.installment_plan_id,
+      invoiceMonth: row.invoice_month,
+      occurrenceNumber: row.occurrence_number,
+      owner: OwnerType[row.owner],
+      ownerId: row.owner_id,
+      paid: row.paid === true,
+      recurrenceId: row.recurrence_id,
+      type: TransactionType[row.type],
+    };
   }
 
   async findTransactionsForExport(query: ExportQuery): Promise<TransactionEntity[]> {

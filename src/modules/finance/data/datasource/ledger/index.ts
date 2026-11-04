@@ -1,12 +1,18 @@
 import { UnprocessableEntityException } from '@nestjs/common';
 
-import { Prisma } from '@db/client';
+import { OwnerType, Prisma } from '@db/client';
 import { TransactionType } from '@finance/domain/enum';
 import { LedgerDelta, LedgerEntry } from '@finance/domain/service/LedgerBalance';
 
 export interface LockedTransactionRow extends LedgerEntry {
   creditCardId: null | string;
   invoiceMonth: null | string;
+}
+
+// The row of a write plus its owner, read by the same statement that locks it (spec 085).
+export interface LockedWriteRow extends LockedTransactionRow {
+  owner: OwnerType;
+  ownerId: string;
 }
 
 interface LockedRow {
@@ -16,6 +22,10 @@ interface LockedRow {
   paid: boolean | null;
   type: string;
   value: number;
+}
+interface LockedWriteRaw extends LockedRow {
+  owner: OwnerType;
+  owner_id: string;
 }
 
 // One atomic increment per account (`ledger_balance = ledger_balance + delta`): never read, add, write.
@@ -94,6 +104,26 @@ export async function lockTransactionRow(
   );
 
   return rows.length > 0 ? toLockedRow(rows[0]) : undefined;
+}
+// Spec 085: ONE statement for the whole lock scope of an update or delete. The cards (the one of the stored row plus
+// the ones the write moves to) are locked first, ascending id, in a materialized CTE the row select depends on; the
+// row is locked and read after them. Same order as `lockCards` + `lockTransactionRow`: cards -> row.
+export async function lockWriteScope(
+  tx: Prisma.TransactionClient,
+  params: { extraCardIds: string[]; rowId: string },
+): Promise<LockedWriteRow | undefined> {
+  const extra = [...new Set(params.extraCardIds)].sort();
+  const cardMatches = [
+    Prisma.sql`c."id" IN (SELECT t0."credit_card_id" FROM "financial_transactions" t0 WHERE t0."id" = ${params.rowId} AND t0."credit_card_id" IS NOT NULL)`,
+    ...(extra.length > 0 ? [Prisma.sql`c."id" IN (${Prisma.join(extra)})`] : []),
+  ];
+  const rows = await tx.$queryRaw<LockedWriteRaw[]>(
+    Prisma.sql`WITH "locked_cards" AS MATERIALIZED (SELECT c."id" FROM "financial_credit_cards" c WHERE ${Prisma.join(cardMatches, ' OR ')} ORDER BY c."id" FOR UPDATE) SELECT t."account_id", t."credit_card_id", t."invoice_month", t."owner"::text AS "owner", t."owner_id", t."paid", t."type"::text AS "type", t."value" FROM "financial_transactions" t WHERE t."id" = ${params.rowId} AND (SELECT count(*) FROM "locked_cards") >= 0 FOR UPDATE OF t`,
+  );
+
+  return rows.length > 0
+    ? { ...toLockedRow(rows[0]), owner: rows[0].owner, ownerId: rows[0].owner_id }
+    : undefined;
 }
 export function toLedgerEntry(row: {
   account_id: null | string;
