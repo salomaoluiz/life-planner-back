@@ -96,10 +96,18 @@ describe('Method undo', () => {
   it('SHOULD restore the months, break the discount cycle, delete the discount row AND the record', async () => {
     await setup.undo('plan-1');
 
-    expect(spies.transactionUpdate).toHaveBeenCalledWith({
-      data: { invoice_month: '2026-11', prepayment_id: null },
-      where: { id: 'tx-4' },
-    });
+    expect(spies.transactionUpdate).not.toHaveBeenCalled();
+    expect(spies.executeRaw).toHaveBeenCalledTimes(1);
+
+    const sql = spies.executeRaw.mock.calls[0][0] as { strings: string[]; values: unknown[] };
+
+    expect(sql.values).toEqual(['tx-4', '2026-11', null, 'tx-5', '2026-12', null]);
+    expect(sql.strings.join('?')).toContain(
+      'SET "invoice_month" = v."invoice_month", "prepayment_id" = v."prepayment_id"',
+    );
+    expect(spies.executeRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      spies.prepaymentUpdate.mock.invocationCallOrder[0],
+    );
     expect(spies.prepaymentUpdate).toHaveBeenCalledWith({
       data: { discount_transaction_id: null },
       where: { id: 'prepayment-1' },
@@ -115,6 +123,7 @@ describe('Method undo', () => {
 
     await expect(setup.undo('plan-1')).rejects.toThrow('Invoice is paid');
     expect(spies.transactionUpdate).not.toHaveBeenCalled();
+    expect(spies.executeRaw).not.toHaveBeenCalled();
   });
 
   it('SHOULD answer 404 WHEN the plan or the prepayment does not exist', async () => {
