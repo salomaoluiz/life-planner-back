@@ -233,9 +233,9 @@
   "GET /api/v1/finance/month": {
     "indexes": null,
     "kind": "read",
-    "maxBytes": 262144,
-    "maxQueries": 20,
-    "p50Ms": null,
+    "maxBytes": 198367,
+    "maxQueries": 11,
+    "p50Ms": 110,
     "scenario": "month={referenceMonth}"
   },
   "GET /api/v1/finance/recurrences": {
