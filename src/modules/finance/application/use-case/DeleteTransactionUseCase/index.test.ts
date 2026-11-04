@@ -14,7 +14,7 @@ it.each([
 ])(
   'SHOULD throw NotFound (404) AND delete nothing WHEN the transaction is %s',
   async (_label, found) => {
-    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce(found);
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce(found);
 
     await expect(
       setup.execute({ accessibleOwners: mocks.accessibleOwners, id: mocks.transaction.id }),
@@ -24,7 +24,7 @@ it.each([
 );
 
 it('SHOULD refuse to delete the INVOICE_PAYMENT transaction (422): only undoing the payment removes it', async () => {
-  mocks.transactionRepository.findTransactionById.mockResolvedValueOnce({
+  mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce({
     ...mocks.transaction,
     category: { ...mocks.transaction.category, systemKey: 'INVOICE_PAYMENT' },
   });
@@ -36,7 +36,7 @@ it('SHOULD refuse to delete the INVOICE_PAYMENT transaction (422): only undoing 
 });
 
 it('SHOULD refuse to delete one installment (422): the whole plan goes through its own endpoint', async () => {
-  mocks.transactionRepository.findTransactionById.mockResolvedValueOnce({
+  mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce({
     ...mocks.transaction,
     installmentPlanId: 'plan-1',
   });
@@ -50,7 +50,7 @@ it('SHOULD refuse to delete one installment (422): the whole plan goes through i
 it.each(['CARD_REFUND', 'CARD_EARLY_PAYMENT', 'INSTALLMENT_PREPAYMENT_DISCOUNT'])(
   'SHOULD refuse to delete a %s row here (422): the card endpoints own it',
   async (systemKey) => {
-    mocks.transactionRepository.findTransactionById.mockResolvedValueOnce({
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce({
       ...mocks.transaction,
       category: { ...mocks.transaction.category, systemKey },
     });
@@ -78,7 +78,7 @@ describe('recurring occurrences (spec 034)', () => {
   }
 
   beforeEach(() => {
-    mocks.transactionRepository.findTransactionById.mockResolvedValue(mocks.recurring);
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValue(mocks.recurring);
   });
 
   it('SHOULD delete only that row with scope ONLY_THIS AND not hide numbers the series already generated', async () => {
@@ -89,7 +89,7 @@ describe('recurring occurrences (spec 034)', () => {
   });
 
   it('SHOULD hide the number WHEN the row was a projected occurrence made real', async () => {
-    mocks.transactionRepository.findTransactionById.mockResolvedValue({
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValue({
       ...mocks.recurring,
       occurrenceNumber: 9,
     });
@@ -136,7 +136,7 @@ it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)'
 });
 
 it('SHOULD invalidate the gate of the series owner WHEN a recurrence row is deleted (spec 081)', async () => {
-  mocks.transactionRepository.findTransactionById.mockResolvedValue({
+  mocks.transactionRepository.findTransactionScalarsById.mockResolvedValue({
     ...mocks.recurring,
     occurrenceNumber: 9,
   });

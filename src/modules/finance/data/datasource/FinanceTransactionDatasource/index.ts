@@ -31,6 +31,7 @@ import {
   FinancialTransactionWithRelations,
   FindTransactionsFilter,
   IFinanceTransactionDatasource,
+  TransactionScalarsRecord,
   UnpaidAccountRowRecord,
   UpdateTransactionDatasourceParams,
 } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
@@ -219,6 +220,31 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
       include: TRANSACTION_RELATIONS,
       orderBy: [{ date: 'asc' }, { created_at: 'asc' }, { id: 'asc' }],
       where: exportWhere(params),
+    });
+  }
+
+  async findScalarsById(id: string): Promise<null | TransactionScalarsRecord> {
+    return this.db.client.financialTransaction.findUnique({
+      relationLoadStrategy: 'join',
+      select: {
+        account_id: true,
+        category: { select: { system_key: true } },
+        category_id: true,
+        credit_card_id: true,
+        currency: true,
+        date: true,
+        id: true,
+        installment_number: true,
+        installment_plan_id: true,
+        invoice_month: true,
+        occurrence_number: true,
+        owner: true,
+        owner_id: true,
+        paid: true,
+        recurrence_id: true,
+        type: true,
+      },
+      where: { id },
     });
   }
   // Default source ACCOUNT: account rows without the invoice payment transactions (the paid invoice line stands for them).

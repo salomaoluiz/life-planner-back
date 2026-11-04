@@ -1,5 +1,7 @@
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
-import TransactionEntity from '@finance/domain/entity/TransactionEntity';
+import TransactionEntity, {
+  TransactionCategorySummary,
+} from '@finance/domain/entity/TransactionEntity';
 import { TransactionSource, TransactionType } from '@finance/domain/enum';
 import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { SearchTerms } from '@finance/domain/service/TransactionSearch';
@@ -19,6 +21,8 @@ export type IFinanceTransactionRepository = {
   existsByOwner(access: OwnerAccess): Promise<boolean>;
   findDuplicateCandidates(query: DuplicateQuery): Promise<DuplicateCandidate[]>;
   findTransactionById(id: string): Promise<TransactionEntity | undefined>;
+  // Spec 085: the stored row without relations (one read), for the checks before an update or delete.
+  findTransactionScalarsById(id: string): Promise<TransactionScalars | undefined>;
   // Spec 047: every row of the period by its own date (system rows included), `date` then `createdAt` ascending.
   findTransactionsForExport(query: ExportQuery): Promise<TransactionEntity[]>;
   // Sorted by `date` descending, then `createdAt` descending.
@@ -59,6 +63,24 @@ interface DuplicateQuery {
   owner: OwnerAccess;
   to: string;
 }
+type TransactionScalars = { category: Pick<TransactionCategorySummary, 'systemKey'> } & Pick<
+  TransactionEntity,
+  | 'accountId'
+  | 'categoryId'
+  | 'creditCardId'
+  | 'currency'
+  | 'date'
+  | 'id'
+  | 'installmentNumber'
+  | 'installmentPlanId'
+  | 'invoiceMonth'
+  | 'occurrenceNumber'
+  | 'owner'
+  | 'ownerId'
+  | 'paid'
+  | 'recurrenceId'
+  | 'type'
+>;
 interface UnpaidAccountRow {
   accountId: null | string;
   categoryId: string;
@@ -189,6 +211,7 @@ export {
   DuplicateQuery,
   ExportQuery,
   TransactionQuery,
+  TransactionScalars,
   UnpaidAccountRow,
   UpdateTransactionRepositoryParams,
 };

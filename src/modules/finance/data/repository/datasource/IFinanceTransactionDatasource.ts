@@ -158,11 +158,30 @@ export interface IFinanceTransactionDatasource {
   findForExport(
     params: ExportTransactionsDatasourceParams,
   ): Promise<FinancialTransactionWithRelations[]>;
+  findScalarsById(id: string): Promise<null | TransactionScalarsRecord>;
   findUnpaidAccountRows(owners: OwnerAccess[], to: string): Promise<UnpaidAccountRowRecord[]>;
   sumCardInvoices(creditCardIds: string[]): Promise<CardInvoiceSum[]>;
   sumDashboardRows(params: DashboardSumsParams): Promise<DashboardSumRow[]>;
   update(params: UpdateTransactionDatasourceParams): Promise<FinancialTransactionWithRelations>;
 }
+export type TransactionScalarsRecord = { category: { system_key: null | string } } & Pick<
+  FinancialTransaction,
+  | 'account_id'
+  | 'category_id'
+  | 'credit_card_id'
+  | 'currency'
+  | 'date'
+  | 'id'
+  | 'installment_number'
+  | 'installment_plan_id'
+  | 'invoice_month'
+  | 'occurrence_number'
+  | 'owner_id'
+  | 'owner'
+  | 'paid'
+  | 'recurrence_id'
+  | 'type'
+>;
 export type UnpaidAccountRowRecord = Pick<
   FinancialTransaction,
   | 'account_id'

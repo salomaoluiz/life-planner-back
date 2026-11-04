@@ -32,7 +32,7 @@ export class DeleteTransactionUseCase implements UseCaseWithParams<DeleteTransac
   async execute(params: DeleteTransactionInput): Promise<void> {
     const input = validate(DeleteTransactionSchema, params);
 
-    const transaction = await this.transactionRepository.findTransactionById(input.id);
+    const transaction = await this.transactionRepository.findTransactionScalarsById(input.id);
 
     if (!transaction || !hasOwnerAccess(input.accessibleOwners, transaction)) {
       throw new NotFoundException();

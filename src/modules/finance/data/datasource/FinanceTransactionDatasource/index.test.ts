@@ -137,6 +137,37 @@ describe('Method findById', () => {
   });
 });
 
+describe('Method findScalarsById (spec 085)', () => {
+  it('SHOULD select the scalar columns and the category system key in ONE join read, or null WHEN not found', async () => {
+    spies.findUnique.mockResolvedValueOnce(mocks.transaction).mockResolvedValueOnce(null);
+
+    expect(await setup.findScalarsById(mocks.transaction.id)).toEqual(mocks.transaction);
+    expect(await setup.findScalarsById('missing')).toBeNull();
+    expect(spies.findUnique).toHaveBeenCalledWith({
+      relationLoadStrategy: 'join',
+      select: {
+        account_id: true,
+        category: { select: { system_key: true } },
+        category_id: true,
+        credit_card_id: true,
+        currency: true,
+        date: true,
+        id: true,
+        installment_number: true,
+        installment_plan_id: true,
+        invoice_month: true,
+        occurrence_number: true,
+        owner: true,
+        owner_id: true,
+        paid: true,
+        recurrence_id: true,
+        type: true,
+      },
+      where: { id: mocks.transaction.id },
+    });
+  });
+});
+
 describe('Method findByOwners', () => {
   it('SHOULD query every owner in ONE findMany, sorted by date, created_at and id desc, the default strategy WHEN unbounded', async () => {
     spies.findMany.mockResolvedValue([mocks.transaction]);
