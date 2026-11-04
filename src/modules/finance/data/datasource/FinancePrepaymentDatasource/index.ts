@@ -118,6 +118,11 @@ export class FinancePrepaymentDatasource implements IFinancePrepaymentDatasource
           },
         });
 
+        // Spec 091: the discount row is an INCOME card row of the target invoice, so it counts in its stored total.
+        await refreshCardInvoiceTotals(tx, [
+          { creditCardId: params.credit_card_id, invoiceMonth: params.target_invoice_month },
+        ]);
+
         return tx.financialInstallmentPrepayment.update({
           data: { discount_transaction_id: discount.id },
           include: INCLUDE,
