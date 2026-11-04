@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 
+import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
 import RecurrenceEntityFixture from '@finance/domain/entity/mocks/RecurrenceEntity.fixture';
 import { RecurrenceFrequency } from '@finance/domain/enum';
@@ -23,6 +24,7 @@ const weeklySeries = new RecurrenceEntityFixture()
 
 const creditCardRepositoryMock = { findCreditCardsByIds: jest.fn() };
 const invoicePaymentRepositoryMock = { findByCardIds: jest.fn() };
+const gateMock = { runOnce: jest.fn() };
 const recurrenceRepositoryMock = { findDue: jest.fn(), materialize: jest.fn() };
 
 // endregion Mocks
@@ -35,12 +37,16 @@ beforeEach(async () => {
     { ...cardMock, closingDay: 10 },
   ]);
   invoicePaymentRepositoryMock.findByCardIds.mockResolvedValue([]);
+  gateMock.runOnce.mockImplementation(
+    async (_owners: string[], _today: string, task: () => Promise<void>) => task(),
+  );
   recurrenceRepositoryMock.findDue.mockResolvedValue([weeklySeries]);
   recurrenceRepositoryMock.materialize.mockResolvedValue(undefined);
 
   const module = await Test.createTestingModule({
     providers: [
       MaterializeRecurrencesUseCase,
+      { provide: MaterializationGate, useValue: gateMock },
       { provide: 'IFinanceCreditCardRepository', useValue: creditCardRepositoryMock },
       { provide: 'IFinanceInvoicePaymentRepository', useValue: invoicePaymentRepositoryMock },
       { provide: 'IFinanceRecurrenceRepository', useValue: recurrenceRepositoryMock },
@@ -54,6 +60,7 @@ const mocks = {
   accessibleOwners,
   card: cardMock,
   creditCardRepository: creditCardRepositoryMock,
+  gate: gateMock,
   invoicePaymentRepository: invoicePaymentRepositoryMock,
   recurrenceRepository: recurrenceRepositoryMock,
   weeklySeries,
