@@ -3,6 +3,12 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.1.5] - 2026-11-04
+
+### Changed
+
+- Creating, editing and deleting a transaction holds its database locks for fewer steps, so quick consecutive saves wait less on each other. Responses do not change (spec 085).
+
 ## [3.1.4] - 2026-11-04
 
 ### Changed

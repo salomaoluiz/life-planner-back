@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { join } from 'node:path';
 
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
@@ -8,13 +9,15 @@ import { configureApp } from '@shared/infra/http/configure-app';
 
 import { AppModule } from '../src/modules/app.module';
 import { assertPerfRunAllowed } from '../scripts/perf/measure/safety';
+import { loadRegistry } from '../scripts/perf/registry';
 import { ApiClient } from '../scripts/perf/seed/client';
 
 // Spec 085: statements held under lock by the transaction writes, and 10 parallel writes on one card and one account.
 // Exception to spec 093 ("perf tests only read"): it writes only under a throwaway user it signs up itself (never the
 // pinned base user, so the dataset fingerprint is untouched) and deletes that user in afterAll.
 const FINANCE = '/api/v1/finance';
-const MAX_STATEMENTS_IN_TX = { create: 15, delete: 10, update: 15 };
+const BUDGETS = loadRegistry(join(__dirname, 'budgets'), ['finance']).finance;
+const maxInTx = (key: string): number => BUDGETS[key].maxQueriesInTx as number;
 const MAX_CREATE_TOTAL = 20;
 const PARALLEL = 10;
 const runsFinance = (process.env.PERF_MODULES ?? '').split(',').includes('finance');
@@ -139,7 +142,7 @@ function newTransaction(extra: Record<string, unknown>): Record<string, unknown>
     console.info('write-perf create', { inTx, total });
     expect(joinReads(statements)).toBe(0);
     expect(inTx).toBeGreaterThan(0);
-    expect(inTx).toBeLessThanOrEqual(MAX_STATEMENTS_IN_TX.create);
+    expect(inTx).toBeLessThanOrEqual(maxInTx('POST /api/v1/finance/transactions'));
     expect(total).toBeLessThanOrEqual(MAX_CREATE_TOTAL);
   });
 
@@ -159,7 +162,7 @@ function newTransaction(extra: Record<string, unknown>): Record<string, unknown>
     expect(joinReads(statements)).toBe(0);
     expect(lockStatements(statements)).toBe(1);
     expect(inTx).toBeGreaterThan(0);
-    expect(inTx).toBeLessThanOrEqual(MAX_STATEMENTS_IN_TX.update);
+    expect(inTx).toBeLessThanOrEqual(maxInTx('PATCH /api/v1/finance/transactions/:id'));
   });
 
   it('SHOULD hold at most 10 statements under lock when deleting', async () => {
@@ -174,7 +177,7 @@ function newTransaction(extra: Record<string, unknown>): Record<string, unknown>
     console.info('write-perf delete', { inTx });
     expect(lockStatements(statements)).toBe(1);
     expect(inTx).toBeGreaterThan(0);
-    expect(inTx).toBeLessThanOrEqual(MAX_STATEMENTS_IN_TX.delete);
+    expect(inTx).toBeLessThanOrEqual(maxInTx('DELETE /api/v1/finance/transactions/:id'));
   });
 
   it('SHOULD finish 10 parallel creates on one card and one account with the right balance', async () => {

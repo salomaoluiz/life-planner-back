@@ -7,6 +7,7 @@ Rule: `.claude/CLAUDE.md` rule 17. Specs: 065 (query counts), 066 (timing, paylo
 - Perf tests only read: no test creates, updates or deletes anything. Write routes stay in the registry as `unmeasured`.
 - `yarn perf:seed` builds the base user's dataset (default user `perf-base-user@example.com`, password from `PERF_USER_PASSWORD`). Every date hangs from `anchorDate` in `perf/seed.config.json` and every recurrence ends at the anchor, so reads never materialize rows. The seed stores a `fingerprint` (list sizes) in `perf/seed.manifest.json`.
 - Before measuring, `yarn perf` and `yarn perf:check` verify the fingerprint; a difference exits `2` (`perf dataset drifted (...): run yarn perf:seed --reset`). A changed `perf/seed.config.json` also exits `2` (`run yarn perf:seed --reset`): the seed never tops up over old data.
+- Exception (spec 085): `perf/write-transactions.perf.test.ts` writes, but only under a throwaway user it signs up itself (never the base user, so the fingerprint is untouched) and deletes that user in `afterAll`. It checks `maxQueriesInTx` of the transaction write routes and a 10+10 parallel-create run. Write routes stay `unmeasured` in the registry.
 - Changing the dataset (config, anchor, volumes) means `yarn perf:seed --reset` and a reviewed re-baseline of the budgets in the same PR.
 
 ## Commands
