@@ -94,6 +94,14 @@ describe('GetBalanceSeriesUseCase', () => {
     ]);
   });
 
+  it('SHOULD hand the accounts it read to the planned balances (spec 083)', async () => {
+    await setup.execute({ ...mocks.input, to: '2027-01-31' });
+
+    const [call] = mocks.daily.execute.mock.calls[0];
+
+    expect(call.preloaded.accounts).toEqual([mocks.account]);
+  });
+
   it('SHOULD mark every point projected for a period entirely in the future', async () => {
     const series = await setup.execute({ ...mocks.input, from: '2026-12-01', to: '2027-02-28' });
 

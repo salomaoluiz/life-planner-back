@@ -36,3 +36,18 @@ describe('execute', () => {
     expect(mocks.categoryRepository.findCategories).not.toHaveBeenCalled();
   });
 });
+
+describe('preloaded categories (spec 083)', () => {
+  it('SHOULD NOT read the repository WHEN the categories come preloaded', async () => {
+    const result = await setup.execute({
+      accessibleOwners: mocks.accessibleOwners,
+      categoryIds: ['market'],
+      preloaded: {
+        categories: [mocks.category('market'), mocks.category('greens', 'market')] as never,
+      },
+    });
+
+    expect(result.sort()).toEqual(['greens', 'market']);
+    expect(mocks.categoryRepository.findCategories).not.toHaveBeenCalled();
+  });
+});

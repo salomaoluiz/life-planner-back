@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 
 import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
+import { LoadFilterCategoriesUseCase } from '@finance/application/use-case/LoadFilterCategoriesUseCase';
 import { ResolveSearchCategoryIdsUseCase } from '@finance/application/use-case/ResolveSearchCategoryIdsUseCase';
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
 import RecurrenceEntityFixture from '@finance/domain/entity/mocks/RecurrenceEntity.fixture';
@@ -22,6 +23,7 @@ const seriesMock = new RecurrenceEntityFixture()
   .build();
 
 const expandMock = { execute: jest.fn() };
+const loadCategoriesMock = { execute: jest.fn() };
 const resolveSearchMock = { execute: jest.fn() };
 const creditCardRepositoryMock = { findCreditCardById: jest.fn(), findCreditCardsByIds: jest.fn() };
 const recurrenceRepositoryMock = { findByOwners: jest.fn(), findFutureNumbers: jest.fn() };
@@ -45,6 +47,7 @@ beforeEach(async () => {
     providers: [
       GetProjectionsUseCase,
       { provide: ExpandCategoryIdsUseCase, useValue: expandMock },
+      { provide: LoadFilterCategoriesUseCase, useValue: loadCategoriesMock },
       { provide: ResolveSearchCategoryIdsUseCase, useValue: resolveSearchMock },
       { provide: 'IFinanceCreditCardRepository', useValue: creditCardRepositoryMock },
       { provide: 'IFinanceRecurrenceRepository', useValue: recurrenceRepositoryMock },
@@ -59,6 +62,7 @@ const mocks = {
   card: cardMock,
   creditCardRepository: creditCardRepositoryMock,
   expand: expandMock,
+  loadCategories: loadCategoriesMock,
   recurrenceRepository: recurrenceRepositoryMock,
   resolveSearch: resolveSearchMock,
   series: seriesMock,

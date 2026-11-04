@@ -7,6 +7,7 @@ import {
 } from '@finance/application/dto/GetTransactions';
 import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
 import { FindInvoicesInRangeUseCase } from '@finance/application/use-case/FindInvoicesInRangeUseCase';
+import { LoadFilterCategoriesUseCase } from '@finance/application/use-case/LoadFilterCategoriesUseCase';
 import { ResolveSearchCategoryIdsUseCase } from '@finance/application/use-case/ResolveSearchCategoryIdsUseCase';
 import { narrowOwners } from '@finance/domain/entity/OwnerAccess';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
@@ -32,6 +33,8 @@ export class GetTransactionsUseCase implements UseCaseWithParams<
     private readonly expandCategoryIdsUseCase: ExpandCategoryIdsUseCase,
     @Inject(FindInvoicesInRangeUseCase)
     private readonly findInvoicesInRangeUseCase: FindInvoicesInRangeUseCase,
+    @Inject(LoadFilterCategoriesUseCase)
+    private readonly loadFilterCategoriesUseCase: LoadFilterCategoriesUseCase,
     @Inject(ResolveSearchCategoryIdsUseCase)
     private readonly resolveSearchCategoryIdsUseCase: ResolveSearchCategoryIdsUseCase,
     @Inject('IFinanceTransactionRepository')
@@ -51,10 +54,17 @@ export class GetTransactionsUseCase implements UseCaseWithParams<
       ...(filter.creditCardIds ?? []),
       ...(input.creditCardId ? [input.creditCardId] : []),
     ];
+    const categories =
+      input.preloaded?.categories ??
+      (await this.loadFilterCategoriesUseCase.execute({
+        accessibleOwners: input.accessibleOwners,
+        filter,
+      }));
     const categoryIds = filter.categoryIds?.length
       ? await this.expandCategoryIdsUseCase.execute({
           accessibleOwners: input.accessibleOwners,
           categoryIds: filter.categoryIds,
+          preloaded: { categories },
         })
       : undefined;
     let invoiceData;
@@ -109,6 +119,7 @@ export class GetTransactionsUseCase implements UseCaseWithParams<
     const matchingCategoryIds = new Set(
       await this.resolveSearchCategoryIdsUseCase.execute({
         accessibleOwners: input.accessibleOwners,
+        preloaded: { categories },
         q: query,
       }),
     );

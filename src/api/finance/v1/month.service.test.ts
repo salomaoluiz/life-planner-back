@@ -100,3 +100,28 @@ it('SHOULD propagate Forbidden (403) from a use case', async () => {
     ForbiddenException,
   );
 });
+
+it('SHOULD read the filter categories ONCE AND hand them to the rows, the invoices AND the projections (spec 083)', async () => {
+  const categories = [{ id: 'market' }] as never;
+  const filter = { categoryIds: ['market'], q: 'gym' };
+
+  mocks.loadFilterCategoriesUseCase.execute.mockResolvedValue(categories);
+
+  await setup.find(mocks.userId, '2027-01', undefined, filter, today);
+
+  expect(mocks.loadFilterCategoriesUseCase.execute).toHaveBeenCalledTimes(1);
+  expect(mocks.loadFilterCategoriesUseCase.execute).toHaveBeenCalledWith({
+    accessibleOwners: mocks.accessibleOwners,
+    filter,
+  });
+
+  for (const useCase of [
+    mocks.getTransactionsUseCase,
+    mocks.getInvoicesForListUseCase,
+    mocks.getProjectionsUseCase,
+  ]) {
+    expect(useCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ preloaded: { categories } }),
+    );
+  }
+});

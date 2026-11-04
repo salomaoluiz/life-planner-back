@@ -104,3 +104,30 @@ describe('GetDashboardSummaryUseCase', () => {
     expect(summary.balance.projectedEnd).toBe(75000);
   });
 });
+
+describe('no repeated reads (spec 083)', () => {
+  it('SHOULD read the categories once AND hand categories AND cards to both period reads', async () => {
+    const categories = [{ id: 'food' }] as never;
+
+    mocks.loadCategories.execute.mockResolvedValue(categories);
+
+    await setup.execute({ ...mocks.input, filter: { categoryIds: ['food'] } });
+
+    expect(mocks.loadCategories.execute).toHaveBeenCalledTimes(1);
+    expect(mocks.rows.execute).toHaveBeenCalledTimes(2);
+
+    for (const [call] of mocks.rows.execute.mock.calls) {
+      expect(call.preloaded.categories).toBe(categories);
+      expect(call.preloaded.cards).toHaveLength(1);
+    }
+  });
+
+  it('SHOULD hand its accounts AND cards to the planned balance', async () => {
+    await setup.execute({ ...mocks.input, to: '2027-03-31' });
+
+    const [call] = mocks.daily.execute.mock.calls[0];
+
+    expect(call.preloaded.accounts).toEqual([mocks.account]);
+    expect(call.preloaded.cards).toHaveLength(1);
+  });
+});

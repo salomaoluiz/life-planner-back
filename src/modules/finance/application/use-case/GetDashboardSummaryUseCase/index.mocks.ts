@@ -5,6 +5,7 @@ import {
   DashboardRow,
   GetDashboardRowsUseCase,
 } from '@finance/application/use-case/GetDashboardRowsUseCase';
+import { LoadFilterCategoriesUseCase } from '@finance/application/use-case/LoadFilterCategoriesUseCase';
 import AccountEntityFixture from '@finance/domain/entity/mocks/AccountEntity.fixture';
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
 import { TransactionType } from '@finance/domain/enum';
@@ -33,6 +34,7 @@ const accountRepositoryMock = { findAccounts: jest.fn(), findPaidSumsFrom: jest.
 const creditCardRepositoryMock = { findCreditCards: jest.fn() };
 const rowsMock = { execute: jest.fn() };
 const dailyMock = { execute: jest.fn() };
+const loadCategoriesMock = { execute: jest.fn() };
 
 function rowOf(overrides: Partial<DashboardRow>): DashboardRow {
   return {
@@ -58,6 +60,7 @@ beforeEach(async () => {
   creditCardRepositoryMock.findCreditCards.mockResolvedValue([
     new CreditCardEntityFixture().withOwnerId(ownerId).build(),
   ]);
+  loadCategoriesMock.execute.mockResolvedValue(undefined);
   rowsMock.execute.mockResolvedValue([]);
   dailyMock.execute.mockResolvedValue({
     accounts: [accountMock],
@@ -80,6 +83,7 @@ beforeEach(async () => {
       { provide: 'IFinanceCreditCardRepository', useValue: creditCardRepositoryMock },
       { provide: GetDashboardRowsUseCase, useValue: rowsMock },
       { provide: GetDailyBalancesUseCase, useValue: dailyMock },
+      { provide: LoadFilterCategoriesUseCase, useValue: loadCategoriesMock },
     ],
   }).compile();
 
@@ -91,6 +95,7 @@ const mocks = {
   accountRepository: accountRepositoryMock,
   daily: dailyMock,
   input: inputMock,
+  loadCategories: loadCategoriesMock,
   rowOf,
   rows: rowsMock,
 };

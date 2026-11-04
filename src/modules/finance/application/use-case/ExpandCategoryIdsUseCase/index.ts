@@ -2,6 +2,7 @@ import { Inject } from '@nestjs/common';
 import { z } from 'zod';
 
 import { AccessibleOwnersSchema } from '@finance/application/dto/FinanceCommon';
+import CategoryEntity from '@finance/domain/entity/CategoryEntity';
 import { IFinanceCategoryRepository } from '@finance/domain/repository';
 import { collectDescendants } from '@finance/domain/service/CategoryTree';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -10,6 +11,8 @@ import { validate } from '@shared/infra/validation';
 const ExpandCategoryIdsSchema = z.object({
   accessibleOwners: AccessibleOwnersSchema,
   categoryIds: z.array(z.string()),
+  // Spec 083: the categories the caller already read in this request.
+  preloaded: z.object({ categories: z.array(z.custom<CategoryEntity>()).optional() }).optional(),
 });
 
 export type ExpandCategoryIdsInput = z.input<typeof ExpandCategoryIdsSchema>;
@@ -32,9 +35,9 @@ export class ExpandCategoryIdsUseCase implements UseCaseWithParams<
       return [];
     }
 
-    const categories = await this.categoryRepository.findCategories({
-      owners: input.accessibleOwners,
-    });
+    const categories =
+      input.preloaded?.categories ??
+      (await this.categoryRepository.findCategories({ owners: input.accessibleOwners }));
     const ids = new Set(input.categoryIds);
 
     for (const id of input.categoryIds) {

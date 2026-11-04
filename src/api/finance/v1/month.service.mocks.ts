@@ -8,6 +8,7 @@ import { GetInvoicesForListUseCase } from '@finance/application/use-case/GetInvo
 import { GetMonthSummaryUseCase } from '@finance/application/use-case/GetMonthSummaryUseCase';
 import { GetProjectionsUseCase } from '@finance/application/use-case/GetProjectionsUseCase';
 import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransactionsUseCase';
+import { LoadFilterCategoriesUseCase } from '@finance/application/use-case/LoadFilterCategoriesUseCase';
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import TransactionEntityFixture from '@finance/domain/entity/mocks/TransactionEntity.fixture';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -34,6 +35,7 @@ const getInvoicesForListUseCaseMock = { execute: jest.fn() };
 const getMonthSummaryUseCaseMock = { execute: jest.fn() };
 const getProjectionsUseCaseMock = { execute: jest.fn() };
 const getTransactionsUseCaseMock = { execute: jest.fn() };
+const loadFilterCategoriesUseCaseMock = { execute: jest.fn() };
 const materializeRecurrencesUseCaseMock = { execute: jest.fn() };
 
 // endregion Mocks
@@ -48,6 +50,7 @@ beforeEach(async () => {
   getMonthSummaryUseCaseMock.execute.mockResolvedValue(summaryMock);
   getProjectionsUseCaseMock.execute.mockResolvedValue([]);
   getTransactionsUseCaseMock.execute.mockResolvedValue({ items: [rowMock], nextCursor: null });
+  loadFilterCategoriesUseCaseMock.execute.mockResolvedValue(undefined);
   materializeRecurrencesUseCaseMock.execute.mockResolvedValue(undefined);
 
   const module = await Test.createTestingModule({
@@ -59,6 +62,7 @@ beforeEach(async () => {
       { provide: GetMonthSummaryUseCase, useValue: getMonthSummaryUseCaseMock },
       { provide: GetProjectionsUseCase, useValue: getProjectionsUseCaseMock },
       { provide: GetTransactionsUseCase, useValue: getTransactionsUseCaseMock },
+      { provide: LoadFilterCategoriesUseCase, useValue: loadFilterCategoriesUseCaseMock },
       { provide: MaterializeRecurrencesUseCase, useValue: materializeRecurrencesUseCaseMock },
     ],
   }).compile();
@@ -74,6 +78,7 @@ const mocks = {
   getMonthSummaryUseCase: getMonthSummaryUseCaseMock,
   getProjectionsUseCase: getProjectionsUseCaseMock,
   getTransactionsUseCase: getTransactionsUseCaseMock,
+  loadFilterCategoriesUseCase: loadFilterCategoriesUseCaseMock,
   materializeRecurrencesUseCase: materializeRecurrencesUseCaseMock,
   row: rowMock,
   summary: summaryMock,

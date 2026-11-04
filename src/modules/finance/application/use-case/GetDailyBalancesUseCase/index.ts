@@ -81,12 +81,13 @@ export class GetDailyBalancesUseCase implements UseCaseWithParams<
     const owners = narrowOwners(input.accessibleOwners, input.ownerIds);
     const monthStart = `${input.month}-01`;
     const monthEnd = lastDayOfMonth(`${untilMonth}-01`);
+    const preloaded = input.preloaded;
     const [allAccounts, cards] =
       owners.length === 0
         ? [[], []]
         : await Promise.all([
-            this.accountRepository.findAccounts(owners),
-            this.creditCardRepository.findCreditCards(owners),
+            preloaded?.accounts ?? this.accountRepository.findAccounts(owners),
+            preloaded?.cards ?? this.creditCardRepository.findCreditCards(owners),
           ]);
     const accounts = allAccounts
       .filter((account) => account.status === AccountStatus.ACTIVE)

@@ -190,6 +190,25 @@ describe('executeChunked (spec 053)', () => {
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
+  it('SHOULD read the categories ONCE for every window (spec 083)', async () => {
+    const categories = [{ id: 'market' }] as never;
+
+    mocks.loadCategories.execute.mockResolvedValue(categories);
+
+    await setup.executeChunked({
+      ...base,
+      filter: { categoryIds: ['market'], q: 'rent' },
+      from: '2026-11',
+      to: '2028-10',
+    });
+
+    expect(mocks.loadCategories.execute).toHaveBeenCalledTimes(1);
+    expect(mocks.expand.execute).toHaveBeenCalledTimes(2);
+    expect(mocks.expand.execute).toHaveBeenLastCalledWith(
+      expect.objectContaining({ preloaded: { categories } }),
+    );
+  });
+
   it('SHOULD reject a reversed range', async () => {
     await expect(setup.executeChunked({ ...base, from: '2027-01', to: '2026-12' })).rejects.toThrow(
       'The range must be 1 to 12 months',
@@ -228,5 +247,36 @@ describe('search by notes, category and amount (spec 059)', () => {
     expect(ids(byCategory)).toEqual(new Set([mocks.series.id]));
     expect(ids(byAmount)).toEqual(new Set([mocks.series.id]));
     expect(none).toEqual([]);
+  });
+});
+
+describe('categories read once (spec 083)', () => {
+  const categories = [{ id: 'market' }, { id: 'greens', parentId: 'market' }] as never;
+
+  it('SHOULD load the categories ONCE AND hand them to the expansion AND the search', async () => {
+    mocks.loadCategories.execute.mockResolvedValue(categories);
+
+    await setup.execute({ ...base, filter: { categoryIds: ['market'], q: 'rent' } });
+
+    expect(mocks.loadCategories.execute).toHaveBeenCalledTimes(1);
+    expect(mocks.expand.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ preloaded: { categories } }),
+    );
+    expect(mocks.resolveSearch.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ preloaded: { categories } }),
+    );
+  });
+
+  it('SHOULD NOT load them WHEN the caller passes them preloaded', async () => {
+    await setup.execute({
+      ...base,
+      filter: { categoryIds: ['market'], q: 'rent' },
+      preloaded: { categories },
+    });
+
+    expect(mocks.loadCategories.execute).not.toHaveBeenCalled();
+    expect(mocks.expand.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ preloaded: { categories } }),
+    );
   });
 });

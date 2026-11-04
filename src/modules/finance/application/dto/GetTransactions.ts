@@ -4,6 +4,7 @@ import {
   AccessibleOwnersSchema,
   CalendarDateSchema,
   InvoiceMonthSchema,
+  PreloadedSchema,
   TransactionFilterSchema,
 } from '@finance/application/dto/FinanceCommon';
 import type { CardInvoiceData } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
@@ -29,6 +30,7 @@ export const GetTransactionsSchema = z.object({
     .max(TRANSACTION_PAGE_MAX_LIMIT)
     .default(TRANSACTION_PAGE_DEFAULT_LIMIT),
   ownerIds: z.array(z.string()).optional(),
+  preloaded: PreloadedSchema,
   source: z.enum(TransactionSource).default(TransactionSource.ACCOUNT),
   // Needed to place CARD rows in a period by their invoice list date.
   today: CalendarDateSchema.optional(),

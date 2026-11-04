@@ -4,6 +4,7 @@ import {
   AccessibleOwnersSchema,
   CalendarDateSchema,
   InvoiceMonthSchema,
+  PreloadedSchema,
   TransactionFilterSchema,
 } from '@finance/application/dto/FinanceCommon';
 
@@ -14,6 +15,7 @@ export const GetInvoicesForListSchema = z
     filter: TransactionFilterSchema.optional(),
     month: InvoiceMonthSchema.optional(),
     ownerIds: z.array(z.string()).optional(),
+    preloaded: PreloadedSchema,
     today: CalendarDateSchema,
   })
   .refine((value) => (value.month === undefined) !== (value.filter?.from === undefined), {

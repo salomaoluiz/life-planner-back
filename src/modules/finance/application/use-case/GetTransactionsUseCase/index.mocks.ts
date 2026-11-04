@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 
 import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
 import { FindInvoicesInRangeUseCase } from '@finance/application/use-case/FindInvoicesInRangeUseCase';
+import { LoadFilterCategoriesUseCase } from '@finance/application/use-case/LoadFilterCategoriesUseCase';
 import { ResolveSearchCategoryIdsUseCase } from '@finance/application/use-case/ResolveSearchCategoryIdsUseCase';
 import TransactionEntityFixture from '@finance/domain/entity/mocks/TransactionEntity.fixture';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -20,6 +21,7 @@ const transactionsMock = [
 ];
 
 const expandMock = { execute: jest.fn() };
+const loadCategoriesMock = { execute: jest.fn() };
 const resolveSearchMock = { execute: jest.fn() };
 const findInvoicesMock = { executeWithData: jest.fn() };
 const transactionRepositoryMock = {
@@ -41,6 +43,7 @@ beforeEach(async () => {
     providers: [
       GetTransactionsUseCase,
       { provide: ExpandCategoryIdsUseCase, useValue: expandMock },
+      { provide: LoadFilterCategoriesUseCase, useValue: loadCategoriesMock },
       { provide: ResolveSearchCategoryIdsUseCase, useValue: resolveSearchMock },
       { provide: FindInvoicesInRangeUseCase, useValue: findInvoicesMock },
       { provide: 'IFinanceTransactionRepository', useValue: transactionRepositoryMock },
@@ -54,6 +57,7 @@ const mocks = {
   accessibleOwners,
   expand: expandMock,
   findInvoices: findInvoicesMock,
+  loadCategories: loadCategoriesMock,
   resolveSearch: resolveSearchMock,
   transactionRepository: transactionRepositoryMock,
   transactions: transactionsMock,

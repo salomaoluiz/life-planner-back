@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
 import { GetProjectionsUseCase } from '@finance/application/use-case/GetProjectionsUseCase';
+import { LoadFilterCategoriesUseCase } from '@finance/application/use-case/LoadFilterCategoriesUseCase';
 import { ResolveSearchCategoryIdsUseCase } from '@finance/application/use-case/ResolveSearchCategoryIdsUseCase';
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
 import { DashboardSum } from '@finance/domain/repository';
@@ -27,6 +28,7 @@ const creditCardRepositoryMock = { findCreditCards: jest.fn() };
 const transactionRepositoryMock = { sumDashboardRows: jest.fn() };
 const computeMock = { execute: jest.fn() };
 const expandMock = { execute: jest.fn() };
+const loadCategoriesMock = { execute: jest.fn() };
 const resolveSearchMock = { execute: jest.fn() };
 const projectionsMock = { executeChunked: jest.fn() };
 
@@ -79,6 +81,7 @@ beforeEach(async () => {
       { provide: 'IFinanceTransactionRepository', useValue: transactionRepositoryMock },
       { provide: ComputeCardInvoicesUseCase, useValue: computeMock },
       { provide: ExpandCategoryIdsUseCase, useValue: expandMock },
+      { provide: LoadFilterCategoriesUseCase, useValue: loadCategoriesMock },
       { provide: ResolveSearchCategoryIdsUseCase, useValue: resolveSearchMock },
       { provide: GetProjectionsUseCase, useValue: projectionsMock },
     ],
@@ -93,6 +96,7 @@ const mocks = {
   creditCardRepository: creditCardRepositoryMock,
   expand: expandMock,
   input: inputMock,
+  loadCategories: loadCategoriesMock,
   occurrenceOf,
   projections: projectionsMock,
   resolveSearch: resolveSearchMock,

@@ -60,7 +60,9 @@ export class GetBalanceSeriesUseCase implements UseCaseWithParams<
       input.today,
     );
     const filter = input.filter?.accountIds?.length ? new Set(input.filter.accountIds) : undefined;
-    const accounts = (owners.length === 0 ? [] : await this.accountRepository.findAccounts(owners))
+    const allAccounts =
+      owners.length === 0 ? [] : await this.accountRepository.findAccounts(owners);
+    const accounts = allAccounts
       .filter(
         (account) =>
           account.status === AccountStatus.ACTIVE &&
@@ -98,6 +100,8 @@ export class GetBalanceSeriesUseCase implements UseCaseWithParams<
           accessibleOwners: input.accessibleOwners,
           month: input.today.slice(0, 7),
           ownerIds: input.ownerIds,
+          // Spec 083: the unfiltered accounts of these owners, already read above.
+          preloaded: { accounts: allAccounts },
           today: input.today,
           untilMonth:
             input.to.slice(0, 7) > input.today.slice(0, 7) ? input.to.slice(0, 7) : undefined,
