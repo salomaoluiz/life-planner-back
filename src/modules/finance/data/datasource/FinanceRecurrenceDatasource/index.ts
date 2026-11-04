@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { OwnerType, Prisma } from '@db/client';
+import { batchUpdate } from '@finance/data/datasource/batchUpdate';
 import { TRANSACTION_RELATIONS } from '@finance/data/datasource/FinanceTransactionDatasource';
 import {
   applyLedgerDeltas,
@@ -278,14 +279,18 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
         where: { id: { in: editable } },
       });
     }
-    for (const item of patch.invoice_months ?? []) {
-      if (editable.includes(item.id)) {
-        await tx.financialTransaction.update({
-          data: { invoice_month: item.invoice_month },
-          where: { id: item.id },
-        });
-      }
-    }
+    // Spec 086: one statement for every moved invoice month.
+    const editableIds = new Set(editable);
+
+    await batchUpdate(
+      tx,
+      'financial_transactions',
+      'id',
+      [{ cast: 'char(7)', name: 'invoice_month' }],
+      (patch.invoice_months ?? [])
+        .filter((item) => editableIds.has(item.id))
+        .map((item) => ({ key: item.id, values: [item.invoice_month] })),
+    );
   }
 
   // Spec 034 FR 29-31. Card rows in an invoice with a payment record and rows that were refunded can't go away:
