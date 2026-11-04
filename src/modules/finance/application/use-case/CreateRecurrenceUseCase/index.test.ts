@@ -88,6 +88,7 @@ describe('CreateRecurrenceUseCase', () => {
       { date: '2026-10-05', invoiceMonth: '2026-10', number: 1 },
     ]);
     expect(result.overLimit).toBe(true);
+    expect(result.invoiceData).toHaveLength(1);
   });
 
   it('SHOULD reject a paid flag on a card series', async () => {

@@ -5,7 +5,10 @@ import {
   CreateTransactionSchema,
 } from '@finance/application/dto/CreateTransaction';
 import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
-import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
+import {
+  CardInvoiceData,
+  ComputeCardInvoicesUseCase,
+} from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import AccountEntity from '@finance/domain/entity/AccountEntity';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
@@ -17,6 +20,8 @@ import { validate } from '@shared/infra/validation';
 
 // `overLimit` is true only for a card purchase that leaves the card above its limit (spec 029 FR 11): the write still succeeds.
 export interface TransactionWithLimit {
+  // Spec 083: the card's invoices computed for `overLimit`, reused by the caller (card rows only).
+  invoiceData?: CardInvoiceData[];
   overLimit: boolean;
   transaction: TransactionEntity;
 }
@@ -82,11 +87,11 @@ export class CreateTransactionUseCase implements UseCaseWithParams<
       return { overLimit: false, transaction };
     }
 
-    const [data] = await this.computeCardInvoicesUseCase.execute({
+    const invoiceData = await this.computeCardInvoicesUseCase.execute({
       cards: [card],
       today: input.today,
     });
 
-    return { overLimit: data.invoices.used > card.limit, transaction };
+    return { invoiceData, overLimit: invoiceData[0].invoices.used > card.limit, transaction };
   }
 }

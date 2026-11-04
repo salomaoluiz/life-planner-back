@@ -80,3 +80,44 @@ it('SHOULD drop the card rows whose resolved status differs from the paid filter
   expect(unpaid.map((row) => row.id)).toEqual([mocks.accountRow.id, mocks.openRow.id]);
   expect(paid.map((row) => row.id)).toEqual([mocks.accountRow.id]);
 });
+
+it('SHOULD skip the card and invoice reads WHEN invoiceData covers the cards of the rows (spec 083)', async () => {
+  const result = await setup.execute({
+    invoiceData: [
+      {
+        card: mocks.card,
+        invoices: undefined as never,
+        payments: [],
+        totals: [
+          { amount: 5000, invoiceMonth: '2026-10' },
+          { amount: 0, invoiceMonth: '2026-09' },
+        ],
+      },
+    ],
+    today: mocks.today,
+    transactions: [mocks.openRow, mocks.closedRow],
+  });
+
+  expect(result.map((row) => row.paid)).toEqual([false, true]);
+  expect(mocks.creditCardRepository.findCreditCardsByIds).not.toHaveBeenCalled();
+  expect(mocks.compute.execute).not.toHaveBeenCalled();
+});
+
+it('SHOULD compute only the cards missing from invoiceData (spec 083)', async () => {
+  const otherCard = { ...mocks.card, id: 'other-card' };
+  const otherRow = { ...mocks.openRow, creditCardId: 'other-card' };
+
+  mocks.creditCardRepository.findCreditCardsByIds.mockResolvedValue([otherCard]);
+  mocks.compute.execute.mockResolvedValue([
+    { card: otherCard, payments: [], totals: [{ amount: 100, invoiceMonth: '2026-10' }] },
+  ]);
+
+  await setup.execute({
+    invoiceData: [{ card: mocks.card, invoices: undefined as never, payments: [], totals: [] }],
+    today: mocks.today,
+    transactions: [mocks.openRow, otherRow],
+  });
+
+  expect(mocks.creditCardRepository.findCreditCardsByIds).toHaveBeenCalledWith(['other-card']);
+  expect(mocks.compute.execute).toHaveBeenCalledWith({ cards: [otherCard], today: mocks.today });
+});

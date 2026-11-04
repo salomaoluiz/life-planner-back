@@ -150,12 +150,16 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
       return { overLimit: false, transaction: updated };
     }
 
-    const [data] = await this.computeCardInvoicesUseCase.execute({
+    const invoiceData = await this.computeCardInvoicesUseCase.execute({
       cards: [card],
       today: input.today,
     });
 
-    return { overLimit: data.invoices.used > card.limit, transaction: updated };
+    return {
+      invoiceData,
+      overLimit: invoiceData[0].invoices.used > card.limit,
+      transaction: updated,
+    };
   }
 
   // Spec 030 FR 11-17: an installment changes only value, description and category, for the rows `scope` names.
@@ -221,12 +225,16 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
       )) as TransactionEntity;
     }
 
-    const [data] = await this.computeCardInvoicesUseCase.execute({
+    const invoiceData = await this.computeCardInvoicesUseCase.execute({
       cards: [card],
       today: input.today,
     });
 
-    return { overLimit: data.invoices.used > card.limit, transaction: updated };
+    return {
+      invoiceData,
+      overLimit: invoiceData[0].invoices.used > card.limit,
+      transaction: updated,
+    };
   }
 }
 

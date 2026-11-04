@@ -21,7 +21,7 @@ const transactionsMock = [
 
 const expandMock = { execute: jest.fn() };
 const resolveSearchMock = { execute: jest.fn() };
-const findInvoicesMock = { execute: jest.fn() };
+const findInvoicesMock = { executeWithData: jest.fn() };
 const transactionRepositoryMock = {
   findTransactions: jest.fn().mockResolvedValue(transactionsMock),
 };
@@ -35,7 +35,7 @@ beforeEach(async () => {
   transactionRepositoryMock.findTransactions.mockResolvedValue(transactionsMock);
   expandMock.execute.mockImplementation(async ({ categoryIds }) => categoryIds);
   resolveSearchMock.execute.mockResolvedValue([]);
-  findInvoicesMock.execute.mockResolvedValue([]);
+  findInvoicesMock.executeWithData.mockResolvedValue({ data: [], matches: [] });
 
   const module = await Test.createTestingModule({
     providers: [

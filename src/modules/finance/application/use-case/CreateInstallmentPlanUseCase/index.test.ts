@@ -109,3 +109,15 @@ it('SHOULD store the notes on the plan (spec 059)', async () => {
     expect.objectContaining({ notes: 'Presente' }),
   );
 });
+
+it('SHOULD hand the card and the computed invoices to GetInstallmentPlan (spec 083)', async () => {
+  const data = { invoices: { used: 1000 } };
+
+  mocks.compute.execute.mockResolvedValueOnce([data]);
+
+  await setup.execute(mocks.input);
+
+  expect(mocks.getPlan.execute).toHaveBeenCalledWith(
+    expect.objectContaining({ card: mocks.card, invoiceData: data }),
+  );
+});

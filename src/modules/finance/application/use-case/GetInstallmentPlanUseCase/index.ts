@@ -55,16 +55,16 @@ export class GetInstallmentPlanUseCase implements UseCaseWithParams<
       throw new NotFoundException();
     }
 
-    const card = await this.creditCardRepository.findCreditCardById(plan.creditCardId);
+    const card =
+      input.card ?? (await this.creditCardRepository.findCreditCardById(plan.creditCardId));
 
     if (!card) {
       throw new NotFoundException();
     }
 
-    const [data] = await this.computeCardInvoicesUseCase.execute({
-      cards: [card],
-      today: input.today,
-    });
+    const data =
+      input.invoiceData ??
+      (await this.computeCardInvoicesUseCase.execute({ cards: [card], today: input.today }))[0];
     const installments = plan.installments.map((row) => ({
       id: row.id,
       installmentNumber: row.installmentNumber as number,

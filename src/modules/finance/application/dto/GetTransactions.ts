@@ -6,6 +6,7 @@ import {
   InvoiceMonthSchema,
   TransactionFilterSchema,
 } from '@finance/application/dto/FinanceCommon';
+import type { CardInvoiceData } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { TransactionSource } from '@finance/domain/enum';
 import {
@@ -35,6 +36,8 @@ export const GetTransactionsSchema = z.object({
 
 export type GetTransactionsInput = z.input<typeof GetTransactionsSchema>;
 export interface TransactionPage {
+  // Spec 083: set when the CARD period lookup computed the invoices; the caller reuses them.
+  invoiceData?: CardInvoiceData[];
   items: TransactionEntity[];
   nextCursor: null | string;
 }

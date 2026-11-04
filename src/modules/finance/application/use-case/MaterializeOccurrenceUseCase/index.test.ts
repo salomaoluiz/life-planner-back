@@ -50,6 +50,7 @@ describe('MaterializeOccurrenceUseCase', () => {
       expect.objectContaining({ invoiceMonth: '2027-04', paid: undefined }),
     );
     expect(result.overLimit).toBe(true);
+    expect(result.invoiceData).toEqual([{ invoices: { used: 99_999 } }]);
   });
 
   it('SHOULD refuse a paid flag on a card occurrence', async () => {

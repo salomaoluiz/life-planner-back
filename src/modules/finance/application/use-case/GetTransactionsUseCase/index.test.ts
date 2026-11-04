@@ -100,11 +100,12 @@ describe('filters (spec 045)', () => {
   });
 
   it('SHOULD place CARD rows in the period by the invoices listed in it', async () => {
-    mocks.findInvoices.execute.mockResolvedValue([
-      { card: { id: 'card-1' }, invoice: { referenceMonth: '2026-10' } },
-    ]);
+    mocks.findInvoices.executeWithData.mockResolvedValue({
+      data: [{ card: { id: 'card-1' } }],
+      matches: [{ card: { id: 'card-1' }, invoice: { referenceMonth: '2026-10' } }],
+    });
 
-    await setup.execute({
+    const page = await setup.execute({
       accessibleOwners: mocks.accessibleOwners,
       filter: { from: '2026-11-01', to: '2026-11-30' },
       source: 'CARD' as never,
@@ -118,6 +119,8 @@ describe('filters (spec 045)', () => {
         invoiceRefs: [{ creditCardId: 'card-1', invoiceMonth: '2026-10' }],
       }),
     );
+    // Spec 083: the invoices computed to place the rows travel with the page.
+    expect(page.invoiceData).toEqual([{ card: { id: 'card-1' } }]);
   });
 
   it('SHOULD return [] WHEN no invoice is listed in the period', async () => {

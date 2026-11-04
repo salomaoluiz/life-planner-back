@@ -6,7 +6,10 @@ import {
 } from '@finance/application/dto/CreateRecurrence';
 import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
-import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
+import {
+  CardInvoiceData,
+  ComputeCardInvoicesUseCase,
+} from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import AccountEntity from '@finance/domain/entity/AccountEntity';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
@@ -22,6 +25,7 @@ import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
 export interface RecurrenceWithOccurrences {
+  invoiceData?: CardInvoiceData[];
   occurrences: TransactionEntity[];
   overLimit: boolean;
   recurrence: RecurrenceEntity;
@@ -116,11 +120,16 @@ export class CreateRecurrenceUseCase implements UseCaseWithParams<
       return { occurrences, overLimit: false, recurrence };
     }
 
-    const [data] = await this.computeCardInvoicesUseCase.execute({
+    const invoiceData = await this.computeCardInvoicesUseCase.execute({
       cards: [card],
       today: input.today,
     });
 
-    return { occurrences, overLimit: data.invoices.used > card.limit, recurrence };
+    return {
+      invoiceData,
+      occurrences,
+      overLimit: invoiceData[0].invoices.used > card.limit,
+      recurrence,
+    };
   }
 }

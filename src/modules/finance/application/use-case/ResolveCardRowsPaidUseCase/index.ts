@@ -35,8 +35,15 @@ export class ResolveCardRowsPaidUseCase implements UseCaseWithParams<
       return input.transactions;
     }
 
-    const cards = await this.creditCardRepository.findCreditCardsByIds(cardIds);
-    const data = await this.computeCardInvoicesUseCase.execute({ cards, today: input.today });
+    const known = new Map((input.invoiceData ?? []).map((item) => [item.card.id, item]));
+    const missingIds = cardIds.filter((id) => !known.has(id));
+    const cards =
+      missingIds.length > 0 ? await this.creditCardRepository.findCreditCardsByIds(missingIds) : [];
+    const computed =
+      cards.length > 0
+        ? await this.computeCardInvoicesUseCase.execute({ cards, today: input.today })
+        : [];
+    const data = [...known.values(), ...computed];
     const byCard = new Map(
       data.map((item) => [
         item.card.id,

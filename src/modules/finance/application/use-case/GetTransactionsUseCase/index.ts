@@ -57,11 +57,12 @@ export class GetTransactionsUseCase implements UseCaseWithParams<
           categoryIds: filter.categoryIds,
         })
       : undefined;
+    let invoiceData;
     let invoiceRefs;
 
     // Card rows belong to a period through the list date of their invoice, not their own date.
     if (input.source === TransactionSource.CARD && filter.from && filter.to) {
-      const matches = await this.findInvoicesInRangeUseCase.execute({
+      const found = await this.findInvoicesInRangeUseCase.executeWithData({
         accessibleOwners: input.accessibleOwners,
         creditCardIds,
         from: filter.from,
@@ -70,11 +71,12 @@ export class GetTransactionsUseCase implements UseCaseWithParams<
         today: input.today ?? new Date().toISOString().slice(0, 10),
       });
 
-      if (matches.length === 0) {
+      if (found.matches.length === 0) {
         return EMPTY_PAGE;
       }
 
-      invoiceRefs = matches.map(({ card, invoice }) => ({
+      invoiceData = found.data;
+      invoiceRefs = found.matches.map(({ card, invoice }) => ({
         creditCardId: card.id,
         invoiceMonth: invoice.referenceMonth,
       }));
@@ -100,7 +102,7 @@ export class GetTransactionsUseCase implements UseCaseWithParams<
     });
 
     if (!query) {
-      return toPage(rows, input.limit);
+      return { ...toPage(rows, input.limit), invoiceData };
     }
 
     // Spec 059 FR 14: description, notes, category (and its ancestors) or amount.
@@ -126,7 +128,7 @@ export class GetTransactionsUseCase implements UseCaseWithParams<
         (!cursor || isAfter(row, cursor)),
     );
 
-    return toPage(matching, input.limit);
+    return { ...toPage(matching, input.limit), invoiceData };
   }
 }
 
