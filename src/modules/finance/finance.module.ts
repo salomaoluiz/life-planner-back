@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import { AddFamilyToCategoryScopesUseCase } from '@finance/application/use-case/AddFamilyToCategoryScopesUseCase';
 import { AddFamilyToTagScopesUseCase } from '@finance/application/use-case/AddFamilyToTagScopesUseCase';
 import { AdjustAccountBalanceUseCase } from '@finance/application/use-case/AdjustAccountBalanceUseCase';
@@ -198,6 +199,7 @@ const useCases = [
   exports: [...useCases],
   providers: [
     ...useCases,
+    MaterializationGate,
     { provide: 'IFinanceAccountRepository', useClass: FinanceAccountRepository },
     { provide: 'IFinanceAccountDatasource', useClass: FinanceAccountDatasource },
     { provide: 'IFinanceCardCreditRepository', useClass: FinanceCardCreditRepository },
