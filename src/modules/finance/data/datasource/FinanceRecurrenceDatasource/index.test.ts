@@ -224,6 +224,22 @@ describe('Method materialize', () => {
     expect(spies.accountUpdate).not.toHaveBeenCalled();
   });
 
+  it('SHOULD lock the card BEFORE the series AND refresh the invoice totals of a card series (spec 090)', async () => {
+    spies.recurrenceFindUnique.mockResolvedValue({ credit_card_id: 'card-1' });
+    spies.queryRaw.mockResolvedValue([{ ...locked, account_id: null, credit_card_id: 'card-1' }]);
+
+    await setup.materialize({
+      ...params,
+      rows: [{ date: new Date('2026-11-05T00:00:00.000Z'), invoice_month: '2026-12', number: 2 }],
+    });
+
+    expect(spies.queryRaw.mock.calls[0][0].sql).toContain('financial_credit_cards');
+    expect(spies.queryRaw.mock.calls[1][0].sql).toContain('financial_recurrences');
+    expect(spies.refreshInvoiceTotals).toHaveBeenCalledWith(expect.anything(), [
+      { creditCardId: 'card-1', invoiceMonth: '2026-12' },
+    ]);
+  });
+
   it('SHOULD do nothing WHEN another read already advanced the series', async () => {
     spies.queryRaw.mockResolvedValue([{ ...locked, last_generated_number: 3 }]);
 

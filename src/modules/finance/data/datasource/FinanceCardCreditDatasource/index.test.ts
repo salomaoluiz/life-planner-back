@@ -23,6 +23,20 @@ describe('Method createRefund', () => {
     );
   });
 
+  it('SHOULD refresh the stored invoice totals of the invoice the credit lands on (spec 090)', async () => {
+    spies.create.mockResolvedValue({
+      credit_card_id: 'card-1',
+      id: 'refund-1',
+      invoice_month: '2026-10',
+    });
+
+    await setup.createRefund(mocks.refundParams);
+
+    expect(spies.refreshInvoiceTotals).toHaveBeenCalledWith(expect.anything(), [
+      { creditCardId: 'card-1', invoiceMonth: '2026-10' },
+    ]);
+  });
+
   it('SHOULD answer 422 WHEN the invoice has a payment record', async () => {
     spies.paymentFindFirst.mockResolvedValue({ id: 'p' });
 

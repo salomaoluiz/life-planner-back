@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { AccountStatus, FinancialCreditCard } from '@db/client';
 import { BatchRow, batchUpdate } from '@finance/data/datasource/batchUpdate';
+import { refreshCardInvoiceTotals } from '@finance/data/datasource/cardInvoiceTotals';
 import { lockCards } from '@finance/data/datasource/ledger';
 import { toCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
 import { toOwnerWhere } from '@finance/data/datasource/mapper/OwnerWhere';
@@ -104,12 +105,15 @@ export class FinanceCreditCardDatasource implements IFinanceCreditCardDatasource
       });
       // Spec 086: every moved row (purchases and installments) goes out in one statement.
       const moves: BatchRow[] = [];
+      // Spec 090: the months the moved rows leave (the ones they reach are in `moves`).
+      const leftMonths = new Map<string, string>();
 
       for (const purchase of purchases) {
         const month = invoiceMonthOf(toCalendarDate(purchase.date), closingDay);
 
         if (month !== purchase.invoice_month && !paidMonths.has(month)) {
           moves.push({ key: purchase.id, values: [month] });
+          leftMonths.set(purchase.id, purchase.invoice_month as string);
         }
       }
 
@@ -142,6 +146,7 @@ export class FinanceCreditCardDatasource implements IFinanceCreditCardDatasource
         for (const [index, row] of rows.entries()) {
           if (months[index] !== row.invoiceMonth) {
             moves.push({ key: row.id, values: [months[index]] });
+            leftMonths.set(row.id, row.invoiceMonth);
           }
         }
       }
@@ -153,6 +158,16 @@ export class FinanceCreditCardDatasource implements IFinanceCreditCardDatasource
         [{ cast: 'char(7)', name: 'invoice_month' }],
         moves,
       );
+      await refreshCardInvoiceTotals(tx, [
+        ...[...leftMonths.values()].map((invoiceMonth) => ({
+          creditCardId: params.id,
+          invoiceMonth,
+        })),
+        ...moves.map((move) => ({
+          creditCardId: params.id,
+          invoiceMonth: move.values[0] as string,
+        })),
+      ]);
 
       return updated;
     });

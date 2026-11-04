@@ -1,6 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { Prisma } from '@db/client';
+import {
+  invoiceTotalsKeysOf,
+  invoiceTotalsKeysWhere,
+  refreshCardInvoiceTotals,
+} from '@finance/data/datasource/cardInvoiceTotals';
 import { TRANSACTION_RELATIONS } from '@finance/data/datasource/FinanceTransactionDatasource';
 import {
   assertInvoicesNotPaid,
@@ -56,9 +61,10 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
         },
         select: { id: true },
       });
-      await tx.financialTransaction.createMany({
-        data: toRows(params.rows, { ...params, plan_id: plan.id }),
-      });
+      const rows = toRows(params.rows, { ...params, plan_id: plan.id });
+
+      await tx.financialTransaction.createMany({ data: rows });
+      await refreshCardInvoiceTotals(tx, invoiceTotalsKeysOf(rows));
 
       if (params.tag_names && params.tag_names.length > 0) {
         await applyTagNames(tx, {
@@ -79,6 +85,11 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
       await lockCards(tx, [cardId]);
       await assertNoPaidInstallment(tx, cardId, await this.monthsOf(tx, id));
 
+      // Spec 090: the plan's installments and its prepayment discount row (read before they go).
+      const keysBefore = await invoiceTotalsKeysWhere(tx, {
+        OR: [{ installment_plan_id: id }, { prepayment: { installment_plan_id: id } }],
+      });
+
       // A prepayment and its discount row point at each other: break the cycle, then drop discount, rows, record (spec 032 FR 19).
       const prepayment = await tx.financialInstallmentPrepayment.findUnique({
         select: { id: true },
@@ -96,6 +107,7 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
       }
 
       await tx.financialTransaction.deleteMany({ where: { installment_plan_id: id } });
+      await refreshCardInvoiceTotals(tx, keysBefore);
 
       if (prepayment) {
         await tx.financialInstallmentPrepayment.delete({ where: { id: prepayment.id } });
@@ -171,20 +183,22 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
       // Spec 043: the recreated rows keep the tags of the first installment unless names are given.
       const kept = await tagIdsOfRow(tx, { installment_plan_id: params.id });
 
-      await tx.financialTransaction.deleteMany({ where: { installment_plan_id: params.id } });
-      await tx.financialTransaction.createMany({
-        data: toRows(params.rows, {
-          category_id: params.category_id,
-          credit_card_id: params.credit_card_id,
-          currency: plan.currency,
-          date: params.date,
-          description: params.description,
-          notes: params.notes,
-          owner: plan.owner,
-          owner_id: plan.owner_id,
-          plan_id: params.id,
-        }),
+      const keysBefore = await invoiceTotalsKeysWhere(tx, { installment_plan_id: params.id });
+      const newRows = toRows(params.rows, {
+        category_id: params.category_id,
+        credit_card_id: params.credit_card_id,
+        currency: plan.currency,
+        date: params.date,
+        description: params.description,
+        notes: params.notes,
+        owner: plan.owner,
+        owner_id: plan.owner_id,
+        plan_id: params.id,
       });
+
+      await tx.financialTransaction.deleteMany({ where: { installment_plan_id: params.id } });
+      await tx.financialTransaction.createMany({ data: newRows });
+      await refreshCardInvoiceTotals(tx, [...keysBefore, ...invoiceTotalsKeysOf(newRows)]);
 
       const created = await tx.financialTransaction.findMany({
         select: { id: true },
@@ -248,6 +262,10 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
         },
         where,
       });
+      if (params.value !== undefined) {
+        // Spec 090: only a value change moves the totals (text and category never do).
+        await refreshCardInvoiceTotals(tx, await invoiceTotalsKeysWhere(tx, where));
+      }
 
       if (params.tag_names !== undefined) {
         const plan = await tx.financialInstallmentPlan.findUniqueOrThrow({

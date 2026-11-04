@@ -1,11 +1,22 @@
 import { faker } from '@faker-js/faker';
 import { Test } from '@nestjs/testing';
 
+import {
+  invoiceTotalsKeysWhere,
+  refreshCardInvoiceTotals,
+} from '@finance/data/datasource/cardInvoiceTotals';
 import { FinancialTransactionWithRelations } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { Database } from '@shared/infra/db/Database';
 
 import { FinanceTransactionDatasource } from './index';
+
+// Spec 090: the stored invoice totals have their own tests; here only the calls are checked.
+jest.mock('@finance/data/datasource/cardInvoiceTotals', () => ({
+  ...jest.requireActual('@finance/data/datasource/cardInvoiceTotals'),
+  invoiceTotalsKeysWhere: jest.fn().mockResolvedValue([]),
+  refreshCardInvoiceTotals: jest.fn().mockResolvedValue(undefined),
+}));
 
 // region Mocks
 
@@ -166,10 +177,12 @@ const spies = {
   findUnique: findUniqueSpy,
   findUniqueOrThrow: findUniqueOrThrowSpy,
   groupBy: groupBySpy,
+  invoiceTotalsKeysWhere: jest.mocked(invoiceTotalsKeysWhere),
   paymentFindFirst: paymentFindFirstSpy,
   planCount: planCountSpy,
   queryRaw: queryRawSpy,
   recurrenceCount: recurrenceCountSpy,
+  refreshInvoiceTotals: jest.mocked(refreshCardInvoiceTotals),
   tagCreate: tagCreateSpy,
   tagFindMany: tagFindManySpy,
   tagLinkCreateMany: tagLinkCreateManySpy,
