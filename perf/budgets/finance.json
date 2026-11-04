@@ -230,6 +230,14 @@
     "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
     "scenario": ""
   },
+  "GET /api/v1/finance/month": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": 262144,
+    "maxQueries": 20,
+    "p50Ms": null,
+    "scenario": "month={referenceMonth}"
+  },
   "GET /api/v1/finance/recurrences": {
     "indexes": null,
     "kind": "read",

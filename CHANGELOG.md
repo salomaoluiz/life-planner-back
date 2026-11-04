@@ -3,6 +3,12 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.1.0] - 2026-11-04
+
+### Added
+
+- `GET /finance/month?month=YYYY-MM`: the rows, invoices, daily balances, projections and the month summary (`income`, `expense`, `toPay`, `toReceive`, `projectedIncome`, `projectedExpense`) of a month in one call, with the filters of spec 045 (spec 080).
+
 ## [3.0.0] - 2026-11-04
 
 ### Changed
