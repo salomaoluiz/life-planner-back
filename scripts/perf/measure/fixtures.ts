@@ -46,6 +46,7 @@ export function expandScenario(scenario: string, fx: Fixtures): string {
     monthStart: `${fx.referenceMonth}-01`,
     nextMonth: next,
     referenceMonth: fx.referenceMonth,
+    twoYearsStart: new Date(Date.UTC(year, month - 24, 1)).toISOString().slice(0, 10),
     userId: fx.userId,
   };
 

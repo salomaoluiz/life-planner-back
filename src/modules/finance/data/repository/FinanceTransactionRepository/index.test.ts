@@ -121,10 +121,30 @@ describe('card helpers', () => {
     expect(
       await setup.findCardPurchases([{ creditCardId: 'card-1', invoiceMonth: '2026-10' }]),
     ).toHaveLength(1);
-    expect(mocks.transactionDatasource.findCardPurchases).toHaveBeenCalledWith([
-      { credit_card_id: 'card-1', invoice_month: '2026-10' },
-    ]);
+    expect(mocks.transactionDatasource.findCardPurchases).toHaveBeenCalledWith(
+      [{ credit_card_id: 'card-1', invoice_month: '2026-10' }],
+      undefined,
+    );
     expect(await setup.countByCreditCardId('card-1')).toBe(0);
+  });
+});
+
+describe('search (spec 084)', () => {
+  const search = { categoryIds: ['cat-1'], text: 'mercado' };
+
+  it('SHOULD forward the search terms to the datasource on the list AND on the card purchases', async () => {
+    await setup.findTransactions([], undefined, { search });
+    await setup.findCardPurchases([{ creditCardId: 'card-1', invoiceMonth: '2026-10' }], search);
+
+    expect(mocks.transactionDatasource.findByOwners).toHaveBeenCalledWith(
+      [],
+      'ACCOUNT',
+      expect.objectContaining({ search }),
+    );
+    expect(mocks.transactionDatasource.findCardPurchases).toHaveBeenCalledWith(
+      [{ credit_card_id: 'card-1', invoice_month: '2026-10' }],
+      search,
+    );
   });
 });
 

@@ -3,6 +3,12 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.1.4] - 2026-11-04
+
+### Changed
+
+- Transaction and card invoice search (`q`) now runs in the database, so results and pages stay fast over long periods. Search rules and responses do not change (spec 084).
+
 ## [3.1.3] - 2026-11-04
 
 ### Changed

@@ -28,6 +28,9 @@ describe('expandScenario', () => {
     const december = { ...fx, referenceMonth: '2027-12' };
     expect(expandScenario('{nextMonth}', december)).toBe('2028-01');
     expect(expandScenario('{monthEnd}', { ...fx, referenceMonth: '2028-02' })).toBe('2028-02-29');
+    expect(expandScenario('{twoYearsStart}', { ...fx, referenceMonth: '2028-02' })).toBe(
+      '2026-03-01',
+    );
   });
 
   it('SHOULD replace the family token with the first family', () => {

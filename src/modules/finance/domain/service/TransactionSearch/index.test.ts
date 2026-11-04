@@ -1,4 +1,4 @@
-import { matchesTransactionQuery, parseAmountQuery } from './index';
+import { matchesTransactionQuery, parseAmountQuery, toSearchTerms } from './index';
 
 describe('parseAmountQuery', () => {
   it.each([
@@ -65,5 +65,27 @@ describe('matchesTransactionQuery', () => {
   it('SHOULD refuse when nothing matches AND trim the query', () => {
     expect(matchesTransactionQuery(row, 'mercado', none)).toBe(false);
     expect(matchesTransactionQuery(row, '  ipva ', none)).toBe(true);
+  });
+});
+
+describe('toSearchTerms', () => {
+  it('SHOULD return null for a blank query', () => {
+    expect(toSearchTerms('   ', ['cat-1'])).toBeNull();
+  });
+
+  it('SHOULD carry the trimmed text and the category ids', () => {
+    expect(toSearchTerms('  Mercado ', ['cat-1'])).toEqual({
+      categoryIds: ['cat-1'],
+      text: 'Mercado',
+    });
+  });
+
+  it('SHOULD add the amount range for "38,7"', () => {
+    expect(toSearchTerms('38,7', [])).toEqual({
+      amountMax: 3879,
+      amountMin: 3870,
+      categoryIds: [],
+      text: '38,7',
+    });
   });
 });

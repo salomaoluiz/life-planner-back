@@ -38,6 +38,7 @@ import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
 import { SystemCategoryKey, TransactionSource, TransactionType } from '@finance/domain/enum';
 import { ledgerDeltas } from '@finance/domain/service/LedgerBalance';
+import { SearchTerms } from '@finance/domain/service/TransactionSearch';
 import { Database } from '@shared/infra/db/Database';
 import { uuidV4 } from '@shared/infra/uuid';
 
@@ -235,6 +236,15 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
             invoice_month: filter.invoiceMonth,
           }
         : ACCOUNT_SOURCE_WHERE;
+    // Spec 084: the text search runs in SQL first; the usual filters, order, cursor and page then apply to its ids.
+    const searched = filter.search
+      ? await this.matchingIds(listWindowSql(owners, source, filter), filter.search)
+      : undefined;
+
+    if (searched?.length === 0) {
+      return [];
+    }
+
     return this.db.client.financialTransaction.findMany({
       include: TRANSACTION_RELATIONS,
       // `id` breaks ties (rows imported or materialized together share date and created_at): a stable order.
@@ -247,6 +257,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
           sourceWhere,
           ...filterWhere(source, filter),
           ...(filter.cursor ? [afterCursorWhere(filter.cursor)] : []),
+          ...(searched ? [{ id: { in: searched } }] : []),
         ],
       },
     });
@@ -305,16 +316,45 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
     }));
   }
 
-  async findCardPurchases(keys: CardInvoiceKey[]): Promise<FinancialTransactionWithRelations[]> {
+  async findCardPurchases(
+    keys: CardInvoiceKey[],
+    search?: SearchTerms,
+  ): Promise<FinancialTransactionWithRelations[]> {
     if (keys.length === 0) {
+      return [];
+    }
+    const byKeys = { OR: keys.map((key) => ({ ...key })) };
+
+    if (!search) {
+      return this.db.client.financialTransaction.findMany({
+        include: TRANSACTION_RELATIONS,
+        orderBy: [{ date: 'asc' }, { created_at: 'asc' }, { id: 'asc' }],
+        relationLoadStrategy: 'join',
+        where: byKeys,
+      });
+    }
+
+    // Spec 084: only the purchases matching the text, category ids or amount range.
+    const ids = await this.matchingIds(invoiceKeysSql(keys), search);
+
+    if (ids.length === 0) {
       return [];
     }
     return this.db.client.financialTransaction.findMany({
       include: TRANSACTION_RELATIONS,
       orderBy: [{ date: 'asc' }, { created_at: 'asc' }, { id: 'asc' }],
       relationLoadStrategy: 'join',
-      where: { OR: keys.map((key) => ({ ...key })) },
+      where: { AND: [byKeys, { id: { in: ids } }] },
     });
+  }
+
+  // Spec 084: ids of the rows of `window` matching the search (parameters only, nothing interpolated).
+  private async matchingIds(window: Prisma.Sql, search: SearchTerms): Promise<string[]> {
+    const rows = await this.db.client.$queryRaw<{ id: string }[]>(
+      Prisma.sql`SELECT t."id" FROM "financial_transactions" t WHERE ${window} AND ${searchSql(search)}`,
+    );
+
+    return rows.map((row) => row.id);
   }
   // One grouped query for every card: the sum of each (card, invoice month).
   async sumCardInvoices(creditCardIds: string[]): Promise<CardInvoiceSum[]> {
@@ -513,23 +553,15 @@ function dashboardSumsSql(params: DashboardSumsParams): Prisma.Sql {
     );
   }
   if (params.q) {
-    const pattern = `%${params.q.trim().replace(/[\\%_]/g, '\\$&')}%`;
     // Spec 059 FR 14: description, notes, category (the ids already include the descendants) or amount.
-    const matchers = [
-      foldedLike(Prisma.sql`t."description"`, pattern),
-      foldedLike(Prisma.sql`COALESCE(t."notes", '')`, pattern),
-    ];
-
-    if (params.search_category_ids?.length) {
-      matchers.push(Prisma.sql`t."category_id" IN (${Prisma.join(params.search_category_ids)})`);
-    }
-    if (params.amount_min !== undefined && params.amount_max !== undefined) {
-      matchers.push(
-        Prisma.sql`ABS(t."value") BETWEEN ${params.amount_min} AND ${params.amount_max}`,
-      );
-    }
-
-    conditions.push(Prisma.sql`(${Prisma.join(matchers, ' OR ')})`);
+    conditions.push(
+      searchSql({
+        amountMax: params.amount_max,
+        amountMin: params.amount_min,
+        categoryIds: params.search_category_ids ?? [],
+        text: params.q,
+      }),
+    );
   }
 
   const tagJoin = params.by_tag
@@ -549,8 +581,66 @@ function dashboardSumsSql(params: DashboardSumsParams): Prisma.Sql {
     WHERE ${Prisma.join(conditions, ' AND ')}
     GROUP BY 1, 2, 3, 4, 5, 6, 7`;
 }
+// Spec 059 FR 14 / spec 084: description or notes (case and accent insensitive), category ids, or amount range.
+function searchSql(search: SearchTerms): Prisma.Sql {
+  const pattern = `%${search.text.trim().replace(/[\\%_]/g, '\\$&')}%`;
+  const matchers = [
+    foldedLike(Prisma.sql`t."description"`, pattern),
+    foldedLike(Prisma.sql`COALESCE(t."notes", '')`, pattern),
+  ];
+
+  if (search.categoryIds.length) {
+    matchers.push(Prisma.sql`t."category_id" IN (${Prisma.join(search.categoryIds)})`);
+  }
+  if (search.amountMin !== undefined && search.amountMax !== undefined) {
+    matchers.push(Prisma.sql`ABS(t."value") BETWEEN ${search.amountMin} AND ${search.amountMax}`);
+  }
+
+  return Prisma.sql`(${Prisma.join(matchers, ' OR ')})`;
+}
+// The rows of these (card, invoice month) pairs.
+function invoiceKeysSql(keys: CardInvoiceKey[]): Prisma.Sql {
+  return Prisma.sql`(t."credit_card_id", t."invoice_month") IN (${Prisma.join(
+    keys.map((key) => Prisma.sql`(${key.credit_card_id}, ${key.invoice_month})`),
+  )})`;
+}
+// The coarse part of the list filters (owners, source, period or invoices); Prisma applies the exact ones afterwards.
 function foldedLike(column: Prisma.Sql, pattern: string): Prisma.Sql {
   return Prisma.sql`translate(lower(${column}), ${ACCENTS}, ${PLAIN}) ILIKE translate(lower(${pattern}), ${ACCENTS}, ${PLAIN})`;
+}
+function listWindowSql(
+  owners: OwnerAccess[],
+  source: TransactionSource,
+  filter: FindTransactionsFilter,
+): Prisma.Sql {
+  const conditions: Prisma.Sql[] = [
+    Prisma.sql`(t."owner", t."owner_id") IN (${Prisma.join(
+      owners.map((access) => Prisma.sql`(${access.owner}::"OwnerType", ${access.ownerId})`),
+    )})`,
+  ];
+
+  if (source === TransactionSource.CARD) {
+    conditions.push(
+      filter.creditCardIds?.length
+        ? Prisma.sql`t."credit_card_id" IN (${Prisma.join(filter.creditCardIds)})`
+        : Prisma.sql`t."credit_card_id" IS NOT NULL`,
+    );
+    if (filter.invoiceMonth !== undefined) {
+      conditions.push(Prisma.sql`t."invoice_month" = ${filter.invoiceMonth}`);
+    }
+    if (filter.invoiceRefs?.length) {
+      conditions.push(invoiceKeysSql(filter.invoiceRefs));
+    }
+  } else {
+    conditions.push(Prisma.sql`t."credit_card_id" IS NULL`);
+    if (filter.from && filter.to) {
+      conditions.push(
+        Prisma.sql`t."date" >= ${filter.from}::date AND t."date" <= ${filter.to}::date`,
+      );
+    }
+  }
+
+  return Prisma.join(conditions, ' AND ');
 }
 
 // Spec 045: the optional filters as extra AND conditions (none → the same query as before).

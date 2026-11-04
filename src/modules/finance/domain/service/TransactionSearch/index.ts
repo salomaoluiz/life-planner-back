@@ -11,7 +11,32 @@ export interface SearchableRow {
   valueCents: number;
 }
 
+// Spec 084: what the SQL search needs. `text` is trimmed but not folded (the database folds it).
+export interface SearchTerms {
+  amountMax?: number;
+  amountMin?: number;
+  categoryIds: string[];
+  text: string;
+}
+
 const INT4_MAX = 2147483647;
+
+// Spec 084: the same three matchers as `matchesTransactionQuery`, as data for the datasource. Blank → no search.
+export function toSearchTerms(query: string, categoryIds: readonly string[]): null | SearchTerms {
+  const text = query.trim();
+
+  if (text === '') {
+    return null;
+  }
+
+  const range = parseAmountQuery(query);
+
+  return {
+    ...(range ? { amountMax: range.maxCents, amountMin: range.minCents } : {}),
+    categoryIds: [...categoryIds],
+    text,
+  };
+}
 // Digits with optional thousand separators, then an optional `,`/`.` decimal part of 1-2 digits.
 const AMOUNT = /^(\d{1,3}(?:[.,]\d{3})+|\d+)(?:[.,](\d{1,2}))?$/;
 

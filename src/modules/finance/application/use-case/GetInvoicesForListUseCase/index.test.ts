@@ -103,6 +103,8 @@ describe('filters (spec 045)', () => {
   });
 
   it('SHOULD omit an invoice with no matching row', async () => {
+    mocks.transactionRepository.findCardPurchases.mockResolvedValue([]);
+
     expect(
       await setup.execute({
         ...base,
@@ -111,21 +113,48 @@ describe('filters (spec 045)', () => {
     ).toEqual([]);
   });
 
-  it('SHOULD match the text ignoring accents AND the tags by id', async () => {
+  it('SHOULD search in SQL: terms go to the repository, its rows are not re-matched, the count is the whole invoice', async () => {
+    mocks.resolveSearch.execute.mockResolvedValue(['home']);
+    mocks.transactionRepository.findCardPurchases.mockResolvedValue([matching]);
+
+    const result = await setup.execute({
+      ...base,
+      filter: { from: '2026-11-01', q: '12,34', to: '2026-11-30' },
+    });
+
+    expect(mocks.transactionRepository.findCardPurchases).toHaveBeenCalledWith(expect.any(Array), {
+      amountMax: 1234,
+      amountMin: 1234,
+      categoryIds: ['home'],
+      text: '12,34',
+    });
+    expect(result[0].purchases).toEqual([matching]);
+    expect(result[0].filtered).toEqual({ filteredTotal: 10000, matchedCount: 1, purchaseCount: 2 });
+  });
+
+  it('SHOULD NOT count the purchases separately WHEN there is no text', async () => {
+    await setup.execute({
+      ...base,
+      filter: { categoryIds: ['market'], from: '2026-11-01', to: '2026-11-30' },
+    });
+
+    expect(mocks.transactionRepository.findCardPurchases).toHaveBeenCalledWith(
+      expect.any(Array),
+      undefined,
+    );
+    expect(mocks.transactionRepository.countCardPurchasesByInvoice).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD filter the tags by id in memory', async () => {
     const tagged = { ...other, tags: [{ id: 'tag-1', name: 'fixo' }] };
 
     mocks.transactionRepository.findCardPurchases.mockResolvedValue([matching, tagged]);
 
-    const byText = await setup.execute({
-      ...base,
-      filter: { from: '2026-11-01', q: 'mercadao', to: '2026-11-30' },
-    });
     const byTag = await setup.execute({
       ...base,
       filter: { from: '2026-11-01', tagIds: ['tag-1'], to: '2026-11-30' },
     });
 
-    expect(byText[0].purchases).toEqual([matching]);
     expect(byTag[0].purchases).toEqual([tagged]);
   });
 
@@ -141,31 +170,6 @@ describe('filters (spec 045)', () => {
       setup.execute({ ...mocks.input, filter: { from: '2026-11-01', to: '2026-11-30' } }),
     ).rejects.toThrow();
     await expect(setup.execute(base)).rejects.toThrow();
-  });
-
-  it('SHOULD match a purchase by its notes, its category name or its amount', async () => {
-    const noted = { ...matching, categoryId: 'cat-x', notes: 'Presente da Ana', value: 1234 };
-    const plain = { ...other, categoryId: 'cat-y', notes: null, value: 999 };
-
-    mocks.transactionRepository.findCardPurchases.mockResolvedValue([noted, plain]);
-    const byNotes = await setup.execute({
-      ...base,
-      filter: { from: '2026-11-01', q: 'presente', to: '2026-11-30' },
-    });
-    mocks.resolveSearch.execute.mockResolvedValue(['cat-y']);
-    const byCategory = await setup.execute({
-      ...base,
-      filter: { from: '2026-11-01', q: 'lazer', to: '2026-11-30' },
-    });
-    mocks.resolveSearch.execute.mockResolvedValue([]);
-    const byAmount = await setup.execute({
-      ...base,
-      filter: { from: '2026-11-01', q: '12,34', to: '2026-11-30' },
-    });
-
-    expect(byNotes[0].purchases).toEqual([noted]);
-    expect(byCategory[0].purchases).toEqual([plain]);
-    expect(byAmount[0].purchases).toEqual([noted]);
   });
 });
 

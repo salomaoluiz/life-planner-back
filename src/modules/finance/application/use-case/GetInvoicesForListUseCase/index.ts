@@ -15,7 +15,7 @@ import { hasFilter, TransactionFilter } from '@finance/domain/entity/Transaction
 import { InvoiceStatus, TransactionType } from '@finance/domain/enum';
 import { IFinanceTransactionRepository } from '@finance/domain/repository';
 import { lastDayOfMonth } from '@finance/domain/service/RecurrenceSchedule';
-import { matchesTransactionQuery } from '@finance/domain/service/TransactionSearch';
+import { toSearchTerms } from '@finance/domain/service/TransactionSearch';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -62,17 +62,21 @@ export class GetInvoicesForListUseCase implements UseCaseWithParams<
       return [];
     }
 
-    const rows = await this.transactionRepository.findCardPurchases(
-      matches.map(({ card, invoice }) => ({
-        creditCardId: card.id,
-        invoiceMonth: invoice.referenceMonth,
-      })),
-    );
+    const keys = matches.map(({ card, invoice }) => ({
+      creditCardId: card.id,
+      invoiceMonth: invoice.referenceMonth,
+    }));
     const rowMatcher = await this.buildRowMatcher(
       input.accessibleOwners,
       filter,
       input.preloaded?.categories,
     );
+    // Spec 084: the text search runs in SQL, so `rows` are already the text matches; the purchase count of an
+    // invoice then comes from a grouped count instead of the loaded rows.
+    const [rows, counts] = await Promise.all([
+      this.transactionRepository.findCardPurchases(keys, rowMatcher.search ?? undefined),
+      rowMatcher.search ? this.transactionRepository.countCardPurchasesByInvoice(keys) : [],
+    ]);
     const details = matches.map(({ card, invoice }): InvoiceDetail => {
       const invoiceRows = rows.filter(
         (row) => row.creditCardId === card.id && row.invoiceMonth === invoice.referenceMonth,
@@ -93,7 +97,12 @@ export class GetInvoicesForListUseCase implements UseCaseWithParams<
             0,
           ),
           matchedCount: matching.length,
-          purchaseCount: invoiceRows.length,
+          purchaseCount: rowMatcher.search
+            ? (counts.find(
+                (count) =>
+                  count.creditCardId === card.id && count.invoiceMonth === invoice.referenceMonth,
+              )?.count ?? 0)
+            : invoiceRows.length,
         },
         invoice,
       };
@@ -127,33 +136,24 @@ export class GetInvoicesForListUseCase implements UseCaseWithParams<
         )
       : undefined;
     const tagIds = filter.tagIds?.length ? new Set(filter.tagIds) : undefined;
-    const query = filter.q;
-    const searchCategoryIds = new Set(
-      query
-        ? await this.resolveSearchCategoryIdsUseCase.execute({
+    const query = filter.q?.trim();
+    const search = query
+      ? toSearchTerms(
+          query,
+          await this.resolveSearchCategoryIdsUseCase.execute({
             accessibleOwners,
             preloaded: { categories },
             q: query,
-          })
-        : [],
-    );
+          }),
+        )
+      : null;
 
     return {
       active: !!categoryIds || !!tagIds || !!filter.q,
       matches: (row: TransactionEntity) =>
         (!categoryIds || categoryIds.has(row.categoryId)) &&
-        (!tagIds || row.tags.some((tag) => tagIds.has(tag.id))) &&
-        (!query ||
-          matchesTransactionQuery(
-            {
-              categoryId: row.categoryId,
-              description: row.description,
-              notes: row.notes,
-              valueCents: row.value,
-            },
-            query,
-            searchCategoryIds,
-          )),
+        (!tagIds || row.tags.some((tag) => tagIds.has(tag.id))),
+      search,
     };
   }
 }

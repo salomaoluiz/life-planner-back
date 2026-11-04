@@ -16,9 +16,8 @@ import { IFinanceTransactionRepository } from '@finance/domain/repository';
 import {
   decodeTransactionCursor,
   encodeTransactionCursor,
-  TransactionCursor,
 } from '@finance/domain/service/TransactionCursor';
-import { matchesTransactionQuery } from '@finance/domain/service/TransactionSearch';
+import { toSearchTerms } from '@finance/domain/service/TransactionSearch';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -92,54 +91,36 @@ export class GetTransactionsUseCase implements UseCaseWithParams<
       }));
     }
 
-    const query = filter.q;
     const cursor = input.cursor ? decodeTransactionCursor(input.cursor) : undefined;
-    // The text search filters in memory (until spec 084): the window is read whole and cut after filtering,
-    // so every page is full and its cursor right.
-    const paged = query === undefined;
+    // Spec 084: the text search (description, notes, category with ancestors, amount) runs in SQL, so the page is
+    // cut after it and is full whenever more matches exist.
+    const query = filter.q?.trim();
+    const search = query
+      ? toSearchTerms(
+          query,
+          await this.resolveSearchCategoryIdsUseCase.execute({
+            accessibleOwners: input.accessibleOwners,
+            preloaded: { categories },
+            q: query,
+          }),
+        )
+      : null;
     const rows = await this.transactionRepository.findTransactions(owners, input.source, {
       accountIds: filter.accountIds,
       categoryIds,
       creditCardIds: creditCardIds.length > 0 ? creditCardIds : undefined,
-      cursor: paged ? cursor : undefined,
+      cursor,
       from: filter.from,
       invoiceMonth: input.invoiceMonth,
       invoiceRefs,
-      limit: paged ? input.limit : undefined,
+      limit: input.limit,
       paid: filter.paid,
+      search: search ?? undefined,
       tagIds: filter.tagIds,
       to: filter.to,
     });
 
-    if (!query) {
-      return { ...toPage(rows, input.limit), invoiceData };
-    }
-
-    // Spec 059 FR 14: description, notes, category (and its ancestors) or amount.
-    const matchingCategoryIds = new Set(
-      await this.resolveSearchCategoryIdsUseCase.execute({
-        accessibleOwners: input.accessibleOwners,
-        preloaded: { categories },
-        q: query,
-      }),
-    );
-
-    const matching = rows.filter(
-      (row) =>
-        matchesTransactionQuery(
-          {
-            categoryId: row.categoryId,
-            description: row.description,
-            notes: row.notes,
-            valueCents: row.value,
-          },
-          query,
-          matchingCategoryIds,
-        ) &&
-        (!cursor || isAfter(row, cursor)),
-    );
-
-    return { ...toPage(matching, input.limit), invoiceData };
+    return { ...toPage(rows, input.limit), invoiceData };
   }
 }
 
@@ -160,19 +141,4 @@ function toPage(rows: TransactionEntity[], limit: number): TransactionPage {
       id: last.id,
     }),
   };
-}
-
-// Strictly after the cursor in the (date, createdAt, id) descending order.
-function isAfter(row: TransactionEntity, cursor: TransactionCursor): boolean {
-  const date = cursor.date.toISOString().slice(0, 10);
-
-  if (row.date !== date) {
-    return row.date < date;
-  }
-
-  if (row.createdAt.getTime() !== cursor.createdAt.getTime()) {
-    return row.createdAt.getTime() < cursor.createdAt.getTime();
-  }
-
-  return row.id < cursor.id;
 }
