@@ -111,12 +111,74 @@ export type CreateTransactionApiInput = z.infer<typeof CreateTransactionApiSchem
 export type UpdateTransactionApiInput = z.infer<typeof UpdateTransactionApiSchema>;
 
 export class CreateTransactionBody extends createZodDto(CreateTransactionApiSchema) {}
+// Spec 079: a row carries ids only; the entities it references come once in `lookups`. Null and empty
+// fields are left out, and so are the timestamps and the ids that were repeated by nested objects.
+export const TransactionItemApiSchema = z.strictObject({
+  accountId: z.uuid().optional(),
+  categoryId: z.uuid(),
+  creditCardId: z.uuid().optional(),
+  currency: CurrencyApiSchema,
+  date: z.string(),
+  description: z.string(),
+  earlyPayment: TransactionApiSchema.shape.earlyPayment.unwrap().optional(),
+  id: z.uuid(),
+  installmentCount: z.number().int().optional(),
+  installmentNumber: z.number().int().optional(),
+  installmentPlanId: z.uuid().optional(),
+  invoiceMonth: z.string().optional(),
+  notes: z.string().optional(),
+  occurrenceCount: z.number().int().optional(),
+  occurrenceNumber: z.number().int().optional(),
+  overLimit: z.boolean().optional(),
+  owner: OwnerTypeApiSchema,
+  ownerId: z.uuid(),
+  paid: z.boolean(),
+  recurrenceFrequency: z.enum(RecurrenceFrequency).optional(),
+  recurrenceId: z.uuid().optional(),
+  tagIds: z.array(z.uuid()).optional(),
+  type: TransactionTypeApiSchema,
+  value: z.number().int(),
+});
+
+export const TransactionLookupsApiSchema = z.strictObject({
+  accounts: z.record(z.uuid(), z.strictObject({ icon: z.string(), name: z.string() })),
+  categories: z.record(
+    z.uuid(),
+    z.strictObject({
+      excludeFromTotals: z.literal(true).optional(),
+      icon: z.string(),
+      iconColor: IconColorApiSchema,
+      name: z.string(),
+      systemKey: z.enum(SystemCategoryKey).optional(),
+    }),
+  ),
+  creditCards: z.record(
+    z.uuid(),
+    z.strictObject({
+      color: z.string(),
+      lastDigits: z.string().optional(),
+      title: z.string(),
+    }),
+  ),
+  tags: z.record(z.uuid(), z.strictObject({ name: z.string() })),
+});
+
 // Spec 078: one keyset page of the list; `nextCursor` is null on the last page.
 export const TransactionPageApiSchema = z.object({
-  items: z.array(TransactionApiSchema),
+  items: z.array(TransactionItemApiSchema),
+  lookups: TransactionLookupsApiSchema,
   nextCursor: z.string().nullable(),
 });
 
+export const TransactionWithLookupsApiSchema = z.object({
+  item: TransactionItemApiSchema,
+  lookups: TransactionLookupsApiSchema,
+});
+
+export type TransactionItem = z.infer<typeof TransactionItemApiSchema>;
+export type TransactionLookups = z.infer<typeof TransactionLookupsApiSchema>;
+
 export class TransactionOutput extends createZodDto(TransactionApiSchema) {}
 export class TransactionPageOutput extends createZodDto(TransactionPageApiSchema) {}
+export class TransactionWithLookupsOutput extends createZodDto(TransactionWithLookupsApiSchema) {}
 export class UpdateTransactionBody extends createZodDto(UpdateTransactionApiSchema) {}

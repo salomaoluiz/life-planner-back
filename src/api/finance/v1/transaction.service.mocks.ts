@@ -17,40 +17,68 @@ import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 const userId = faker.string.uuid();
 const accessibleOwners = [{ owner: OwnerType.USER, ownerId: userId }];
+const accountId = faker.string.uuid();
+const categoryId = faker.string.uuid();
+const tagId = faker.string.uuid();
 const transactionResultMock = {
-  account: { icon: 'bank', id: faker.string.uuid(), name: 'Checking' },
-  accountId: faker.string.uuid(),
+  account: { icon: 'bank', id: accountId, name: 'Checking' },
+  accountId,
   category: {
     excludeFromTotals: false,
     icon: 'cart',
     iconColor: '#2E7D32',
-    id: faker.string.uuid(),
+    id: categoryId,
     name: 'Groceries',
     systemKey: null,
   },
-  categoryId: faker.string.uuid(),
+  categoryId,
   createdAt: new Date('2026-10-04T12:00:00.000Z'),
   creditCard: null,
   creditCardId: null,
+  currency: 'BRL',
   date: '2026-10-03',
   description: 'Weekly groceries',
+  earlyPayment: null,
   id: faker.string.uuid(),
+  installmentCount: null,
+  installmentNumber: null,
+  installmentPlanId: null,
   invoiceMonth: null,
+  notes: null,
+  occurrenceCount: null,
+  occurrenceNumber: null,
   owner: OwnerType.USER,
   ownerId: userId,
   paid: true,
+  recurrenceFrequency: null,
+  recurrenceId: null,
+  tags: [{ id: tagId, name: 'home' }],
   type: TransactionType.EXPENSE,
   updatedAt: new Date('2026-10-04T13:00:00.000Z'),
   value: 23490,
 };
-const transactionApiMock = {
-  ...transactionResultMock,
-  createdAt: '2026-10-04T12:00:00.000Z',
-  overLimit: undefined,
+// Spec 079: ids only, no nulls, no timestamps; the referenced entities once in `lookups`.
+const transactionItemMock = {
+  accountId,
+  categoryId,
+  currency: 'BRL',
+  date: '2026-10-03',
+  description: 'Weekly groceries',
+  id: transactionResultMock.id,
   owner: 'USER',
+  ownerId: userId,
+  paid: true,
+  tagIds: [tagId],
   type: 'EXPENSE',
-  updatedAt: '2026-10-04T13:00:00.000Z',
+  value: 23490,
 };
+const transactionLookupsMock = {
+  accounts: { [accountId]: { icon: 'bank', name: 'Checking' } },
+  categories: { [categoryId]: { icon: 'cart', iconColor: '#2E7D32', name: 'Groceries' } },
+  creditCards: {},
+  tags: { [tagId]: { name: 'home' } },
+};
+const transactionApiMock = { item: transactionItemMock, lookups: transactionLookupsMock };
 
 const createTransactionUseCaseMock = {
   execute: jest.fn().mockResolvedValue({ overLimit: false, transaction: transactionResultMock }),
@@ -105,6 +133,8 @@ const mocks = {
   materializeRecurrencesUseCase: materializeRecurrencesUseCaseMock,
   resolveCardRowsPaidUseCase: resolveCardRowsPaidUseCaseMock,
   transactionApi: transactionApiMock,
+  transactionItem: transactionItemMock,
+  transactionLookups: transactionLookupsMock,
   transactionResult: transactionResultMock,
   updateTransactionUseCase: updateTransactionUseCaseMock,
   userId,

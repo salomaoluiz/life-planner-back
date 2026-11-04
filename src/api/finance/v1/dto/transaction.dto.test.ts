@@ -3,6 +3,9 @@ import { INT4_MAX } from '@finance/application/dto/FinanceCommon';
 import {
   CreateTransactionApiSchema,
   TransactionApiSchema,
+  TransactionItemApiSchema,
+  TransactionPageApiSchema,
+  TransactionWithLookupsApiSchema,
   UpdateTransactionApiSchema,
 } from './transaction.dto';
 
@@ -184,5 +187,54 @@ describe('notes (spec 059)', () => {
 
   it('SHOULD let an update clear the notes on its own', () => {
     expect(UpdateTransactionApiSchema.parse({ notes: null })).toEqual({ notes: null });
+  });
+});
+
+describe('lean transaction payload (spec 079)', () => {
+  const categoryId = '1d0f8a3b-5c6e-4f70-8a91-b2c3d4e5f607';
+  const item = {
+    accountId: uuid,
+    categoryId,
+    currency: 'BRL',
+    date: '2026-11-03',
+    description: 'Groceries',
+    id: '2a9f4c1e-7b3d-4e68-9c05-6d7e8f901a2b',
+    owner: 'USER',
+    ownerId: '0b6a1e7c-3f4d-4b2a-8c9d-1e2f3a4b5c6d',
+    paid: true,
+    tagIds: ['5c4b3a29-1807-4f6e-8d9c-0a1b2c3d4e5f'],
+    type: 'EXPENSE',
+    value: 1250,
+  };
+  const lookups = {
+    accounts: { [uuid]: { icon: 'bank', name: 'Checking' } },
+    categories: { [categoryId]: { icon: 'cart', iconColor: '#888888', name: 'Food' } },
+    creditCards: {},
+    tags: { '5c4b3a29-1807-4f6e-8d9c-0a1b2c3d4e5f': { name: 'home' } },
+  };
+
+  it('SHOULD accept the spec example as an item, a page and an item with lookups', () => {
+    expect(TransactionItemApiSchema.safeParse(item).success).toBe(true);
+    expect(
+      TransactionPageApiSchema.safeParse({ items: [item], lookups, nextCursor: null }).success,
+    ).toBe(true);
+    expect(TransactionWithLookupsApiSchema.safeParse({ item, lookups }).success).toBe(true);
+  });
+
+  it.each([
+    ['createdAt', { createdAt: '2026-11-03T10:00:00.000Z' }],
+    ['updatedAt', { updatedAt: '2026-11-03T10:00:00.000Z' }],
+    ['a nested category', { category: { id: categoryId, name: 'Food' } }],
+    ['a nested account', { account: null }],
+    ['tags objects', { tags: [] }],
+    ['a null field', { notes: null }],
+  ])('SHOULD reject %s on an item', (_label, patch) => {
+    expect(TransactionItemApiSchema.safeParse({ ...item, ...patch }).success).toBe(false);
+  });
+
+  it('SHOULD require lookups on a page', () => {
+    expect(TransactionPageApiSchema.safeParse({ items: [item], nextCursor: null }).success).toBe(
+      false,
+    );
   });
 });
