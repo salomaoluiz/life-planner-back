@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { AccountStatus, FinancialCreditCard } from '@db/client';
+import { BatchRow, batchUpdate } from '@finance/data/datasource/batchUpdate';
 import { lockCards } from '@finance/data/datasource/ledger';
 import { toCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
 import { toOwnerWhere } from '@finance/data/datasource/mapper/OwnerWhere';
@@ -101,21 +102,15 @@ export class FinanceCreditCardDatasource implements IFinanceCreditCardDatasource
           type: 'EXPENSE',
         },
       });
-      const idsByMonth = new Map<string, string[]>();
+      // Spec 086: every moved row (purchases and installments) goes out in one statement.
+      const moves: BatchRow[] = [];
 
       for (const purchase of purchases) {
         const month = invoiceMonthOf(toCalendarDate(purchase.date), closingDay);
 
         if (month !== purchase.invoice_month && !paidMonths.has(month)) {
-          idsByMonth.set(month, [...(idsByMonth.get(month) ?? []), purchase.id]);
+          moves.push({ key: purchase.id, values: [month] });
         }
-      }
-
-      for (const [month, ids] of idsByMonth) {
-        await tx.financialTransaction.updateMany({
-          data: { invoice_month: month },
-          where: { id: { in: ids } },
-        });
       }
 
       // Installments keep their order: installment 1 by the date rule, k = that + (k - 1); paid rows stay.
@@ -146,13 +141,18 @@ export class FinanceCreditCardDatasource implements IFinanceCreditCardDatasource
 
         for (const [index, row] of rows.entries()) {
           if (months[index] !== row.invoiceMonth) {
-            await tx.financialTransaction.update({
-              data: { invoice_month: months[index] },
-              where: { id: row.id },
-            });
+            moves.push({ key: row.id, values: [months[index]] });
           }
         }
       }
+
+      await batchUpdate(
+        tx,
+        'financial_transactions',
+        'id',
+        [{ cast: 'char(7)', name: 'invoice_month' }],
+        moves,
+      );
 
       return updated;
     });
