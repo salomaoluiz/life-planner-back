@@ -9,9 +9,43 @@ const LISTS: Record<string, string> = {
   recurrences: '/api/v1/finance/recurrences',
   stock: '/api/v1/stock/items',
   tags: '/api/v1/finance/tags',
-  // Unbounded on purpose: it counts every row, including any a read materialized.
-  transactions: '/api/v1/finance/transactions',
 };
+
+// The transactions list needs a period of at most 2 years (spec 078): the windows tile 2015..2034, so every row counts
+// once, including any a read materialized.
+const TRANSACTION_WINDOWS = Array.from({ length: 10 }, (_, i) => ({
+  from: `${2015 + i * 2}-01-01`,
+  to: `${2016 + i * 2}-12-31`,
+}));
+const TRANSACTIONS_PATH = '/api/v1/finance/transactions';
+const PAGE_LIMIT = 500;
+
+interface TransactionsPage<T = unknown> {
+  items: T[];
+  nextCursor: null | string;
+}
+
+// Every row of the list for `extraQuery` (e.g. `source=CARD`), read window by window and page by page.
+export async function listAllTransactions<T = unknown>(
+  client: Pick<ApiClient, 'get'>,
+  extraQuery = '',
+): Promise<T[]> {
+  const rows: T[] = [];
+  for (const { from, to } of TRANSACTION_WINDOWS) {
+    let cursor: null | string = null;
+    do {
+      const page: TransactionsPage<T> = await client.get<TransactionsPage<T>>(
+        `${TRANSACTIONS_PATH}?${extraQuery ? `${extraQuery}&` : ''}from=${from}&to=${to}&limit=${PAGE_LIMIT}${
+          cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''
+        }`,
+      );
+      rows.push(...page.items);
+      cursor = page.nextCursor;
+    } while (cursor);
+  }
+
+  return rows;
+}
 
 // Size of every list of the base user. Reads only.
 export async function measureDataset(
@@ -21,6 +55,7 @@ export async function measureDataset(
   for (const [name, path] of Object.entries(LISTS)) {
     sizes[name] = (await client.get<unknown[]>(path)).length;
   }
+  sizes.transactions = (await listAllTransactions(client)).length;
 
   return sizes;
 }

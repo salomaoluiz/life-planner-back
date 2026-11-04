@@ -42,7 +42,18 @@ describe('findAll', () => {
     expect(mocks.getTransactionsUseCase.execute).toHaveBeenCalledWith(
       expect.objectContaining({ accessibleOwners: mocks.accessibleOwners, ownerIds: ['o1'] }),
     );
-    expect(result).toEqual([mocks.transactionApi]);
+    expect(result).toEqual({ items: [mocks.transactionApi], nextCursor: null });
+  });
+
+  it('SHOULD forward cursor and limit AND return the next cursor of the page (spec 078)', async () => {
+    mocks.getTransactionsUseCase.execute.mockResolvedValueOnce({ items: [], nextCursor: 'next' });
+
+    const result = await setup.findAll(mocks.userId, undefined, { cursor: 'c', limit: 50 });
+
+    expect(mocks.getTransactionsUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ cursor: 'c', limit: 50 }),
+    );
+    expect(result).toEqual({ items: [], nextCursor: 'next' });
   });
 
   it('SHOULD forward the filter AND the paid choice to the card resolver (spec 045)', async () => {
@@ -84,11 +95,14 @@ describe('delete', () => {
 
 describe('system categories (spec 028)', () => {
   it('SHOULD expose the system key AND excludeFromTotals of a balance adjustment', async () => {
-    mocks.getTransactionsUseCase.execute.mockResolvedValueOnce([
-      new TransactionEntityFixture().withBalanceAdjustment().build(),
-    ]);
+    mocks.getTransactionsUseCase.execute.mockResolvedValueOnce({
+      items: [new TransactionEntityFixture().withBalanceAdjustment().build()],
+      nextCursor: null,
+    });
 
-    const [result] = await setup.findAll(mocks.userId);
+    const {
+      items: [result],
+    } = await setup.findAll(mocks.userId);
 
     expect(result.category.systemKey).toBe(SystemCategoryKey.BALANCE_ADJUSTMENT);
     expect(result.category.excludeFromTotals).toBe(true);
@@ -156,7 +170,9 @@ describe('paid status (spec 033)', () => {
       { ...mocks.transactionResult, paid: false },
     ]);
 
-    const [result] = await setup.findAll(mocks.userId, undefined, {}, '2026-10-15');
+    const {
+      items: [result],
+    } = await setup.findAll(mocks.userId, undefined, {}, '2026-10-15');
 
     expect(result.paid).toBe(false);
     expect(mocks.resolveCardRowsPaidUseCase.execute).toHaveBeenCalledWith({
@@ -183,7 +199,7 @@ describe('recurring transactions (spec 034)', () => {
     mocks.getTransactionsUseCase.execute.mockImplementationOnce(async () => {
       order.push('read');
 
-      return [];
+      return { items: [], nextCursor: null };
     });
 
     await setup.findAll(mocks.userId, ['o1'], {}, '2026-10-17');

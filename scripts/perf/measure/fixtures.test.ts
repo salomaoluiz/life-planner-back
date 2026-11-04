@@ -59,8 +59,8 @@ describe('resolveFixtures plan lookup (spec 093)', () => {
         if (path.includes('/transactions?')) {
           // Installment rows are card rows: the default list only has account rows.
           return path.includes('source=CARD') && path.includes(`from=${month}-01`)
-            ? [{ installmentPlanId: 'plan-3' }]
-            : [];
+            ? { items: [{ installmentPlanId: 'plan-3' }], nextCursor: null }
+            : { items: [], nextCursor: null };
         }
 
         return [{ id: 'x' }];
@@ -95,7 +95,10 @@ describe('resolveFixtures', () => {
       get: jest.fn(async (path: string) => {
         if (path.endsWith('/transactions?source=ACCOUNT&limit=1')) return [];
         if (path.includes('/transactions'))
-          return [{ installmentPlanId: null }, { installmentPlanId: 'plan-9' }];
+          return {
+            items: [{ installmentPlanId: null }, { installmentPlanId: 'plan-9' }],
+            nextCursor: null,
+          };
 
         return [{ id: `first:${path}` }, { id: 'second' }];
       }),

@@ -1,3 +1,4 @@
+import { listAllTransactions } from '../measure/dataset';
 import { ApiClient } from './client';
 import { buildFinancePlan, FinanceVolumes, monthsBack, PlanOwner } from './finance-plan';
 import { Rng } from './random';
@@ -119,8 +120,8 @@ export async function seedFinance(
   // 3. Transactions: only the descriptions not there yet.
   // The list splits account rows and card purchases by source.
   const rows = [
-    ...(await client.get<NamedRow[]>(`${BASE}/transactions?source=ACCOUNT`)),
-    ...(await client.get<NamedRow[]>(`${BASE}/transactions?source=CARD`)),
+    ...(await listAllTransactions<NamedRow>(client, 'source=ACCOUNT')),
+    ...(await listAllTransactions<NamedRow>(client, 'source=CARD')),
   ];
   const descriptions = rows.map((r) => r.description ?? '');
   const known = new Set(descriptions);

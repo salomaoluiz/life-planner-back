@@ -111,5 +111,12 @@ export type CreateTransactionApiInput = z.infer<typeof CreateTransactionApiSchem
 export type UpdateTransactionApiInput = z.infer<typeof UpdateTransactionApiSchema>;
 
 export class CreateTransactionBody extends createZodDto(CreateTransactionApiSchema) {}
+// Spec 078: one keyset page of the list; `nextCursor` is null on the last page.
+export const TransactionPageApiSchema = z.object({
+  items: z.array(TransactionApiSchema),
+  nextCursor: z.string().nullable(),
+});
+
 export class TransactionOutput extends createZodDto(TransactionApiSchema) {}
+export class TransactionPageOutput extends createZodDto(TransactionPageApiSchema) {}
 export class UpdateTransactionBody extends createZodDto(UpdateTransactionApiSchema) {}

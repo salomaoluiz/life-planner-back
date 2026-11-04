@@ -14,6 +14,7 @@ function fakeClient() {
     get: jest.fn().mockImplementation(async (path: string) => {
       if (path === '/api/v1/user/me') return { email: 'perf@example.com', id: 'u1' };
       if (path === '/api/v1/families') return [{ id: 'f1', name: 'Perf family 1' }];
+      if (path.startsWith('/api/v1/finance/transactions')) return { items: [], nextCursor: null };
       return [];
     }),
     login: jest.fn().mockResolvedValue(undefined),
@@ -79,11 +80,16 @@ describe('runSeed', () => {
     client.get.mockImplementation(async (path: string) => {
       if (path === '/api/v1/user/me') return { email: 'perf@example.com', id: 'u1' };
       if (path === '/api/v1/families') return [{ id: 'f1', name: 'Perf family 1' }];
-      if (path === '/api/v1/finance/transactions') {
+      if (path.startsWith('/api/v1/finance/transactions')) {
+        // The counter pages through 2-year windows: the first window carries every row.
+        if (!path.includes('from=2015-01-01')) return { items: [], nextCursor: null };
         reads += 1;
 
         // The first read materializes one more row, as a lazy series would.
-        return Array.from({ length: reads === 1 ? 10 : 11 }, () => ({}));
+        return {
+          items: Array.from({ length: reads === 1 ? 10 : 11 }, () => ({})),
+          nextCursor: null,
+        };
       }
 
       return [];
@@ -132,9 +138,13 @@ describe('runSeed', () => {
   it('logs in as the default base user WHEN PERF_USER_EMAIL is unset or empty', async () => {
     for (const email of [undefined, '']) {
       const client = fakeClient();
-      client.get.mockImplementation(async (path: string) =>
-        path === '/api/v1/user/me' ? { email: DEFAULT_PERF_EMAIL, id: 'u1' } : [],
-      );
+      client.get.mockImplementation(async (path: string) => {
+        if (path === '/api/v1/user/me') return { email: DEFAULT_PERF_EMAIL, id: 'u1' };
+
+        return path.startsWith('/api/v1/finance/transactions')
+          ? { items: [], nextCursor: null }
+          : [];
+      });
 
       await runSeed(
         [],

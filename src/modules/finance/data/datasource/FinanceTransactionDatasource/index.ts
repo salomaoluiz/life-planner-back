@@ -246,7 +246,15 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
       // `id` breaks ties (rows imported or materialized together share date and created_at): a stable order.
       orderBy: [{ date: 'desc' }, { created_at: 'desc' }, { id: 'desc' }],
       relationLoadStrategy: relationLoadStrategyFor(source, filter),
-      where: { AND: [toOwnerWhere(owners), sourceWhere, ...filterWhere(source, filter)] },
+      ...(filter.limit === undefined ? {} : { take: filter.limit + 1 }),
+      where: {
+        AND: [
+          toOwnerWhere(owners),
+          sourceWhere,
+          ...filterWhere(source, filter),
+          ...(filter.cursor ? [afterCursorWhere(filter.cursor)] : []),
+        ],
+      },
     });
   }
 
@@ -518,6 +526,16 @@ function exportWhere(
       toOwnerWhere(params.owners),
       { date: { gte: fromCalendarDate(params.from), lte: fromCalendarDate(params.to) } },
       ...(picked.length > 0 ? [{ OR: picked }] : []),
+    ],
+  };
+}
+// Rows strictly after the cursor in the (date, created_at, id) descending order.
+function afterCursorWhere(cursor: NonNullable<FindTransactionsFilter['cursor']>) {
+  return {
+    OR: [
+      { date: { lt: cursor.date } },
+      { created_at: { lt: cursor.createdAt }, date: cursor.date },
+      { created_at: cursor.createdAt, date: cursor.date, id: { lt: cursor.id } },
     ],
   };
 }

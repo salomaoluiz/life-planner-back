@@ -7,15 +7,26 @@ const PATHS: Record<string, string> = {
   '/api/v1/finance/credit-cards': 'cards',
   '/api/v1/finance/recurrences': 'recurrences',
   '/api/v1/finance/tags': 'tags',
-  '/api/v1/finance/transactions': 'transactions',
   '/api/v1/stock/items': 'stock',
 };
 
+const PAGE = 500;
+
+// The transactions come in keyset pages of 500, all inside the first 2-year window.
 function clientWith(sizes: Record<string, number>): never {
   return {
-    get: jest.fn(async (path: string) =>
-      Array.from({ length: sizes[PATHS[path]] ?? 0 }, (_, i) => ({ id: i })),
-    ),
+    get: jest.fn(async (path: string) => {
+      if (path.startsWith('/api/v1/finance/transactions')) {
+        const query = new URLSearchParams(path.split('?')[1]);
+        const offset = Number(query.get('cursor') ?? 0);
+        const inWindow = query.get('from') === '2015-01-01' ? (sizes.transactions ?? 0) : 0;
+        const items = Array.from({ length: Math.max(0, Math.min(PAGE, inWindow - offset)) });
+
+        return { items, nextCursor: offset + PAGE < inWindow ? String(offset + PAGE) : null };
+      }
+
+      return Array.from({ length: sizes[PATHS[path]] ?? 0 }, (_, i) => ({ id: i }));
+    }),
   } as never;
 }
 

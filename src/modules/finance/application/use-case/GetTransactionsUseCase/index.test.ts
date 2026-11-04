@@ -8,9 +8,9 @@ it('SHOULD return the repository result as-is (the repository already sorts date
   expect(mocks.transactionRepository.findTransactions).toHaveBeenCalledWith(
     mocks.accessibleOwners,
     'ACCOUNT',
-    { creditCardId: undefined, invoiceMonth: undefined },
+    { creditCardId: undefined, invoiceMonth: undefined, limit: 200 },
   );
-  expect(result).toBe(mocks.transactions);
+  expect(result).toEqual({ items: mocks.transactions, nextCursor: null });
 });
 
 it('SHOULD narrow to the requested ownerIds', async () => {
@@ -19,21 +19,24 @@ it('SHOULD narrow to the requested ownerIds', async () => {
   expect(mocks.transactionRepository.findTransactions).toHaveBeenCalledWith(
     [{ owner: OwnerType.FAMILY, ownerId: 'family-id' }],
     'ACCOUNT',
-    { creditCardId: undefined, invoiceMonth: undefined },
+    { creditCardId: undefined, invoiceMonth: undefined, limit: 200 },
   );
 });
 
 it('SHOULD return [] WITHOUT querying WHEN no requested id is accessible (never an error)', async () => {
   expect(
     await setup.execute({ accessibleOwners: mocks.accessibleOwners, ownerIds: ['stranger'] }),
-  ).toEqual([]);
+  ).toEqual({ items: [], nextCursor: null });
   expect(mocks.transactionRepository.findTransactions).not.toHaveBeenCalled();
 });
 
 it('SHOULD return [] WHEN the owners have no transactions', async () => {
   mocks.transactionRepository.findTransactions.mockResolvedValueOnce([]);
 
-  expect(await setup.execute({ accessibleOwners: mocks.accessibleOwners })).toEqual([]);
+  expect(await setup.execute({ accessibleOwners: mocks.accessibleOwners })).toEqual({
+    items: [],
+    nextCursor: null,
+  });
 });
 
 it('SHOULD pass the CARD source and its filters through', async () => {
@@ -47,7 +50,7 @@ it('SHOULD pass the CARD source and its filters through', async () => {
   expect(mocks.transactionRepository.findTransactions).toHaveBeenCalledWith(
     mocks.accessibleOwners,
     'CARD',
-    { creditCardIds: ['card-1'], invoiceMonth: '2026-10' },
+    { creditCardIds: ['card-1'], invoiceMonth: '2026-10', limit: 200 },
   );
 });
 
@@ -74,6 +77,7 @@ describe('filters (spec 045)', () => {
         accountIds: ['acc-1'],
         categoryIds: ['market', 'greens'],
         from: '2025-01-01',
+        limit: 200,
         paid: false,
         tagIds: ['tag-1', 'tag-2'],
         to: '2025-12-31',
@@ -92,7 +96,7 @@ describe('filters (spec 045)', () => {
       filter: { q: 'mercadao' },
     });
 
-    expect(result).toEqual([{ description: 'MERCADÃO' }]);
+    expect(result.items).toEqual([{ description: 'MERCADÃO' }]);
   });
 
   it('SHOULD place CARD rows in the period by the invoices listed in it', async () => {
@@ -123,7 +127,7 @@ describe('filters (spec 045)', () => {
         filter: { from: '2026-11-01', to: '2026-11-30' },
         source: 'CARD' as never,
       }),
-    ).toEqual([]);
+    ).toEqual({ items: [], nextCursor: null });
     expect(mocks.transactionRepository.findTransactions).not.toHaveBeenCalled();
   });
 });
@@ -145,7 +149,7 @@ describe('search by notes, category and amount (spec 059)', () => {
       filter: { q: 'aeroporto' },
     });
 
-    expect(result).toEqual([rows[0]]);
+    expect(result.items).toEqual([rows[0]]);
   });
 
   it('SHOULD match the categories resolved from the name (ancestors included)', async () => {
@@ -160,7 +164,7 @@ describe('search by notes, category and amount (spec 059)', () => {
       accessibleOwners: mocks.accessibleOwners,
       q: 'alimentacao',
     });
-    expect(result).toEqual([rows[1], rows[2]]);
+    expect(result.items).toEqual([rows[1], rows[2]]);
   });
 
   it('SHOULD match the amount: 38,70 exactly, 38 as 38,00 to 38,99', async () => {
@@ -173,13 +177,94 @@ describe('search by notes, category and amount (spec 059)', () => {
       filter: { q: '38' },
     });
 
-    expect(exact).toEqual([rows[0]]);
-    expect(whole).toEqual([rows[0], rows[2]]);
+    expect(exact.items).toEqual([rows[0]]);
+    expect(whole.items).toEqual([rows[0], rows[2]]);
   });
 
   it('SHOULD NOT resolve categories WHEN there is no text filter', async () => {
     await setup.execute({ accessibleOwners: mocks.accessibleOwners });
 
     expect(mocks.resolveSearch.execute).not.toHaveBeenCalled();
+  });
+});
+
+function cursorOf(date: string, createdAt: string, id: string) {
+  return Buffer.from(`${date}|${createdAt}|${id}`).toString('base64');
+}
+function row(id: string, date: string, createdAt: string) {
+  return {
+    createdAt: new Date(createdAt),
+    date,
+    description: id,
+    id,
+    notes: null,
+    value: 100,
+  } as never;
+}
+
+describe('keyset pages (spec 078)', () => {
+  it('SHOULD cut limit rows and return the cursor of the last one WHEN the repository returns limit + 1', async () => {
+    mocks.transactionRepository.findTransactions.mockResolvedValue([
+      row('c', '2026-11-03', '2026-11-03T10:00:00.000Z'),
+      row('b', '2026-11-02', '2026-11-02T10:00:00.000Z'),
+      row('a', '2026-11-01', '2026-11-01T10:00:00.000Z'),
+    ]);
+
+    const result = await setup.execute({ accessibleOwners: mocks.accessibleOwners, limit: 2 });
+
+    expect(result.items.map((item) => item.id)).toEqual(['c', 'b']);
+    expect(result.nextCursor).toBe(cursorOf('2026-11-02', '2026-11-02T10:00:00.000Z', 'b'));
+    expect(mocks.transactionRepository.findTransactions).toHaveBeenCalledWith(
+      mocks.accessibleOwners,
+      'ACCOUNT',
+      expect.objectContaining({ limit: 2 }),
+    );
+  });
+
+  it('SHOULD pass the decoded cursor to the repository', async () => {
+    await setup.execute({
+      accessibleOwners: mocks.accessibleOwners,
+      cursor: cursorOf('2026-11-02', '2026-11-02T10:00:00.000Z', 'b'),
+    });
+
+    expect(mocks.transactionRepository.findTransactions).toHaveBeenCalledWith(
+      mocks.accessibleOwners,
+      'ACCOUNT',
+      expect.objectContaining({
+        cursor: {
+          createdAt: new Date('2026-11-02T10:00:00.000Z'),
+          date: new Date('2026-11-02T00:00:00.000Z'),
+          id: 'b',
+        },
+      }),
+    );
+  });
+
+  it('SHOULD read the whole window and cut after the text filter WHEN there is a search, so pages stay full', async () => {
+    mocks.transactionRepository.findTransactions.mockResolvedValue([
+      row('mercado-3', '2026-11-05', '2026-11-05T10:00:00.000Z'),
+      row('other', '2026-11-04', '2026-11-04T10:00:00.000Z'),
+      row('mercado-2', '2026-11-03', '2026-11-03T10:00:00.000Z'),
+      row('mercado-1', '2026-11-02', '2026-11-02T10:00:00.000Z'),
+    ]);
+
+    const first = await setup.execute({
+      accessibleOwners: mocks.accessibleOwners,
+      filter: { q: 'mercado' },
+      limit: 2,
+    });
+    const second = await setup.execute({
+      accessibleOwners: mocks.accessibleOwners,
+      cursor: first.nextCursor ?? undefined,
+      filter: { q: 'mercado' },
+      limit: 2,
+    });
+
+    expect(mocks.transactionRepository.findTransactions.mock.calls[0][2]).toEqual(
+      expect.objectContaining({ cursor: undefined, limit: undefined }),
+    );
+    expect(first.items.map((item) => item.id)).toEqual(['mercado-3', 'mercado-2']);
+    expect(second.items.map((item) => item.id)).toEqual(['mercado-1']);
+    expect(second.nextCursor).toBeNull();
   });
 });

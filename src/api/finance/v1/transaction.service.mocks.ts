@@ -57,7 +57,7 @@ const createTransactionUseCaseMock = {
 const deleteTransactionUseCaseMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const financeAccessServiceMock = { resolve: jest.fn().mockResolvedValue(accessibleOwners) };
 const getTransactionsUseCaseMock = {
-  execute: jest.fn().mockResolvedValue([transactionResultMock]),
+  execute: jest.fn().mockResolvedValue({ items: [transactionResultMock], nextCursor: null }),
 };
 const resolveCardRowsPaidUseCaseMock = {
   execute: jest.fn().mockImplementation(async ({ transactions }) => transactions),

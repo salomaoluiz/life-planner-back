@@ -118,12 +118,14 @@ export class TransactionService {
     userId: string,
     ownerIds?: string[],
     filter: {
+      cursor?: string;
       filter?: TransactionFilter;
       invoiceMonth?: string;
+      limit?: number;
       source?: TransactionSource;
     } = {},
     today?: string,
-  ): Promise<TransactionOutput[]> {
+  ): Promise<{ items: TransactionOutput[]; nextCursor: null | string }> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
     // Real occurrences up to the end of this month exist before the list is read (spec 034 FR 9).
@@ -133,7 +135,7 @@ export class TransactionService {
       today: resolveToday(today),
     });
 
-    const transactions = await this.getTransactionsUseCase.execute({
+    const { items: transactions, nextCursor } = await this.getTransactionsUseCase.execute({
       accessibleOwners,
       ownerIds,
       ...filter,
@@ -146,7 +148,7 @@ export class TransactionService {
       transactions,
     });
 
-    return resolved.map((transaction) => toTransactionOutput(transaction));
+    return { items: resolved.map((transaction) => toTransactionOutput(transaction)), nextCursor };
   }
 
   async update(

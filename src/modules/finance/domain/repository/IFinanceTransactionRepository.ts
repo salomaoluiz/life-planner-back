@@ -122,9 +122,12 @@ interface TransactionQuery {
   accountIds?: string[];
   categoryIds?: string[];
   creditCardIds?: string[];
+  // Spec 078: rows strictly after this position, at most `limit + 1` of them (the extra one tells a next page exists).
+  cursor?: { createdAt: Date; date: Date; id: string };
   from?: string;
   invoiceMonth?: string;
   invoiceRefs?: CardInvoiceRef[];
+  limit?: number;
   // Account rows only: card rows derive it from their invoice.
   paid?: boolean;
   tagIds?: string[];

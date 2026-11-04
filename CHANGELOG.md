@@ -3,6 +3,13 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [2.0.0] - 2026-11-03
+
+### Changed
+
+- **Breaking:** `GET /api/v1/finance/transactions` requires a period (`from` + `to`, or `source=CARD` with `invoiceMonth`) and returns `{ items, nextCursor }` keyset pages (`limit` default 200, max 500, `cursor`) (spec 078).
+- Transactions `created_at` keeps milliseconds; a partial index serves the account list and two redundant indexes are dropped (spec 078).
+
 ## [1.4.0] - 2026-11-03
 
 ### Added

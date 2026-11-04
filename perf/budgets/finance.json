@@ -265,17 +265,6 @@
     "p50Ms": 60,
     "scenario": ""
   },
-  "GET /api/v1/finance/transactions #card": {
-    "indexes": [],
-    "kind": "read",
-    "knownException": "Unbounded list, removed by spec 078 (period required and keyset pagination)",
-    "maxBytes": 4063133,
-    "maxQueries": 7,
-    "p50Ms": 424,
-    "scenario": "source=CARD",
-    "seqScanException": "Full scan until spec 078",
-    "table": "financial_transactions"
-  },
   "GET /api/v1/finance/transactions #card-month": {
     "indexes": ["financial_transactions_credit_card_id_invoice_month_idx"],
     "kind": "read",
@@ -286,24 +275,13 @@
     "table": "financial_transactions"
   },
   "GET /api/v1/finance/transactions #month": {
-    "indexes": ["financial_transactions_owner_owner_id_date_idx"],
+    "indexes": ["financial_transactions_account_list_idx"],
     "kind": "read",
     "knownException": "Month list is ~1 KB per row; removed by spec 079 (lean transaction payload)",
     "maxBytes": 362674,
     "maxQueries": 4,
     "p50Ms": 95,
     "scenario": "from={monthStart}&to={monthEnd}",
-    "table": "financial_transactions"
-  },
-  "GET /api/v1/finance/transactions #unbounded": {
-    "indexes": [],
-    "kind": "read",
-    "knownException": "Unbounded list, removed by spec 078 (period required and keyset pagination)",
-    "maxBytes": 8810078,
-    "maxQueries": 4,
-    "p50Ms": 624,
-    "scenario": "",
-    "seqScanException": "Full scan until spec 078",
     "table": "financial_transactions"
   },
   "GET /api/v1/finance/transactions/export": {
