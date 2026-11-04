@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 
 import {
   CreateTransactionApiInput,
+  TransactionItem,
+  TransactionLookups,
   TransactionOutput,
   UpdateTransactionApiInput,
 } from '@api/finance/v1/dto/transaction.dto';
@@ -75,7 +77,84 @@ function toTransactionOutput(
   };
 }
 
-export { toTransactionOutput };
+// Spec 079: ids only, no nulls, no timestamps; the referenced entities go to `toTransactionLookups`.
+function toTransactionItem(transaction: TransactionEntity, overLimit?: boolean): TransactionItem {
+  return {
+    accountId: transaction.accountId ?? undefined,
+    categoryId: transaction.categoryId,
+    creditCardId: transaction.creditCardId ?? undefined,
+    currency: transaction.currency,
+    date: transaction.date,
+    description: transaction.description,
+    earlyPayment: transaction.earlyPayment ?? undefined,
+    id: transaction.id,
+    installmentCount: transaction.installmentCount ?? undefined,
+    installmentNumber: transaction.installmentNumber ?? undefined,
+    installmentPlanId: transaction.installmentPlanId ?? undefined,
+    invoiceMonth: transaction.invoiceMonth ?? undefined,
+    notes: transaction.notes ?? undefined,
+    occurrenceCount: transaction.occurrenceCount ?? undefined,
+    occurrenceNumber: transaction.occurrenceNumber ?? undefined,
+    overLimit,
+    owner: transaction.owner,
+    ownerId: transaction.ownerId,
+    paid: transaction.paid,
+    recurrenceFrequency: transaction.recurrenceFrequency ?? undefined,
+    recurrenceId: transaction.recurrenceId ?? undefined,
+    tagIds: transaction.tags.length > 0 ? transaction.tags.map((tag) => tag.id) : undefined,
+    type: transaction.type,
+    value: transaction.value,
+  };
+}
+
+// Exactly the entities the given rows reference, each once.
+interface TransactionWithLookups {
+  item: TransactionItem;
+  lookups: TransactionLookups;
+}
+
+function toTransactionLookups(transactions: TransactionEntity[]): TransactionLookups {
+  const lookups: TransactionLookups = { accounts: {}, categories: {}, creditCards: {}, tags: {} };
+
+  for (const { account, category, creditCard, tags } of transactions) {
+    if (account) {
+      lookups.accounts[account.id] = { icon: account.icon, name: account.name };
+    }
+
+    lookups.categories[category.id] = {
+      excludeFromTotals: category.excludeFromTotals ? true : undefined,
+      icon: category.icon,
+      iconColor: category.iconColor,
+      name: category.name,
+      systemKey: category.systemKey ?? undefined,
+    };
+
+    if (creditCard) {
+      lookups.creditCards[creditCard.id] = {
+        color: creditCard.color,
+        lastDigits: creditCard.lastDigits,
+        title: creditCard.title,
+      };
+    }
+
+    for (const tag of tags) {
+      lookups.tags[tag.id] = { name: tag.name };
+    }
+  }
+
+  return lookups;
+}
+function toWithLookups(
+  transaction: TransactionEntity,
+  overLimit?: boolean,
+): TransactionWithLookups {
+  return {
+    item: toTransactionItem(transaction, overLimit),
+    lookups: toTransactionLookups([transaction]),
+  };
+}
+
+export { toTransactionItem, toTransactionLookups, toTransactionOutput };
 
 @Injectable()
 export class TransactionService {
@@ -94,7 +173,7 @@ export class TransactionService {
     userId: string,
     input: CreateTransactionApiInput,
     today?: string,
-  ): Promise<TransactionOutput> {
+  ): Promise<TransactionWithLookups> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
     const { overLimit, transaction } = await this.createTransactionUseCase.execute({
@@ -107,7 +186,7 @@ export class TransactionService {
       transactions: [transaction],
     });
 
-    return toTransactionOutput(resolved, transaction.creditCardId ? overLimit : undefined);
+    return toWithLookups(resolved, transaction.creditCardId ? overLimit : undefined);
   }
 
   async delete(userId: string, id: string, scope?: InstallmentEditScope): Promise<void> {
@@ -127,7 +206,7 @@ export class TransactionService {
       source?: TransactionSource;
     } = {},
     today?: string,
-  ): Promise<{ items: TransactionOutput[]; nextCursor: null | string }> {
+  ): Promise<{ items: TransactionItem[]; lookups: TransactionLookups; nextCursor: null | string }> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
     // Real occurrences up to the end of this month exist before the list is read (spec 034 FR 9).
@@ -150,11 +229,15 @@ export class TransactionService {
       transactions,
     });
 
-    return { items: resolved.map((transaction) => toTransactionOutput(transaction)), nextCursor };
+    return {
+      items: resolved.map((transaction) => toTransactionItem(transaction)),
+      lookups: toTransactionLookups(resolved),
+      nextCursor,
+    };
   }
 
   // Spec 077: one row for the edit form; a card purchase gets its `paid` from its invoice like in the list.
-  async findById(userId: string, id: string, today?: string): Promise<TransactionOutput> {
+  async findById(userId: string, id: string, today?: string): Promise<TransactionWithLookups> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
     const transaction = await this.getTransactionByIdUseCase.execute({ accessibleOwners, id });
@@ -163,7 +246,7 @@ export class TransactionService {
       transactions: [transaction],
     });
 
-    return toTransactionOutput(resolved);
+    return toWithLookups(resolved);
   }
 
   async update(
@@ -171,7 +254,7 @@ export class TransactionService {
     id: string,
     input: UpdateTransactionApiInput,
     today?: string,
-  ): Promise<TransactionOutput> {
+  ): Promise<TransactionWithLookups> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
     const { overLimit, transaction } = await this.updateTransactionUseCase.execute({
@@ -185,6 +268,6 @@ export class TransactionService {
       transactions: [transaction],
     });
 
-    return toTransactionOutput(resolved, transaction.creditCardId ? overLimit : undefined);
+    return toWithLookups(resolved, transaction.creditCardId ? overLimit : undefined);
   }
 }

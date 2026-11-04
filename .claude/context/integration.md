@@ -128,6 +128,8 @@ Upcoming items (spec 062, additive): `GET /finance/upcoming?ownerId=…&today=YY
 
 Breaking (spec 078): `GET /finance/transactions` returns `{ items, nextCursor }` and requires a period (`from`+`to`, or `source=CARD` + `invoiceMonth`); the app loads every page of its window. The CSV export stays unbounded.
 
+Breaking (spec 079): transaction responses are lean. List `{ items, nextCursor, lookups }`; by id, `POST` and `PATCH` `{ item, lookups }`. An item has ids only (`accountId?`, `creditCardId?`, `categoryId`, `tagIds?`), omits null/empty fields and has no `createdAt`/`updatedAt`; `lookups` = `{ categories, accounts, creditCards, tags }` keyed by id, only the entities the returned rows reference. The app joins them in `TransactionModel.fromLeanJSON`. The recurrence endpoints (`/finance/recurrences/*`) keep the nested row shape.
+
 ## Transaction by id (spec 077)
 
 Additive: `GET /api/v1/finance/transactions/:id` (see `api.md`). The app opens a row that is not in a loaded month (Home upcoming, invoice, installment edit) with it instead of reading a list. Deploy the backend first.

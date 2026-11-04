@@ -3,6 +3,12 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.0.0] - 2026-11-04
+
+### Changed
+
+- **Breaking:** `GET /finance/transactions` answers `{ items, nextCursor, lookups }`; `GET /finance/transactions/:id`, `POST` and `PATCH` answer `{ item, lookups }`. Rows carry ids only (`tagIds`, no nested `category`/`account`/`creditCard`/`tags`), omit null fields and have no `createdAt`/`updatedAt`; `lookups` has each referenced category, account, card and tag once (spec 079). Recurrence endpoints keep the previous row shape.
+
 ## [2.1.0] - 2026-11-03
 
 ### Added

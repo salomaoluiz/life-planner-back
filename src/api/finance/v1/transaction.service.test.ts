@@ -7,8 +7,8 @@ import { mocks, setup } from './transaction.service.mocks';
 describe('create', () => {
   it('SHOULD add the accessible owners AND return the API shape with embedded summaries and ISO dates', async () => {
     const body = {
-      accountId: mocks.transactionApi.accountId,
-      categoryId: mocks.transactionApi.categoryId,
+      accountId: mocks.transactionItem.accountId,
+      categoryId: mocks.transactionItem.categoryId,
       date: '2026-10-03',
       description: 'Weekly groceries',
       owner: OwnerType.USER,
@@ -25,13 +25,7 @@ describe('create', () => {
       today: '2026-10-15',
     });
     expect(result).toEqual(mocks.transactionApi);
-    expect(result.account).toEqual({
-      icon: 'bank',
-      id: mocks.transactionApi.account?.id,
-      name: 'Checking',
-    });
-    expect(result.category.iconColor).toBe('#2E7D32');
-    expect(result.date).toBe('2026-10-03');
+    expect(result.item.date).toBe('2026-10-03');
   });
 });
 
@@ -42,7 +36,11 @@ describe('findAll', () => {
     expect(mocks.getTransactionsUseCase.execute).toHaveBeenCalledWith(
       expect.objectContaining({ accessibleOwners: mocks.accessibleOwners, ownerIds: ['o1'] }),
     );
-    expect(result).toEqual({ items: [mocks.transactionApi], nextCursor: null });
+    expect(result).toEqual({
+      items: [mocks.transactionItem],
+      lookups: mocks.transactionLookups,
+      nextCursor: null,
+    });
   });
 
   it('SHOULD forward cursor and limit AND return the next cursor of the page (spec 078)', async () => {
@@ -53,7 +51,11 @@ describe('findAll', () => {
     expect(mocks.getTransactionsUseCase.execute).toHaveBeenCalledWith(
       expect.objectContaining({ cursor: 'c', limit: 50 }),
     );
-    expect(result).toEqual({ items: [], nextCursor: 'next' });
+    expect(result).toEqual({
+      items: [],
+      lookups: { accounts: {}, categories: {}, creditCards: {}, tags: {} },
+      nextCursor: 'next',
+    });
   });
 
   it('SHOULD forward the filter AND the paid choice to the card resolver (spec 045)', async () => {
@@ -90,7 +92,7 @@ describe('findById (spec 077)', () => {
       today: '2026-10-15',
       transactions: [mocks.transactionResult],
     });
-    expect(result.paid).toBe(false);
+    expect(result.item.paid).toBe(false);
   });
 
   it('SHOULD propagate the not found of the use case', async () => {
@@ -134,10 +136,16 @@ describe('system categories (spec 028)', () => {
 
     const {
       items: [result],
+      lookups,
     } = await setup.findAll(mocks.userId);
 
-    expect(result.category.systemKey).toBe(SystemCategoryKey.BALANCE_ADJUSTMENT);
-    expect(result.category.excludeFromTotals).toBe(true);
+    expect(result.categoryId).toBeDefined();
+    expect(Object.values(lookups.categories)).toEqual([
+      expect.objectContaining({
+        excludeFromTotals: true,
+        systemKey: SystemCategoryKey.BALANCE_ADJUSTMENT,
+      }),
+    ]);
   });
 });
 
@@ -168,17 +176,20 @@ describe('card purchases (spec 029)', () => {
       value: 100,
     });
 
-    expect(result).toMatchObject({
-      account: null,
-      accountId: null,
-      creditCard: { id: 'card-1', title: 'Main card' },
+    expect(result.item).toMatchObject({
+      creditCardId: 'card-1',
       invoiceMonth: '2026-10',
       overLimit: true,
+    });
+    expect(JSON.parse(JSON.stringify(result.item))).not.toHaveProperty('accountId');
+    expect(result.lookups.accounts).toEqual({});
+    expect(result.lookups.creditCards).toEqual({
+      'card-1': { color: '#2B3A8C', lastDigits: '1234', title: 'Main card' },
     });
   });
 
   it('SHOULD omit overLimit for account rows AND forward source filters', async () => {
-    expect((await setup.update(mocks.userId, 'tx-1', { value: 1 })).overLimit).toBeUndefined();
+    expect((await setup.update(mocks.userId, 'tx-1', { value: 1 })).item.overLimit).toBeUndefined();
 
     await setup.findAll(mocks.userId, undefined, {
       invoiceMonth: '2026-10',
@@ -216,7 +227,7 @@ describe('paid status (spec 033)', () => {
   it('SHOULD resolve the status of a created row', async () => {
     const result = await setup.create(mocks.userId, {} as never, '2026-10-15');
 
-    expect(result.paid).toBe(true);
+    expect(result.item.paid).toBe(true);
     expect(mocks.resolveCardRowsPaidUseCase.execute).toHaveBeenCalledTimes(1);
   });
 });
@@ -252,5 +263,46 @@ describe('recurring transactions (spec 034)', () => {
       id: 'tx-1',
       scope: 'ONLY_THIS',
     });
+  });
+});
+
+describe('lean payload (spec 079)', () => {
+  function walk(value: unknown): unknown[] {
+    return value !== null && typeof value === 'object'
+      ? Object.values(value).flatMap((child) => [child, ...walk(child)])
+      : [];
+  }
+
+  it('SHOULD carry no null, no timestamps and no nested entities in a response', async () => {
+    const list = await setup.findAll(mocks.userId);
+    const one = await setup.findById(mocks.userId, mocks.transactionResult.id);
+    const json = JSON.parse(JSON.stringify({ list, one }));
+
+    // `nextCursor: null` is the only null: it marks the last page.
+    expect(walk({ ...json, list: { ...json.list, nextCursor: undefined } })).not.toContain(null);
+    expect(JSON.stringify(json)).not.toMatch(/createdAt|updatedAt/);
+    expect(json.list.items[0]).not.toHaveProperty('category');
+    expect(json.list.items[0]).not.toHaveProperty('tags');
+  });
+
+  it('SHOULD leave out tagIds for a row without tags AND list a shared tag once', async () => {
+    const withTags = { ...mocks.transactionResult, id: 'other-id' };
+    const without = { ...mocks.transactionResult, tags: [] };
+    mocks.resolveCardRowsPaidUseCase.execute.mockResolvedValueOnce([withTags, without]);
+
+    const { items, lookups } = await setup.findAll(mocks.userId);
+
+    expect(items[0].tagIds).toHaveLength(1);
+    expect(JSON.parse(JSON.stringify(items[1]))).not.toHaveProperty('tagIds');
+    expect(Object.keys(lookups.tags)).toHaveLength(1);
+    expect(Object.keys(lookups.categories)).toHaveLength(1);
+  });
+
+  it('SHOULD return four empty maps for an empty page', async () => {
+    mocks.resolveCardRowsPaidUseCase.execute.mockResolvedValueOnce([]);
+
+    const { lookups } = await setup.findAll(mocks.userId);
+
+    expect(lookups).toEqual({ accounts: {}, categories: {}, creditCards: {}, tags: {} });
   });
 });

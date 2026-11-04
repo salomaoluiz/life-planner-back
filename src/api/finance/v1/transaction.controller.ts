@@ -20,8 +20,8 @@ import { CalendarDateApiSchema } from '@api/finance/v1/dto/finance-fields';
 import {
   CreateTransactionApiSchema,
   CreateTransactionBody,
-  TransactionOutput,
   TransactionPageOutput,
+  TransactionWithLookupsOutput,
   UpdateTransactionApiSchema,
   UpdateTransactionBody,
 } from '@api/finance/v1/dto/transaction.dto';
@@ -84,7 +84,7 @@ export class TransactionController {
   constructor(private readonly transactionService: TransactionService) {}
 
   @Post()
-  @ZodResponse({ status: 201, type: TransactionOutput })
+  @ZodResponse({ status: 201, type: TransactionWithLookupsOutput })
   async create(
     @Request() req: JwtPayload & Request,
     @Body() body: CreateTransactionBody,
@@ -126,7 +126,7 @@ export class TransactionController {
   }
 
   @Get(':id')
-  @ZodResponse({ status: 200, type: TransactionOutput })
+  @ZodResponse({ status: 200, type: TransactionWithLookupsOutput })
   async findById(
     @Request() req: JwtPayload & Request,
     @Param('id', ParseUUIDPipe) id: string,
@@ -138,7 +138,7 @@ export class TransactionController {
   }
 
   @Patch(':id')
-  @ZodResponse({ status: 200, type: TransactionOutput })
+  @ZodResponse({ status: 200, type: TransactionWithLookupsOutput })
   async update(
     @Request() req: JwtPayload & Request,
     @Param('id', ParseUUIDPipe) id: string,

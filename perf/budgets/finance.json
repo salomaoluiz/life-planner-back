@@ -268,7 +268,7 @@
   "GET /api/v1/finance/transactions #card-month": {
     "indexes": ["financial_transactions_credit_card_id_invoice_month_idx"],
     "kind": "read",
-    "maxBytes": 61456,
+    "maxBytes": 30007,
     "maxQueries": 10,
     "p50Ms": 162,
     "scenario": "source=CARD&from={monthStart}&to={monthEnd}",
@@ -277,8 +277,7 @@
   "GET /api/v1/finance/transactions #month": {
     "indexes": ["financial_transactions_account_list_idx"],
     "kind": "read",
-    "knownException": "Month list is ~1 KB per row; removed by spec 079 (lean transaction payload)",
-    "maxBytes": 362674,
+    "maxBytes": 93119,
     "maxQueries": 4,
     "p50Ms": 95,
     "scenario": "from={monthStart}&to={monthEnd}",
@@ -287,7 +286,7 @@
   "GET /api/v1/finance/transactions/:id": {
     "indexes": null,
     "kind": "read",
-    "maxBytes": 1000,
+    "maxBytes": 775,
     "maxQueries": 3,
     "p50Ms": 40,
     "params": {
