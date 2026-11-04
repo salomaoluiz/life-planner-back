@@ -3,6 +3,12 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [2.1.0] - 2026-11-03
+
+### Added
+
+- `GET /api/v1/finance/transactions/:id` returns one transaction (card `paid` resolved, 404 when it is missing or not readable) (spec 077).
+
 ## [2.0.0] - 2026-11-03
 
 ### Changed

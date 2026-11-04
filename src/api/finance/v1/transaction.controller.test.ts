@@ -193,6 +193,27 @@ describe('create', () => {
   });
 });
 
+describe('findById (spec 077)', () => {
+  it('SHOULD forward the user, the id and the today query', async () => {
+    const result = await setup.findById(mocks.request, mocks.transaction.id, {
+      today: '2026-10-15',
+    });
+
+    expect(mocks.transactionService.findById).toHaveBeenCalledWith(
+      mocks.request.user.id,
+      mocks.transaction.id,
+      '2026-10-15',
+    );
+    expect(result).toEqual(mocks.transaction);
+  });
+
+  it('SHOULD throw ValidationError WHEN today is not a calendar date', async () => {
+    await expect(
+      setup.findById(mocks.request, mocks.transaction.id, { today: 'nope' }),
+    ).rejects.toThrow(ValidationError);
+  });
+});
+
 describe('update', () => {
   it('SHOULD forward a valid patch', async () => {
     await setup.update(mocks.request, mocks.transaction.id, { value: 100 } as never, {});

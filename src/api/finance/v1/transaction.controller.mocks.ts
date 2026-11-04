@@ -29,6 +29,7 @@ const transactionServiceMock = {
   create: jest.fn().mockResolvedValue(transactionApiMock),
   delete: jest.fn().mockResolvedValue(undefined),
   findAll: jest.fn().mockResolvedValue({ items: [transactionApiMock], nextCursor: null }),
+  findById: jest.fn().mockResolvedValue(transactionApiMock),
   update: jest.fn().mockResolvedValue(transactionApiMock),
 };
 

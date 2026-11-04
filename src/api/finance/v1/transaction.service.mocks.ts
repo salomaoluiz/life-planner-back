@@ -5,6 +5,7 @@ import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { TransactionService } from '@api/finance/v1/transaction.service';
 import { CreateTransactionUseCase } from '@finance/application/use-case/CreateTransactionUseCase';
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
+import { GetTransactionByIdUseCase } from '@finance/application/use-case/GetTransactionByIdUseCase';
 import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransactionsUseCase';
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { ResolveCardRowsPaidUseCase } from '@finance/application/use-case/ResolveCardRowsPaidUseCase';
@@ -56,6 +57,9 @@ const createTransactionUseCaseMock = {
 };
 const deleteTransactionUseCaseMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const financeAccessServiceMock = { resolve: jest.fn().mockResolvedValue(accessibleOwners) };
+const getTransactionByIdUseCaseMock = {
+  execute: jest.fn().mockResolvedValue(transactionResultMock),
+};
 const getTransactionsUseCaseMock = {
   execute: jest.fn().mockResolvedValue({ items: [transactionResultMock], nextCursor: null }),
 };
@@ -81,6 +85,7 @@ beforeEach(async () => {
       { provide: CreateTransactionUseCase, useValue: createTransactionUseCaseMock },
       { provide: DeleteTransactionUseCase, useValue: deleteTransactionUseCaseMock },
       { provide: FinanceAccessService, useValue: financeAccessServiceMock },
+      { provide: GetTransactionByIdUseCase, useValue: getTransactionByIdUseCaseMock },
       { provide: GetTransactionsUseCase, useValue: getTransactionsUseCaseMock },
       { provide: ResolveCardRowsPaidUseCase, useValue: resolveCardRowsPaidUseCaseMock },
       { provide: UpdateTransactionUseCase, useValue: updateTransactionUseCaseMock },
@@ -95,6 +100,7 @@ const mocks = {
   accessibleOwners,
   createTransactionUseCase: createTransactionUseCaseMock,
   deleteTransactionUseCase: deleteTransactionUseCaseMock,
+  getTransactionByIdUseCase: getTransactionByIdUseCaseMock,
   getTransactionsUseCase: getTransactionsUseCaseMock,
   materializeRecurrencesUseCase: materializeRecurrencesUseCaseMock,
   resolveCardRowsPaidUseCase: resolveCardRowsPaidUseCaseMock,

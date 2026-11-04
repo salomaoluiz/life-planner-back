@@ -284,6 +284,17 @@
     "scenario": "from={monthStart}&to={monthEnd}",
     "table": "financial_transactions"
   },
+  "GET /api/v1/finance/transactions/:id": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": 1000,
+    "maxQueries": 3,
+    "p50Ms": 40,
+    "params": {
+      "id": "transaction"
+    },
+    "scenario": ""
+  },
   "GET /api/v1/finance/transactions/export": {
     "indexes": null,
     "kind": "read",

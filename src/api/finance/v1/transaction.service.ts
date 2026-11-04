@@ -9,6 +9,7 @@ import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { resolveToday } from '@api/finance/v1/finance-query';
 import { CreateTransactionUseCase } from '@finance/application/use-case/CreateTransactionUseCase';
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
+import { GetTransactionByIdUseCase } from '@finance/application/use-case/GetTransactionByIdUseCase';
 import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransactionsUseCase';
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { ResolveCardRowsPaidUseCase } from '@finance/application/use-case/ResolveCardRowsPaidUseCase';
@@ -82,6 +83,7 @@ export class TransactionService {
     private readonly createTransactionUseCase: CreateTransactionUseCase,
     private readonly deleteTransactionUseCase: DeleteTransactionUseCase,
     private readonly financeAccessService: FinanceAccessService,
+    private readonly getTransactionByIdUseCase: GetTransactionByIdUseCase,
     private readonly getTransactionsUseCase: GetTransactionsUseCase,
     private readonly materializeRecurrencesUseCase: MaterializeRecurrencesUseCase,
     private readonly resolveCardRowsPaidUseCase: ResolveCardRowsPaidUseCase,
@@ -149,6 +151,19 @@ export class TransactionService {
     });
 
     return { items: resolved.map((transaction) => toTransactionOutput(transaction)), nextCursor };
+  }
+
+  // Spec 077: one row for the edit form; a card purchase gets its `paid` from its invoice like in the list.
+  async findById(userId: string, id: string, today?: string): Promise<TransactionOutput> {
+    const accessibleOwners = await this.financeAccessService.resolve(userId);
+
+    const transaction = await this.getTransactionByIdUseCase.execute({ accessibleOwners, id });
+    const [resolved] = await this.resolveCardRowsPaidUseCase.execute({
+      today: resolveToday(today),
+      transactions: [transaction],
+    });
+
+    return toTransactionOutput(resolved);
   }
 
   async update(
