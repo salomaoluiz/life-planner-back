@@ -55,3 +55,5 @@ Add the class to the module's `useCases` array (`providers` + `exports`) — see
 ## Family module use cases
 
 `CreateFamilyUseCase` (validates name 1–50 trimmed), `GetUserFamiliesUseCase` (sorted), `GetFamilyByIdUseCase` (404 for non-members), `EnsureFamilyOwnerUseCase` (404 → 403), `UpdateFamilyUseCase`, `DeleteFamilyUseCase`, plus the exported cross-module contract composed only in `src/api`: `GetUserFamilyIdsUseCase.execute(userId) → string[]` and `CheckFamilyMembershipUseCase.execute({ userId, familyId }) → boolean`.
+
+- `GetMonthSummaryUseCase` (spec 080): pure summary of a month from already-loaded parts (`accountRows`, `invoices`, `projections`); rules ported from the app's `getMonthSummaryUseCase` (card purchases count on their invoice month, projections only after the current month, `excludeFromTotals` skipped).

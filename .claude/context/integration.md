@@ -133,3 +133,7 @@ Breaking (spec 079): transaction responses are lean. List `{ items, nextCursor, 
 ## Transaction by id (spec 077)
 
 Additive: `GET /api/v1/finance/transactions/:id` (see `api.md`). The app opens a row that is not in a loaded month (Home upcoming, invoice, installment edit) with it instead of reading a list. Deploy the backend first.
+
+## Month endpoint (spec 080)
+
+The transactions screen reads `GET /finance/month` (see `api.md`) instead of the five separate month requests; the separate endpoints stay for the filtered period views, Home and the forms. Deploy the backend first (additive).

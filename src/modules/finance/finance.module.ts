@@ -50,6 +50,7 @@ import { GetFinanceTotalsUseCase } from '@finance/application/use-case/GetFinanc
 import { GetInstallmentPlanUseCase } from '@finance/application/use-case/GetInstallmentPlanUseCase';
 import { GetInvoicesForListUseCase } from '@finance/application/use-case/GetInvoicesForListUseCase';
 import { GetInvoiceUseCase } from '@finance/application/use-case/GetInvoiceUseCase';
+import { GetMonthSummaryUseCase } from '@finance/application/use-case/GetMonthSummaryUseCase';
 import { GetPrepaymentPreviewUseCase } from '@finance/application/use-case/GetPrepaymentPreviewUseCase';
 import { GetProjectionsUseCase } from '@finance/application/use-case/GetProjectionsUseCase';
 import { GetRecurrencesUseCase } from '@finance/application/use-case/GetRecurrencesUseCase';
@@ -157,6 +158,7 @@ const useCases = [
   GetCreditCardByIdUseCase,
   GetBalanceSeriesUseCase,
   GetDailyBalancesUseCase,
+  GetMonthSummaryUseCase,
   GetUpcomingItemsUseCase,
   GetDashboardRowsUseCase,
   GetDashboardSummaryUseCase,

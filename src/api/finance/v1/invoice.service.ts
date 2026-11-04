@@ -76,6 +76,8 @@ function toPaymentOutput(payment: InvoicePaymentEntity) {
   };
 }
 
+export { toDetailOutput };
+
 @Injectable()
 export class InvoiceService {
   constructor(
