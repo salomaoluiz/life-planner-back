@@ -63,6 +63,15 @@ it('SHOULD delete the referencing rows first, then everything of ONE owner in ON
   expect(spies.transactionDeleteMany).toHaveBeenNthCalledWith(4, { where });
   expect(result).toBe(2 * 4 + 1 + 1 + 1 + 1 + 1 + 1 + 3 + 5 + 2);
   expect(spies.tagDeleteMany).toHaveBeenCalledWith({ where });
+  // Spec 090: the card rows of this owner on another owner's card are read first and refreshed before the cards go.
+  expect(spies.invoiceTotalsKeysWhere).toHaveBeenCalledWith(expect.anything(), {
+    credit_card: { is: { NOT: where } },
+    OR: [{ paid_from_transaction: { is: where } }, where],
+  });
+  expect(spies.refreshInvoiceTotals).toHaveBeenCalledTimes(1);
+  expect(spies.refreshInvoiceTotals.mock.invocationCallOrder[0]).toBeLessThan(
+    spies.creditCardDeleteMany.mock.invocationCallOrder[0],
+  );
 });
 
 it('SHOULD return 0 WHEN the owner has nothing (second call of a retry)', async () => {

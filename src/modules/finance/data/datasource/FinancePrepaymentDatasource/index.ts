@@ -8,6 +8,7 @@ import {
 
 import { Prisma, TransactionType } from '@db/client';
 import { batchUpdate } from '@finance/data/datasource/batchUpdate';
+import { refreshCardInvoiceTotals } from '@finance/data/datasource/cardInvoiceTotals';
 import { assertInvoicesNotPaid, lockCards } from '@finance/data/datasource/ledger';
 import {
   FinancialPrepaymentWithDiscount,
@@ -91,6 +92,14 @@ export class FinancePrepaymentDatasource implements IFinancePrepaymentDatasource
         data: { invoice_month: params.target_invoice_month, prepayment_id: record.id },
         where: { id: { in: eligible.map((row) => row.id) } },
       });
+      // Spec 090: the installments leave their months for the target (the discount row lands there too).
+      await refreshCardInvoiceTotals(tx, [
+        { creditCardId: params.credit_card_id, invoiceMonth: params.target_invoice_month },
+        ...eligible.map((row) => ({
+          creditCardId: params.credit_card_id,
+          invoiceMonth: row.invoice_month as string,
+        })),
+      ]);
 
       if (params.discount > 0) {
         const discount = await tx.financialTransaction.create({
@@ -170,6 +179,13 @@ export class FinancePrepaymentDatasource implements IFinancePrepaymentDatasource
         where: { id: record.id },
       });
       await tx.financialTransaction.deleteMany({ where: { prepayment_id: record.id } });
+      await refreshCardInvoiceTotals(
+        tx,
+        [record.target_invoice_month, ...Object.values(original)].map((invoiceMonth) => ({
+          creditCardId: plan.credit_card_id,
+          invoiceMonth,
+        })),
+      );
       await tx.financialInstallmentPrepayment.delete({ where: { id: record.id } });
     });
   }

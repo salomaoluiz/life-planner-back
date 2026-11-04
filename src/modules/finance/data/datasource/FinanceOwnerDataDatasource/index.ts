@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 
 import {
+  invoiceTotalsKeysWhere,
+  refreshCardInvoiceTotals,
+} from '@finance/data/datasource/cardInvoiceTotals';
+import {
   DeleteAllByOwnerDatasourceParams,
   IFinanceOwnerDataDatasource,
 } from '@finance/data/repository/datasource/IFinanceOwnerDataDatasource';
@@ -20,6 +24,12 @@ export class FinanceOwnerDataDatasource implements IFinanceOwnerDataDatasource {
     const where = { owner: params.owner, owner_id: params.owner_id };
 
     return this.db.client.$transaction(async (tx) => {
+      // Spec 090: rows of this owner that sit on a card of ANOTHER owner keep that card's stored totals in sync;
+      // the cards of this owner take their totals with them (FK cascade).
+      const foreignKeys = await invoiceTotalsKeysWhere(tx, {
+        credit_card: { is: { NOT: where } },
+        OR: [{ paid_from_transaction: { is: where } }, where],
+      });
       const counts = [
         await tx.financialTransaction.deleteMany({
           where: { paid_from_transaction: { is: where } },
@@ -45,6 +55,7 @@ export class FinanceOwnerDataDatasource implements IFinanceOwnerDataDatasource {
         await tx.financialInstallmentPrepayment.deleteMany({ where }),
         await tx.financialInvoicePayment.deleteMany({ where }),
         await tx.financialTransaction.deleteMany({ where }),
+        await refreshCardInvoiceTotals(tx, foreignKeys).then(() => ({ count: 0 })),
         await tx.financialRecurrence.deleteMany({ where }),
         await tx.financialInstallmentPlan.deleteMany({ where }),
         await tx.financialCreditCard.deleteMany({ where }),

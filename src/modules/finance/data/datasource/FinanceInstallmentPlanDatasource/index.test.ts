@@ -40,6 +40,14 @@ describe('Method create', () => {
       }),
     );
     expect(data[2].installment_number).toBe(3);
+    // Spec 090: one refresh with every invoice month of the plan.
+    expect(spies.refreshInvoiceTotals).toHaveBeenCalledTimes(1);
+    expect(spies.refreshInvoiceTotals.mock.calls[0][1]).toEqual(
+      data.map((row: { invoice_month: string }) => ({
+        creditCardId: 'card-1',
+        invoiceMonth: row.invoice_month,
+      })),
+    );
   });
 
   it('SHOULD resolve the tag names in the owner AND attach them to every row (spec 043)', async () => {

@@ -2,6 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { OwnerType, Prisma } from '@db/client';
 import {
+  invoiceTotalsKeysOf,
+  refreshCardInvoiceTotals,
+} from '@finance/data/datasource/cardInvoiceTotals';
+import {
   applyLedgerDeltas,
   assertInvoiceNotPaid,
   lockCards,
@@ -73,7 +77,9 @@ export const TRANSACTION_RELATIONS = {
 // Spec 085: what the ledger and the tags need inside a write transaction; the full row (relations) is read after commit.
 const WRITE_SELECT = {
   account_id: true,
+  credit_card_id: true,
   id: true,
+  invoice_month: true,
   owner: true,
   owner_id: true,
   paid: true,
@@ -120,6 +126,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
       const { tag_names: tagNames, ...data } = params;
       const created = await tx.financialTransaction.create({ data, select: WRITE_SELECT });
       await applyLedgerDeltas(tx, ledgerDeltas(undefined, toLedgerEntry(created)));
+      await refreshCardInvoiceTotals(tx, invoiceTotalsKeysOf([created]));
       if (tagNames !== undefined && tagNames.length > 0) {
         await applyTagNames(tx, {
           names: tagNames,
@@ -178,6 +185,12 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
       await assertInvoiceNotPaid(tx, stored.creditCardId, stored.invoiceMonth);
       await tx.financialTransaction.deleteMany({ where: { id } });
       await applyLedgerDeltas(tx, ledgerDeltas(stored, undefined));
+      await refreshCardInvoiceTotals(
+        tx,
+        invoiceTotalsKeysOf([
+          { credit_card_id: stored.creditCardId, invoice_month: stored.invoiceMonth },
+        ]),
+      );
     });
   }
 
@@ -487,6 +500,13 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
         where: { id: params.id },
       });
       await applyLedgerDeltas(tx, ledgerDeltas(stored, toLedgerEntry(updated)));
+      await refreshCardInvoiceTotals(
+        tx,
+        invoiceTotalsKeysOf([
+          { credit_card_id: stored.creditCardId, invoice_month: stored.invoiceMonth },
+          updated,
+        ]),
+      );
       // Spec 043 FR 9/12: names replace the set; a new owner re-resolves the current names in that owner.
       const ownerChanged = updated.owner !== stored.owner || updated.owner_id !== stored.ownerId;
       const names =
@@ -798,13 +818,21 @@ export async function insertRows(
   });
   const created = await tx.financialTransaction.createManyAndReturn({
     data: entries.map((entry) => entry.data),
-    select: { account_id: true, paid: true, type: true, value: true },
+    select: {
+      account_id: true,
+      credit_card_id: true,
+      invoice_month: true,
+      paid: true,
+      type: true,
+      value: true,
+    },
   });
 
   await applyLedgerDeltas(
     tx,
     sumLedgerDeltas(created.flatMap((row) => ledgerDeltas(undefined, toLedgerEntry(row)))),
   );
+  await refreshCardInvoiceTotals(tx, invoiceTotalsKeysOf(created));
   // Tags belong to the owner of their rows: one resolution per owner (spec 047, owner per row).
   const byOwner = new Map<string, typeof entries>();
 

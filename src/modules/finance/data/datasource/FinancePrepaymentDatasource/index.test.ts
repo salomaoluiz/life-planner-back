@@ -116,6 +116,12 @@ describe('Method undo', () => {
       where: { prepayment_id: 'prepayment-1' },
     });
     expect(spies.prepaymentDelete).toHaveBeenCalledWith({ where: { id: 'prepayment-1' } });
+    // Spec 090: the target and every month the installments go back to.
+    expect(spies.refreshInvoiceTotals.mock.calls[0][1]).toEqual([
+      { creditCardId: expect.any(String), invoiceMonth: expect.any(String) },
+      { creditCardId: expect.any(String), invoiceMonth: '2026-11' },
+      { creditCardId: expect.any(String), invoiceMonth: '2026-12' },
+    ]);
   });
 
   it('SHOULD answer 422 WHEN the target invoice is paid', async () => {

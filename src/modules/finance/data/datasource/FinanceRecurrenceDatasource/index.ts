@@ -7,6 +7,11 @@ import {
 
 import { OwnerType, Prisma } from '@db/client';
 import { batchUpdate } from '@finance/data/datasource/batchUpdate';
+import {
+  invoiceTotalsKeysOf,
+  invoiceTotalsKeysWhere,
+  refreshCardInvoiceTotals,
+} from '@finance/data/datasource/cardInvoiceTotals';
 import { TRANSACTION_RELATIONS } from '@finance/data/datasource/FinanceTransactionDatasource';
 import {
   applyLedgerDeltas,
@@ -123,6 +128,8 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
       await lockCards(tx, cardIds);
       await lockSeries(tx, source.id);
 
+      // Spec 090: the invoices the rows to change sit on before the change (the ones after it are read at the end).
+      const keysBefore: LockableRow[] = [];
       const payments = await tx.financialInvoicePayment.findMany({
         select: { credit_card_id: true, invoice_month: true },
         where: { credit_card_id: { in: cardIds } },
@@ -144,6 +151,8 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
           throw new UnprocessableEntityException('Occurrences after the new end date are paid');
         }
 
+        keysBefore.push(...late);
+
         await tx.financialTransaction.deleteMany({
           where: { id: { in: late.map((row) => row.id) } },
         });
@@ -154,6 +163,8 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
         where: { occurrence_number: { gte: params.from_number }, recurrence_id: source.id },
       });
       const affectedIds = affected.map((row) => row.id);
+
+      keysBefore.push(...affected);
       let targetId = source.id;
 
       if (params.new_series) {
@@ -184,6 +195,10 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
       });
 
       await this.applyTags(tx, params, source, targetId);
+      await refreshCardInvoiceTotals(tx, [
+        ...invoiceTotalsKeysOf(keysBefore),
+        ...(await invoiceTotalsKeysWhere(tx, { recurrence_id: { in: [source.id, targetId] } })),
+      ]);
 
       return targetId;
     });
@@ -328,6 +343,9 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
           ...rows.flatMap((row) => (row.credit_card_id ? [row.credit_card_id] : [])),
         ]),
       ];
+      // Spec 090: rows on another card than the series' are locked before they are deleted.
+      await lockCards(tx, cardIds);
+
       const payments =
         cardIds.length > 0
           ? await tx.financialInvoicePayment.findMany({
@@ -380,6 +398,7 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
           where: { id: { in: removable.map((row) => row.id) } },
         });
         await applyLedgerDeltas(tx, reversalOf(paidRows));
+        await refreshCardInvoiceTotals(tx, invoiceTotalsKeysOf(removable));
       }
 
       if (params.delete_series) {
@@ -465,6 +484,7 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
 
       if (rows.length > 0) {
         await tx.financialTransaction.createMany({ data: rows });
+        await refreshCardInvoiceTotals(tx, invoiceTotalsKeysOf(rows));
         await copyRecurrenceTagsToRows(tx, series.id);
         await applyLedgerDeltas(
           tx,
@@ -539,6 +559,7 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
       });
 
       await applyLedgerDeltas(tx, ledgerDeltas(undefined, toLedgerEntry(created)));
+      await refreshCardInvoiceTotals(tx, invoiceTotalsKeysOf([created]));
 
       // The occurrence takes the tags of the series unless the caller named others.
       if (params.tag_names === undefined) {
@@ -641,6 +662,16 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
   // unique `(recurrence_id, occurrence_number)` protects against any other overlap (spec 034 FR 9).
   async materialize(params: MaterializeRecurrenceDatasourceParams): Promise<void> {
     await this.db.client.$transaction(async (tx) => {
+      // Spec 090: cards before the series (the order of `apply`), so the stored invoice totals stay serialized.
+      if (params.rows.length > 0) {
+        const card = await tx.financialRecurrence.findUnique({
+          select: { credit_card_id: true },
+          where: { id: params.id },
+        });
+
+        await lockCards(tx, card?.credit_card_id ? [card.credit_card_id] : []);
+      }
+
       const locked = await tx.$queryRaw<
         {
           account_id: null | string;
@@ -675,6 +706,10 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
           data: toRows(params.rows, locked[0], params.id),
           skipDuplicates: true,
         });
+        await refreshCardInvoiceTotals(
+          tx,
+          invoiceTotalsKeysOf(toRows(params.rows, locked[0], params.id)),
+        );
         await copyRecurrenceTagsToRows(tx, params.id, {
           occurrence_number: {
             in: numbers.filter(
