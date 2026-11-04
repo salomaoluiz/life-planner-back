@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 
+import { Database } from '@shared/infra/db/Database';
 import { QueryCounter } from '@shared/infra/db/QueryCounter';
 import { configureApp } from '@shared/infra/http/configure-app';
 
@@ -178,6 +179,49 @@ function newTransaction(extra: Record<string, unknown>): Record<string, unknown>
     expect(lockStatements(statements)).toBe(1);
     expect(inTx).toBeGreaterThan(0);
     expect(inTx).toBeLessThanOrEqual(maxInTx('DELETE /api/v1/finance/transactions/:id'));
+  });
+
+  it('SHOULD take the card lock BEFORE the row lock in the single statement of an update (lock order cards -> row)', async () => {
+    const created = await client.post<{ item: { id: string } }>(
+      `${FINANCE}/transactions`,
+      newTransaction({ creditCardId: cardId }),
+    );
+    const rowId = created.item.id;
+    const db = app.get(Database).client;
+    let releaseCard: () => void = () => undefined;
+    const cardHeld = new Promise<void>((resolve) => (releaseCard = resolve));
+    let cardLocked: () => void = () => undefined;
+    const cardIsLocked = new Promise<void>((resolve) => (cardLocked = resolve));
+    // Another connection holds the card (as an invoice payment would).
+    const holder = db.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`SELECT "id" FROM "financial_credit_cards" WHERE "id" = ${cardId} FOR UPDATE`;
+        cardLocked();
+        await cardHeld;
+      },
+      { timeout: 30_000 },
+    );
+    await cardIsLocked;
+
+    let patched = false;
+    const patch = client
+      .patch(`${FINANCE}/transactions/${rowId}`, { value: 3000 })
+      .then(() => (patched = true));
+    await new Promise((resolve) => setTimeout(resolve, 700));
+
+    // The PATCH waits on the card, so it must not hold the row yet: a NOWAIT lock on the row succeeds.
+    expect(patched).toBe(false);
+    await expect(
+      db.$transaction(
+        (tx) =>
+          tx.$queryRaw`SELECT "id" FROM "financial_transactions" WHERE "id" = ${rowId} FOR UPDATE NOWAIT`,
+      ),
+    ).resolves.toHaveLength(1);
+
+    releaseCard();
+    await holder;
+    await patch;
+    expect(patched).toBe(true);
   });
 
   it('SHOULD finish 10 parallel creates on one card and one account with the right balance', async () => {
