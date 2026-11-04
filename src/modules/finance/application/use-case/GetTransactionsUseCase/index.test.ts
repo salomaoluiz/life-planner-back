@@ -85,18 +85,19 @@ describe('filters (spec 045)', () => {
     );
   });
 
-  it('SHOULD keep the rows whose description contains the text, ignoring case and accents', async () => {
-    mocks.transactionRepository.findTransactions.mockResolvedValue([
-      { description: 'MERCADÃO' },
-      { description: 'Farmácia' },
-    ]);
+  it('SHOULD hand the text to the repository as search terms AND return its rows as they are', async () => {
+    const rows = [{ description: 'MERCADÃO' }];
+    mocks.transactionRepository.findTransactions.mockResolvedValue(rows);
 
     const result = await setup.execute({
       accessibleOwners: mocks.accessibleOwners,
-      filter: { q: 'mercadao' },
+      filter: { q: ' mercadao ' },
     });
 
-    expect(result.items).toEqual([{ description: 'MERCADÃO' }]);
+    expect(mocks.transactionRepository.findTransactions.mock.calls[0][2]).toEqual(
+      expect.objectContaining({ limit: 200, search: { categoryIds: [], text: 'mercadao' } }),
+    );
+    expect(result.items).toEqual(rows);
   });
 
   it('SHOULD place CARD rows in the period by the invoices listed in it', async () => {
@@ -135,58 +136,36 @@ describe('filters (spec 045)', () => {
   });
 });
 
-describe('search by notes, category and amount (spec 059)', () => {
-  const rows = [
-    { categoryId: 'c-ride', description: 'Uber', notes: 'Casa → Aeroporto', value: 3870 },
-    { categoryId: 'c-food', description: 'Padaria', notes: null, value: 2240 },
-    { categoryId: 'c-food', description: 'Pizza', notes: null, value: 3899 },
-  ];
+describe('search by notes, category and amount (spec 059, in SQL since spec 084)', () => {
+  function searchOf() {
+    return mocks.transactionRepository.findTransactions.mock.calls[0][2].search;
+  }
 
-  beforeEach(() => {
-    mocks.transactionRepository.findTransactions.mockResolvedValue(rows);
-  });
-
-  it('SHOULD match the notes', async () => {
-    const result = await setup.execute({
-      accessibleOwners: mocks.accessibleOwners,
-      filter: { q: 'aeroporto' },
-    });
-
-    expect(result.items).toEqual([rows[0]]);
-  });
-
-  it('SHOULD match the categories resolved from the name (ancestors included)', async () => {
+  it('SHOULD send the categories resolved from the name (ancestors included)', async () => {
     mocks.resolveSearch.execute.mockResolvedValue(['c-food']);
 
-    const result = await setup.execute({
-      accessibleOwners: mocks.accessibleOwners,
-      filter: { q: 'alimentacao' },
-    });
+    await setup.execute({ accessibleOwners: mocks.accessibleOwners, filter: { q: 'alimentacao' } });
 
     expect(mocks.resolveSearch.execute).toHaveBeenCalledWith(
       expect.objectContaining({ accessibleOwners: mocks.accessibleOwners, q: 'alimentacao' }),
     );
-    expect(result.items).toEqual([rows[1], rows[2]]);
+    expect(searchOf()).toEqual({ categoryIds: ['c-food'], text: 'alimentacao' });
   });
 
-  it('SHOULD match the amount: 38,70 exactly, 38 as 38,00 to 38,99', async () => {
-    const exact = await setup.execute({
-      accessibleOwners: mocks.accessibleOwners,
-      filter: { q: '38,70' },
-    });
-    const whole = await setup.execute({
-      accessibleOwners: mocks.accessibleOwners,
-      filter: { q: '38' },
-    });
+  it('SHOULD send the amount range: 38,70 exactly, 38 as 38,00 to 38,99', async () => {
+    await setup.execute({ accessibleOwners: mocks.accessibleOwners, filter: { q: '38,70' } });
+    expect(searchOf()).toEqual(expect.objectContaining({ amountMax: 3870, amountMin: 3870 }));
 
-    expect(exact.items).toEqual([rows[0]]);
-    expect(whole.items).toEqual([rows[0], rows[2]]);
+    mocks.transactionRepository.findTransactions.mockClear();
+    await setup.execute({ accessibleOwners: mocks.accessibleOwners, filter: { q: '38' } });
+    expect(searchOf()).toEqual(expect.objectContaining({ amountMax: 3899, amountMin: 3800 }));
   });
 
-  it('SHOULD NOT resolve categories WHEN there is no text filter', async () => {
+  it('SHOULD NOT search NOR resolve categories WHEN there is no text', async () => {
     await setup.execute({ accessibleOwners: mocks.accessibleOwners });
 
     expect(mocks.resolveSearch.execute).not.toHaveBeenCalled();
+    expect(searchOf()).toBeUndefined();
   });
 });
 
@@ -242,10 +221,9 @@ describe('keyset pages (spec 078)', () => {
     );
   });
 
-  it('SHOULD read the whole window and cut after the text filter WHEN there is a search, so pages stay full', async () => {
+  it('SHOULD page the search in SQL: cursor and limit go to the repository, a full page gets its cursor', async () => {
     mocks.transactionRepository.findTransactions.mockResolvedValue([
       row('mercado-3', '2026-11-05', '2026-11-05T10:00:00.000Z'),
-      row('other', '2026-11-04', '2026-11-04T10:00:00.000Z'),
       row('mercado-2', '2026-11-03', '2026-11-03T10:00:00.000Z'),
       row('mercado-1', '2026-11-02', '2026-11-02T10:00:00.000Z'),
     ]);
@@ -255,19 +233,23 @@ describe('keyset pages (spec 078)', () => {
       filter: { q: 'mercado' },
       limit: 2,
     });
-    const second = await setup.execute({
+
+    expect(mocks.transactionRepository.findTransactions.mock.calls[0][2]).toEqual(
+      expect.objectContaining({ cursor: undefined, limit: 2 }),
+    );
+    expect(first.items.map((item) => item.id)).toEqual(['mercado-3', 'mercado-2']);
+    expect(first.nextCursor).not.toBeNull();
+
+    await setup.execute({
       accessibleOwners: mocks.accessibleOwners,
       cursor: first.nextCursor ?? undefined,
       filter: { q: 'mercado' },
       limit: 2,
     });
 
-    expect(mocks.transactionRepository.findTransactions.mock.calls[0][2]).toEqual(
-      expect.objectContaining({ cursor: undefined, limit: undefined }),
+    expect(mocks.transactionRepository.findTransactions.mock.calls[1][2].cursor).toEqual(
+      expect.objectContaining({ id: 'mercado-2' }),
     );
-    expect(first.items.map((item) => item.id)).toEqual(['mercado-3', 'mercado-2']);
-    expect(second.items.map((item) => item.id)).toEqual(['mercado-1']);
-    expect(second.nextCursor).toBeNull();
   });
 });
 

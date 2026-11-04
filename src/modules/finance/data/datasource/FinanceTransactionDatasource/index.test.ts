@@ -486,6 +486,88 @@ describe('Card purchases', () => {
   });
 });
 
+describe('search in SQL (spec 084)', () => {
+  const search = { amountMax: 3879, amountMin: 3870, categoryIds: ['cat-1'], text: '50%_off' };
+  function rawValues(): unknown[] {
+    return spies.queryRaw.mock.calls[0][0].values;
+  }
+
+  it('SHOULD find the matching ids with bound parameters AND load only them with the usual filters, order and page', async () => {
+    spies.queryRaw.mockResolvedValue([{ id: 'row-1' }, { id: 'row-2' }]);
+    spies.findMany.mockResolvedValue([mocks.transaction]);
+
+    const result = await setup.findByOwners(mocks.owners, TransactionSource.ACCOUNT, {
+      from: '2026-10-01',
+      limit: 200,
+      search,
+      to: '2026-10-31',
+    });
+
+    expect(result).toEqual([mocks.transaction]);
+    expect(rawValues()).toEqual(
+      expect.arrayContaining(['%50\\%\\_off%', 'cat-1', 3870, 3879, '2026-10-01', '2026-10-31']),
+    );
+    expect(spies.queryRaw.mock.calls[0][0].sql).not.toContain('50%_off');
+    const call = spies.findMany.mock.calls[0][0];
+
+    expect(call.where.AND).toContainEqual({ id: { in: ['row-1', 'row-2'] } });
+    expect(call.take).toBe(201);
+    expect(call.orderBy).toEqual([{ date: 'desc' }, { created_at: 'desc' }, { id: 'desc' }]);
+    expect(call.relationLoadStrategy).toBe('join');
+  });
+
+  it('SHOULD return [] WITHOUT loading rows WHEN no id matches', async () => {
+    spies.queryRaw.mockResolvedValue([]);
+
+    expect(await setup.findByOwners(mocks.owners, TransactionSource.ACCOUNT, { search })).toEqual(
+      [],
+    );
+    expect(spies.findMany).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD leave out the category and amount matchers WHEN the terms have none', async () => {
+    spies.queryRaw.mockResolvedValue([]);
+
+    await setup.findByOwners(mocks.owners, TransactionSource.CARD, {
+      invoiceMonth: '2026-10',
+      search: { categoryIds: [], text: 'mercado' },
+    });
+
+    const { sql } = spies.queryRaw.mock.calls[0][0];
+
+    expect(sql).not.toContain('"category_id" IN');
+    expect(sql).not.toContain('BETWEEN');
+    expect(rawValues()).toContain('2026-10');
+  });
+
+  it('SHOULD search the purchases of the invoice keys', async () => {
+    spies.queryRaw.mockResolvedValue([{ id: 'row-1' }]);
+    spies.findMany.mockResolvedValue([mocks.transaction]);
+    const keys = [{ credit_card_id: 'card-1', invoice_month: '2026-10' }];
+
+    expect(await setup.findCardPurchases(keys, search)).toEqual([mocks.transaction]);
+    expect(rawValues()).toEqual(expect.arrayContaining(['card-1', '2026-10']));
+    expect(spies.findMany).toHaveBeenCalledWith({
+      include: mocks.include,
+      orderBy: [{ date: 'asc' }, { created_at: 'asc' }, { id: 'asc' }],
+      relationLoadStrategy: 'join',
+      where: { AND: [{ OR: keys }, { id: { in: ['row-1'] } }] },
+    });
+  });
+
+  it('SHOULD return no purchases WHEN the search matches none', async () => {
+    spies.queryRaw.mockResolvedValue([]);
+
+    expect(
+      await setup.findCardPurchases(
+        [{ credit_card_id: 'card-1', invoice_month: '2026-10' }],
+        search,
+      ),
+    ).toEqual([]);
+    expect(spies.findMany).not.toHaveBeenCalled();
+  });
+});
+
 describe('Method update on a paid invoice (spec 030 FR 16)', () => {
   const lockedRow = [
     {

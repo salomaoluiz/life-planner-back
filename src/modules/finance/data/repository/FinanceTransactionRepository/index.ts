@@ -22,6 +22,7 @@ import {
   UnpaidAccountRow,
   UpdateTransactionRepositoryParams,
 } from '@finance/domain/repository';
+import { SearchTerms } from '@finance/domain/service/TransactionSearch';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 @Injectable()
@@ -77,9 +78,13 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
     return this.transactionDatasource.exists({ owner: access.owner, owner_id: access.ownerId });
   }
 
-  async findCardPurchases(keys: CardInvoiceRef[]): Promise<TransactionEntity[]> {
+  async findCardPurchases(
+    keys: CardInvoiceRef[],
+    search?: SearchTerms,
+  ): Promise<TransactionEntity[]> {
     const result = await this.transactionDatasource.findCardPurchases(
       keys.map((key) => ({ credit_card_id: key.creditCardId, invoice_month: key.invoiceMonth })),
+      search,
     );
 
     return result.map((row) => FinanceTransactionMapper.toDomain(row));

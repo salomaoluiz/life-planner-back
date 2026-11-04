@@ -31,7 +31,10 @@ const expandMock = { execute: jest.fn() };
 const loadCategoriesMock = { execute: jest.fn() };
 const resolveSearchMock = { execute: jest.fn() };
 const creditCardRepositoryMock = { findCreditCards: jest.fn() };
-const transactionRepositoryMock = { findCardPurchases: jest.fn() };
+const transactionRepositoryMock = {
+  countCardPurchasesByInvoice: jest.fn(),
+  findCardPurchases: jest.fn(),
+};
 
 // endregion Mocks
 
@@ -44,6 +47,9 @@ beforeEach(async () => {
   ]);
   creditCardRepositoryMock.findCreditCards.mockResolvedValue([cardMock]);
   transactionRepositoryMock.findCardPurchases.mockResolvedValue([purchaseMock]);
+  transactionRepositoryMock.countCardPurchasesByInvoice.mockImplementation(async (keys) =>
+    keys.map((key: object) => ({ ...key, count: 2 })),
+  );
   expandMock.execute.mockImplementation(async ({ categoryIds }) => categoryIds);
   resolveSearchMock.execute.mockResolvedValue([]);
 

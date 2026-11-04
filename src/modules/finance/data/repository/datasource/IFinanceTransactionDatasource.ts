@@ -11,6 +11,7 @@ import {
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { TransactionSource } from '@finance/domain/enum';
 import { CurrencyCode } from '@finance/domain/enum/Currency';
+import { SearchTerms } from '@finance/domain/service/TransactionSearch';
 
 export interface CardInvoiceCount extends CardInvoiceKey {
   count: number;
@@ -123,6 +124,7 @@ export interface FindTransactionsFilter {
   invoiceRefs?: CardInvoiceKey[];
   limit?: number;
   paid?: boolean;
+  search?: SearchTerms;
   tagIds?: string[];
   to?: string;
 }
@@ -143,7 +145,10 @@ export interface IFinanceTransactionDatasource {
     source?: TransactionSource,
     filter?: FindTransactionsFilter,
   ): Promise<FinancialTransactionWithRelations[]>;
-  findCardPurchases(keys: CardInvoiceKey[]): Promise<FinancialTransactionWithRelations[]>;
+  findCardPurchases(
+    keys: CardInvoiceKey[],
+    search?: SearchTerms,
+  ): Promise<FinancialTransactionWithRelations[]>;
   findDuplicateCandidates(params: {
     from: string;
     owner: OwnerType;

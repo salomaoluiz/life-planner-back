@@ -2,6 +2,7 @@ import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { TransactionSource, TransactionType } from '@finance/domain/enum';
 import { CurrencyCode } from '@finance/domain/enum/Currency';
+import { SearchTerms } from '@finance/domain/service/TransactionSearch';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export type IFinanceTransactionRepository = {
@@ -21,7 +22,8 @@ export type IFinanceTransactionRepository = {
   // Spec 047: every row of the period by its own date (system rows included), `date` then `createdAt` ascending.
   findTransactionsForExport(query: ExportQuery): Promise<TransactionEntity[]>;
   // Sorted by `date` descending, then `createdAt` descending.
-  findCardPurchases(keys: CardInvoiceRef[]): Promise<TransactionEntity[]>;
+  // Spec 084: with `search` only the purchases matching the text, category ids or amount range.
+  findCardPurchases(keys: CardInvoiceRef[], search?: SearchTerms): Promise<TransactionEntity[]>;
   // Spec 082: unpaid account rows up to `to` (no lower bound), scalars only, date descending.
   findUnpaidAccountRows(owners: OwnerAccess[], to: string): Promise<UnpaidAccountRow[]>;
   // Default source ACCOUNT: account rows only, without the invoice payment transactions.
@@ -152,6 +154,8 @@ interface TransactionQuery {
   limit?: number;
   // Account rows only: card rows derive it from their invoice.
   paid?: boolean;
+  // Spec 084: the text search, applied in SQL before the page is cut.
+  search?: SearchTerms;
   tagIds?: string[];
   to?: string;
 }
