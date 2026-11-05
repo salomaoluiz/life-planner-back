@@ -42,7 +42,7 @@ describe('MaterializeOccurrenceUseCase', () => {
       creditCardId: mocks.card.id,
     });
     mocks.ensureConsistency.execute.mockResolvedValue({ card: mocks.card });
-    mocks.compute.execute.mockResolvedValue([{ invoices: { used: 99_999 } }]);
+    mocks.compute.execute.mockResolvedValue([{ invoices: { projectedUsed: 0, used: 99_999 } }]);
 
     const result = await setup.execute(base);
 
@@ -50,7 +50,7 @@ describe('MaterializeOccurrenceUseCase', () => {
       expect.objectContaining({ invoiceMonth: '2027-04', paid: undefined }),
     );
     expect(result.overLimit).toBe(true);
-    expect(result.invoiceData).toEqual([{ invoices: { used: 99_999 } }]);
+    expect(result.invoiceData).toEqual([{ invoices: { projectedUsed: 0, used: 99_999 } }]);
   });
 
   it('SHOULD refuse a paid flag on a card occurrence', async () => {

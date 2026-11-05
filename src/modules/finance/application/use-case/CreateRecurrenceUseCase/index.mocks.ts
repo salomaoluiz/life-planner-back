@@ -49,7 +49,9 @@ let setup: CreateRecurrenceUseCase;
 
 beforeEach(async () => {
   jest.clearAllMocks();
-  computeCardInvoicesMock.execute.mockResolvedValue([{ invoices: { used: cardMock.limit + 1 } }]);
+  computeCardInvoicesMock.execute.mockResolvedValue([
+    { invoices: { projectedUsed: 0, used: cardMock.limit + 1 } },
+  ]);
   ensureConsistencyMock.execute.mockResolvedValue({ account: new AccountEntityFixture().build() });
   recurrenceRepositoryMock.create.mockResolvedValue('recurrence-1');
   recurrenceRepositoryMock.findById.mockResolvedValue(recurrenceMock);

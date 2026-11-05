@@ -40,6 +40,7 @@ const paramsMock: TransactionEntity = {
   paidFromTransactionId: null,
   paymentMethod: null,
   prepaymentId: null,
+  projected: false,
   recurrenceFrequency: null,
   recurrenceId: null,
   refundedName: null,

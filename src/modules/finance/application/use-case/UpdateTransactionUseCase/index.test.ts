@@ -248,7 +248,7 @@ describe('card purchases and the invoice payment (spec 029)', () => {
       invoiceMonth: '2026-10',
     });
     mocks.ensureConsistency.execute.mockResolvedValueOnce({ card: mocks.card });
-    mocks.compute.execute.mockResolvedValueOnce([{ invoices: { used: 20_000 } }]);
+    mocks.compute.execute.mockResolvedValueOnce([{ invoices: { projectedUsed: 0, used: 20_000 } }]);
 
     const result = await run({ date: '2026-12-31' });
 
@@ -256,7 +256,7 @@ describe('card purchases and the invoice payment (spec 029)', () => {
       expect.objectContaining({ invoiceMonth: '2026-12' }),
     );
     expect(result.overLimit).toBe(true);
-    expect(result.invoiceData).toEqual([{ invoices: { used: 20_000 } }]);
+    expect(result.invoiceData).toEqual([{ invoices: { projectedUsed: 0, used: 20_000 } }]);
   });
 
   it('SHOULD throw ValidationError WHEN the patch sends both sources', async () => {
@@ -402,12 +402,12 @@ describe('installments (spec 030)', () => {
   });
 
   it('SHOULD flag overLimit WHEN the new value leaves the card above its limit', async () => {
-    mocks.compute.execute.mockResolvedValue([{ invoices: { used: 999_999 } }]);
+    mocks.compute.execute.mockResolvedValue([{ invoices: { projectedUsed: 0, used: 999_999 } }]);
 
     const result = await runInstallment({ scope: 'ONLY_THIS', value: 1 });
 
     expect(result.overLimit).toBe(true);
-    expect(result.invoiceData).toEqual([{ invoices: { used: 999_999 } }]);
+    expect(result.invoiceData).toEqual([{ invoices: { projectedUsed: 0, used: 999_999 } }]);
   });
 
   it('SHOULD answer 400 WHEN scope is missing', async () => {

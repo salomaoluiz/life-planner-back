@@ -73,6 +73,7 @@ export class FinanceTransactionMapper {
       paidFromTransactionId: raw.paid_from_transaction_id,
       paymentMethod: raw.payment_method ? InvoicePaymentMethod[raw.payment_method] : null,
       prepaymentId: raw.prepayment_id,
+      projected: raw.projected,
       recurrenceFrequency: raw.recurrence ? RecurrenceFrequency[raw.recurrence.frequency] : null,
       recurrenceId: raw.recurrence_id,
       refundedName: raw.refunded_transaction?.description ?? raw.refunded_plan?.description ?? null,

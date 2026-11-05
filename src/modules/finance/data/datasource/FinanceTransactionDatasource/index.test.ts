@@ -245,6 +245,7 @@ describe('Method findScalarsById (spec 085)', () => {
         owner: true,
         owner_id: true,
         paid: true,
+        projected: true,
         recurrence_id: true,
         type: true,
       },
@@ -628,11 +629,20 @@ describe('Card purchases', () => {
         expense: 1000,
         income: 700,
         invoice_month: '2026-10',
+        projected_amount: 250,
+        projected_count: 2,
       },
     ]);
 
     expect(await setup.findInvoiceTotals(['card-1'])).toEqual([
-      { amount: 300, credit_card_id: 'card-1', early_paid: 600, invoice_month: '2026-10' },
+      {
+        amount: 300,
+        credit_card_id: 'card-1',
+        early_paid: 600,
+        invoice_month: '2026-10',
+        projected_amount: 250,
+        projected_count: 2,
+      },
     ]);
     expect(await setup.findInvoiceTotals([])).toEqual([]);
     expect(spies.invoiceTotalsFindMany).toHaveBeenCalledTimes(1);

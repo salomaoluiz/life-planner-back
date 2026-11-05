@@ -24,6 +24,8 @@ export interface CardInvoiceSum extends CardInvoiceKey {
   // NET: purchases minus credits.
   amount: number;
   early_paid: number;
+  projected_amount: number;
+  projected_count: number;
 }
 export interface CreateTransactionDatasourceParams {
   account_id?: null | string;
@@ -179,6 +181,7 @@ export type TransactionScalarsRecord = { category: { system_key: null | string }
   | 'owner_id'
   | 'owner'
   | 'paid'
+  | 'projected'
   | 'recurrence_id'
   | 'type'
 >;

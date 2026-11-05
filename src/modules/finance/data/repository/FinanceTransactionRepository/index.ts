@@ -117,6 +117,8 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
       creditCardId: row.credit_card_id,
       earlyPaid: row.early_paid,
       invoiceMonth: row.invoice_month,
+      projectedAmount: row.projected_amount,
+      projectedCount: row.projected_count,
     }));
   }
 
@@ -168,6 +170,7 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
       owner: OwnerType[row.owner],
       ownerId: row.owner_id,
       paid: row.paid === true,
+      projected: row.projected,
       recurrenceId: row.recurrence_id,
       type: TransactionType[row.type],
     };

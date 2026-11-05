@@ -47,7 +47,7 @@ let setup: UpdateTransactionUseCase;
 beforeEach(async () => {
   jest.clearAllMocks();
   ensureConsistencyMock.execute.mockResolvedValue({});
-  computeMock.execute.mockResolvedValue([{ invoices: { used: 5000 } }]);
+  computeMock.execute.mockResolvedValue([{ invoices: { projectedUsed: 0, used: 5000 } }]);
   transactionRepositoryMock.findTransactionById.mockResolvedValue(updatedMock);
   transactionRepositoryMock.findTransactionScalarsById.mockResolvedValue(transactionMock);
   installmentPlanRepositoryMock.updateFromNumber.mockResolvedValue(undefined);

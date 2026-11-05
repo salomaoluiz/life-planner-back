@@ -16,6 +16,7 @@ import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { IFinanceTransactionRepository } from '@finance/domain/repository';
 import {
   invoiceMonthOf,
+  isOverLimit,
   isPurchaseInvoiceAllowed,
 } from '@finance/domain/service/InvoiceCalculator';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -105,6 +106,10 @@ export class CreateTransactionUseCase implements UseCaseWithParams<
       today: input.today,
     });
 
-    return { invoiceData, overLimit: invoiceData[0].invoices.used > card.limit, transaction };
+    return {
+      invoiceData,
+      overLimit: isOverLimit(invoiceData[0].invoices, card.limit),
+      transaction,
+    };
   }
 }

@@ -16,6 +16,7 @@ import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { IFinanceRecurrenceRepository } from '@finance/domain/repository';
+import { isOverLimit } from '@finance/domain/service/InvoiceCalculator';
 import {
   lastDayOfMonth,
   planMaterialization,
@@ -128,7 +129,7 @@ export class CreateRecurrenceUseCase implements UseCaseWithParams<
     return {
       invoiceData,
       occurrences,
-      overLimit: invoiceData[0].invoices.used > card.limit,
+      overLimit: isOverLimit(invoiceData[0].invoices, card.limit),
       recurrence,
     };
   }

@@ -26,6 +26,7 @@ import {
 import {
   addInvoiceMonths,
   invoiceMonthOf,
+  isOverLimit,
   isPurchaseInvoiceAllowed,
   monthsBetween,
 } from '@finance/domain/service/InvoiceCalculator';
@@ -182,7 +183,7 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
 
     return {
       invoiceData,
-      overLimit: invoiceData[0].invoices.used > card.limit,
+      overLimit: isOverLimit(invoiceData[0].invoices, card.limit),
       transaction: updated,
     };
   }
@@ -294,7 +295,7 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
 
     return {
       invoiceData,
-      overLimit: invoiceData[0].invoices.used > card.limit,
+      overLimit: isOverLimit(invoiceData[0].invoices, card.limit),
       transaction: updated,
     };
   }

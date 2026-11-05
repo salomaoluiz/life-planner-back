@@ -44,7 +44,7 @@ let setup: CreateTransactionUseCase;
 beforeEach(async () => {
   jest.clearAllMocks();
   ensureConsistencyMock.execute.mockResolvedValue({ account: accountMock });
-  computeMock.execute.mockResolvedValue([{ invoices: { used: 5000 } }]);
+  computeMock.execute.mockResolvedValue([{ invoices: { projectedUsed: 0, used: 5000 } }]);
 
   const module = await Test.createTestingModule({
     providers: [

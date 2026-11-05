@@ -21,6 +21,7 @@ import {
 } from '@finance/domain/service/InstallmentPlan';
 import {
   invoiceMonthOf,
+  isOverLimit,
   isPurchaseInvoiceAllowed,
 } from '@finance/domain/service/InvoiceCalculator';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -103,6 +104,6 @@ export class CreateInstallmentPlanUseCase implements UseCaseWithParams<
       today: input.today,
     });
 
-    return { ...details, overLimit: data.invoices.used > card.limit };
+    return { ...details, overLimit: isOverLimit(data.invoices, card.limit) };
   }
 }

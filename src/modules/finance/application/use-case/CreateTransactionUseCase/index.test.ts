@@ -187,13 +187,19 @@ describe('card purchases (spec 029)', () => {
   });
 
   it('SHOULD answer overLimit true (and still save) WHEN used passes the limit', async () => {
-    mocks.compute.execute.mockResolvedValue([{ invoices: { used: 10_001 } }]);
+    mocks.compute.execute.mockResolvedValue([{ invoices: { projectedUsed: 0, used: 10_001 } }]);
 
     const result = await setup.execute(cardInput());
 
     expect(result.overLimit).toBe(true);
-    expect(result.invoiceData).toEqual([{ invoices: { used: 10_001 } }]);
+    expect(result.invoiceData).toEqual([{ invoices: { projectedUsed: 0, used: 10_001 } }]);
     expect(mocks.transactionRepository.createTransaction).toHaveBeenCalledTimes(1);
+  });
+
+  it('SHOULD flag overLimit WHEN projected purchases push the card over the limit (spec 096)', async () => {
+    mocks.compute.execute.mockResolvedValue([{ invoices: { projectedUsed: 6000, used: 5000 } }]);
+
+    expect((await setup.execute(cardInput())).overLimit).toBe(true);
   });
 
   it.each([
@@ -272,7 +278,7 @@ describe('currency (spec 040)', () => {
     mocks.ensureConsistency.execute.mockResolvedValueOnce({
       card: { ...mocks.card, currency: 'EUR' },
     });
-    mocks.compute.execute.mockResolvedValueOnce([{ invoices: { used: 0 } }]);
+    mocks.compute.execute.mockResolvedValueOnce([{ invoices: { projectedUsed: 0, used: 0 } }]);
 
     await setup.execute({ ...mocks.input, accountId: undefined, creditCardId: mocks.card.id });
 

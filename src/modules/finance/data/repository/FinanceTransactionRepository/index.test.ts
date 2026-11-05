@@ -73,6 +73,7 @@ describe('findTransactionScalarsById (spec 085)', () => {
       owner: 'USER',
       owner_id: 'owner-1',
       paid: true,
+      projected: true,
       recurrence_id: 'series-1',
       type: 'EXPENSE',
     });
@@ -92,6 +93,7 @@ describe('findTransactionScalarsById (spec 085)', () => {
       owner: 'USER',
       ownerId: 'owner-1',
       paid: true,
+      projected: true,
       recurrenceId: 'series-1',
       type: 'EXPENSE',
     });
@@ -162,7 +164,13 @@ describe('updateTransaction', () => {
 describe('card helpers', () => {
   it('SHOULD sum invoices, find purchases and count by card', async () => {
     expect(await setup.findInvoiceTotals(['card-1'])).toEqual([
-      { amount: 450, creditCardId: 'card-1', invoiceMonth: '2026-10' },
+      {
+        amount: 450,
+        creditCardId: 'card-1',
+        invoiceMonth: '2026-10',
+        projectedAmount: 120,
+        projectedCount: 1,
+      },
     ]);
     expect(
       await setup.findCardPurchases([{ creditCardId: 'card-1', invoiceMonth: '2026-10' }]),

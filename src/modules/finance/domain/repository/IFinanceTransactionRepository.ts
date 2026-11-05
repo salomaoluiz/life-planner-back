@@ -78,6 +78,7 @@ type TransactionScalars = { category: Pick<TransactionCategorySummary, 'systemKe
   | 'owner'
   | 'ownerId'
   | 'paid'
+  | 'projected'
   | 'recurrenceId'
   | 'type'
 >;
@@ -104,6 +105,9 @@ interface CardInvoiceTotal extends CardInvoiceRef {
   // NET: purchases minus credits.
   amount: number;
   earlyPaid: number;
+  // Spec 096: projected rows of the invoice, apart from the effective amount.
+  projectedAmount: number;
+  projectedCount: number;
 }
 interface DashboardSum {
   amount: number;

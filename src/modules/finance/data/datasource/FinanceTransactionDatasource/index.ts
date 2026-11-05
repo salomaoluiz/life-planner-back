@@ -261,6 +261,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
         owner: true,
         owner_id: true,
         paid: true,
+        projected: true,
         recurrence_id: true,
         type: true,
       },
@@ -417,6 +418,8 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
         expense: true,
         income: true,
         invoice_month: true,
+        projected_amount: true,
+        projected_count: true,
       },
       where: { credit_card_id: { in: creditCardIds } },
     });
@@ -426,6 +429,8 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
       credit_card_id: row.credit_card_id,
       early_paid: row.early_paid,
       invoice_month: row.invoice_month,
+      projected_amount: row.projected_amount,
+      projected_count: row.projected_count,
     }));
   }
   // Spec 046: one grouped query for the dashboard, in the database (never the rows in memory).

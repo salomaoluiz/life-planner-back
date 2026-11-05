@@ -34,7 +34,7 @@ let setup: CreateInstallmentPlanUseCase;
 
 beforeEach(async () => {
   jest.clearAllMocks();
-  computeMock.execute.mockResolvedValue([{ invoices: { used: 512000 } }]);
+  computeMock.execute.mockResolvedValue([{ invoices: { projectedUsed: 0, used: 512000 } }]);
   ensureConsistencyMock.execute.mockResolvedValue({ card: cardMock });
   getPlanMock.execute.mockResolvedValue({ installments: [], plan: { id: 'plan-1' } });
   planRepositoryMock.createPlan.mockResolvedValue('plan-1');
