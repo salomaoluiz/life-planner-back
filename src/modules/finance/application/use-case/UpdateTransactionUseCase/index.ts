@@ -23,7 +23,10 @@ import {
   IFinanceTransactionRepository,
   TransactionScalars,
 } from '@finance/domain/repository';
-import { invoiceMonthOf } from '@finance/domain/service/InvoiceCalculator';
+import {
+  invoiceMonthOf,
+  isPurchaseInvoiceAllowed,
+} from '@finance/domain/service/InvoiceCalculator';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -69,6 +72,10 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
       return this.updateInstallment(input, transaction);
     }
     if (transaction.recurrenceId) {
+      // Spec 095 FR 8: recurring rows follow the date.
+      if (input.invoiceMonth !== undefined) {
+        throw new UnprocessableEntityException('Recurring transactions follow the date');
+      }
       assertRecurringEdit(input);
     } else if (input.scope !== undefined) {
       throw new BadRequestException(
@@ -120,7 +127,22 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
     const needsInvoiceMonth = card !== undefined && (sourceChanged || input.date !== undefined);
     let invoiceMonth: null | string | undefined;
 
-    if (card && needsInvoiceMonth) {
+    // Spec 095 FR 4: a chosen month is checked against the final date and card; without one, the stored month
+    // stays unless the date or the card changed. A paid month is refused by the datasource (`Invoice is paid`).
+    if (input.invoiceMonth !== undefined) {
+      if (
+        !card ||
+        !isPurchaseInvoiceAllowed(
+          input.date ?? transaction.date,
+          card.closingDay,
+          input.invoiceMonth,
+        )
+      ) {
+        throw new UnprocessableEntityException('Invoice is not available for this date');
+      }
+
+      invoiceMonth = input.invoiceMonth;
+    } else if (card && needsInvoiceMonth) {
       invoiceMonth = invoiceMonthOf(input.date ?? transaction.date, card.closingDay);
     } else if (!card && transaction.creditCardId) {
       invoiceMonth = null;

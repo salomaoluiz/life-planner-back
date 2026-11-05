@@ -264,6 +264,100 @@ describe('card purchases and the invoice payment (spec 029)', () => {
   });
 });
 
+describe('chosen invoice (spec 095)', () => {
+  function storedCardRow(patch: Record<string, unknown> = {}) {
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce({
+      ...mocks.transaction,
+      accountId: null,
+      creditCardId: mocks.card.id,
+      date: '2026-10-30',
+      invoiceMonth: '2026-11',
+      ...patch,
+    });
+    mocks.ensureConsistency.execute.mockResolvedValueOnce({ card: mocks.card });
+  }
+
+  it('SHOULD store the chosen invoice WHEN only invoiceMonth is sent', async () => {
+    storedCardRow();
+
+    await run({ invoiceMonth: '2026-10' });
+
+    expect(mocks.transactionRepository.updateTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ invoiceMonth: '2026-10' }),
+    );
+  });
+
+  it('SHOULD leave the stored invoice alone WHEN neither date nor card changes', async () => {
+    storedCardRow();
+
+    await run({ description: 'Only the text' });
+
+    expect(mocks.transactionRepository.updateTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ invoiceMonth: undefined }),
+    );
+  });
+
+  it('SHOULD recompute from the date WHEN the date changes without invoiceMonth', async () => {
+    storedCardRow();
+
+    await run({ date: '2026-12-31' });
+
+    expect(mocks.transactionRepository.updateTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ invoiceMonth: '2026-12' }),
+    );
+  });
+
+  it('SHOULD validate the chosen invoice against the NEW date', async () => {
+    storedCardRow();
+    await run({ date: '2026-12-31', invoiceMonth: '2027-01' });
+    storedCardRow();
+
+    await expect(run({ date: '2026-12-31', invoiceMonth: '2026-10' })).rejects.toThrow(
+      new UnprocessableEntityException('Invoice is not available for this date'),
+    );
+    expect(mocks.transactionRepository.updateTransaction).toHaveBeenCalledTimes(1);
+    expect(mocks.transactionRepository.updateTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ invoiceMonth: '2027-01' }),
+    );
+  });
+
+  it('SHOULD refuse a month outside the three options AND update nothing', async () => {
+    storedCardRow();
+
+    await expect(run({ invoiceMonth: '2027-01' })).rejects.toThrow(
+      new UnprocessableEntityException('Invoice is not available for this date'),
+    );
+    expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD refuse invoiceMonth together with accountId AND on an account row', async () => {
+    storedCardRow();
+    mocks.ensureConsistency.execute.mockReset();
+    mocks.ensureConsistency.execute.mockResolvedValue({});
+
+    await expect(run({ accountId: 'new-account', invoiceMonth: '2026-10' })).rejects.toThrow(
+      UnprocessableEntityException,
+    );
+    await expect(run({ invoiceMonth: '2026-10' })).rejects.toThrow(UnprocessableEntityException);
+    expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD refuse invoiceMonth on a recurring row', async () => {
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce(mocks.recurring);
+
+    await expect(
+      setup.execute({
+        accessibleOwners: mocks.accessibleOwners,
+        id: mocks.recurring.id,
+        invoiceMonth: '2026-10',
+        scope: 'ONLY_THIS',
+        today: '2026-10-15',
+      } as never),
+    ).rejects.toThrow(new UnprocessableEntityException('Recurring transactions follow the date'));
+    expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
+  });
+});
+
 describe('installments (spec 030)', () => {
   async function runInstallment(patch: Record<string, unknown>) {
     return setup.execute({
