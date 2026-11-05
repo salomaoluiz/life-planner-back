@@ -61,6 +61,7 @@ function toDetailOutput({ card, credits, filtered, invoice, purchases }: Invoice
       ownerId: purchase.ownerId,
       prepaid: purchase.prepaymentId !== null,
       projected: purchase.projected ? true : undefined,
+      recurrenceId: purchase.recurrenceId ?? undefined,
       value: purchase.value,
     })),
   };
