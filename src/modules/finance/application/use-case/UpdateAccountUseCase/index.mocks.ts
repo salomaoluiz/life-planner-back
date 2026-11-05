@@ -18,6 +18,7 @@ const accountRepositoryMock = {
   findAccountById: jest.fn().mockResolvedValue(accountMock),
   updateAccount: jest.fn().mockResolvedValue(updatedMock),
 };
+const favoriteRepositoryMock = { clear: jest.fn(), set: jest.fn() };
 const attachMock = { execute: jest.fn() };
 const endRecurrencesMock = { execute: jest.fn().mockResolvedValue(0) };
 
@@ -35,6 +36,7 @@ beforeEach(async () => {
       UpdateAccountUseCase,
       { provide: AttachAccountBalancesUseCase, useValue: attachMock },
       { provide: EndRecurrencesBySourceUseCase, useValue: endRecurrencesMock },
+      { provide: 'IFinanceAccountFavoriteRepository', useValue: favoriteRepositoryMock },
       { provide: 'IFinanceAccountRepository', useValue: accountRepositoryMock },
     ],
   }).compile();
@@ -48,6 +50,7 @@ const mocks = {
   accountRepository: accountRepositoryMock,
   attach: attachMock,
   endRecurrences: endRecurrencesMock,
+  favoriteRepository: favoriteRepositoryMock,
   updated: updatedMock,
   withBalances: withBalancesMock,
 };

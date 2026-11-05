@@ -6,6 +6,7 @@ import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { AdjustAccountBalanceUseCase } from '@finance/application/use-case/AdjustAccountBalanceUseCase';
 import { CreateAccountUseCase } from '@finance/application/use-case/CreateAccountUseCase';
 import { DeleteAccountUseCase } from '@finance/application/use-case/DeleteAccountUseCase';
+import { GetAccountFavoriteUseCase } from '@finance/application/use-case/GetAccountFavoriteUseCase';
 import { GetAccountsUseCase } from '@finance/application/use-case/GetAccountsUseCase';
 import { GetDailyBalancesUseCase } from '@finance/application/use-case/GetDailyBalancesUseCase';
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
@@ -36,6 +37,7 @@ const accountApiMock = {
   icon: 'bank',
   id: accountResultMock.id,
   initialBalance: 100000,
+  isFavorite: false,
   name: 'Checking',
   owner: 'USER',
   ownerId: userId,
@@ -48,6 +50,7 @@ const adjustAccountBalanceUseCaseMock = { execute: jest.fn().mockResolvedValue(w
 const createAccountUseCaseMock = { execute: jest.fn().mockResolvedValue(withBalancesMock) };
 const deleteAccountUseCaseMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const financeAccessServiceMock = { resolve: jest.fn().mockResolvedValue(accessibleOwners) };
+const getAccountFavoriteUseCaseMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const getAccountsUseCaseMock = { execute: jest.fn().mockResolvedValue([withBalancesMock]) };
 const dailyResultMock = {
   accounts: [accountResultMock],
@@ -73,6 +76,7 @@ let setup: AccountService;
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  getAccountFavoriteUseCaseMock.execute.mockResolvedValue(undefined);
 
   const module = await Test.createTestingModule({
     providers: [
@@ -81,6 +85,7 @@ beforeEach(async () => {
       { provide: CreateAccountUseCase, useValue: createAccountUseCaseMock },
       { provide: DeleteAccountUseCase, useValue: deleteAccountUseCaseMock },
       { provide: FinanceAccessService, useValue: financeAccessServiceMock },
+      { provide: GetAccountFavoriteUseCase, useValue: getAccountFavoriteUseCaseMock },
       { provide: GetAccountsUseCase, useValue: getAccountsUseCaseMock },
       { provide: GetDailyBalancesUseCase, useValue: getDailyBalancesUseCaseMock },
       { provide: UpdateAccountUseCase, useValue: updateAccountUseCaseMock },
@@ -99,6 +104,7 @@ const mocks = {
   dailyResult: dailyResultMock,
   deleteAccountUseCase: deleteAccountUseCaseMock,
   financeAccessService: financeAccessServiceMock,
+  getAccountFavoriteUseCase: getAccountFavoriteUseCaseMock,
   getAccountsUseCase: getAccountsUseCaseMock,
   getDailyBalancesUseCase: getDailyBalancesUseCaseMock,
   materializeRecurrencesUseCase: materializeRecurrencesUseCaseMock,

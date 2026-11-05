@@ -14,6 +14,7 @@ import { FamilyStatus } from '@family/domain/enum';
 import { AddFamilyToCategoryScopesUseCase } from '@finance/application/use-case/AddFamilyToCategoryScopesUseCase';
 import { AddFamilyToTagScopesUseCase } from '@finance/application/use-case/AddFamilyToTagScopesUseCase';
 import { GetFamilyArchiveBlockersUseCase } from '@finance/application/use-case/GetFamilyArchiveBlockersUseCase';
+import { RemoveFamilyAccountFavoritesUseCase } from '@finance/application/use-case/RemoveFamilyAccountFavoritesUseCase';
 import { RemoveFamilyFromCategoryScopesUseCase } from '@finance/application/use-case/RemoveFamilyFromCategoryScopesUseCase';
 import { RemoveFamilyFromTagScopesUseCase } from '@finance/application/use-case/RemoveFamilyFromTagScopesUseCase';
 import { FindUserByIdUseCase } from '@user/application/use-case/FindUserByIdUseCase';
@@ -40,6 +41,7 @@ const familyApiMock = {
 
 const addFamilyToCategoryScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const addFamilyToTagScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
+const removeFamilyAccountFavoritesMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const removeFamilyFromTagScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const removeFamilyFromCategoryScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const createFamilyUseCaseMock = { execute: jest.fn().mockResolvedValue(familyResultMock) };
@@ -80,6 +82,10 @@ beforeEach(async () => {
       FamilyService,
       { provide: AddFamilyToCategoryScopesUseCase, useValue: addFamilyToCategoryScopesMock },
       { provide: AddFamilyToTagScopesUseCase, useValue: addFamilyToTagScopesMock },
+      {
+        provide: RemoveFamilyAccountFavoritesUseCase,
+        useValue: removeFamilyAccountFavoritesMock,
+      },
       { provide: RemoveFamilyFromTagScopesUseCase, useValue: removeFamilyFromTagScopesMock },
       {
         provide: RemoveFamilyFromCategoryScopesUseCase,
@@ -117,6 +123,7 @@ const mocks = {
   getUserFamiliesUseCase: getUserFamiliesUseCaseMock,
   noBlockers,
   recordsCheck: recordsCheckMock,
+  removeFamilyAccountFavorites: removeFamilyAccountFavoritesMock,
   removeFamilyFromCategoryScopes: removeFamilyFromCategoryScopesMock,
   removeFamilyFromTagScopes: removeFamilyFromTagScopesMock,
   updateFamilyUseCase: updateFamilyUseCaseMock,

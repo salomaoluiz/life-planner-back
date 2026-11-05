@@ -11,6 +11,11 @@ const ownerId = '0b6a1e7c-3f4d-4b2a-8c9d-1e2f3a4b5c6d';
 const valid = { icon: 'bank', name: 'Checking', owner: 'USER', ownerId };
 
 describe('CreateAccountApiSchema', () => {
+  it('SHOULD accept an optional isFavorite (spec 094)', () => {
+    expect(CreateAccountApiSchema.parse({ ...valid, isFavorite: true }).isFavorite).toBe(true);
+    expect(CreateAccountApiSchema.parse(valid).isFavorite).toBeUndefined();
+  });
+
   it('SHOULD default initialBalance to 0 AND status to ACTIVE, trimming strings', () => {
     const result = CreateAccountApiSchema.parse({ ...valid, name: '  Checking ' });
 
@@ -50,6 +55,11 @@ describe('CreateAccountApiSchema', () => {
 });
 
 describe('UpdateAccountApiSchema', () => {
+  it('SHOULD accept isFavorite alone (spec 094)', () => {
+    expect(UpdateAccountApiSchema.parse({ isFavorite: true })).toEqual({ isFavorite: true });
+    expect(UpdateAccountApiSchema.safeParse({ isFavorite: 'yes' }).success).toBe(false);
+  });
+
   it('SHOULD accept any subset of icon / name / status', () => {
     expect(UpdateAccountApiSchema.parse({ name: ' New ' })).toEqual({ name: 'New' });
     expect(UpdateAccountApiSchema.parse({ icon: 'cash', status: 'ARCHIVED' })).toEqual({

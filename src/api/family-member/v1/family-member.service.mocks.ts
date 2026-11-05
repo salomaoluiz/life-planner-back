@@ -11,6 +11,7 @@ import { AddFamilyToCategoryScopesUseCase } from '@finance/application/use-case/
 import { AddFamilyToTagScopesUseCase } from '@finance/application/use-case/AddFamilyToTagScopesUseCase';
 import { DetachCategoryCreatorFromFamilyUseCase } from '@finance/application/use-case/DetachCategoryCreatorFromFamilyUseCase';
 import { DetachTagCreatorFromFamilyUseCase } from '@finance/application/use-case/DetachTagCreatorFromFamilyUseCase';
+import { RemoveFamilyAccountFavoritesUseCase } from '@finance/application/use-case/RemoveFamilyAccountFavoritesUseCase';
 import { FindUserByIdUseCase } from '@user/application/use-case/FindUserByIdUseCase';
 import { FindUsersByIdsUseCase } from '@user/application/use-case/FindUsersByIdsUseCase';
 
@@ -58,6 +59,7 @@ const acceptFamilyInviteUseCaseMock = { execute: jest.fn() };
 const addFamilyToCategoryScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const detachCategoryCreatorMock = { execute: jest.fn().mockResolvedValue(0) };
 const addFamilyToTagScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
+const removeFamilyAccountFavoritesMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const detachTagCreatorMock = { execute: jest.fn().mockResolvedValue(0) };
 const deleteFamilyMemberUseCaseMock = { execute: jest.fn() };
 const findUserByIdUseCaseMock = { execute: jest.fn() };
@@ -98,6 +100,10 @@ beforeEach(async () => {
       { provide: AddFamilyToTagScopesUseCase, useValue: addFamilyToTagScopesMock },
       { provide: DetachTagCreatorFromFamilyUseCase, useValue: detachTagCreatorMock },
       {
+        provide: RemoveFamilyAccountFavoritesUseCase,
+        useValue: removeFamilyAccountFavoritesMock,
+      },
+      {
         provide: DetachCategoryCreatorFromFamilyUseCase,
         useValue: detachCategoryCreatorMock,
       },
@@ -130,6 +136,7 @@ const mocks = {
   inviteFamilyMemberUseCase: inviteFamilyMemberUseCaseMock,
   logger: loggerMock,
   otherUserId,
+  removeFamilyAccountFavorites: removeFamilyAccountFavoritesMock,
   rows: { joined: joinedRow, owner: ownerRow, pending: pendingRow },
   userId,
 };

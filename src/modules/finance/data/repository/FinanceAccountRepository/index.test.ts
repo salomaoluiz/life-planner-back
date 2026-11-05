@@ -104,6 +104,16 @@ describe('updateAccount', () => {
   });
 });
 
+describe('updateAccount clearFavorites (spec 094)', () => {
+  it('SHOULD forward clearFavorites as clear_favorites', async () => {
+    await setup.updateAccount({ clearFavorites: true, id: 'id-1', status: 'ARCHIVED' as never });
+
+    expect(mocks.accountDatasource.update).toHaveBeenCalledWith(
+      expect.objectContaining({ clear_favorites: true }),
+    );
+  });
+});
+
 describe('findAccountsByIds', () => {
   it('SHOULD map the rows to entities', async () => {
     expect(await setup.findAccountsByIds(['id-1'])).toEqual([mocks.accountEntity]);

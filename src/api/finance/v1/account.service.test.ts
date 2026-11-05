@@ -21,6 +21,7 @@ describe('create', () => {
       ...body,
       accessibleOwners: mocks.accessibleOwners,
       today,
+      userId: mocks.userId,
     });
     expect(result).toEqual(mocks.accountApi);
     expect(result).not.toHaveProperty('ledgerBalance');
@@ -70,6 +71,7 @@ describe('update', () => {
       id: mocks.accountApi.id,
       name: 'New',
       today,
+      userId: mocks.userId,
     });
     expect(result).toEqual(mocks.accountApi);
   });
@@ -146,5 +148,55 @@ describe('getDailyBalances (spec 035)', () => {
       },
     ]);
     expect(JSON.stringify(result)).not.toContain('ledgerBalance');
+  });
+});
+
+describe('favorite account (spec 094)', () => {
+  it('SHOULD mark ONLY the favorite account of the requesting user WHEN listing, with ONE favorite read', async () => {
+    const other = { ...mocks.accountApi, id: 'other-id' };
+    mocks.getAccountFavoriteUseCase.execute.mockResolvedValue(mocks.accountApi.id);
+    mocks.getAccountsUseCase.execute.mockResolvedValueOnce([
+      {
+        account: {
+          ...mocks.accountApi,
+          createdAt: new Date(),
+          ledgerBalance: 1,
+          updatedAt: new Date(),
+        },
+        balance: 150000,
+        projectedBalance: 152075,
+      },
+      {
+        account: { ...other, createdAt: new Date(), ledgerBalance: 1, updatedAt: new Date() },
+        balance: 1,
+        projectedBalance: 1,
+      },
+    ]);
+
+    const result = await setup.findAll(mocks.userId, undefined, today);
+
+    expect(result.map((item) => item.isFavorite)).toEqual([true, false]);
+    expect(mocks.getAccountFavoriteUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(mocks.getAccountFavoriteUseCase.execute).toHaveBeenCalledWith({ userId: mocks.userId });
+  });
+
+  it('SHOULD forward isFavorite AND the user id on create and update', async () => {
+    await setup.create(mocks.userId, { ...body, isFavorite: true } as never, today);
+    await setup.update(mocks.userId, 'id-1', { isFavorite: true }, today);
+
+    expect(mocks.createAccountUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ isFavorite: true, userId: mocks.userId }),
+    );
+    expect(mocks.updateAccountUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'id-1', isFavorite: true, userId: mocks.userId }),
+    );
+  });
+
+  it('SHOULD report isFavorite on the result of a balance adjustment', async () => {
+    mocks.getAccountFavoriteUseCase.execute.mockResolvedValue(mocks.accountApi.id);
+
+    const result = await setup.adjustBalance(mocks.userId, 'account-id', 1, today);
+
+    expect(result.isFavorite).toBe(true);
   });
 });

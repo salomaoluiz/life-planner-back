@@ -1,4 +1,4 @@
-import { ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, UnprocessableEntityException } from '@nestjs/common';
 
 import { INT4_MAX, INT4_MIN } from '@finance/application/dto/FinanceCommon';
 import { AccountStatus } from '@finance/domain/enum';
@@ -101,5 +101,34 @@ it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)'
   await expect(setup.execute({ ...input, accessibleOwners })).rejects.toMatchObject({
     message: 'Family is archived',
     status: 422,
+  });
+});
+
+describe('favorite account (spec 094)', () => {
+  it('SHOULD set the new account as the favorite of the user WHEN isFavorite is true', async () => {
+    await setup.execute({ ...mocks.input, isFavorite: true, userId: 'user-id' });
+
+    expect(mocks.favoriteRepository.set).toHaveBeenCalledWith('user-id', mocks.account.id);
+  });
+
+  it('SHOULD NOT set a favorite WHEN isFavorite is omitted OR false', async () => {
+    await setup.execute({ ...mocks.input, userId: 'user-id' });
+    await setup.execute({ ...mocks.input, isFavorite: false, userId: 'user-id' });
+
+    expect(mocks.favoriteRepository.set).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD throw 422 BEFORE creating WHEN the account would be archived AND favorite', async () => {
+    await expect(
+      setup.execute({
+        ...mocks.input,
+        isFavorite: true,
+        status: AccountStatus.ARCHIVED,
+        userId: 'user-id',
+      }),
+    ).rejects.toThrow(
+      new UnprocessableEntityException("An archived account can't be the favorite"),
+    );
+    expect(mocks.accountRepository.createAccount).not.toHaveBeenCalled();
   });
 });

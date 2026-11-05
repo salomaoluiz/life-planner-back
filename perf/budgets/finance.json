@@ -113,7 +113,7 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": 6998,
-    "maxQueries": 5,
+    "maxQueries": 6,
     "p50Ms": 46,
     "scenario": ""
   },

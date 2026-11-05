@@ -34,6 +34,7 @@ import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-ca
 import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
 import { ExportTransactionsUseCase } from '@finance/application/use-case/ExportTransactionsUseCase';
 import { FindInvoicesInRangeUseCase } from '@finance/application/use-case/FindInvoicesInRangeUseCase';
+import { GetAccountFavoriteUseCase } from '@finance/application/use-case/GetAccountFavoriteUseCase';
 import { GetAccountsByIdsUseCase } from '@finance/application/use-case/GetAccountsByIdsUseCase';
 import { GetAccountsUseCase } from '@finance/application/use-case/GetAccountsUseCase';
 import { GetBalanceSeriesUseCase } from '@finance/application/use-case/GetBalanceSeriesUseCase';
@@ -68,6 +69,7 @@ import { MaterializeOccurrenceUseCase } from '@finance/application/use-case/Mate
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { PayInvoiceUseCase } from '@finance/application/use-case/PayInvoiceUseCase';
 import { PrepayInstallmentPlanUseCase } from '@finance/application/use-case/PrepayInstallmentPlanUseCase';
+import { RemoveFamilyAccountFavoritesUseCase } from '@finance/application/use-case/RemoveFamilyAccountFavoritesUseCase';
 import { RemoveFamilyFromCategoryScopesUseCase } from '@finance/application/use-case/RemoveFamilyFromCategoryScopesUseCase';
 import { RemoveFamilyFromTagScopesUseCase } from '@finance/application/use-case/RemoveFamilyFromTagScopesUseCase';
 import { ResolveCardRowsPaidUseCase } from '@finance/application/use-case/ResolveCardRowsPaidUseCase';
@@ -87,6 +89,7 @@ import { UpdateRecurrenceUseCase } from '@finance/application/use-case/UpdateRec
 import { UpdateTagUseCase } from '@finance/application/use-case/UpdateTagUseCase';
 import { UpdateTransactionUseCase } from '@finance/application/use-case/UpdateTransactionUseCase';
 import { FinanceAccountDatasource } from '@finance/data/datasource/FinanceAccountDatasource';
+import { FinanceAccountFavoriteDatasource } from '@finance/data/datasource/FinanceAccountFavoriteDatasource';
 import { FinanceCardCreditDatasource } from '@finance/data/datasource/FinanceCardCreditDatasource';
 import { FinanceCategoryDatasource } from '@finance/data/datasource/FinanceCategoryDatasource';
 import { FinanceCategoryIconDatasource } from '@finance/data/datasource/FinanceCategoryIconDatasource';
@@ -99,6 +102,7 @@ import { FinancePrepaymentDatasource } from '@finance/data/datasource/FinancePre
 import { FinanceRecurrenceDatasource } from '@finance/data/datasource/FinanceRecurrenceDatasource';
 import { FinanceTagDatasource } from '@finance/data/datasource/FinanceTagDatasource';
 import { FinanceTransactionDatasource } from '@finance/data/datasource/FinanceTransactionDatasource';
+import { FinanceAccountFavoriteRepository } from '@finance/data/repository/FinanceAccountFavoriteRepository';
 import { FinanceAccountRepository } from '@finance/data/repository/FinanceAccountRepository';
 import { FinanceCardCreditRepository } from '@finance/data/repository/FinanceCardCreditRepository';
 import { FinanceCategoryIconRepository } from '@finance/data/repository/FinanceCategoryIconRepository';
@@ -151,6 +155,7 @@ const useCases = [
   DeleteTransactionUseCase,
   DetachCategoryCreatorFromFamilyUseCase,
   EnsureTransactionConsistencyUseCase,
+  GetAccountFavoriteUseCase,
   GetAccountsUseCase,
   GetCategoriesUseCase,
   ExpandCategoryIdsUseCase,
@@ -183,6 +188,7 @@ const useCases = [
   HasFinanceDataByOwnerUseCase,
   PayInvoiceUseCase,
   PrepayInstallmentPlanUseCase,
+  RemoveFamilyAccountFavoritesUseCase,
   RemoveFamilyFromCategoryScopesUseCase,
   ResolveCardRowsPaidUseCase,
   UndoInstallmentPrepaymentUseCase,
@@ -206,6 +212,8 @@ const useCases = [
   providers: [
     ...useCases,
     MaterializationGate,
+    { provide: 'IFinanceAccountFavoriteDatasource', useClass: FinanceAccountFavoriteDatasource },
+    { provide: 'IFinanceAccountFavoriteRepository', useClass: FinanceAccountFavoriteRepository },
     { provide: 'IFinanceAccountRepository', useClass: FinanceAccountRepository },
     { provide: 'IFinanceAccountDatasource', useClass: FinanceAccountDatasource },
     { provide: 'IFinanceCardCreditRepository', useClass: FinanceCardCreditRepository },

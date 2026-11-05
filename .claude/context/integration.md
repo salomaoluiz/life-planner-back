@@ -137,3 +137,5 @@ Additive: `GET /api/v1/finance/transactions/:id` (see `api.md`). The app opens a
 ## Month endpoint (spec 080)
 
 The transactions screen reads `GET /finance/month` (see `api.md`) instead of the five separate month requests; the separate endpoints stay for the filtered period views, Home and the forms. Deploy the backend first (additive).
+
+Spec 094 contract: account output gains `isFavorite: boolean` (per requesting user); `POST`/`PATCH /accounts` take an optional `isFavorite` (additive, old apps ignore it). New table `financial_account_favorites` (migration `20261105000200_financial_account_favorites`).

@@ -13,13 +13,23 @@ export const UpdateAccountSchema = z
     accessibleOwners: AccessibleOwnersSchema,
     icon: IconSchema.optional(),
     id: z.string().min(1),
+    isFavorite: z.boolean().optional(),
     name: NameSchema.optional(),
     status: z.enum(AccountStatus).optional(),
     today: CalendarDateSchema,
+    // Required with `isFavorite`: the favorite is the preference of this user.
+    userId: z.string().min(1).optional(),
   })
   .refine(
-    (input) => input.icon !== undefined || input.name !== undefined || input.status !== undefined,
+    (input) =>
+      input.icon !== undefined ||
+      input.isFavorite !== undefined ||
+      input.name !== undefined ||
+      input.status !== undefined,
     { message: 'At least one field is required' },
-  );
+  )
+  .refine((input) => input.isFavorite === undefined || input.userId !== undefined, {
+    message: 'userId is required with isFavorite',
+  });
 
 export type UpdateAccountInput = z.input<typeof UpdateAccountSchema>;

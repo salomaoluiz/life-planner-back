@@ -122,14 +122,23 @@ export class FinanceAccountDatasource implements IFinanceAccountDatasource {
   }
 
   async update(params: UpdateAccountDatasourceParams): Promise<FinancialAccount> {
-    return this.db.client.financialAccount.update({
-      data: {
-        archived_at: params.archived_at,
-        icon: params.icon,
-        name: params.name,
-        status: params.status,
-      },
-      where: { id: params.id },
-    });
+    const data = {
+      archived_at: params.archived_at,
+      icon: params.icon,
+      name: params.name,
+      status: params.status,
+    };
+
+    if (!params.clear_favorites) {
+      return this.db.client.financialAccount.update({ data, where: { id: params.id } });
+    }
+
+    // Archiving: the account write and the removal of every user's favorite land together (spec 094 FR 4).
+    const [, updated] = await this.db.client.$transaction([
+      this.db.client.financialAccountFavorite.deleteMany({ where: { account_id: params.id } }),
+      this.db.client.financialAccount.update({ data, where: { id: params.id } }),
+    ]);
+
+    return updated;
   }
 }

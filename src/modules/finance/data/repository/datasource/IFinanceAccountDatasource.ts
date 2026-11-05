@@ -52,6 +52,7 @@ export interface UnpaidSumsRow {
 }
 export interface UpdateAccountDatasourceParams {
   archived_at?: Date | null;
+  clear_favorites?: boolean;
   icon?: string;
   id: string;
   name?: string;
