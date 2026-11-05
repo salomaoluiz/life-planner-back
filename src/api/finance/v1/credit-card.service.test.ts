@@ -1,5 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 
+import { toInvoiceOutput } from './credit-card.service';
 import { mocks, setup } from './credit-card.service.mocks';
 
 describe('create', () => {
@@ -55,6 +56,29 @@ describe('archivedAt', () => {
     const result = await setup.findOne(mocks.userId, mocks.cardApi.id);
 
     expect(result.archivedAt).toBe('2026-10-10T12:00:00.000Z');
+  });
+});
+
+describe('toInvoiceOutput (spec 096)', () => {
+  const invoice = { amountDue: 5000, projectedAmount: 0, projectedCount: 0, projectedTotal: 5000 };
+
+  it('SHOULD leave the projected fields out WHEN the invoice has no projected purchase', () => {
+    const output = JSON.parse(JSON.stringify(toInvoiceOutput(invoice as never)));
+
+    expect(output).not.toHaveProperty('projectedAmount');
+    expect(output).not.toHaveProperty('projectedCount');
+    expect(output).not.toHaveProperty('projectedTotal');
+  });
+
+  it('SHOULD send the three projected fields WHEN it has some', () => {
+    expect(
+      toInvoiceOutput({
+        ...invoice,
+        projectedAmount: 800,
+        projectedCount: 2,
+        projectedTotal: 5800,
+      } as never),
+    ).toMatchObject({ projectedAmount: 800, projectedCount: 2, projectedTotal: 5800 });
   });
 });
 

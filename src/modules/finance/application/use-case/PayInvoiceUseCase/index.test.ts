@@ -156,3 +156,82 @@ it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)'
     status: 422,
   });
 });
+
+describe('projected purchases (spec 096)', () => {
+  function projectedTotals(amount: number) {
+    return [{ amount, invoiceMonth: '2026-10', projectedAmount: 13000, projectedCount: 2 }];
+  }
+  const listed = [
+    {
+      date: '2026-10-25',
+      description: 'Youtube Premium',
+      id: 'p-1',
+      recurrenceId: 'series-1',
+      value: 10000,
+    },
+    { date: '2026-10-20', description: 'Gift', id: 'p-2', recurrenceId: null, value: 3000 },
+  ];
+
+  it('SHOULD answer 409 with the projected list AND pay nothing', async () => {
+    mocks.compute.execute.mockResolvedValueOnce([
+      { ...mocks.data[0], totals: projectedTotals(45000) },
+    ]);
+    mocks.transactionRepository.findProjectedByInvoice.mockResolvedValue(listed);
+
+    const error = await setup.execute(mocks.input).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(ConflictException);
+    expect((error as ConflictException).getResponse()).toEqual({
+      message: 'Invoice has projected purchases',
+      projected: listed.map(({ date, description, id, recurrenceId, value }) => ({
+        date,
+        description,
+        id,
+        recurrenceId,
+        value,
+      })),
+    });
+    expect(mocks.transactionRepository.findProjectedByInvoice).toHaveBeenCalledWith(
+      mocks.card.id,
+      '2026-10',
+    );
+    expect(mocks.invoicePaymentRepository.payInvoice).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD answer the projected 409, not "only a closed invoice with an amount", WHEN only projected rows exist', async () => {
+    mocks.compute.execute.mockResolvedValueOnce([{ ...mocks.data[0], totals: projectedTotals(0) }]);
+    mocks.transactionRepository.findProjectedByInvoice.mockResolvedValue(listed);
+
+    await expect(setup.execute(mocks.input)).rejects.toThrow(
+      new ConflictException('Invoice has projected purchases'),
+    );
+  });
+
+  it('SHOULD NOT read projected rows WHEN the invoice has none', async () => {
+    await setup.execute(mocks.input);
+
+    expect(mocks.transactionRepository.findProjectedByInvoice).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD keep "already paid" ahead of the projected check', async () => {
+    mocks.compute.execute.mockResolvedValueOnce([
+      {
+        ...mocks.data[0],
+        payments: [
+          {
+            accountId: null,
+            accountName: null,
+            amount: 45000,
+            method: InvoicePaymentMethod.EXTERNAL,
+            paidOn: '2026-11-01',
+            referenceMonth: '2026-10',
+          },
+        ],
+        totals: projectedTotals(45000),
+      },
+    ]);
+
+    await expect(setup.execute(mocks.input)).rejects.toThrow('Invoice already paid');
+    expect(mocks.transactionRepository.findProjectedByInvoice).not.toHaveBeenCalled();
+  });
+});

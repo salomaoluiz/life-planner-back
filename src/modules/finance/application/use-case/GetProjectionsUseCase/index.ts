@@ -214,6 +214,7 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
         occurrenceNumber: series.firstNumber - 1 + occurrence.k,
         owner: series.owner,
         ownerId: series.ownerId,
+        projected: series.projected,
         recurrenceId: series.id,
         tags: series.tags,
         type: series.type,

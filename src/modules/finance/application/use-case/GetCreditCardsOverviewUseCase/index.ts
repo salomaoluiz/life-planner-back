@@ -20,11 +20,13 @@ export interface CreditCardOverviewItem {
   card: CreditCardEntity;
   closedInvoices: Invoice[];
   openInvoice: Invoice;
+  // Spec 096: projected purchases of the unpaid invoices; `available` already subtracts them.
+  projectedUsed: number;
   upcomingInvoices: Invoice[];
   used: number;
 }
 export interface CreditCardsOverview {
-  aggregate: { available: number; totalLimit: number; used: number };
+  aggregate: { available: number; projectedUsed: number; totalLimit: number; used: number };
   cards: CreditCardOverviewItem[];
 }
 
@@ -62,6 +64,7 @@ export class GetCreditCardsOverviewUseCase implements UseCaseWithParams<
       card,
       closedInvoices: invoices.closedInvoices,
       openInvoice: invoices.openInvoice,
+      projectedUsed: invoices.projectedUsed,
       upcomingInvoices: invoices.upcomingInvoices,
       used: invoices.used,
     }));
@@ -73,6 +76,10 @@ export class GetCreditCardsOverviewUseCase implements UseCaseWithParams<
 function toOverview(cards: CreditCardOverviewItem[]): CreditCardsOverview {
   const totalLimit = cards.reduce((sum, item) => sum + item.card.limit, 0);
   const used = cards.reduce((sum, item) => sum + item.used, 0);
+  const projectedUsed = cards.reduce((sum, item) => sum + item.projectedUsed, 0);
 
-  return { aggregate: { available: totalLimit - used, totalLimit, used }, cards };
+  return {
+    aggregate: { available: totalLimit - used - projectedUsed, projectedUsed, totalLimit, used },
+    cards,
+  };
 }

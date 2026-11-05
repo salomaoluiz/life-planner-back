@@ -26,6 +26,8 @@ export interface ProjectedOccurrence {
   occurrenceNumber: number;
   owner: OwnerType;
   ownerId: string;
+  // Spec 096: the series is projected, so is every occurrence.
+  projected: boolean;
   recurrenceId: string;
   tags: TagRef[];
   type: TransactionType;

@@ -54,6 +54,7 @@ function sumOf(overrides: Partial<DashboardSum>): DashboardSum {
     date: '2026-10-05',
     invoiceMonth: null,
     paid: true,
+    projected: false,
     tagId: null,
     type: 'EXPENSE' as DashboardSum['type'],
     ...overrides,

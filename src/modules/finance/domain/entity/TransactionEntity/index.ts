@@ -70,6 +70,8 @@ interface ITransactionEntity {
   paidFromTransactionId?: null | string;
   paymentMethod?: InvoicePaymentMethod | null;
   prepaymentId?: null | string;
+  // Spec 096: a card EXPENSE not charged yet.
+  projected?: boolean;
   recurrenceFrequency?: null | RecurrenceFrequency;
   recurrenceId?: null | string;
   refundedName?: null | string;
@@ -118,6 +120,7 @@ class TransactionEntity {
   paymentMethod: InvoicePaymentMethod | null;
   // Set on installments moved by a prepayment and on its discount row.
   prepaymentId: null | string;
+  projected: boolean;
   recurrenceFrequency: null | RecurrenceFrequency;
   recurrenceId: null | string;
   // Description of the refunded purchase or plan.
@@ -158,6 +161,7 @@ class TransactionEntity {
     this.paidFromTransactionId = params.paidFromTransactionId ?? null;
     this.paymentMethod = params.paymentMethod ?? null;
     this.prepaymentId = params.prepaymentId ?? null;
+    this.projected = params.projected ?? false;
     this.recurrenceFrequency = params.recurrenceFrequency ?? null;
     this.recurrenceId = params.recurrenceId ?? null;
     this.refundedName = params.refundedName ?? null;

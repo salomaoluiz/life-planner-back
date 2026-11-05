@@ -30,6 +30,7 @@ describe('FinanceRecurrenceMapper.toDomain', () => {
       occurrenceCount: 12,
       owner: 'USER',
       ownerId: mocks.raw.owner_id,
+      projected: false,
       skippedNumbers: [3],
       startDate: '2026-10-05',
       status: 'ACTIVE',

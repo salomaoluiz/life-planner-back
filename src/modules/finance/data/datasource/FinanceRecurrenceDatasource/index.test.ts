@@ -74,6 +74,23 @@ describe('Method create', () => {
     expect(spies.accountUpdate).not.toHaveBeenCalled();
   });
 
+  it('SHOULD store the projected flag on the card series AND on every row (spec 096)', async () => {
+    await setup.create({
+      ...mocks.accountParams,
+      account_id: undefined,
+      credit_card_id: 'card-1',
+      projected: true,
+      rows: [{ date: new Date('2026-10-05T00:00:00.000Z'), invoice_month: '2026-11', number: 1 }],
+    });
+
+    expect(spies.recurrenceCreate.mock.calls[0][0].data).toEqual(
+      expect.objectContaining({ projected: true }),
+    );
+    expect(spies.rowCreateMany.mock.calls[0][0].data[0]).toEqual(
+      expect.objectContaining({ projected: true }),
+    );
+  });
+
   it('SHOULD write nothing WHEN a card invoice is already paid', async () => {
     spies.paymentFindFirst.mockResolvedValue({ id: 'payment-1' });
 
@@ -222,6 +239,20 @@ describe('Method materialize', () => {
       where: { id: 'recurrence-1' },
     });
     expect(spies.accountUpdate).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD copy the projected flag of the series to the rows (spec 096)', async () => {
+    spies.queryRaw.mockResolvedValue([{ ...locked, credit_card_id: 'card-1', projected: true }]);
+
+    await setup.materialize({
+      ...params,
+      rows: [{ date: new Date('2026-11-05T00:00:00.000Z'), invoice_month: '2026-12', number: 2 }],
+    });
+
+    expect(spies.rowCreateMany.mock.calls[0][0].data[0]).toEqual(
+      expect.objectContaining({ projected: true }),
+    );
+    expect(spies.queryRaw.mock.calls[0][0].sql).toContain('"projected"');
   });
 
   it('SHOULD lock the card BEFORE the series AND refresh the invoice totals of a card series (spec 090)', async () => {
@@ -471,6 +502,26 @@ describe('Method apply', () => {
 
     expect(spies.rowCreateMany.mock.calls[0][0].data[0]).toEqual(
       expect.objectContaining({ recurrence_id: 'recurrence-2', value: 9 }),
+    );
+  });
+
+  it('SHOULD keep projected on the replaced rows of a new series (spec 096)', async () => {
+    spies.rowFindMany.mockResolvedValue([unpaid]);
+    spies.recurrenceCreate.mockResolvedValue({ id: 'recurrence-2' });
+
+    await setup.apply({
+      ...base,
+      new_series: {
+        ...mocks.accountParams,
+        first_number: 5,
+        projected: true,
+        skipped_numbers: [],
+      },
+      replace_rows: [{ date: new Date('2026-11-05T00:00:00.000Z'), number: 5 }],
+    });
+
+    expect(spies.rowCreateMany.mock.calls[0][0].data[0]).toEqual(
+      expect.objectContaining({ projected: true }),
     );
   });
 

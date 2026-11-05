@@ -106,6 +106,10 @@ export const InvoiceApiSchema = z.object({
   paymentDate: z.string(),
   periodEnd: z.string(),
   periodStart: z.string(),
+  // Spec 096: projected rows of the invoice, apart from the effective amount.
+  projectedAmount: z.number().int().optional(),
+  projectedCount: z.number().int().optional(),
+  projectedTotal: z.number().int().optional(),
   referenceMonth: z.string(),
   status: z.enum(InvoiceStatus),
   total: z.number().int(),
@@ -114,6 +118,7 @@ export const InvoiceApiSchema = z.object({
 export const CreditCardsOverviewApiSchema = z.object({
   aggregate: z.object({
     available: z.number().int(),
+    projectedUsed: z.number().int(),
     totalLimit: z.number().int(),
     used: z.number().int(),
   }),
@@ -123,6 +128,7 @@ export const CreditCardsOverviewApiSchema = z.object({
       card: CreditCardApiSchema,
       closedInvoices: z.array(InvoiceApiSchema),
       openInvoice: InvoiceApiSchema,
+      projectedUsed: z.number().int(),
       upcomingInvoices: z.array(InvoiceApiSchema),
       used: z.number().int(),
     }),

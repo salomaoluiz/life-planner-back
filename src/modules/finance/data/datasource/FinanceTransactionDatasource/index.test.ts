@@ -245,6 +245,7 @@ describe('Method findScalarsById (spec 085)', () => {
         owner: true,
         owner_id: true,
         paid: true,
+        projected: true,
         recurrence_id: true,
         type: true,
       },
@@ -362,6 +363,32 @@ describe('Method findByOwners keyset pages (spec 078)', () => {
   });
 });
 
+describe('Method findProjectedByInvoice (spec 096)', () => {
+  it('SHOULD read the projected rows of the invoice, oldest first, with scalars only', async () => {
+    spies.findMany.mockResolvedValue([{ id: 'p-1' }]);
+
+    expect(await setup.findProjectedByInvoice('card-1', '2026-10')).toEqual([{ id: 'p-1' }]);
+    expect(spies.findMany).toHaveBeenCalledWith({
+      orderBy: [{ date: 'asc' }, { created_at: 'asc' }, { id: 'asc' }],
+      select: { date: true, description: true, id: true, recurrence_id: true, value: true },
+      where: { credit_card_id: 'card-1', invoice_month: '2026-10', projected: true },
+    });
+  });
+});
+
+describe('Method findByOwners projected filter (spec 096)', () => {
+  it.each([
+    [TransactionSource.ACCOUNT, true],
+    [TransactionSource.CARD, false],
+  ])('SHOULD add the projected condition on %s rows (%s)', async (source, projected) => {
+    spies.findMany.mockResolvedValue([]);
+
+    await setup.findByOwners(mocks.owners, source, { projected });
+
+    expect(spies.findMany.mock.calls[0][0].where.AND).toContainEqual({ projected });
+  });
+});
+
 describe('Method findByOwners filters (spec 045)', () => {
   it('SHOULD add one AND condition per filter on account rows', async () => {
     spies.findMany.mockResolvedValue([]);
@@ -437,6 +464,42 @@ describe('Method update', () => {
       where: { id: mocks.transaction.id },
     });
     expect(spies.queryRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('SHOULD write projected false and refresh both invoices WHEN a projected row is confirmed (spec 096)', async () => {
+    spies.queryRaw.mockResolvedValue([
+      {
+        account_id: null,
+        credit_card_id: 'card-1',
+        invoice_month: '2026-05',
+        paid: null,
+        ...OWNER,
+        type: 'EXPENSE',
+        value: 1000,
+      },
+    ]);
+    spies.update.mockResolvedValue({
+      ...mocks.transaction,
+      account_id: null,
+      credit_card_id: 'card-1',
+      invoice_month: '2026-06',
+      paid: null,
+    });
+
+    await setup.update({
+      id: mocks.transaction.id,
+      invoice_month: '2026-06',
+      projected: false,
+      value: 990,
+    });
+
+    expect(spies.update.mock.calls[0][0].data).toEqual(
+      expect.objectContaining({ invoice_month: '2026-06', projected: false, value: 990 }),
+    );
+    expect(spies.refreshInvoiceTotals).toHaveBeenCalledWith(expect.anything(), [
+      { creditCardId: 'card-1', invoiceMonth: '2026-05' },
+      { creditCardId: 'card-1', invoiceMonth: '2026-06' },
+    ]);
   });
 
   it('SHOULD refresh the invoice totals of BOTH the stored and the new invoice WHEN a card row moves (spec 090)', async () => {
@@ -628,11 +691,20 @@ describe('Card purchases', () => {
         expense: 1000,
         income: 700,
         invoice_month: '2026-10',
+        projected_amount: 250,
+        projected_count: 2,
       },
     ]);
 
     expect(await setup.findInvoiceTotals(['card-1'])).toEqual([
-      { amount: 300, credit_card_id: 'card-1', early_paid: 600, invoice_month: '2026-10' },
+      {
+        amount: 300,
+        credit_card_id: 'card-1',
+        early_paid: 600,
+        invoice_month: '2026-10',
+        projected_amount: 250,
+        projected_count: 2,
+      },
     ]);
     expect(await setup.findInvoiceTotals([])).toEqual([]);
     expect(spies.invoiceTotalsFindMany).toHaveBeenCalledTimes(1);
@@ -933,6 +1005,29 @@ describe('Method sumDashboardRows (spec 046)', () => {
     expect(sqlOf(0)).not.toContain('financial_transaction_tags');
   });
 
+  it('SHOULD select and group by the projected flag (spec 096)', async () => {
+    spies.queryRaw.mockResolvedValue([
+      {
+        amount: BigInt(700),
+        category_id: 'cat-1',
+        count: BigInt(1),
+        credit_card_id: 'card-1',
+        date: null,
+        invoice_month: '2026-10',
+        paid: null,
+        projected: true,
+        tag_id: null,
+        type: 'EXPENSE',
+      },
+    ]);
+
+    const rows = await setup.sumDashboardRows(params);
+
+    expect(rows).toEqual([expect.objectContaining({ amount: 700, projected: true })]);
+    expect(sqlOf(0)).toContain('t."projected"');
+    expect(sqlOf(0)).toContain('GROUP BY 1, 2, 3, 4, 5, 6, 7, 8');
+  });
+
   it('SHOULD join the tags only by tag AND apply the filters', async () => {
     spies.queryRaw.mockResolvedValue([]);
 
@@ -1030,9 +1125,16 @@ describe('Method countForExport / findForExport (spec 047)', () => {
               lte: new Date('2026-12-31T00:00:00.000Z'),
             },
           },
+          { projected: false },
         ],
       },
     });
+  });
+
+  it('SHOULD leave projected rows out of the export (spec 096)', async () => {
+    await setup.findForExport(params);
+
+    expect(spies.findMany.mock.calls[0][0].where.AND).toContainEqual({ projected: false });
   });
 
   it('SHOULD match a row of a chosen account OR card, ordered by date then creation', async () => {

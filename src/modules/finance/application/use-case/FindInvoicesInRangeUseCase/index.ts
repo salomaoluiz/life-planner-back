@@ -66,7 +66,7 @@ export class FindInvoicesInRangeUseCase implements UseCaseWithParams<
         .map((month) => invoiceOf(month))
         .filter(
           (invoice) =>
-            (invoice.amount > 0 || invoice.earlyPaid > 0) &&
+            (invoice.amount > 0 || invoice.earlyPaid > 0 || invoice.projectedCount > 0) &&
             invoice.listDate >= input.from &&
             invoice.listDate <= input.to,
         )

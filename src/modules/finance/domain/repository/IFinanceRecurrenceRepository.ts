@@ -86,6 +86,7 @@ interface CreateRecurrenceRepositoryParams {
   notes?: null | string;
   owner: OwnerType;
   ownerId: string;
+  projected?: boolean;
   rows: OccurrenceRow[];
   startDate: string;
   status: RecurrenceStatus;
@@ -125,6 +126,7 @@ interface NewSeriesRepositoryParams {
   notes?: null | string;
   owner: OwnerType;
   ownerId: string;
+  projected?: boolean;
   skippedNumbers: number[];
   startDate: string;
   status: RecurrenceStatus;

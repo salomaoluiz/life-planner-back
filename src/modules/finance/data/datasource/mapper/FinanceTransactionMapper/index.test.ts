@@ -40,6 +40,7 @@ describe('FinanceTransactionMapper.toDomain', () => {
       paidFromTransactionId: null,
       paymentMethod: null,
       prepaymentId: null,
+      projected: false,
       recurrenceFrequency: null,
       recurrenceId: null,
       refundedName: null,
@@ -57,6 +58,10 @@ describe('FinanceTransactionMapper.toDomain', () => {
 
     expect(FinanceTransactionMapper.toDomain(raw).date).toBe('2026-10-03');
   });
+});
+
+it('SHOULD map the projected flag (spec 096)', () => {
+  expect(FinanceTransactionMapper.toDomain({ ...mocks.raw, projected: true }).projected).toBe(true);
 });
 
 it('SHOULD map a system category: its key as the enum AND excludeFromTotals', () => {

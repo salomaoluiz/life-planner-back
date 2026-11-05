@@ -70,6 +70,36 @@ describe('GetDashboardRowsUseCase', () => {
     );
   });
 
+  it('SHOULD count a projected card purchase as projected even WHEN its invoice owes nothing, and never as paid (spec 096)', async () => {
+    mocks.compute.execute.mockResolvedValue([
+      {
+        card: mocks.card,
+        invoices: {},
+        payments: [],
+        totals: [{ amount: 0, invoiceMonth: '2026-09', projectedAmount: 700, projectedCount: 1 }],
+      },
+    ]);
+    mocks.transactionRepository.sumDashboardRows.mockResolvedValue([
+      mocks.sumOf({
+        creditCardId: mocks.card.id,
+        date: null,
+        invoiceMonth: '2026-09',
+        paid: null,
+        projected: true,
+      }),
+    ]);
+
+    const rows = await setup.execute({ ...mocks.input, from: '2026-10-01' });
+    const onlyPaid = await setup.execute({
+      ...mocks.input,
+      filter: { paid: true },
+      from: '2026-10-01',
+    });
+
+    expect(rows.map((row) => row.projected)).toEqual([true]);
+    expect(onlyPaid).toEqual([]);
+  });
+
   it('SHOULD project an unpaid invoice of the current month AND skip an unpaid one of an earlier month', async () => {
     mocks.compute.execute.mockResolvedValue([
       {

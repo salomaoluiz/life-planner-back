@@ -564,3 +564,76 @@ describe('monthsBetween (spec 095)', () => {
     expect(monthsBetween('2026-05', '2026-05')).toBe(0);
   });
 });
+
+describe('projected purchases (spec 096)', () => {
+  const card = buildCard({ closingDay: 10, limit: 500000 });
+  const paidJan: InvoicePaymentInfo = {
+    accountId: null,
+    accountName: null,
+    amount: 0,
+    method: InvoicePaymentMethod.EXTERNAL,
+    paidOn: '2026-02-01',
+    referenceMonth: '2026-01',
+  };
+
+  it('SHOULD keep net, total and amountDue effective and add the projected fields', () => {
+    const totals: InvoiceTotal[] = [
+      { amount: 10000, invoiceMonth: '2026-02', projectedAmount: 5000, projectedCount: 2 },
+    ];
+    const { openInvoice } = calculateInvoices(card, totals, [], '2026-02-05');
+
+    expect(openInvoice).toMatchObject({
+      amountDue: 10000,
+      net: 10000,
+      projectedAmount: 5000,
+      projectedCount: 2,
+      projectedTotal: 15000,
+      total: 10000,
+    });
+  });
+
+  it('SHOULD give projectedTotal = projectedAmount when the effective total is a credit, without touching the carry', () => {
+    const totals: InvoiceTotal[] = [
+      { amount: -3000, invoiceMonth: '2026-01', projectedAmount: 4000, projectedCount: 1 },
+    ];
+    const { closedInvoices, openInvoice } = calculateInvoices(card, totals, [], '2026-02-05');
+    const january = buildInvoiceFor(card, '2026-01', totals, [], '2026-02-05');
+
+    expect(january).toMatchObject({ amountDue: 0, projectedTotal: 4000, total: -3000 });
+    expect(openInvoice.carryIn).toBe(-3000);
+    expect(openInvoice.projectedTotal).toBe(0);
+    expect(closedInvoices.map((invoice) => invoice.referenceMonth)).toContain('2026-01');
+  });
+
+  it('SHOULD keep a month with only projected rows unpaid: closed stays CLOSED, a later one is upcoming', () => {
+    const totals: InvoiceTotal[] = [
+      { amount: 0, invoiceMonth: '2026-01', projectedAmount: 1000, projectedCount: 1 },
+      { amount: 0, invoiceMonth: '2026-03', projectedAmount: 800, projectedCount: 1 },
+    ];
+    const { closedInvoices, upcomingInvoices } = calculateInvoices(card, totals, [], '2026-02-05');
+
+    expect(closedInvoices.find((invoice) => invoice.referenceMonth === '2026-01')?.status).toBe(
+      InvoiceStatus.CLOSED,
+    );
+    expect(upcomingInvoices.map((invoice) => invoice.referenceMonth)).toEqual(['2026-03']);
+  });
+
+  it('SHOULD sum projectedUsed over unpaid months only and subtract it from available', () => {
+    const totals: InvoiceTotal[] = [
+      { amount: 0, invoiceMonth: '2026-01', projectedAmount: 1000, projectedCount: 1 },
+      { amount: 2000, invoiceMonth: '2026-02', projectedAmount: 500, projectedCount: 1 },
+    ];
+    const result = calculateInvoices(card, totals, [paidJan], '2026-02-05');
+
+    expect(result.used).toBe(2000);
+    expect(result.projectedUsed).toBe(500);
+    expect(result.available).toBe(500000 - 2000 - 500);
+  });
+
+  it('SHOULD default the projected fields to zero without projected totals', () => {
+    const { openInvoice, projectedUsed } = calculateInvoices(card, [], [], '2026-02-05');
+
+    expect(openInvoice).toMatchObject({ projectedAmount: 0, projectedCount: 0, projectedTotal: 0 });
+    expect(projectedUsed).toBe(0);
+  });
+});

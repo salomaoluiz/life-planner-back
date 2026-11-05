@@ -22,6 +22,28 @@ describe('CreateRecurrenceUseCase', () => {
     });
   });
 
+  it('SHOULD pass projected to the series (spec 096)', async () => {
+    mocks.ensureConsistency.execute.mockResolvedValue({ card: { ...mocks.card, closingDay: 10 } });
+
+    await setup.execute({
+      ...mocks.input,
+      accountId: undefined,
+      creditCardId: mocks.card.id,
+      projected: true,
+    });
+
+    expect(mocks.recurrenceRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ projected: true }),
+    );
+  });
+
+  it('SHOULD refuse projected on an account series (spec 096)', async () => {
+    await expect(setup.execute({ ...mocks.input, projected: true })).rejects.toThrow(
+      'Projected is only for card expenses',
+    );
+    expect(mocks.recurrenceRepository.create).not.toHaveBeenCalled();
+  });
+
   it('SHOULD default the first row to paid WHEN it is dated up to today', async () => {
     await setup.execute(mocks.input);
 

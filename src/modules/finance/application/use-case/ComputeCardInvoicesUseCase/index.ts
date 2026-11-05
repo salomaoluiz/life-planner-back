@@ -68,6 +68,8 @@ export class ComputeCardInvoicesUseCase implements UseCaseWithParams<
           amount: sum.amount,
           earlyPaid: sum.earlyPaid,
           invoiceMonth: sum.invoiceMonth,
+          projectedAmount: sum.projectedAmount,
+          projectedCount: sum.projectedCount,
         }));
       // Spec 091: the chain starts after the latest settled (paid) month before `fromMonth`.
       const totals = input.fromMonth

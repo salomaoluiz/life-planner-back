@@ -30,6 +30,8 @@ export const CreateTransactionSchema = z
     ownerId: OwnerIdSchema,
     // Account rows only; omitted → paid when dated up to `today` (spec 033 FR 4).
     paid: z.boolean().optional(),
+    // Spec 096: a card expense not charged yet; refused on anything else by the use case.
+    projected: z.boolean().optional(),
     // Spec 043: tag names (max 10, 30 characters each).
     tags: TagNamesSchema.optional(),
     // Local calendar day of the caller: only used to read the card's invoices after a purchase.

@@ -29,6 +29,22 @@ describe('create', () => {
   });
 });
 
+describe('projected rows (spec 096)', () => {
+  it('SHOULD leave projected out of an effective item AND send projected true on a projected one', async () => {
+    const effective = await setup.create(mocks.userId, {} as never, '2026-10-15');
+
+    expect(JSON.parse(JSON.stringify(effective.item))).not.toHaveProperty('projected');
+
+    mocks.createTransactionUseCase.execute.mockResolvedValueOnce({
+      overLimit: false,
+      transaction: { ...mocks.transactionResult, projected: true },
+    });
+    const projected = await setup.create(mocks.userId, {} as never, '2026-10-15');
+
+    expect(projected.item.projected).toBe(true);
+  });
+});
+
 describe('findAll', () => {
   it('SHOULD forward ownerIds AND map every transaction', async () => {
     const result = await setup.findAll(mocks.userId, ['o1']);
@@ -112,6 +128,27 @@ describe('update', () => {
       today: '2026-10-15',
       value: 100,
     });
+  });
+});
+
+describe('confirm (spec 096)', () => {
+  it('SHOULD forward the real value, date and invoice with the accessible owners', async () => {
+    const result = await setup.confirm(
+      mocks.userId,
+      'tx-1',
+      { date: '2026-10-24', invoiceMonth: '2026-11', value: 9990 },
+      '2026-10-25',
+    );
+
+    expect(mocks.confirmProjectedTransactionUseCase.execute).toHaveBeenCalledWith({
+      accessibleOwners: mocks.accessibleOwners,
+      date: '2026-10-24',
+      id: 'tx-1',
+      invoiceMonth: '2026-11',
+      today: '2026-10-25',
+      value: 9990,
+    });
+    expect(result).toEqual(mocks.transactionApi);
   });
 });
 

@@ -27,6 +27,7 @@ const transactionApiMock = {
 const requestMock = { user: { id: userId } } as JwtPayload & Request;
 
 const transactionServiceMock = {
+  confirm: jest.fn().mockResolvedValue(transactionApiMock),
   create: jest.fn().mockResolvedValue(transactionApiMock),
   delete: jest.fn().mockResolvedValue(undefined),
   findAll: jest.fn().mockResolvedValue({ items: [transactionApiMock], nextCursor: null }),

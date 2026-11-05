@@ -22,6 +22,8 @@ export type IFinanceTransactionRepository = {
   findDuplicateCandidates(query: DuplicateQuery): Promise<DuplicateCandidate[]>;
   findTransactionById(id: string): Promise<TransactionEntity | undefined>;
   // Spec 085: the stored row without relations (one read), for the checks before an update or delete.
+  // Spec 096 FR 10: the projected rows of one invoice, the ones that block paying it.
+  findProjectedByInvoice(creditCardId: string, invoiceMonth: string): Promise<ProjectedPurchase[]>;
   findTransactionScalarsById(id: string): Promise<TransactionScalars | undefined>;
   // Spec 047: every row of the period by its own date (system rows included), `date` then `createdAt` ascending.
   findTransactionsForExport(query: ExportQuery): Promise<TransactionEntity[]>;
@@ -78,6 +80,7 @@ type TransactionScalars = { category: Pick<TransactionCategorySummary, 'systemKe
   | 'owner'
   | 'ownerId'
   | 'paid'
+  | 'projected'
   | 'recurrenceId'
   | 'type'
 >;
@@ -104,6 +107,9 @@ interface CardInvoiceTotal extends CardInvoiceRef {
   // NET: purchases minus credits.
   amount: number;
   earlyPaid: number;
+  // Spec 096: projected rows of the invoice, apart from the effective amount.
+  projectedAmount: number;
+  projectedCount: number;
 }
 interface DashboardSum {
   amount: number;
@@ -115,6 +121,8 @@ interface DashboardSum {
   invoiceMonth: null | string;
   // Account rows only.
   paid: boolean | null;
+  // Spec 096: a projected card purchase; it never counts as realized.
+  projected: boolean;
   tagId: null | string;
   type: TransactionType;
 }
@@ -159,9 +167,19 @@ interface CreateTransactionRepositoryParams {
   ownerId: string;
   // Account rows only; omitted for card rows.
   paid?: boolean;
+  // Spec 096: a card expense not charged yet.
+  projected?: boolean;
   // Spec 043: tag names, resolved (or created) in the owner inside the write.
   tags?: string[];
   type: TransactionType;
+  value: number;
+}
+interface ProjectedPurchase {
+  // `YYYY-MM-DD`
+  date: string;
+  description: string;
+  id: string;
+  recurrenceId: null | string;
   value: number;
 }
 interface TransactionQuery {
@@ -176,6 +194,8 @@ interface TransactionQuery {
   limit?: number;
   // Account rows only: card rows derive it from their invoice.
   paid?: boolean;
+  // Spec 096: only projected (true) or only effective (false) rows.
+  projected?: boolean;
   // Spec 084: the text search, applied in SQL before the page is cut.
   search?: SearchTerms;
   tagIds?: string[];
@@ -194,6 +214,8 @@ interface UpdateTransactionRepositoryParams {
   ownerId?: string;
   // true/false on account rows, null when the row moves to a card.
   paid?: boolean | null;
+  // Spec 096: `false` confirms a projected card purchase.
+  projected?: boolean;
   // `undefined` leaves the tags untouched, `[]` removes them all.
   tags?: string[];
   type?: TransactionType;
@@ -210,6 +232,7 @@ export {
   DuplicateCandidate,
   DuplicateQuery,
   ExportQuery,
+  ProjectedPurchase,
   TransactionQuery,
   TransactionScalars,
   UnpaidAccountRow,

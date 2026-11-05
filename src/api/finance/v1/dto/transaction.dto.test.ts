@@ -107,6 +107,7 @@ it('SHOULD require systemKey (nullable) AND excludeFromTotals on the category su
     owner: 'USER',
     ownerId: id,
     paid: true,
+    projected: false,
     recurrenceFrequency: null,
     recurrenceId: null,
     tags: [],

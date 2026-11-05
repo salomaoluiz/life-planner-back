@@ -36,6 +36,7 @@ const accountRepositoryMock = { findAccountById: jest.fn() };
 const computeMock = { execute: jest.fn() };
 const creditCardRepositoryMock = { findCreditCardById: jest.fn() };
 const invoicePaymentRepositoryMock = { payInvoice: jest.fn() };
+const transactionRepositoryMock = { findProjectedByInvoice: jest.fn() };
 
 // endregion Mocks
 
@@ -47,6 +48,7 @@ beforeEach(async () => {
   computeMock.execute.mockResolvedValue(dataMock);
   creditCardRepositoryMock.findCreditCardById.mockResolvedValue(cardMock);
   invoicePaymentRepositoryMock.payInvoice.mockResolvedValue({ id: 'payment-1' });
+  transactionRepositoryMock.findProjectedByInvoice.mockResolvedValue([]);
 
   const module = await Test.createTestingModule({
     providers: [
@@ -55,6 +57,7 @@ beforeEach(async () => {
       { provide: ComputeCardInvoicesUseCase, useValue: computeMock },
       { provide: 'IFinanceCreditCardRepository', useValue: creditCardRepositoryMock },
       { provide: 'IFinanceInvoicePaymentRepository', useValue: invoicePaymentRepositoryMock },
+      { provide: 'IFinanceTransactionRepository', useValue: transactionRepositoryMock },
     ],
   }).compile();
 
@@ -70,6 +73,7 @@ const mocks = {
   data: dataMock,
   input: inputMock,
   invoicePaymentRepository: invoicePaymentRepositoryMock,
+  transactionRepository: transactionRepositoryMock,
 };
 const spies = {};
 

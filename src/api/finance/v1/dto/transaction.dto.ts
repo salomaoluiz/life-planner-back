@@ -46,10 +46,17 @@ export const CreateTransactionApiSchema = TransactionFieldsSchema.partial({
   paid: true,
   tags: true,
 })
-  .extend({ currency: CurrencyApiSchema.optional() })
+  .extend({ currency: CurrencyApiSchema.optional(), projected: z.boolean().optional() })
   .refine((value) => (value.accountId === undefined) !== (value.creditCardId === undefined), {
     message: 'Send either accountId or creditCardId',
   });
+
+// Spec 096 FR 4: the real charge of a projected card purchase.
+export const ConfirmTransactionApiSchema = z.strictObject({
+  date: CalendarDateApiSchema,
+  invoiceMonth: InvoiceMonthSchema.optional(),
+  value: ValueApiSchema,
+});
 
 export const UpdateTransactionApiSchema = TransactionFieldsSchema.partial()
   .extend({ scope: z.enum(InstallmentEditScope).optional() })
@@ -103,6 +110,7 @@ export const TransactionApiSchema = z.object({
   ownerId: z.uuid(),
   // Stored for account rows; derived from the invoice for card rows.
   paid: z.boolean(),
+  projected: z.boolean(),
   recurrenceFrequency: z.enum(RecurrenceFrequency).nullable(),
   recurrenceId: z.uuid().nullable(),
   tags: z.array(TagRefApiSchema),
@@ -111,9 +119,11 @@ export const TransactionApiSchema = z.object({
   value: z.number().int(),
 });
 
+export type ConfirmTransactionApiInput = z.infer<typeof ConfirmTransactionApiSchema>;
 export type CreateTransactionApiInput = z.infer<typeof CreateTransactionApiSchema>;
 export type UpdateTransactionApiInput = z.infer<typeof UpdateTransactionApiSchema>;
 
+export class ConfirmTransactionBody extends createZodDto(ConfirmTransactionApiSchema) {}
 export class CreateTransactionBody extends createZodDto(CreateTransactionApiSchema) {}
 // Spec 079: a row carries ids only; the entities it references come once in `lookups`. Null and empty
 // fields are left out, and so are the timestamps and the ids that were repeated by nested objects.
@@ -137,6 +147,7 @@ export const TransactionItemApiSchema = z.strictObject({
   owner: OwnerTypeApiSchema,
   ownerId: z.uuid(),
   paid: z.boolean(),
+  projected: z.boolean().optional(),
   recurrenceFrequency: z.enum(RecurrenceFrequency).optional(),
   recurrenceId: z.uuid().optional(),
   tagIds: z.array(z.uuid()).optional(),

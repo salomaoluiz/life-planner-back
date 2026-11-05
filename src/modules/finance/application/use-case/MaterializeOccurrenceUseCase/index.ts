@@ -16,7 +16,7 @@ import { TransactionWithLimit } from '@finance/application/use-case/CreateTransa
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { IFinanceRecurrenceRepository } from '@finance/domain/repository';
-import { invoiceMonthOf } from '@finance/domain/service/InvoiceCalculator';
+import { invoiceMonthOf, isOverLimit } from '@finance/domain/service/InvoiceCalculator';
 import { occurrenceDate } from '@finance/domain/service/RecurrenceSchedule';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
@@ -102,6 +102,10 @@ export class MaterializeOccurrenceUseCase implements UseCaseWithParams<
       today: input.today,
     });
 
-    return { invoiceData, overLimit: invoiceData[0].invoices.used > card.limit, transaction };
+    return {
+      invoiceData,
+      overLimit: isOverLimit(invoiceData[0].invoices, card.limit),
+      transaction,
+    };
   }
 }

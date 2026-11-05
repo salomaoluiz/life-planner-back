@@ -23,6 +23,7 @@ describe('findForList', () => {
     });
     expect(result.invoice.amount).toBe(45000);
     expect(result.purchases[0].prepaid).toBe(false);
+    expect(result.purchases[0].projected).toBeUndefined();
     expect(result.purchases[0].notes).toBe(mocks.purchase.notes);
     expect(result.credits[0]).toMatchObject({
       id: mocks.refund.id,
@@ -117,5 +118,22 @@ describe('pay / undo', () => {
       creditCardId: mocks.card.id,
       invoiceMonth: '2026-10',
     });
+  });
+});
+
+describe('series rows (spec 096)', () => {
+  it('SHOULD expose the series id of a purchase that belongs to one', async () => {
+    mocks.getInvoicesForList.execute.mockResolvedValueOnce([
+      {
+        card: mocks.card,
+        credits: [],
+        invoice: (await setup.findForList(mocks.userId, '2026-11', ['o1']))[0].invoice,
+        purchases: [{ ...mocks.purchase, projected: true, recurrenceId: 'series-1' }],
+      },
+    ]);
+
+    const [result] = await setup.findForList(mocks.userId, '2026-11', ['o1']);
+
+    expect(result.purchases[0]).toMatchObject({ projected: true, recurrenceId: 'series-1' });
   });
 });

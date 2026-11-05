@@ -249,6 +249,8 @@ model FinancialTransaction {
   prepayment_id            String?
   payment_method           InvoicePaymentMethod?
   paid_from_transaction_id String?               @unique
+  // Spec 096: a card EXPENSE not charged yet (CHECK in the migration); counts apart from the effective totals.
+  projected                Boolean               @default(false)
   currency                 String                @default("BRL") @db.VarChar(3)
   owner                    OwnerType
   owner_id                 String
@@ -316,6 +318,9 @@ model FinancialCardInvoiceTotal {
   expense        Int      @default(0)
   early_paid     Int      @default(0)
   purchase_count Int      @default(0)
+  // Spec 096: `income/expense/early_paid/purchase_count` count effective rows only.
+  projected_amount Int    @default(0)
+  projected_count  Int    @default(0)
   updated_at     DateTime @default(now()) @db.Timestamptz(6)
 
   credit_card FinancialCreditCard @relation(fields: [credit_card_id], references: [id], onDelete: Cascade)
@@ -416,6 +421,8 @@ model FinancialRecurrence {
   next_occurrence_date  DateTime?           @db.Date
   skipped_numbers       Int[]               @default([])
   status                RecurrenceStatus    @default(ACTIVE)
+  // Spec 096: every occurrence of a card EXPENSE series is born projected (CHECK in the migration).
+  projected             Boolean             @default(false)
   currency              String              @default("BRL") @db.VarChar(3)
   owner                 OwnerType
   owner_id              String

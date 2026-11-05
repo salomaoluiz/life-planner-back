@@ -36,7 +36,9 @@ const creditCardRepositoryMock = {
 };
 
 // Stands in for the real sums: the calculator runs for real over the totals below.
-const totalsMock = [{ amount: 4000, invoiceMonth: '2026-11' }];
+const totalsMock = [
+  { amount: 4000, invoiceMonth: '2026-11', projectedAmount: 500, projectedCount: 1 },
+];
 const computeMock = {
   execute: jest.fn(),
 };

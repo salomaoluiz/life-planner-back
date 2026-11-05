@@ -63,10 +63,44 @@ describe('GetUpcomingItemsUseCase', () => {
       expect(result.next[0]).toMatchObject({ purchaseCount: 0 });
     });
 
+    it('SHOULD value the item with the projected total AND expose the projected part (spec 096)', async () => {
+      mocks.findInvoices.execute.mockResolvedValue([
+        {
+          card: mocks.card,
+          invoice: mocks.invoice({ projectedAmount: 800, projectedTotal: 5800 }),
+        },
+      ]);
+
+      const result = await setup.execute(mocks.input);
+
+      expect(result.next[0]).toMatchObject({ projectedAmount: 800, valueCents: 5800 });
+    });
+
+    it('SHOULD list an invoice that has only projected purchases (spec 096)', async () => {
+      mocks.findInvoices.execute.mockResolvedValue([
+        {
+          card: mocks.card,
+          invoice: mocks.invoice({
+            amount: 0,
+            amountDue: 0,
+            projectedAmount: 800,
+            projectedTotal: 800,
+          }),
+        },
+      ]);
+
+      const result = await setup.execute(mocks.input);
+
+      expect(result.next).toEqual([expect.objectContaining({ valueCents: 800 })]);
+    });
+
     it('SHOULD leave out paid invoices and invoices with nothing due', async () => {
       mocks.findInvoices.execute.mockResolvedValue([
         { card: mocks.card, invoice: mocks.invoice({ status: InvoiceStatus.PAID }) },
-        { card: mocks.card, invoice: mocks.invoice({ amountDue: 0, referenceMonth: '2026-10' }) },
+        {
+          card: mocks.card,
+          invoice: mocks.invoice({ amountDue: 0, projectedTotal: 0, referenceMonth: '2026-10' }),
+        },
       ]);
 
       const result = await setup.execute(mocks.input);

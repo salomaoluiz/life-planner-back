@@ -28,6 +28,8 @@ function invoiceMock(overrides: Partial<Invoice> = {}): Invoice {
     amountDue: 5000,
     currency: 'BRL',
     paymentDate: '2026-11-15',
+    projectedAmount: 0,
+    projectedTotal: 5000,
     referenceMonth: '2026-11',
     status: InvoiceStatus.CLOSED,
     ...overrides,

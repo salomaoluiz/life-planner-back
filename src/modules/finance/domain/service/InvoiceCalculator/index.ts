@@ -15,6 +15,8 @@ export interface CardInvoices {
   // Every unpaid closed invoice (amount > 0, oldest first), then the paid ones of the last 3 months.
   closedInvoices: Invoice[];
   openInvoice: Invoice;
+  // Spec 096: Σ projected amounts of the unpaid invoices; `available` subtracts it.
+  projectedUsed: number;
   // Invoices after the open one that already have purchases, nearest first.
   upcomingInvoices: Invoice[];
   used: number;
@@ -37,6 +39,11 @@ export interface Invoice {
   paymentDate: string;
   periodEnd: string;
   periodStart: string;
+  // Spec 096: projected rows of this invoice month (never part of net, total or amountDue).
+  projectedAmount: number;
+  projectedCount: number;
+  // amountDue + projectedAmount
+  projectedTotal: number;
   referenceMonth: string;
   status: InvoiceStatus;
   // net + carryIn
@@ -56,12 +63,18 @@ export interface InvoiceTotal {
   amount: number;
   earlyPaid?: number;
   invoiceMonth: string;
+  projectedAmount?: number;
+  projectedCount?: number;
 }
 
 interface ChainEntry {
   carryIn: number;
   net: number;
   total: number;
+}
+interface ProjectedEntry {
+  amount: number;
+  count: number;
 }
 interface YearMonth {
   month: number; // 1-12
@@ -70,6 +83,7 @@ interface YearMonth {
 
 const CLOSED_PAID_WINDOW = 3;
 const EMPTY_ENTRY: ChainEntry = { carryIn: 0, net: 0, total: 0 };
+const NO_PROJECTED: ProjectedEntry = { amount: 0, count: 0 };
 const MS_PER_DAY = 86_400_000;
 
 export function addInvoiceMonths(month: string, delta: number): string {
@@ -88,7 +102,17 @@ export function buildInvoiceFor(
   const entry = chainOf(totals, paidMonths, referenceMonth).get(referenceMonth) ?? EMPTY_ENTRY;
   const earlyPaid = totals.find((total) => total.invoiceMonth === referenceMonth)?.earlyPaid ?? 0;
 
-  return buildInvoice(card, parseMonth(referenceMonth), entry, earlyPaid, payment, today);
+  const projected = projectedOf(totals).get(referenceMonth) ?? NO_PROJECTED;
+
+  return buildInvoice(
+    card,
+    parseMonth(referenceMonth),
+    entry,
+    earlyPaid,
+    payment,
+    today,
+    projected,
+  );
 }
 export function calculateInvoices(
   card: BillingCard,
@@ -105,13 +129,22 @@ export function calculateInvoices(
   // Months with credits worth showing: a negative total or an early payment.
   const earlyPaidOf = new Map(totals.map((total) => [total.invoiceMonth, total.earlyPaid ?? 0]));
 
+  const projectedByMonth = projectedOf(totals);
+
+  function hasProjected(month: string): boolean {
+    return (projectedByMonth.get(month)?.count ?? 0) > 0;
+  }
+
   const unpaidMonths = [...chain.entries()]
-    .filter(([month, entry]) => entry.total > 0 && !paidMonths.has(month))
+    .filter(([month, entry]) => (entry.total > 0 || hasProjected(month)) && !paidMonths.has(month))
     .map(([month]) => month)
     .sort();
   const used = [...chain.entries()]
     .filter(([month]) => !paidMonths.has(month))
     .reduce((sum, [, entry]) => sum + Math.max(0, entry.total), 0);
+  const projectedUsed = [...projectedByMonth.entries()]
+    .filter(([month]) => !paidMonths.has(month))
+    .reduce((sum, [, entry]) => sum + entry.amount, 0);
   const build = invoiceBuilderFor(card, totals, payments, today);
 
   const closedUnpaid = unpaidMonths.filter((month) => month < openKey).map(build);
@@ -119,7 +152,9 @@ export function calculateInvoices(
   const settledByCredit = [...chain.entries()]
     .filter(
       ([month, entry]) =>
-        !paidMonths.has(month) && (entry.total < 0 || (earlyPaidOf.get(month) ?? 0) > 0),
+        !paidMonths.has(month) &&
+        !hasProjected(month) &&
+        (entry.total < 0 || (earlyPaidOf.get(month) ?? 0) > 0),
     )
     .map(([month]) => month);
   const recentPaid = [...new Set([...paidMonths, ...settledByCredit])]
@@ -128,9 +163,10 @@ export function calculateInvoices(
     .map(build);
 
   return {
-    available: card.limit - used,
+    available: card.limit - used - projectedUsed,
     closedInvoices: [...closedUnpaid, ...recentPaid],
     openInvoice: build(openKey),
+    projectedUsed,
     upcomingInvoices: unpaidMonths.filter((month) => month > openKey).map(build),
     used,
   };
@@ -185,6 +221,7 @@ export function invoiceBuilderFor(
     }
   }
 
+  const projectedByMonth = projectedOf(totals);
   let chain = chainOf(totals, paidMonths, '');
   let chainEnd = [...chain.keys()].pop() ?? '';
 
@@ -202,6 +239,7 @@ export function invoiceBuilderFor(
       earlyPaidOf.get(referenceMonth) ?? 0,
       paymentOf.get(referenceMonth) ?? null,
       today,
+      projectedByMonth.get(referenceMonth) ?? NO_PROJECTED,
     );
   };
 }
@@ -235,6 +273,10 @@ export function isInvoiceAssignable(
   );
 }
 
+// Spec 096 FR 8: projected purchases also consume the limit.
+export function isOverLimit(invoices: CardInvoices, limit: number): boolean {
+  return invoices.used + invoices.projectedUsed > limit;
+}
 // Spec 095 FR 1: a purchase may sit on the invoice its date computes, on the one before or on the one after.
 export function isPurchaseInvoiceAllowed(date: string, closingDay: number, month: string): boolean {
   return purchaseInvoiceOptions(date, closingDay).includes(month);
@@ -276,6 +318,7 @@ function buildInvoice(
   earlyPaid: number,
   payment: InvoicePaymentInfo | null,
   today: string,
+  projected: ProjectedEntry,
 ): Invoice {
   const closingDate = closingDateOf(card.closingDay, reference);
   const periodStart = addDays(closingDateOf(card.closingDay, addMonths(reference, -1)), 1);
@@ -284,7 +327,7 @@ function buildInvoice(
   const closed = today > closingDate;
   const amountDue = Math.max(0, entry.total);
   // A paid invoice keeps the amount frozen on its payment; a closed one with nothing to pay counts as paid.
-  const paid = payment !== null || (closed && entry.total <= 0);
+  const paid = payment !== null || (closed && entry.total <= 0 && projected.count === 0);
 
   return {
     amount: payment ? payment.amount : amountDue,
@@ -301,6 +344,9 @@ function buildInvoice(
     paymentDate,
     periodEnd: closingDate,
     periodStart,
+    projectedAmount: projected.amount,
+    projectedCount: projected.count,
+    projectedTotal: amountDue + projected.amount,
     referenceMonth: formatMonth(reference),
     status: statusOf(paid, closed),
     total: entry.total,
@@ -343,11 +389,22 @@ function daysInMonth(year: number, month: number): number {
 function formatMonth(reference: YearMonth): string {
   return `${pad(reference.year, 4)}-${pad(reference.month, 2)}`;
 }
+// Spec 096: the projected rows of each stored month.
 function pad(value: number, length: number): string {
   return String(value).padStart(length, '0');
 }
 function parseMonth(month: string): YearMonth {
   return { month: Number(month.slice(5, 7)), year: Number(month.slice(0, 4)) };
+}
+function projectedOf(totals: InvoiceTotal[]): Map<string, ProjectedEntry> {
+  return new Map(
+    totals
+      .filter((total) => (total.projectedCount ?? 0) > 0)
+      .map((total) => [
+        total.invoiceMonth,
+        { amount: total.projectedAmount ?? 0, count: total.projectedCount ?? 0 },
+      ]),
+  );
 }
 function statusOf(paid: boolean, closed: boolean): InvoiceStatus {
   if (paid) {

@@ -115,6 +115,7 @@ export class GetTransactionsUseCase implements UseCaseWithParams<
       invoiceRefs,
       limit: input.limit,
       paid: filter.paid,
+      projected: filter.projected,
       search: search ?? undefined,
       tagIds: filter.tagIds,
       to: filter.to,

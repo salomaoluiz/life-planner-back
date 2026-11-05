@@ -18,6 +18,7 @@ import {
   DuplicateQuery,
   ExportQuery,
   IFinanceTransactionRepository,
+  ProjectedPurchase,
   TransactionQuery,
   TransactionScalars,
   UnpaidAccountRow,
@@ -117,6 +118,26 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
       creditCardId: row.credit_card_id,
       earlyPaid: row.early_paid,
       invoiceMonth: row.invoice_month,
+      projectedAmount: row.projected_amount,
+      projectedCount: row.projected_count,
+    }));
+  }
+
+  async findProjectedByInvoice(
+    creditCardId: string,
+    invoiceMonth: string,
+  ): Promise<ProjectedPurchase[]> {
+    const rows = await this.transactionDatasource.findProjectedByInvoice(
+      creditCardId,
+      invoiceMonth,
+    );
+
+    return rows.map((row) => ({
+      date: toCalendarDate(row.date),
+      description: row.description,
+      id: row.id,
+      recurrenceId: row.recurrence_id,
+      value: row.value,
     }));
   }
 
@@ -168,6 +189,7 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
       owner: OwnerType[row.owner],
       ownerId: row.owner_id,
       paid: row.paid === true,
+      projected: row.projected,
       recurrenceId: row.recurrence_id,
       type: TransactionType[row.type],
     };
@@ -228,6 +250,7 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
       date: row.date,
       invoiceMonth: row.invoice_month,
       paid: row.paid,
+      projected: row.projected,
       tagId: row.tag_id,
       type: TransactionType[row.type],
     }));
@@ -246,6 +269,7 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
       owner: params.owner,
       owner_id: params.ownerId,
       paid: params.paid,
+      projected: params.projected,
       tag_names: params.tags,
       type: params.type,
       value: params.value,
@@ -268,6 +292,7 @@ export function toCreateParams(params: CreateTransactionRepositoryParams) {
     owner: params.owner,
     owner_id: params.ownerId,
     paid: params.paid,
+    projected: params.projected,
     tag_names: params.tags,
     type: params.type,
     value: params.value,

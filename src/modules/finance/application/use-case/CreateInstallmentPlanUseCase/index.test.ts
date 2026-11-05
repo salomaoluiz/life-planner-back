@@ -35,7 +35,7 @@ it('SHOULD start on the NEXT invoice WHEN the purchase is after the closing day'
 });
 
 it('SHOULD report overLimit false WHEN the card has room', async () => {
-  mocks.compute.execute.mockResolvedValueOnce([{ invoices: { used: 1000 } }]);
+  mocks.compute.execute.mockResolvedValueOnce([{ invoices: { projectedUsed: 0, used: 1000 } }]);
 
   expect((await setup.execute(mocks.input)).overLimit).toBe(false);
 });
@@ -111,7 +111,7 @@ it('SHOULD store the notes on the plan (spec 059)', async () => {
 });
 
 it('SHOULD hand the card and the computed invoices to GetInstallmentPlan (spec 083)', async () => {
-  const data = { invoices: { used: 1000 } };
+  const data = { invoices: { projectedUsed: 0, used: 1000 } };
 
   mocks.compute.execute.mockResolvedValueOnce([data]);
 

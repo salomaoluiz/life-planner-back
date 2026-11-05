@@ -37,7 +37,7 @@ let setup: MaterializeOccurrenceUseCase;
 
 beforeEach(async () => {
   jest.clearAllMocks();
-  computeMock.execute.mockResolvedValue([{ invoices: { used: 5000 } }]);
+  computeMock.execute.mockResolvedValue([{ invoices: { projectedUsed: 0, used: 5000 } }]);
   ensureConsistencyMock.execute.mockResolvedValue({});
   recurrenceRepositoryMock.createOccurrence.mockResolvedValue(transactionMock);
   recurrenceRepositoryMock.findById.mockResolvedValue(seriesMock);

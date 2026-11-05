@@ -60,7 +60,7 @@ export class ResolveCardRowsPaidUseCase implements UseCaseWithParams<
 
       const invoice = invoiceOf(row.invoiceMonth);
 
-      return { ...row, paid: invoice.status === InvoiceStatus.PAID };
+      return { ...row, paid: !row.projected && invoice.status === InvoiceStatus.PAID };
     });
 
     return input.paid === undefined

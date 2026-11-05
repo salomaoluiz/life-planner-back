@@ -28,6 +28,7 @@ interface IRecurrenceEntity {
   occurrenceCount: null | number;
   owner: OwnerType;
   ownerId: string;
+  projected?: boolean;
   skippedNumbers: number[];
   startDate: string;
   status: RecurrenceStatus;
@@ -63,6 +64,8 @@ class RecurrenceEntity {
   occurrenceCount: null | number;
   owner: OwnerType;
   ownerId: string;
+  // Spec 096: every occurrence of the (card EXPENSE) series is born projected.
+  projected: boolean;
   // Occurrence NUMBERS (as displayed) of projected occurrences deleted alone.
   skippedNumbers: number[];
   startDate: string;
@@ -94,6 +97,7 @@ class RecurrenceEntity {
     this.occurrenceCount = params.occurrenceCount;
     this.owner = params.owner;
     this.ownerId = params.ownerId;
+    this.projected = params.projected ?? false;
     this.skippedNumbers = params.skippedNumbers;
     this.startDate = params.startDate;
     this.status = params.status;

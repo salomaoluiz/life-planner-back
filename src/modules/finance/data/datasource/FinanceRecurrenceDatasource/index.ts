@@ -85,6 +85,8 @@ interface SeriesTemplate {
   notes: null | string;
   owner: Prisma.FinancialTransactionCreateManyInput['owner'];
   owner_id: string;
+  // Spec 096: card EXPENSE series only; every row of the series is created with it.
+  projected: boolean;
   type: Prisma.FinancialTransactionCreateManyInput['type'];
   value: number;
 }
@@ -451,6 +453,7 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
           notes: params.notes,
           owner: params.owner,
           owner_id: params.owner_id,
+          projected: params.projected ?? false,
           start_date: params.start_date,
           status: params.status,
           type: params.type,
@@ -467,6 +470,7 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
         notes: params.notes ?? null,
         owner: params.owner,
         owner_id: params.owner_id,
+        projected: params.projected ?? false,
         type: params.type,
         value: params.value,
       };
@@ -683,11 +687,12 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
           notes: null | string;
           owner: SeriesTemplate['owner'];
           owner_id: string;
+          projected: boolean;
           type: SeriesTemplate['type'];
           value: number;
         }[]
       >(
-        Prisma.sql`SELECT "account_id", "category_id", "credit_card_id", "currency", "description", "last_generated_number", "notes", "owner"::text AS "owner", "owner_id", "type"::text AS "type", "value" FROM "financial_recurrences" WHERE "id" = ${params.id} FOR UPDATE`,
+        Prisma.sql`SELECT "account_id", "category_id", "credit_card_id", "currency", "description", "last_generated_number", "notes", "owner"::text AS "owner", "owner_id", "projected", "type"::text AS "type", "value" FROM "financial_recurrences" WHERE "id" = ${params.id} FOR UPDATE`,
       );
 
       if (locked.length === 0 || locked[0].last_generated_number !== params.expected_last) {
@@ -750,6 +755,7 @@ function toRows(
     owner: template.owner,
     owner_id: template.owner_id,
     paid: template.account_id ? (row.paid ?? false) : null,
+    projected: template.projected,
     recurrence_id: recurrenceId,
     type: template.type,
     value: template.value,
@@ -783,6 +789,7 @@ function templateOf(
     notes: base.notes ?? null,
     owner: base.owner,
     owner_id: base.owner_id,
+    projected: base.projected ?? false,
     type: base.type,
     value: base.value,
   };

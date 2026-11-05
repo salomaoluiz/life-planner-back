@@ -43,6 +43,7 @@ function toProjectedOutput(item: ProjectedOccurrence) {
     occurrenceNumber: item.occurrenceNumber,
     owner: item.owner,
     ownerId: item.ownerId,
+    projected: item.projected,
     recurrenceId: item.recurrenceId,
     tags: item.tags,
     type: item.type,

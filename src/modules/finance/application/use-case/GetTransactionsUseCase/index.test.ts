@@ -85,6 +85,16 @@ describe('filters (spec 045)', () => {
     );
   });
 
+  it('SHOULD pass the projected filter to the repository (spec 096)', async () => {
+    await setup.execute({ accessibleOwners: mocks.accessibleOwners, filter: { projected: true } });
+
+    expect(mocks.transactionRepository.findTransactions).toHaveBeenCalledWith(
+      mocks.accessibleOwners,
+      'ACCOUNT',
+      expect.objectContaining({ projected: true }),
+    );
+  });
+
   it('SHOULD hand the text to the repository as search terms AND return its rows as they are', async () => {
     const rows = [{ description: 'MERCADÃO' }];
     mocks.transactionRepository.findTransactions.mockResolvedValue(rows);

@@ -1,4 +1,11 @@
-import { OwnerIdQuerySchema, resolveToday, TodayQuerySchema, toOwnerIds } from './finance-query';
+import {
+  OwnerIdQuerySchema,
+  resolveToday,
+  TodayQuerySchema,
+  toOwnerIds,
+  toTransactionFilter,
+  TransactionFilterQuerySchema,
+} from './finance-query';
 
 const id = '0b6a1e7c-3f4d-4b2a-8c9d-1e2f3a4b5c6d';
 const id2 = '9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d';
@@ -54,5 +61,20 @@ describe('TodayQuerySchema', () => {
   it('SHOULD accept a missing today AND a real date', () => {
     expect(TodayQuerySchema.safeParse({}).success).toBe(true);
     expect(TodayQuerySchema.safeParse({ today: '2028-02-29' }).success).toBe(true);
+  });
+});
+
+describe('projected filter (spec 096)', () => {
+  it.each([
+    ['true', true],
+    ['false', false],
+  ])('SHOULD parse projected=%s', (value, expected) => {
+    const query = TransactionFilterQuerySchema.parse({ projected: value });
+
+    expect(toTransactionFilter(query)).toEqual(expect.objectContaining({ projected: expected }));
+  });
+
+  it('SHOULD reject another value', () => {
+    expect(TransactionFilterQuerySchema.safeParse({ projected: 'yes' }).success).toBe(false);
   });
 });

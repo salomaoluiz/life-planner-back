@@ -24,6 +24,8 @@ export interface CardInvoiceSum extends CardInvoiceKey {
   // NET: purchases minus credits.
   amount: number;
   early_paid: number;
+  projected_amount: number;
+  projected_count: number;
 }
 export interface CreateTransactionDatasourceParams {
   account_id?: null | string;
@@ -38,6 +40,7 @@ export interface CreateTransactionDatasourceParams {
   owner_id: string;
   // Account rows only (spec 033); card rows stay NULL.
   paid?: boolean | null;
+  projected?: boolean;
   tag_names?: string[];
   type: TransactionType;
   value: number;
@@ -50,6 +53,7 @@ export interface DashboardSumRow {
   date: null | string;
   invoice_month: null | string;
   paid: boolean | null;
+  projected: boolean;
   tag_id: null | string;
   type: TransactionType;
 }
@@ -124,6 +128,7 @@ export interface FindTransactionsFilter {
   invoiceRefs?: CardInvoiceKey[];
   limit?: number;
   paid?: boolean;
+  projected?: boolean;
   search?: SearchTerms;
   tagIds?: string[];
   to?: string;
@@ -159,11 +164,19 @@ export interface IFinanceTransactionDatasource {
     params: ExportTransactionsDatasourceParams,
   ): Promise<FinancialTransactionWithRelations[]>;
   findInvoiceTotals(creditCardIds: string[]): Promise<CardInvoiceSum[]>;
+  findProjectedByInvoice(
+    creditCardId: string,
+    invoiceMonth: string,
+  ): Promise<ProjectedPurchaseRecord[]>;
   findScalarsById(id: string): Promise<null | TransactionScalarsRecord>;
   findUnpaidAccountRows(owners: OwnerAccess[], to: string): Promise<UnpaidAccountRowRecord[]>;
   sumDashboardRows(params: DashboardSumsParams): Promise<DashboardSumRow[]>;
   update(params: UpdateTransactionDatasourceParams): Promise<FinancialTransactionWithRelations>;
 }
+export type ProjectedPurchaseRecord = Pick<
+  FinancialTransaction,
+  'date' | 'description' | 'id' | 'recurrence_id' | 'value'
+>;
 export type TransactionScalarsRecord = { category: { system_key: null | string } } & Pick<
   FinancialTransaction,
   | 'account_id'
@@ -179,6 +192,7 @@ export type TransactionScalarsRecord = { category: { system_key: null | string }
   | 'owner_id'
   | 'owner'
   | 'paid'
+  | 'projected'
   | 'recurrence_id'
   | 'type'
 >;
@@ -210,6 +224,7 @@ export interface UpdateTransactionDatasourceParams {
   owner_id?: string;
   // true/false on account rows, null when the row moves to a card (spec 033).
   paid?: boolean | null;
+  projected?: boolean;
   tag_names?: string[];
   type?: TransactionType;
   value?: number;

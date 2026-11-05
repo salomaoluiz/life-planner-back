@@ -27,6 +27,10 @@ const PurchaseApiSchema = z.object({
   notes: z.string().nullable(),
   ownerId: z.uuid(),
   prepaid: z.boolean(),
+  // Only a projected purchase carries it.
+  projected: z.boolean().optional(),
+  // Spec 096: the series of a recurring purchase (a projected one is moved or discarded with a scope).
+  recurrenceId: z.uuid().optional(),
   value: z.number().int(),
 });
 const InvoiceCreditApiSchema = z.object({

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import {
+  ConfirmTransactionApiInput,
   CreateTransactionApiInput,
   TransactionItem,
   TransactionLookups,
@@ -9,6 +10,7 @@ import {
 } from '@api/finance/v1/dto/transaction.dto';
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { resolveToday } from '@api/finance/v1/finance-query';
+import { ConfirmProjectedTransactionUseCase } from '@finance/application/use-case/ConfirmProjectedTransactionUseCase';
 import { CreateTransactionUseCase } from '@finance/application/use-case/CreateTransactionUseCase';
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
 import { GetTransactionByIdUseCase } from '@finance/application/use-case/GetTransactionByIdUseCase';
@@ -68,6 +70,7 @@ function toTransactionOutput(
     owner: transaction.owner,
     ownerId: transaction.ownerId,
     paid: transaction.paid,
+    projected: transaction.projected,
     recurrenceFrequency: transaction.recurrenceFrequency,
     recurrenceId: transaction.recurrenceId,
     tags: transaction.tags,
@@ -99,6 +102,8 @@ function toTransactionItem(transaction: TransactionEntity, overLimit?: boolean):
     owner: transaction.owner,
     ownerId: transaction.ownerId,
     paid: transaction.paid,
+    // Lean payload: only a projected row carries the flag.
+    projected: transaction.projected ? true : undefined,
     recurrenceFrequency: transaction.recurrenceFrequency ?? undefined,
     recurrenceId: transaction.recurrenceId ?? undefined,
     tagIds: transaction.tags.length > 0 ? transaction.tags.map((tag) => tag.id) : undefined,
@@ -159,6 +164,7 @@ export { toTransactionItem, toTransactionLookups, toTransactionOutput };
 @Injectable()
 export class TransactionService {
   constructor(
+    private readonly confirmProjectedTransactionUseCase: ConfirmProjectedTransactionUseCase,
     private readonly createTransactionUseCase: CreateTransactionUseCase,
     private readonly deleteTransactionUseCase: DeleteTransactionUseCase,
     private readonly financeAccessService: FinanceAccessService,
@@ -168,6 +174,30 @@ export class TransactionService {
     private readonly resolveCardRowsPaidUseCase: ResolveCardRowsPaidUseCase,
     private readonly updateTransactionUseCase: UpdateTransactionUseCase,
   ) {}
+
+  async confirm(
+    userId: string,
+    id: string,
+    input: ConfirmTransactionApiInput,
+    today?: string,
+  ): Promise<TransactionWithLookups> {
+    const accessibleOwners = await this.financeAccessService.resolve(userId);
+
+    const { invoiceData, overLimit, transaction } =
+      await this.confirmProjectedTransactionUseCase.execute({
+        ...input,
+        accessibleOwners,
+        id,
+        today: resolveToday(today),
+      });
+    const [resolved] = await this.resolveCardRowsPaidUseCase.execute({
+      invoiceData,
+      today: resolveToday(today),
+      transactions: [transaction],
+    });
+
+    return toWithLookups(resolved, transaction.creditCardId ? overLimit : undefined);
+  }
 
   async create(
     userId: string,

@@ -73,6 +73,7 @@ describe('findTransactionScalarsById (spec 085)', () => {
       owner: 'USER',
       owner_id: 'owner-1',
       paid: true,
+      projected: true,
       recurrence_id: 'series-1',
       type: 'EXPENSE',
     });
@@ -92,6 +93,7 @@ describe('findTransactionScalarsById (spec 085)', () => {
       owner: 'USER',
       ownerId: 'owner-1',
       paid: true,
+      projected: true,
       recurrenceId: 'series-1',
       type: 'EXPENSE',
     });
@@ -162,7 +164,13 @@ describe('updateTransaction', () => {
 describe('card helpers', () => {
   it('SHOULD sum invoices, find purchases and count by card', async () => {
     expect(await setup.findInvoiceTotals(['card-1'])).toEqual([
-      { amount: 450, creditCardId: 'card-1', invoiceMonth: '2026-10' },
+      {
+        amount: 450,
+        creditCardId: 'card-1',
+        invoiceMonth: '2026-10',
+        projectedAmount: 120,
+        projectedCount: 1,
+      },
     ]);
     expect(
       await setup.findCardPurchases([{ creditCardId: 'card-1', invoiceMonth: '2026-10' }]),
@@ -190,6 +198,75 @@ describe('search (spec 084)', () => {
     expect(mocks.transactionDatasource.findCardPurchases).toHaveBeenCalledWith(
       [{ credit_card_id: 'card-1', invoice_month: '2026-10' }],
       search,
+    );
+  });
+});
+
+describe('findProjectedByInvoice (spec 096)', () => {
+  it('SHOULD map the projected rows of one invoice to the blocking list', async () => {
+    expect(await setup.findProjectedByInvoice('card-1', '2026-10')).toEqual([
+      {
+        date: '2026-10-25',
+        description: 'Youtube Premium',
+        id: 'p-1',
+        recurrenceId: 'series-1',
+        value: 10000,
+      },
+    ]);
+    expect(mocks.transactionDatasource.findProjectedByInvoice).toHaveBeenCalledWith(
+      'card-1',
+      '2026-10',
+    );
+  });
+});
+
+describe('sumDashboardRows projected (spec 096)', () => {
+  it('SHOULD map the projected flag of each sum', async () => {
+    mocks.transactionDatasource.sumDashboardRows.mockResolvedValueOnce([
+      {
+        amount: 700,
+        category_id: 'c',
+        count: 1,
+        credit_card_id: 'card-1',
+        date: null,
+        invoice_month: '2026-10',
+        paid: null,
+        projected: true,
+        tag_id: null,
+        type: 'EXPENSE',
+      },
+    ]);
+
+    const rows = await setup.sumDashboardRows({
+      byTag: false,
+      currency: 'BRL',
+      from: '2026-10-01',
+      invoiceRefs: [],
+      owners: [{ owner: OwnerType.USER, ownerId: 'o' }],
+      to: '2026-10-31',
+    });
+
+    expect(rows).toEqual([expect.objectContaining({ projected: true })]);
+  });
+});
+
+describe('projected (spec 096)', () => {
+  it('SHOULD send projected as a column on create', async () => {
+    await setup.createTransaction({
+      categoryId: 'c',
+      creditCardId: 'card',
+      currency: 'BRL',
+      date: '2026-10-03',
+      description: 'x',
+      owner: OwnerType.USER,
+      ownerId: 'o',
+      projected: true,
+      type: TransactionType.EXPENSE,
+      value: 1,
+    });
+
+    expect(mocks.transactionDatasource.create).toHaveBeenCalledWith(
+      expect.objectContaining({ projected: true }),
     );
   });
 });

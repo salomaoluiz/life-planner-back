@@ -13,13 +13,17 @@ import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-ca
 import AccountEntity from '@finance/domain/entity/AccountEntity';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
+import { TransactionType } from '@finance/domain/enum';
 import { IFinanceTransactionRepository } from '@finance/domain/repository';
 import {
   invoiceMonthOf,
+  isOverLimit,
   isPurchaseInvoiceAllowed,
 } from '@finance/domain/service/InvoiceCalculator';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
+
+export const PROJECTED_ONLY_CARD_EXPENSES = 'Projected is only for card expenses';
 
 // `overLimit` is true only for a card purchase that leaves the card above its limit (spec 029 FR 11): the write still succeeds.
 export interface TransactionWithLimit {
@@ -68,6 +72,10 @@ export class CreateTransactionUseCase implements UseCaseWithParams<
       type: input.type,
     });
 
+    if (input.projected === true && (!card || input.type !== TransactionType.EXPENSE)) {
+      throw new UnprocessableEntityException(PROJECTED_ONLY_CARD_EXPENSES);
+    }
+
     if (input.invoiceMonth !== undefined) {
       // Spec 095 FR 1, 3: only a card purchase, and only the previous, computed or next invoice of its date.
       // A paid month is refused by the datasource under the card lock (`Invoice is paid`), with no extra query.
@@ -89,6 +97,7 @@ export class CreateTransactionUseCase implements UseCaseWithParams<
       notes: input.notes,
       owner: input.owner,
       ownerId: input.ownerId,
+      projected: input.projected,
       // Account rows start paid when dated up to today (ISO dates compare as strings).
       paid: input.accountId === undefined ? undefined : (input.paid ?? input.date <= input.today),
       tags: input.tags,
@@ -105,6 +114,10 @@ export class CreateTransactionUseCase implements UseCaseWithParams<
       today: input.today,
     });
 
-    return { invoiceData, overLimit: invoiceData[0].invoices.used > card.limit, transaction };
+    return {
+      invoiceData,
+      overLimit: isOverLimit(invoiceData[0].invoices, card.limit),
+      transaction,
+    };
   }
 }

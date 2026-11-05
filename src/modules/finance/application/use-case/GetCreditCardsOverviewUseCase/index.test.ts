@@ -21,7 +21,8 @@ describe('GetCreditCardsOverviewUseCase', () => {
       '2026-11',
     ]);
     expect(result.cards[0].used).toBe(4000);
-    expect(result.cards[0].available).toBe(496000);
+    expect(result.cards[0].projectedUsed).toBe(500);
+    expect(result.cards[0].available).toBe(495500);
     expect(mocks.compute.execute).toHaveBeenCalledTimes(1);
     expect(mocks.compute.execute).toHaveBeenCalledWith(
       expect.objectContaining({ fromMonth: '2026-07' }),
@@ -31,7 +32,12 @@ describe('GetCreditCardsOverviewUseCase', () => {
   it('SHOULD aggregate limit, used and available over the returned cards', async () => {
     const result = await setup.execute(mocks.input);
 
-    expect(result.aggregate).toEqual({ available: 792000, totalLimit: 800000, used: 8000 });
+    expect(result.aggregate).toEqual({
+      available: 791000,
+      projectedUsed: 1000,
+      totalLimit: 800000,
+      used: 8000,
+    });
   });
 
   it('SHOULD narrow by ownerIds AND drop owners the caller cannot access', async () => {
@@ -49,7 +55,10 @@ describe('GetCreditCardsOverviewUseCase', () => {
   it('SHOULD return an empty overview WITHOUT hitting the repository WHEN no owner remains', async () => {
     const result = await setup.execute({ ...mocks.input, ownerIds: ['foreign'] });
 
-    expect(result).toEqual({ aggregate: { available: 0, totalLimit: 0, used: 0 }, cards: [] });
+    expect(result).toEqual({
+      aggregate: { available: 0, projectedUsed: 0, totalLimit: 0, used: 0 },
+      cards: [],
+    });
     expect(mocks.creditCardRepository.findCreditCards).not.toHaveBeenCalled();
   });
 

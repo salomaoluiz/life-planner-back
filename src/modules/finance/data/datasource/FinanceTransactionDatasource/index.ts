@@ -36,6 +36,7 @@ import {
   FinancialTransactionWithRelations,
   FindTransactionsFilter,
   IFinanceTransactionDatasource,
+  ProjectedPurchaseRecord,
   TransactionScalarsRecord,
   UnpaidAccountRowRecord,
   UpdateTransactionDatasourceParams,
@@ -243,6 +244,18 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
     });
   }
 
+  // Spec 096 FR 10: scalars only, the list that explains why an invoice cannot be paid.
+  async findProjectedByInvoice(
+    creditCardId: string,
+    invoiceMonth: string,
+  ): Promise<ProjectedPurchaseRecord[]> {
+    return this.db.client.financialTransaction.findMany({
+      orderBy: [{ date: 'asc' }, { created_at: 'asc' }, { id: 'asc' }],
+      select: { date: true, description: true, id: true, recurrence_id: true, value: true },
+      where: { credit_card_id: creditCardId, invoice_month: invoiceMonth, projected: true },
+    });
+  }
+
   async findScalarsById(id: string): Promise<null | TransactionScalarsRecord> {
     return this.db.client.financialTransaction.findUnique({
       relationLoadStrategy: 'join',
@@ -261,6 +274,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
         owner: true,
         owner_id: true,
         paid: true,
+        projected: true,
         recurrence_id: true,
         type: true,
       },
@@ -417,6 +431,8 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
         expense: true,
         income: true,
         invoice_month: true,
+        projected_amount: true,
+        projected_count: true,
       },
       where: { credit_card_id: { in: creditCardIds } },
     });
@@ -426,6 +442,8 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
       credit_card_id: row.credit_card_id,
       early_paid: row.early_paid,
       invoice_month: row.invoice_month,
+      projected_amount: row.projected_amount,
+      projected_count: row.projected_count,
     }));
   }
   // Spec 046: one grouped query for the dashboard, in the database (never the rows in memory).
@@ -444,6 +462,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
         date: null | string;
         invoice_month: null | string;
         paid: boolean | null;
+        projected: boolean;
         tag_id: null | string;
         type: TransactionType;
       }[]
@@ -489,6 +508,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
           owner: params.owner,
           owner_id: params.owner_id,
           paid: params.paid,
+          projected: params.projected,
           type: params.type,
           value: params.value,
         },
@@ -610,7 +630,7 @@ function dashboardSumsSql(params: DashboardSumsParams): Prisma.Sql {
 
   return Prisma.sql`
     SELECT to_char(CASE WHEN t."credit_card_id" IS NULL THEN t."date" END, 'YYYY-MM-DD') AS "date", t."credit_card_id", t."invoice_month", t."type"::text AS "type",
-      t."category_id", t."paid", ${tagColumn} AS "tag_id",
+      t."category_id", t."paid", ${tagColumn} AS "tag_id", t."projected",
       COALESCE(SUM(t."value"), 0) AS "amount", COUNT(*) AS "count"
     FROM "financial_transactions" t
     JOIN "financial_categories" c ON c."id" = t."category_id"
@@ -618,7 +638,7 @@ function dashboardSumsSql(params: DashboardSumsParams): Prisma.Sql {
     LEFT JOIN "financial_credit_cards" cc ON cc."id" = t."credit_card_id"
     ${tagJoin}
     WHERE ${Prisma.join(conditions, ' AND ')}
-    GROUP BY 1, 2, 3, 4, 5, 6, 7`;
+    GROUP BY 1, 2, 3, 4, 5, 6, 7, 8`;
 }
 // Spec 059 FR 14 / spec 084: description or notes (case and accent insensitive), category ids, or amount range.
 function searchSql(search: SearchTerms): Prisma.Sql {
@@ -702,6 +722,8 @@ function exportWhere(
       toOwnerWhere(params.owners),
       { date: { gte: fromCalendarDate(params.from), lte: fromCalendarDate(params.to) } },
       ...(picked.length > 0 ? [{ OR: picked }] : []),
+      // Spec 096 FR 13: a projected purchase is not a real charge yet.
+      { projected: false },
     ],
   };
 }
@@ -733,6 +755,10 @@ function filterWhere(source: TransactionSource, filter: FindTransactionsFilter) 
 
   if (filter.tagIds?.length) {
     where.push({ tags: { some: { tag_id: { in: filter.tagIds } } } });
+  }
+
+  if (filter.projected !== undefined) {
+    where.push({ projected: filter.projected });
   }
 
   if (source === TransactionSource.CARD) {
@@ -770,6 +796,7 @@ function isTextOnly(params: UpdateTransactionDatasourceParams): boolean {
     params.invoice_month === undefined &&
     params.owner === undefined &&
     params.owner_id === undefined &&
+    params.projected === undefined &&
     params.type === undefined &&
     params.value === undefined
   );

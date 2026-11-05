@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { TransactionService } from '@api/finance/v1/transaction.service';
+import { ConfirmProjectedTransactionUseCase } from '@finance/application/use-case/ConfirmProjectedTransactionUseCase';
 import { CreateTransactionUseCase } from '@finance/application/use-case/CreateTransactionUseCase';
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
 import { GetTransactionByIdUseCase } from '@finance/application/use-case/GetTransactionByIdUseCase';
@@ -80,6 +81,9 @@ const transactionLookupsMock = {
 };
 const transactionApiMock = { item: transactionItemMock, lookups: transactionLookupsMock };
 
+const confirmProjectedTransactionUseCaseMock = {
+  execute: jest.fn().mockResolvedValue({ overLimit: false, transaction: transactionResultMock }),
+};
 const createTransactionUseCaseMock = {
   execute: jest.fn().mockResolvedValue({ overLimit: false, transaction: transactionResultMock }),
 };
@@ -110,6 +114,10 @@ beforeEach(async () => {
   const module = await Test.createTestingModule({
     providers: [
       TransactionService,
+      {
+        provide: ConfirmProjectedTransactionUseCase,
+        useValue: confirmProjectedTransactionUseCaseMock,
+      },
       { provide: CreateTransactionUseCase, useValue: createTransactionUseCaseMock },
       { provide: DeleteTransactionUseCase, useValue: deleteTransactionUseCaseMock },
       { provide: FinanceAccessService, useValue: financeAccessServiceMock },
@@ -126,6 +134,7 @@ beforeEach(async () => {
 
 const mocks = {
   accessibleOwners,
+  confirmProjectedTransactionUseCase: confirmProjectedTransactionUseCaseMock,
   createTransactionUseCase: createTransactionUseCaseMock,
   deleteTransactionUseCase: deleteTransactionUseCaseMock,
   getTransactionByIdUseCase: getTransactionByIdUseCaseMock,

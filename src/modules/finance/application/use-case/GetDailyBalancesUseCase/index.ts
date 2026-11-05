@@ -187,11 +187,13 @@ function invoicesDue(
     return [...merged.keys()].flatMap((month) => {
       const invoice = invoiceOf(month);
 
-      return invoice.payment === null && invoice.amountDue > 0 && invoice.paymentDate <= monthEnd
+      return invoice.payment === null &&
+        invoice.projectedTotal > 0 &&
+        invoice.paymentDate <= monthEnd
         ? [
             {
               accountId: card.paymentAccountId,
-              amount: -invoice.amountDue,
+              amount: -invoice.projectedTotal,
               date: invoice.paymentDate,
             },
           ]

@@ -56,6 +56,7 @@ export class FinanceRecurrenceMapper {
       occurrenceCount: totalOccurrences({ endDate, frequency, startDate }, raw.first_number),
       owner: OwnerType[raw.owner],
       ownerId: raw.owner_id,
+      projected: raw.projected,
       skippedNumbers: raw.skipped_numbers,
       startDate,
       status: RecurrenceStatus[raw.status],
