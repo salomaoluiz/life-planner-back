@@ -22,6 +22,8 @@ export type IFinanceTransactionRepository = {
   findDuplicateCandidates(query: DuplicateQuery): Promise<DuplicateCandidate[]>;
   findTransactionById(id: string): Promise<TransactionEntity | undefined>;
   // Spec 085: the stored row without relations (one read), for the checks before an update or delete.
+  // Spec 096 FR 10: the projected rows of one invoice, the ones that block paying it.
+  findProjectedByInvoice(creditCardId: string, invoiceMonth: string): Promise<ProjectedPurchase[]>;
   findTransactionScalarsById(id: string): Promise<TransactionScalars | undefined>;
   // Spec 047: every row of the period by its own date (system rows included), `date` then `createdAt` ascending.
   findTransactionsForExport(query: ExportQuery): Promise<TransactionEntity[]>;
@@ -170,6 +172,14 @@ interface CreateTransactionRepositoryParams {
   type: TransactionType;
   value: number;
 }
+interface ProjectedPurchase {
+  // `YYYY-MM-DD`
+  date: string;
+  description: string;
+  id: string;
+  recurrenceId: null | string;
+  value: number;
+}
 interface TransactionQuery {
   accountIds?: string[];
   categoryIds?: string[];
@@ -220,6 +230,7 @@ export {
   DuplicateCandidate,
   DuplicateQuery,
   ExportQuery,
+  ProjectedPurchase,
   TransactionQuery,
   TransactionScalars,
   UnpaidAccountRow,

@@ -18,6 +18,7 @@ import {
   DuplicateQuery,
   ExportQuery,
   IFinanceTransactionRepository,
+  ProjectedPurchase,
   TransactionQuery,
   TransactionScalars,
   UnpaidAccountRow,
@@ -119,6 +120,24 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
       invoiceMonth: row.invoice_month,
       projectedAmount: row.projected_amount,
       projectedCount: row.projected_count,
+    }));
+  }
+
+  async findProjectedByInvoice(
+    creditCardId: string,
+    invoiceMonth: string,
+  ): Promise<ProjectedPurchase[]> {
+    const rows = await this.transactionDatasource.findProjectedByInvoice(
+      creditCardId,
+      invoiceMonth,
+    );
+
+    return rows.map((row) => ({
+      date: toCalendarDate(row.date),
+      description: row.description,
+      id: row.id,
+      recurrenceId: row.recurrence_id,
+      value: row.value,
     }));
   }
 

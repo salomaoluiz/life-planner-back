@@ -163,11 +163,19 @@ export interface IFinanceTransactionDatasource {
     params: ExportTransactionsDatasourceParams,
   ): Promise<FinancialTransactionWithRelations[]>;
   findInvoiceTotals(creditCardIds: string[]): Promise<CardInvoiceSum[]>;
+  findProjectedByInvoice(
+    creditCardId: string,
+    invoiceMonth: string,
+  ): Promise<ProjectedPurchaseRecord[]>;
   findScalarsById(id: string): Promise<null | TransactionScalarsRecord>;
   findUnpaidAccountRows(owners: OwnerAccess[], to: string): Promise<UnpaidAccountRowRecord[]>;
   sumDashboardRows(params: DashboardSumsParams): Promise<DashboardSumRow[]>;
   update(params: UpdateTransactionDatasourceParams): Promise<FinancialTransactionWithRelations>;
 }
+export type ProjectedPurchaseRecord = Pick<
+  FinancialTransaction,
+  'date' | 'description' | 'id' | 'recurrence_id' | 'value'
+>;
 export type TransactionScalarsRecord = { category: { system_key: null | string } } & Pick<
   FinancialTransaction,
   | 'account_id'

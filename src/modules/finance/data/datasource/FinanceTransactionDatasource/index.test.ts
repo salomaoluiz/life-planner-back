@@ -363,6 +363,19 @@ describe('Method findByOwners keyset pages (spec 078)', () => {
   });
 });
 
+describe('Method findProjectedByInvoice (spec 096)', () => {
+  it('SHOULD read the projected rows of the invoice, oldest first, with scalars only', async () => {
+    spies.findMany.mockResolvedValue([{ id: 'p-1' }]);
+
+    expect(await setup.findProjectedByInvoice('card-1', '2026-10')).toEqual([{ id: 'p-1' }]);
+    expect(spies.findMany).toHaveBeenCalledWith({
+      orderBy: [{ date: 'asc' }, { created_at: 'asc' }, { id: 'asc' }],
+      select: { date: true, description: true, id: true, recurrence_id: true, value: true },
+      where: { credit_card_id: 'card-1', invoice_month: '2026-10', projected: true },
+    });
+  });
+});
+
 describe('Method findByOwners projected filter (spec 096)', () => {
   it.each([
     [TransactionSource.ACCOUNT, true],

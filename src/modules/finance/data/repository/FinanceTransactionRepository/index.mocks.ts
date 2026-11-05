@@ -50,6 +50,15 @@ const transactionDatasourceMock = {
       projected_count: 1,
     },
   ]),
+  findProjectedByInvoice: jest.fn().mockResolvedValue([
+    {
+      date: new Date('2026-10-25T00:00:00.000Z'),
+      description: 'Youtube Premium',
+      id: 'p-1',
+      recurrence_id: 'series-1',
+      value: 10000,
+    },
+  ]),
   findScalarsById: jest.fn(),
   findUnpaidAccountRows: jest.fn().mockResolvedValue([
     {

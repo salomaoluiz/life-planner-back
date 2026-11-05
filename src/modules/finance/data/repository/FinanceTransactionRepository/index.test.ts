@@ -202,6 +202,24 @@ describe('search (spec 084)', () => {
   });
 });
 
+describe('findProjectedByInvoice (spec 096)', () => {
+  it('SHOULD map the projected rows of one invoice to the blocking list', async () => {
+    expect(await setup.findProjectedByInvoice('card-1', '2026-10')).toEqual([
+      {
+        date: '2026-10-25',
+        description: 'Youtube Premium',
+        id: 'p-1',
+        recurrenceId: 'series-1',
+        value: 10000,
+      },
+    ]);
+    expect(mocks.transactionDatasource.findProjectedByInvoice).toHaveBeenCalledWith(
+      'card-1',
+      '2026-10',
+    );
+  });
+});
+
 describe('projected (spec 096)', () => {
   it('SHOULD send projected as a column on create', async () => {
     await setup.createTransaction({

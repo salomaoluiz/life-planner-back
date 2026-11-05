@@ -36,6 +36,7 @@ import {
   FinancialTransactionWithRelations,
   FindTransactionsFilter,
   IFinanceTransactionDatasource,
+  ProjectedPurchaseRecord,
   TransactionScalarsRecord,
   UnpaidAccountRowRecord,
   UpdateTransactionDatasourceParams,
@@ -240,6 +241,18 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
       include: TRANSACTION_RELATIONS,
       orderBy: [{ date: 'asc' }, { created_at: 'asc' }, { id: 'asc' }],
       where: exportWhere(params),
+    });
+  }
+
+  // Spec 096 FR 10: scalars only, the list that explains why an invoice cannot be paid.
+  async findProjectedByInvoice(
+    creditCardId: string,
+    invoiceMonth: string,
+  ): Promise<ProjectedPurchaseRecord[]> {
+    return this.db.client.financialTransaction.findMany({
+      orderBy: [{ date: 'asc' }, { created_at: 'asc' }, { id: 'asc' }],
+      select: { date: true, description: true, id: true, recurrence_id: true, value: true },
+      where: { credit_card_id: creditCardId, invoice_month: invoiceMonth, projected: true },
     });
   }
 

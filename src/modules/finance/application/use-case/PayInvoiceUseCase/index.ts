@@ -25,6 +25,7 @@ import {
   IFinanceAccountRepository,
   IFinanceCreditCardRepository,
   IFinanceInvoicePaymentRepository,
+  IFinanceTransactionRepository,
 } from '@finance/domain/repository';
 import { buildInvoiceFor } from '@finance/domain/service/InvoiceCalculator';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -42,6 +43,8 @@ export class PayInvoiceUseCase implements UseCaseWithParams<PayInvoiceInput, Inv
     private readonly creditCardRepository: IFinanceCreditCardRepository,
     @Inject('IFinanceInvoicePaymentRepository')
     private readonly invoicePaymentRepository: IFinanceInvoicePaymentRepository,
+    @Inject('IFinanceTransactionRepository')
+    private readonly transactionRepository: IFinanceTransactionRepository,
   ) {}
 
   async execute(params: PayInvoiceInput): Promise<InvoicePaymentEntity> {
@@ -69,6 +72,15 @@ export class PayInvoiceUseCase implements UseCaseWithParams<PayInvoiceInput, Inv
 
     if (invoice.payment) {
       throw new ConflictException('Invoice already paid');
+    }
+    // Spec 096 FR 10: every projected purchase is confirmed, moved or discarded first.
+    if (invoice.projectedCount > 0) {
+      const projected = await this.transactionRepository.findProjectedByInvoice(
+        card.id,
+        input.invoiceMonth,
+      );
+
+      throw new ConflictException({ message: 'Invoice has projected purchases', projected });
     }
     if (invoice.status !== InvoiceStatus.CLOSED || invoice.amount <= 0) {
       throw new UnprocessableEntityException('Only a closed invoice with an amount can be paid');
