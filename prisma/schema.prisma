@@ -5,9 +5,9 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider     = "prisma-client"
-  output       = "../generated/prisma"
-  moduleFormat = "cjs"
+  provider        = "prisma-client"
+  output          = "../generated/prisma"
+  moduleFormat    = "cjs"
   // Lets a bounded read with relations run as ONE joined query (`relationLoadStrategy: 'join'`).
   previewFeatures = ["relationJoins"]
 }
@@ -17,25 +17,26 @@ datasource db {
 }
 
 model User {
-  id             String         @id @default(uuid())
-  email          String         @unique
-  name           String
-  password_hash  String
-  photo_url      String?
-  created_at     DateTime?      @default(now())
-  updated_at     DateTime?      @updatedAt
-  families       Family[]
-  family_members FamilyMember[]
-  sessions       UserSession[]
+  id               String                    @id @default(uuid())
+  email            String                    @unique
+  name             String
+  password_hash    String
+  photo_url        String?
+  created_at       DateTime?                 @default(now())
+  updated_at       DateTime?                 @updatedAt
+  families         Family[]
+  family_members   FamilyMember[]
+  sessions         UserSession[]
+  account_favorite FinancialAccountFavorite?
 }
 
 model Family {
-  id         String   @id @default(uuid())
+  id         String        @id @default(uuid())
   name       String
   owner_id   String
   status     AccountStatus @default(ACTIVE)
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @updatedAt @db.Timestamptz(6)
+  created_at DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at DateTime      @updatedAt @db.Timestamptz(6)
 
   owner   User           @relation(fields: [owner_id], references: [id], onDelete: Cascade)
   members FamilyMember[]
@@ -95,7 +96,7 @@ model FinancialAccount {
   icon            String
   initial_balance Int           @default(0)
   ledger_balance  Int           @default(0)
-  currency String @default("BRL") @db.VarChar(3)
+  currency        String        @default("BRL") @db.VarChar(3)
   status          AccountStatus @default(ACTIVE)
   archived_at     DateTime?     @db.Timestamptz(6)
   owner           OwnerType
@@ -106,10 +107,25 @@ model FinancialAccount {
   transactions     FinancialTransaction[]
   recurrences      FinancialRecurrence[]
   invoice_payments FinancialInvoicePayment[]
-  payment_cards    FinancialCreditCard[]     @relation("CardPaymentAccount")
+  payment_cards    FinancialCreditCard[]      @relation("CardPaymentAccount")
+  favorites        FinancialAccountFavorite[]
 
   @@index([owner, owner_id])
   @@map("financial_accounts")
+}
+
+// Spec 094: at most one favorite account per user (PK on user_id); the account is only readable by that user.
+model FinancialAccountFavorite {
+  user_id    String   @id
+  account_id String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @updatedAt @db.Timestamptz(6)
+
+  user    User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  account FinancialAccount @relation(fields: [account_id], references: [id], onDelete: Cascade)
+
+  @@index([account_id])
+  @@map("financial_account_favorites")
 }
 
 enum CreditCardBrand {
@@ -131,7 +147,7 @@ model FinancialCreditCard {
   payment_day Int?            @db.SmallInt
   color       String
   last_digits String?         @db.Char(4)
-  currency String @default("BRL") @db.VarChar(3)
+  currency    String          @default("BRL") @db.VarChar(3)
   status      AccountStatus   @default(ACTIVE)
   archived_at DateTime?       @db.Timestamptz(6)
   owner       OwnerType
@@ -233,7 +249,7 @@ model FinancialTransaction {
   prepayment_id            String?
   payment_method           InvoicePaymentMethod?
   paid_from_transaction_id String?               @unique
-  currency String @default("BRL") @db.VarChar(3)
+  currency                 String                @default("BRL") @db.VarChar(3)
   owner                    OwnerType
   owner_id                 String
   created_at               DateTime              @default(now()) @db.Timestamptz(3)
@@ -313,8 +329,8 @@ model FinancialCardInvoiceTotal {
 model FinanceOwnerVersion {
   owner      OwnerType
   owner_id   String
-  version    BigInt   @default(1)
-  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  version    BigInt    @default(1)
+  updated_at DateTime  @default(now()) @db.Timestamptz(6)
 
   @@id([owner, owner_id])
   @@map("finance_owner_versions")
@@ -386,7 +402,7 @@ model FinancialRecurrence {
   id                    String              @id @default(uuid())
   description           String
   // Spec 059: free text, trimmed, at most 1000 characters (CHECK in the migration); NULL when empty.
-  notes                    String?
+  notes                 String?
   value                 Int
   type                  TransactionType
   category_id           String
@@ -400,15 +416,15 @@ model FinancialRecurrence {
   next_occurrence_date  DateTime?           @db.Date
   skipped_numbers       Int[]               @default([])
   status                RecurrenceStatus    @default(ACTIVE)
-  currency String @default("BRL") @db.VarChar(3)
+  currency              String              @default("BRL") @db.VarChar(3)
   owner                 OwnerType
   owner_id              String
   created_at            DateTime            @default(now()) @db.Timestamptz(6)
   updated_at            DateTime            @updatedAt @db.Timestamptz(6)
 
-  category     FinancialCategory      @relation(fields: [category_id], references: [id], onDelete: Restrict)
-  account      FinancialAccount?      @relation(fields: [account_id], references: [id], onDelete: Restrict)
-  credit_card  FinancialCreditCard?   @relation(fields: [credit_card_id], references: [id], onDelete: Restrict)
+  category     FinancialCategory        @relation(fields: [category_id], references: [id], onDelete: Restrict)
+  account      FinancialAccount?        @relation(fields: [account_id], references: [id], onDelete: Restrict)
+  credit_card  FinancialCreditCard?     @relation(fields: [credit_card_id], references: [id], onDelete: Restrict)
   transactions FinancialTransaction[]
   tags         FinancialRecurrenceTag[]
 
@@ -424,12 +440,12 @@ model FinancialInstallmentPlan {
   credit_card_id    String
   description       String
   // Spec 059: free text, trimmed, at most 1000 characters (CHECK in the migration); NULL when empty.
-  notes                    String?
+  notes             String?
   category_id       String
   total_value       Int
   installment_count Int       @db.SmallInt
   date              DateTime  @db.Date
-  currency String @default("BRL") @db.VarChar(3)
+  currency          String    @default("BRL") @db.VarChar(3)
   owner             OwnerType
   owner_id          String
   created_at        DateTime  @default(now()) @db.Timestamptz(6)
@@ -531,12 +547,12 @@ model FinancialRecurrenceTag {
 // Spec 058: curated icon catalog. `search_text` / `search` are generated columns (see the migration), queried only
 // with raw SQL, so Prisma never writes them.
 model CategoryIcon {
-  name        String  @id
+  name        String                   @id
   label_pt    String
   label_en    String
   group_key   String
   keywords    String[]
-  common      Boolean @default(false)
+  common      Boolean                  @default(false)
   sort        Int
   search_text Unsupported("text")?
   search      Unsupported("tsvector")?

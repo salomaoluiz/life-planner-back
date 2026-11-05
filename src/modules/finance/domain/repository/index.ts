@@ -1,3 +1,4 @@
+export * from './IFinanceAccountFavoriteRepository';
 export * from './IFinanceAccountRepository';
 export * from './IFinanceCardCreditRepository';
 export * from './IFinanceCategoryIconRepository';

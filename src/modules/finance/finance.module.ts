@@ -87,6 +87,7 @@ import { UpdateRecurrenceUseCase } from '@finance/application/use-case/UpdateRec
 import { UpdateTagUseCase } from '@finance/application/use-case/UpdateTagUseCase';
 import { UpdateTransactionUseCase } from '@finance/application/use-case/UpdateTransactionUseCase';
 import { FinanceAccountDatasource } from '@finance/data/datasource/FinanceAccountDatasource';
+import { FinanceAccountFavoriteDatasource } from '@finance/data/datasource/FinanceAccountFavoriteDatasource';
 import { FinanceCardCreditDatasource } from '@finance/data/datasource/FinanceCardCreditDatasource';
 import { FinanceCategoryDatasource } from '@finance/data/datasource/FinanceCategoryDatasource';
 import { FinanceCategoryIconDatasource } from '@finance/data/datasource/FinanceCategoryIconDatasource';
@@ -99,6 +100,7 @@ import { FinancePrepaymentDatasource } from '@finance/data/datasource/FinancePre
 import { FinanceRecurrenceDatasource } from '@finance/data/datasource/FinanceRecurrenceDatasource';
 import { FinanceTagDatasource } from '@finance/data/datasource/FinanceTagDatasource';
 import { FinanceTransactionDatasource } from '@finance/data/datasource/FinanceTransactionDatasource';
+import { FinanceAccountFavoriteRepository } from '@finance/data/repository/FinanceAccountFavoriteRepository';
 import { FinanceAccountRepository } from '@finance/data/repository/FinanceAccountRepository';
 import { FinanceCardCreditRepository } from '@finance/data/repository/FinanceCardCreditRepository';
 import { FinanceCategoryIconRepository } from '@finance/data/repository/FinanceCategoryIconRepository';
@@ -206,6 +208,8 @@ const useCases = [
   providers: [
     ...useCases,
     MaterializationGate,
+    { provide: 'IFinanceAccountFavoriteDatasource', useClass: FinanceAccountFavoriteDatasource },
+    { provide: 'IFinanceAccountFavoriteRepository', useClass: FinanceAccountFavoriteRepository },
     { provide: 'IFinanceAccountRepository', useClass: FinanceAccountRepository },
     { provide: 'IFinanceAccountDatasource', useClass: FinanceAccountDatasource },
     { provide: 'IFinanceCardCreditRepository', useClass: FinanceCardCreditRepository },
