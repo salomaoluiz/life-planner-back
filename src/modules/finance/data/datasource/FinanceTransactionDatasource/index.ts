@@ -494,6 +494,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
           owner: params.owner,
           owner_id: params.owner_id,
           paid: params.paid,
+          projected: params.projected,
           type: params.type,
           value: params.value,
         },
@@ -775,6 +776,7 @@ function isTextOnly(params: UpdateTransactionDatasourceParams): boolean {
     params.invoice_month === undefined &&
     params.owner === undefined &&
     params.owner_id === undefined &&
+    params.projected === undefined &&
     params.type === undefined &&
     params.value === undefined
   );

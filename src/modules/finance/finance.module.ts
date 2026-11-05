@@ -6,6 +6,7 @@ import { AddFamilyToTagScopesUseCase } from '@finance/application/use-case/AddFa
 import { AdjustAccountBalanceUseCase } from '@finance/application/use-case/AdjustAccountBalanceUseCase';
 import { AttachAccountBalancesUseCase } from '@finance/application/use-case/AttachAccountBalancesUseCase';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
+import { ConfirmProjectedTransactionUseCase } from '@finance/application/use-case/ConfirmProjectedTransactionUseCase';
 import { CountExportTransactionsUseCase } from '@finance/application/use-case/CountExportTransactionsUseCase';
 import { CreateAccountUseCase } from '@finance/application/use-case/CreateAccountUseCase';
 import { CreateCardEarlyPaymentUseCase } from '@finance/application/use-case/CreateCardEarlyPaymentUseCase';
@@ -144,6 +145,7 @@ const useCases = [
   AdjustAccountBalanceUseCase,
   AttachAccountBalancesUseCase,
   ComputeCardInvoicesUseCase,
+  ConfirmProjectedTransactionUseCase,
   CreateAccountUseCase,
   CreateCategoryUseCase,
   CreateCreditCardUseCase,

@@ -75,8 +75,9 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
       return this.updateInstallment(input, transaction);
     }
     if (transaction.recurrenceId) {
-      // Spec 095 FR 8: recurring rows follow the date.
-      if (input.invoiceMonth !== undefined) {
+      // Spec 095 FR 8: recurring rows follow the date. Spec 096 FR 6: a projected occurrence may move,
+      // alone, to the invoice right after its own.
+      if (input.invoiceMonth !== undefined && !canMoveToNextInvoice(input, transaction)) {
         throw new UnprocessableEntityException('Recurring transactions follow the date');
       }
       assertRecurringEdit(input);
@@ -299,6 +300,17 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
       transaction: updated,
     };
   }
+}
+
+// Spec 096 FR 6: only `stored + 1`, only this occurrence (the 095 date check still runs below).
+function canMoveToNextInvoice(input: ParsedUpdateInput, transaction: TransactionScalars): boolean {
+  return (
+    transaction.projected &&
+    input.scope === InstallmentEditScope.ONLY_THIS &&
+    transaction.invoiceMonth !== null &&
+    input.invoiceMonth !== undefined &&
+    monthsBetween(transaction.invoiceMonth, input.invoiceMonth) === 1
+  );
 }
 
 // Spec 034 FR 21: paying (± a date) needs no scope; any other change on a recurring row is ONLY_THIS.

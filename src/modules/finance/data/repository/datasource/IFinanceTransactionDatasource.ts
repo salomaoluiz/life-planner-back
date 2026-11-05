@@ -214,6 +214,7 @@ export interface UpdateTransactionDatasourceParams {
   owner_id?: string;
   // true/false on account rows, null when the row moves to a card (spec 033).
   paid?: boolean | null;
+  projected?: boolean;
   tag_names?: string[];
   type?: TransactionType;
   value?: number;

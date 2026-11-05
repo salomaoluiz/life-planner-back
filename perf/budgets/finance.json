@@ -792,6 +792,16 @@
     "reason": "Writes are not measured: perf tests only read (spec 093).",
     "scenario": ""
   },
+  "POST /api/v1/finance/transactions/:id/confirm": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "maxQueriesInTx": 15,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
   "POST /api/v1/finance/transactions/import": {
     "indexes": null,
     "kind": "unmeasured",

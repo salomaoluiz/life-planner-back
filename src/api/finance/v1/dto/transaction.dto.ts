@@ -51,6 +51,13 @@ export const CreateTransactionApiSchema = TransactionFieldsSchema.partial({
     message: 'Send either accountId or creditCardId',
   });
 
+// Spec 096 FR 4: the real charge of a projected card purchase.
+export const ConfirmTransactionApiSchema = z.strictObject({
+  date: CalendarDateApiSchema,
+  invoiceMonth: InvoiceMonthSchema.optional(),
+  value: ValueApiSchema,
+});
+
 export const UpdateTransactionApiSchema = TransactionFieldsSchema.partial()
   .extend({ scope: z.enum(InstallmentEditScope).optional() })
   .strict()
@@ -111,9 +118,11 @@ export const TransactionApiSchema = z.object({
   value: z.number().int(),
 });
 
+export type ConfirmTransactionApiInput = z.infer<typeof ConfirmTransactionApiSchema>;
 export type CreateTransactionApiInput = z.infer<typeof CreateTransactionApiSchema>;
 export type UpdateTransactionApiInput = z.infer<typeof UpdateTransactionApiSchema>;
 
+export class ConfirmTransactionBody extends createZodDto(ConfirmTransactionApiSchema) {}
 export class CreateTransactionBody extends createZodDto(CreateTransactionApiSchema) {}
 // Spec 079: a row carries ids only; the entities it references come once in `lookups`. Null and empty
 // fields are left out, and so are the timestamps and the ids that were repeated by nested objects.

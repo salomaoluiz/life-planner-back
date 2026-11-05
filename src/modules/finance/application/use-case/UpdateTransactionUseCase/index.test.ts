@@ -358,6 +358,55 @@ describe('chosen invoice (spec 095)', () => {
   });
 });
 
+describe('move a projected series row to the next invoice (spec 096 FR 6)', () => {
+  function projectedRow() {
+    return {
+      ...mocks.recurring,
+      accountId: null,
+      creditCardId: mocks.card.id,
+      date: '2026-10-20',
+      invoiceMonth: '2026-11',
+      projected: true,
+    };
+  }
+  function patch(over: Record<string, unknown>) {
+    return {
+      accessibleOwners: mocks.accessibleOwners,
+      id: mocks.recurring.id,
+      invoiceMonth: '2026-12',
+      scope: 'ONLY_THIS',
+      today: '2026-10-15',
+      ...over,
+    } as never;
+  }
+
+  beforeEach(() => {
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValue(projectedRow());
+    mocks.ensureConsistency.execute.mockResolvedValue({
+      card: { ...mocks.card, closingDay: 10 },
+    });
+  });
+
+  it('SHOULD accept stored + 1 with ONLY_THIS AND keep the date', async () => {
+    await setup.execute(patch({}));
+
+    expect(mocks.transactionRepository.updateTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ date: undefined, invoiceMonth: '2026-12' }),
+    );
+  });
+
+  it.each([
+    ['another month', { invoiceMonth: '2027-01' }],
+    ['the same month', { invoiceMonth: '2026-11' }],
+    ['scope THIS_AND_NEXT', { scope: 'THIS_AND_NEXT' }],
+  ])('SHOULD refuse %s', async (_, over) => {
+    await expect(setup.execute(patch(over))).rejects.toThrow(
+      new UnprocessableEntityException('Recurring transactions follow the date'),
+    );
+    expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
+  });
+});
+
 describe('installments (spec 030)', () => {
   async function runInstallment(patch: Record<string, unknown>) {
     return setup.execute({

@@ -440,6 +440,42 @@ describe('Method update', () => {
     expect(spies.queryRaw).toHaveBeenCalledTimes(1);
   });
 
+  it('SHOULD write projected false and refresh both invoices WHEN a projected row is confirmed (spec 096)', async () => {
+    spies.queryRaw.mockResolvedValue([
+      {
+        account_id: null,
+        credit_card_id: 'card-1',
+        invoice_month: '2026-05',
+        paid: null,
+        ...OWNER,
+        type: 'EXPENSE',
+        value: 1000,
+      },
+    ]);
+    spies.update.mockResolvedValue({
+      ...mocks.transaction,
+      account_id: null,
+      credit_card_id: 'card-1',
+      invoice_month: '2026-06',
+      paid: null,
+    });
+
+    await setup.update({
+      id: mocks.transaction.id,
+      invoice_month: '2026-06',
+      projected: false,
+      value: 990,
+    });
+
+    expect(spies.update.mock.calls[0][0].data).toEqual(
+      expect.objectContaining({ invoice_month: '2026-06', projected: false, value: 990 }),
+    );
+    expect(spies.refreshInvoiceTotals).toHaveBeenCalledWith(expect.anything(), [
+      { creditCardId: 'card-1', invoiceMonth: '2026-05' },
+      { creditCardId: 'card-1', invoiceMonth: '2026-06' },
+    ]);
+  });
+
   it('SHOULD refresh the invoice totals of BOTH the stored and the new invoice WHEN a card row moves (spec 090)', async () => {
     spies.queryRaw.mockResolvedValue([
       {

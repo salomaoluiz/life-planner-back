@@ -200,6 +200,8 @@ interface UpdateTransactionRepositoryParams {
   ownerId?: string;
   // true/false on account rows, null when the row moves to a card.
   paid?: boolean | null;
+  // Spec 096: `false` confirms a projected card purchase.
+  projected?: boolean;
   // `undefined` leaves the tags untouched, `[]` removes them all.
   tags?: string[];
   type?: TransactionType;

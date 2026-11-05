@@ -18,6 +18,8 @@ import { z } from 'zod';
 
 import { CalendarDateApiSchema } from '@api/finance/v1/dto/finance-fields';
 import {
+  ConfirmTransactionApiSchema,
+  ConfirmTransactionBody,
   CreateTransactionApiSchema,
   CreateTransactionBody,
   TransactionPageOutput,
@@ -84,6 +86,21 @@ const DeleteTransactionQuerySchema = z.object({ scope: z.enum(InstallmentEditSco
 @FinanceEtag()
 export class TransactionController {
   constructor(private readonly transactionService: TransactionService) {}
+
+  @HttpCode(HttpStatus.OK)
+  @Post(':id/confirm')
+  @ZodResponse({ status: 200, type: TransactionWithLookupsOutput })
+  async confirm(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: ConfirmTransactionBody,
+    @Query() query: Record<string, unknown>,
+  ) {
+    const input = validate(ConfirmTransactionApiSchema, body);
+    const { today } = validate(TodayQuerySchema, query);
+
+    return this.transactionService.confirm(req.user.id, id, input, today);
+  }
 
   @Post()
   @ZodResponse({ status: 201, type: TransactionWithLookupsOutput })

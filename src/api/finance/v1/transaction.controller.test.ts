@@ -234,6 +234,40 @@ describe('update', () => {
   });
 });
 
+describe('confirm (spec 096)', () => {
+  const body = { date: '2026-10-24', value: 9990 };
+
+  it('SHOULD forward a valid body AND answer 200 at POST :id/confirm', async () => {
+    await setup.confirm(mocks.request, mocks.transaction.id, body as never, {
+      today: '2026-10-25',
+    });
+
+    expect(mocks.transactionService.confirm).toHaveBeenCalledWith(
+      mocks.request.user.id,
+      mocks.transaction.id,
+      body,
+      '2026-10-25',
+    );
+    expect(Reflect.getMetadata(HTTP_CODE_METADATA, TransactionController.prototype.confirm)).toBe(
+      200,
+    );
+    expect(Reflect.getMetadata(PATH_METADATA, TransactionController.prototype.confirm)).toBe(
+      ':id/confirm',
+    );
+  });
+
+  it.each([
+    ['a missing value', { date: '2026-10-24' }],
+    ['a bad date', { date: '24/10/2026', value: 1 }],
+    ['an unknown field', { date: '2026-10-24', projected: false, value: 1 }],
+  ])('SHOULD throw ValidationError (400) for %s', async (_, bad) => {
+    await expect(
+      setup.confirm(mocks.request, mocks.transaction.id, bad as never, {}),
+    ).rejects.toThrow(ValidationError);
+    expect(mocks.transactionService.confirm).not.toHaveBeenCalled();
+  });
+});
+
 describe('delete', () => {
   it('SHOULD delete by id AND answer 204', async () => {
     await setup.delete(mocks.request, mocks.transaction.id, {});
