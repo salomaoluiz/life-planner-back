@@ -3,6 +3,12 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.2.0] - 2026-11-05
+
+### Added
+
+- Each user can mark one account as their favorite: account responses carry `isFavorite` and `POST`/`PATCH /finance/accounts` accept it. Archiving an account, removing a member from a family or deleting a family clears the affected favorites (spec 094).
+
 ## [3.1.9] - 2026-11-05
 
 ### Changed
