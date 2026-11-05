@@ -71,4 +71,24 @@ describe('refreshCardInvoiceTotals (spec 090)', () => {
     expect(strings).toContain('DELETE FROM "financial_card_invoice_totals"');
     expect(strings).not.toContain('card-a');
   });
+  it('SHOULD split effective and projected rows (spec 096)', async () => {
+    await refreshCardInvoiceTotals(mocks.tx, [{ creditCardId: 'card-a', invoiceMonth: '2026-01' }]);
+
+    const { strings } = sqlOf();
+
+    expect(strings).toContain('FILTER (WHERE t."type" = \'EXPENSE\' AND NOT t."projected")');
+    expect(strings).toContain('FILTER (WHERE t."type" = \'INCOME\' AND NOT t."projected")');
+    expect(strings).toContain('FILTER (WHERE t."projected")');
+    expect(strings).toContain('"projected_amount"');
+    expect(strings).toContain('"projected_count"');
+  });
+
+  it('SHOULD keep the row while only projected rows remain and delete it at zero rows (spec 096)', async () => {
+    await refreshCardInvoiceTotals(mocks.tx, [{ creditCardId: 'card-a', invoiceMonth: '2026-01' }]);
+
+    const { strings } = sqlOf();
+
+    expect(strings).toContain('a."purchase_count" + a."projected_count" = 0');
+    expect(strings).toContain('a."purchase_count" + a."projected_count" > 0');
+  });
 });

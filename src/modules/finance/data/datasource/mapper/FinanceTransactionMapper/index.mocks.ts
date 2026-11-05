@@ -37,6 +37,7 @@ const rawTransactionMock: FinancialTransactionWithRelations = {
   paid_from_transaction_id: null,
   payment_method: null,
   prepayment_id: null,
+  projected: false,
   recurrence: null,
   recurrence_id: null,
   refunded_plan: null,

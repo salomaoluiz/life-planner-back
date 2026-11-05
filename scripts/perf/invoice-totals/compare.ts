@@ -5,10 +5,19 @@ export interface InvoiceTotalsRow {
   expense: number;
   income: number;
   invoiceMonth: string;
+  projectedAmount: number;
+  projectedCount: number;
   purchaseCount: number;
 }
 
-const FIELDS = ['income', 'expense', 'earlyPaid', 'purchaseCount'] as const;
+const FIELDS = [
+  'income',
+  'expense',
+  'earlyPaid',
+  'purchaseCount',
+  'projectedAmount',
+  'projectedCount',
+] as const;
 
 // One line per pair that is missing on one side or differs on a field; empty = in sync.
 export function compareInvoiceTotals(

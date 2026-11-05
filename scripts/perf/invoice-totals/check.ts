@@ -14,6 +14,8 @@ interface RawRow {
   expense: number | string;
   income: number | string;
   invoice_month: string;
+  projected_amount: number | string;
+  projected_count: number | string;
   purchase_count: number | string;
 }
 
@@ -24,6 +26,8 @@ function toRows(rows: RawRow[]): InvoiceTotalsRow[] {
     expense: Number(row.expense),
     income: Number(row.income),
     invoiceMonth: row.invoice_month,
+    projectedAmount: Number(row.projected_amount),
+    projectedCount: Number(row.projected_count),
     purchaseCount: Number(row.purchase_count),
   }));
 }
@@ -47,14 +51,16 @@ async function main(): Promise<number> {
 
   try {
     const stored = await client.query<RawRow>(
-      'SELECT credit_card_id, invoice_month, income, expense, early_paid, purchase_count FROM financial_card_invoice_totals',
+      'SELECT credit_card_id, invoice_month, income, expense, early_paid, purchase_count, projected_amount, projected_count FROM financial_card_invoice_totals',
     );
     const computed = await client.query<RawRow>(
       `SELECT credit_card_id, invoice_month,
-        COALESCE(SUM(value) FILTER (WHERE type = 'INCOME'), 0) AS income,
-        COALESCE(SUM(value) FILTER (WHERE type = 'EXPENSE'), 0) AS expense,
+        COALESCE(SUM(value) FILTER (WHERE type = 'INCOME' AND NOT projected), 0) AS income,
+        COALESCE(SUM(value) FILTER (WHERE type = 'EXPENSE' AND NOT projected), 0) AS expense,
         COALESCE(SUM(value) FILTER (WHERE category_id = $1), 0) AS early_paid,
-        COUNT(*) AS purchase_count
+        COUNT(*) FILTER (WHERE NOT projected) AS purchase_count,
+        COALESCE(SUM(value) FILTER (WHERE projected), 0) AS projected_amount,
+        COUNT(*) FILTER (WHERE projected) AS projected_count
        FROM financial_transactions WHERE credit_card_id IS NOT NULL
        GROUP BY credit_card_id, invoice_month`,
       [EARLY_PAYMENT_CATEGORY_ID],
