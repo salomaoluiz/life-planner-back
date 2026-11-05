@@ -235,6 +235,23 @@ export function isInvoiceAssignable(
   );
 }
 
+// Spec 095 FR 1: a purchase may sit on the invoice its date computes, on the one before or on the one after.
+export function isPurchaseInvoiceAllowed(date: string, closingDay: number, month: string): boolean {
+  return purchaseInvoiceOptions(date, closingDay).includes(month);
+}
+// Signed whole months from `from` to `to` (both `YYYY-MM`).
+export function monthsBetween(from: string, to: string): number {
+  const start = parseMonth(from);
+  const end = parseMonth(to);
+
+  return (end.year - start.year) * 12 + (end.month - start.month);
+}
+export function purchaseInvoiceOptions(date: string, closingDay: number): [string, string, string] {
+  const computed = invoiceMonthOf(date, closingDay);
+
+  return [addInvoiceMonths(computed, -1), computed, addInvoiceMonths(computed, 1)];
+}
+
 function addDays(date: string, delta: number): string {
   const next = new Date(Date.parse(`${date}T00:00:00.000Z`) + delta * MS_PER_DAY);
 
