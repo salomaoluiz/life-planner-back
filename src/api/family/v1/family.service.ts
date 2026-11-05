@@ -18,6 +18,7 @@ import { FamilyStatus } from '@family/domain/enum';
 import { AddFamilyToCategoryScopesUseCase } from '@finance/application/use-case/AddFamilyToCategoryScopesUseCase';
 import { AddFamilyToTagScopesUseCase } from '@finance/application/use-case/AddFamilyToTagScopesUseCase';
 import { GetFamilyArchiveBlockersUseCase } from '@finance/application/use-case/GetFamilyArchiveBlockersUseCase';
+import { RemoveFamilyAccountFavoritesUseCase } from '@finance/application/use-case/RemoveFamilyAccountFavoritesUseCase';
 import { RemoveFamilyFromCategoryScopesUseCase } from '@finance/application/use-case/RemoveFamilyFromCategoryScopesUseCase';
 import { RemoveFamilyFromTagScopesUseCase } from '@finance/application/use-case/RemoveFamilyFromTagScopesUseCase';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -47,6 +48,7 @@ export class FamilyService {
     private readonly getFamilyByIdUseCase: GetFamilyByIdUseCase,
     private readonly getFamilyPendingInvitesUseCase: GetFamilyPendingInvitesUseCase,
     private readonly getUserFamiliesUseCase: GetUserFamiliesUseCase,
+    private readonly removeFamilyAccountFavoritesUseCase: RemoveFamilyAccountFavoritesUseCase,
     private readonly removeFamilyFromCategoryScopesUseCase: RemoveFamilyFromCategoryScopesUseCase,
     private readonly removeFamilyFromTagScopesUseCase: RemoveFamilyFromTagScopesUseCase,
     private readonly updateFamilyUseCase: UpdateFamilyUseCase,
@@ -115,6 +117,8 @@ export class FamilyService {
     // Spec 038 FR 13: the family leaves the scopes of every All category.
     await this.removeFamilyFromCategoryScopesUseCase.execute({ familyId });
     await this.removeFamilyFromTagScopesUseCase.execute({ familyId });
+    // Spec 094 FR 6: nobody keeps a favorite pointing to an account of the deleted family.
+    await this.removeFamilyAccountFavoritesUseCase.execute({ familyId });
   }
 
   async findAll(userId: string): Promise<FamilyOutput[]> {

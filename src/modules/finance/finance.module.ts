@@ -69,6 +69,7 @@ import { MaterializeOccurrenceUseCase } from '@finance/application/use-case/Mate
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { PayInvoiceUseCase } from '@finance/application/use-case/PayInvoiceUseCase';
 import { PrepayInstallmentPlanUseCase } from '@finance/application/use-case/PrepayInstallmentPlanUseCase';
+import { RemoveFamilyAccountFavoritesUseCase } from '@finance/application/use-case/RemoveFamilyAccountFavoritesUseCase';
 import { RemoveFamilyFromCategoryScopesUseCase } from '@finance/application/use-case/RemoveFamilyFromCategoryScopesUseCase';
 import { RemoveFamilyFromTagScopesUseCase } from '@finance/application/use-case/RemoveFamilyFromTagScopesUseCase';
 import { ResolveCardRowsPaidUseCase } from '@finance/application/use-case/ResolveCardRowsPaidUseCase';
@@ -187,6 +188,7 @@ const useCases = [
   HasFinanceDataByOwnerUseCase,
   PayInvoiceUseCase,
   PrepayInstallmentPlanUseCase,
+  RemoveFamilyAccountFavoritesUseCase,
   RemoveFamilyFromCategoryScopesUseCase,
   ResolveCardRowsPaidUseCase,
   UndoInstallmentPrepaymentUseCase,

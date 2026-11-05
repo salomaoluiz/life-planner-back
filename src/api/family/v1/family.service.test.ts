@@ -54,6 +54,14 @@ describe('create', () => {
     });
   });
 
+  it('SHOULD clear every favorite pointing to accounts of the deleted family (spec 094)', async () => {
+    await setup.delete(mocks.userId, mocks.familyId);
+
+    expect(mocks.removeFamilyAccountFavorites.execute).toHaveBeenCalledWith({
+      familyId: mocks.familyId,
+    });
+  });
+
   it('SHOULD propagate NotFoundException WHEN the JWT user no longer exists AND create nothing', async () => {
     mocks.findUserByIdUseCase.execute.mockRejectedValueOnce(new NotFoundException());
 
