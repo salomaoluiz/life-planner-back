@@ -238,3 +238,19 @@ describe('lean transaction payload (spec 079)', () => {
     );
   });
 });
+
+describe('invoiceMonth (spec 095)', () => {
+  const card = { ...valid, accountId: undefined, creditCardId: uuid };
+
+  it('SHOULD accept YYYY-MM on create AND update', () => {
+    expect(CreateTransactionApiSchema.safeParse({ ...card, invoiceMonth: '2026-11' }).success).toBe(
+      true,
+    );
+    expect(UpdateTransactionApiSchema.safeParse({ invoiceMonth: '2026-11' }).success).toBe(true);
+  });
+
+  it.each(['2026-13', '2026-1', '2026-11-01', 'nov'])('SHOULD refuse %s', (invoiceMonth) => {
+    expect(CreateTransactionApiSchema.safeParse({ ...card, invoiceMonth }).success).toBe(false);
+    expect(UpdateTransactionApiSchema.safeParse({ invoiceMonth }).success).toBe(false);
+  });
+});

@@ -121,3 +121,31 @@ it('SHOULD hand the card and the computed invoices to GetInstallmentPlan (spec 0
     expect.objectContaining({ card: mocks.card, invoiceData: data }),
   );
 });
+
+describe('first invoice (spec 095)', () => {
+  it('SHOULD start the installments on the chosen invoice AND follow month by month', async () => {
+    await setup.execute({ ...mocks.input, firstInvoiceMonth: '2026-11', installments: 6 });
+
+    expect(mocks.planRepository.createPlan.mock.calls[0][0].months).toEqual([
+      '2026-11',
+      '2026-12',
+      '2027-01',
+      '2027-02',
+      '2027-03',
+      '2027-04',
+    ]);
+  });
+
+  it('SHOULD start on the invoice of the date WHEN none is chosen', async () => {
+    await setup.execute({ ...mocks.input, installments: 2 });
+
+    expect(mocks.planRepository.createPlan.mock.calls[0][0].months).toEqual(['2026-10', '2026-11']);
+  });
+
+  it('SHOULD refuse a first invoice more than one month from the computed one AND create nothing', async () => {
+    await expect(setup.execute({ ...mocks.input, firstInvoiceMonth: '2026-12' })).rejects.toThrow(
+      new UnprocessableEntityException('Invoice is not available for this date'),
+    );
+    expect(mocks.planRepository.createPlan).not.toHaveBeenCalled();
+  });
+});

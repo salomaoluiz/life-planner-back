@@ -30,6 +30,7 @@ import {
   UpdateInstallmentsFromDatasourceParams,
 } from '@finance/data/repository/datasource/IFinanceInstallmentPlanDatasource';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
+import { addInvoiceMonths } from '@finance/domain/service/InvoiceCalculator';
 import { Database } from '@shared/infra/db/Database';
 
 // Every write locks the card row first (like invoice payments and purchases), so a payment can't land
@@ -242,16 +243,28 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
         installment_plan_id: params.plan_id,
       };
       await lockCards(tx, [cardId]);
-      if (params.value !== undefined) {
+      const shift = params.invoice_month_shift ?? 0;
+      let keysBefore: Awaited<ReturnType<typeof invoiceTotalsKeysWhere>> = [];
+      if (params.value !== undefined || shift !== 0) {
         const rows = await tx.financialTransaction.findMany({
           select: { invoice_month: true },
           where,
         });
-        await assertNoPaidInstallment(
-          tx,
-          cardId,
-          rows.map((row) => row.invoice_month as string),
-        );
+        const months = rows.map((row) => row.invoice_month as string);
+        // A paid installment neither changes value nor leaves its invoice (spec 030 FR 14, spec 095 FR 7).
+        await assertNoPaidInstallment(tx, cardId, months);
+        if (shift !== 0) {
+          // The moved rows may not land on a paid invoice either; one failure moves nothing.
+          await assertInvoicesNotPaid(
+            tx,
+            cardId,
+            months.map((month) => addInvoiceMonths(month, shift)),
+          );
+          keysBefore = await invoiceTotalsKeysWhere(tx, where);
+          await tx.$executeRaw(
+            Prisma.sql`UPDATE "financial_transactions" SET "invoice_month" = to_char(to_date("invoice_month" || '-01', 'YYYY-MM-DD') + make_interval(months => ${shift}), 'YYYY-MM') WHERE "installment_plan_id" = ${params.plan_id} AND "installment_number" >= ${params.from_number}`,
+          );
+        }
       }
       await tx.financialTransaction.updateMany({
         data: {
@@ -262,9 +275,12 @@ export class FinanceInstallmentPlanDatasource implements IFinanceInstallmentPlan
         },
         where,
       });
-      if (params.value !== undefined) {
-        // Spec 090: only a value change moves the totals (text and category never do).
-        await refreshCardInvoiceTotals(tx, await invoiceTotalsKeysWhere(tx, where));
+      if (params.value !== undefined || shift !== 0) {
+        // Spec 090: a value change or a move of invoice moves the totals (text and category never do).
+        await refreshCardInvoiceTotals(tx, [
+          ...keysBefore,
+          ...(await invoiceTotalsKeysWhere(tx, where)),
+        ]);
       }
 
       if (params.tag_names !== undefined) {

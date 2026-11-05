@@ -137,6 +137,51 @@ describe('card purchases (spec 029)', () => {
     );
   });
 
+  describe('chosen invoice (spec 095)', () => {
+    it('SHOULD store the chosen next invoice instead of the computed one', async () => {
+      await setup.execute({ ...cardInput(), date: '2026-10-30', invoiceMonth: '2026-11' });
+
+      expect(mocks.transactionRepository.createTransaction).toHaveBeenCalledWith(
+        expect.objectContaining({ invoiceMonth: '2026-11' }),
+      );
+    });
+
+    it('SHOULD accept the previous invoice AND the computed one', async () => {
+      await setup.execute({ ...cardInput(), date: '2026-10-30', invoiceMonth: '2026-09' });
+      await setup.execute({ ...cardInput(), date: '2026-10-30', invoiceMonth: '2026-10' });
+
+      const months = mocks.transactionRepository.createTransaction.mock.calls.map(
+        ([params]) => params.invoiceMonth,
+      );
+
+      expect(months).toEqual(['2026-09', '2026-10']);
+    });
+
+    it('SHOULD refuse a month more than one away from the computed one AND create nothing', async () => {
+      await expect(
+        setup.execute({ ...cardInput(), date: '2026-10-30', invoiceMonth: '2026-12' }),
+      ).rejects.toThrow(new UnprocessableEntityException('Invoice is not available for this date'));
+      expect(mocks.transactionRepository.createTransaction).not.toHaveBeenCalled();
+    });
+
+    it('SHOULD refuse an invoice month on an account transaction', async () => {
+      mocks.ensureConsistency.execute.mockResolvedValue({ account: mocks.account });
+
+      await expect(setup.execute({ ...mocks.input, invoiceMonth: '2026-10' })).rejects.toThrow(
+        UnprocessableEntityException,
+      );
+      expect(mocks.transactionRepository.createTransaction).not.toHaveBeenCalled();
+    });
+
+    it('SHOULD wrap the year WHEN the computed invoice is December', async () => {
+      await setup.execute({ ...cardInput(), date: '2026-12-20', invoiceMonth: '2027-01' });
+
+      expect(mocks.transactionRepository.createTransaction).toHaveBeenCalledWith(
+        expect.objectContaining({ invoiceMonth: '2027-01' }),
+      );
+    });
+  });
+
   it('SHOULD answer overLimit false WHEN the card used stays within the limit', async () => {
     expect((await setup.execute(cardInput())).overLimit).toBe(false);
   });

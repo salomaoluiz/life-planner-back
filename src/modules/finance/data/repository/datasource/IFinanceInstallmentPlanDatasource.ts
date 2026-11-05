@@ -62,6 +62,7 @@ export interface UpdateInstallmentsFromDatasourceParams {
   category_id?: string;
   description?: string;
   from_number: number;
+  invoice_month_shift?: number;
   notes?: null | string;
   plan_id: string;
   tag_names?: string[];

@@ -82,6 +82,7 @@ export class FinanceInstallmentPlanRepository implements IFinanceInstallmentPlan
       category_id: params.categoryId,
       description: params.description,
       from_number: params.fromNumber,
+      invoice_month_shift: params.invoiceMonthShift,
       notes: params.notes,
       plan_id: params.planId,
       tag_names: params.tags,

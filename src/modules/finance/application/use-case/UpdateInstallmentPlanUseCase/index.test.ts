@@ -158,3 +158,69 @@ describe('notes (spec 059)', () => {
     );
   });
 });
+
+describe('first invoice (spec 095)', () => {
+  function planStartingOn(month: string) {
+    mocks.planRepository.findPlanById.mockResolvedValue({
+      ...mocks.plan,
+      installments: mocks.plan.installments.map((row, index) => ({
+        ...row,
+        invoiceMonth: ['2026-11', '2026-12', '2027-01'][index] ?? month,
+      })),
+    });
+  }
+
+  it('SHOULD recreate the rows on the new first invoice WHEN only firstInvoiceMonth changes', async () => {
+    await setup.execute({ ...mocks.input, firstInvoiceMonth: '2026-11' });
+
+    expect(mocks.planRepository.recreatePlan).toHaveBeenCalledWith(
+      expect.objectContaining({
+        months: ['2026-11', '2026-12', '2027-01'],
+        values: [3334, 3333, 3333],
+      }),
+    );
+  });
+
+  it('SHOULD NOT recreate WHEN firstInvoiceMonth equals the current first invoice', async () => {
+    await setup.execute({ ...mocks.input, description: 'Laptop', firstInvoiceMonth: '2026-10' });
+
+    expect(mocks.planRepository.recreatePlan).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD keep a hand-picked first invoice WHEN only the value changes', async () => {
+    planStartingOn('2026-11');
+
+    await setup.execute({ ...mocks.input, value: 20000 });
+
+    expect(mocks.planRepository.recreatePlan.mock.calls[0][0].months).toEqual([
+      '2026-11',
+      '2026-12',
+      '2027-01',
+    ]);
+  });
+
+  it('SHOULD recompute from the date WHEN the date changes without firstInvoiceMonth', async () => {
+    planStartingOn('2026-11');
+
+    await setup.execute({ ...mocks.input, date: '2026-12-05' });
+
+    expect(mocks.planRepository.recreatePlan.mock.calls[0][0].months).toEqual([
+      '2026-12',
+      '2027-01',
+      '2027-02',
+    ]);
+  });
+
+  it('SHOULD validate firstInvoiceMonth against the NEW date', async () => {
+    await setup.execute({ ...mocks.input, date: '2026-12-05', firstInvoiceMonth: '2027-01' });
+
+    expect(mocks.planRepository.recreatePlan.mock.calls[0][0].months[0]).toBe('2027-01');
+  });
+
+  it('SHOULD refuse a first invoice outside the three options AND write nothing', async () => {
+    await expect(setup.execute({ ...mocks.input, firstInvoiceMonth: '2026-12' })).rejects.toThrow(
+      new UnprocessableEntityException('Invoice is not available for this date'),
+    );
+    expect(mocks.planRepository.recreatePlan).not.toHaveBeenCalled();
+  });
+});

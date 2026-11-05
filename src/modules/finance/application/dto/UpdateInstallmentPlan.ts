@@ -5,6 +5,7 @@ import {
   AccessibleOwnersSchema,
   CalendarDateSchema,
   DescriptionSchema,
+  InvoiceMonthSchema,
   NotesSchema,
   TagNamesSchema,
   ValueSchema,
@@ -17,6 +18,8 @@ export const UpdateInstallmentPlanSchema = z
     creditCardId: z.string().min(1).optional(),
     date: CalendarDateSchema.optional(),
     description: DescriptionSchema.optional(),
+    // Spec 095: the invoice of the 1st installment (previous, computed or next of the date).
+    firstInvoiceMonth: InvoiceMonthSchema.optional(),
     id: z.string().min(1),
     installments: InstallmentsSchema.optional(),
     notes: NotesSchema.optional(),
@@ -31,6 +34,7 @@ export const UpdateInstallmentPlanSchema = z
       input.categoryId !== undefined ||
       input.creditCardId !== undefined ||
       input.date !== undefined ||
+      input.firstInvoiceMonth !== undefined ||
       input.description !== undefined ||
       input.notes !== undefined ||
       input.installments !== undefined ||

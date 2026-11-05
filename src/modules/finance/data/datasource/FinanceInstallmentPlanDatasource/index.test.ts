@@ -281,6 +281,77 @@ describe('Method updateFromNumber', () => {
   });
 });
 
+describe('Method updateFromNumber moving invoices (spec 095)', () => {
+  const where = { installment_number: { gte: 3 }, installment_plan_id: 'plan-1' };
+
+  beforeEach(() => {
+    spies.rowFindMany.mockResolvedValue([
+      { invoice_month: '2026-12' },
+      { invoice_month: '2027-01' },
+    ]);
+    spies.executeRaw.mockResolvedValue(2);
+  });
+
+  it('SHOULD shift the rows from the number on in ONE statement AND refresh the totals before and after', async () => {
+    spies.invoiceTotalsKeysWhere
+      .mockResolvedValueOnce([{ creditCardId: 'card-1', invoiceMonth: '2026-12' }])
+      .mockResolvedValueOnce([{ creditCardId: 'card-1', invoiceMonth: '2027-01' }]);
+
+    await setup.updateFromNumber({ from_number: 3, invoice_month_shift: 1, plan_id: 'plan-1' });
+
+    expect(spies.executeRaw).toHaveBeenCalledTimes(1);
+    expect(spies.paymentFindFirst).toHaveBeenCalledWith({
+      select: { id: true },
+      where: { credit_card_id: 'card-1', invoice_month: { in: ['2027-01', '2027-02'] } },
+    });
+    expect(spies.invoiceTotalsKeysWhere).toHaveBeenCalledWith(expect.anything(), where);
+    expect(spies.refreshInvoiceTotals).toHaveBeenCalledWith(expect.anything(), [
+      { creditCardId: 'card-1', invoiceMonth: '2026-12' },
+      { creditCardId: 'card-1', invoiceMonth: '2027-01' },
+    ]);
+  });
+
+  it('SHOULD cross the year when shifting backwards', async () => {
+    spies.rowFindMany.mockResolvedValue([{ invoice_month: '2027-01' }]);
+
+    await setup.updateFromNumber({ from_number: 3, invoice_month_shift: -1, plan_id: 'plan-1' });
+
+    expect(spies.paymentFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { credit_card_id: 'card-1', invoice_month: { in: ['2026-12'] } },
+      }),
+    );
+  });
+
+  it('SHOULD refuse to move rows OUT of a paid invoice AND change nothing', async () => {
+    spies.paymentFindFirst.mockResolvedValueOnce({ id: 'payment-1' });
+
+    await expect(
+      setup.updateFromNumber({ from_number: 3, invoice_month_shift: 1, plan_id: 'plan-1' }),
+    ).rejects.toThrow('An installment is in a paid invoice');
+    expect(spies.executeRaw).not.toHaveBeenCalled();
+    expect(spies.rowUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD refuse to land on a paid invoice AND change nothing', async () => {
+    spies.paymentFindFirst.mockResolvedValueOnce(null).mockResolvedValueOnce({ id: 'payment-1' });
+
+    await expect(
+      setup.updateFromNumber({ from_number: 3, invoice_month_shift: 1, plan_id: 'plan-1' }),
+    ).rejects.toThrow('Invoice is paid');
+    expect(spies.executeRaw).not.toHaveBeenCalled();
+    expect(spies.refreshInvoiceTotals).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD do nothing extra WHEN the shift is 0 or missing', async () => {
+    await setup.updateFromNumber({ from_number: 3, invoice_month_shift: 0, plan_id: 'plan-1' });
+
+    expect(spies.executeRaw).not.toHaveBeenCalled();
+    expect(spies.paymentFindFirst).not.toHaveBeenCalled();
+    expect(spies.refreshInvoiceTotals).not.toHaveBeenCalled();
+  });
+});
+
 describe('Method updateText', () => {
   it('SHOULD rename the plan AND every row, paid ones included', async () => {
     spies.paymentFindFirst.mockResolvedValue({ id: 'payment-1' });

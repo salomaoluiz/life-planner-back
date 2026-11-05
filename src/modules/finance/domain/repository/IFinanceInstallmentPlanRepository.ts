@@ -61,6 +61,8 @@ interface UpdateInstallmentsFromRepositoryParams {
   categoryId?: string;
   description?: string;
   fromNumber: number;
+  // Spec 095: months to shift the invoice of every row from `fromNumber` on (checked by the datasource).
+  invoiceMonthShift?: number;
   notes?: null | string;
   planId: string;
   tags?: string[];

@@ -11,6 +11,9 @@ import {
   InvoicePaymentInfo,
   InvoiceTotal,
   isInvoiceAssignable,
+  isPurchaseInvoiceAllowed,
+  monthsBetween,
+  purchaseInvoiceOptions,
   trimSettledPrefix,
 } from './index';
 import { mocks } from './index.mocks';
@@ -524,4 +527,40 @@ describe('trimSettledPrefix (spec 091)', () => {
       }
     },
   );
+});
+
+describe('purchaseInvoiceOptions (spec 095)', () => {
+  it('SHOULD list the previous, computed and next invoice', () => {
+    expect(purchaseInvoiceOptions('2026-10-30', 31)).toEqual(['2026-09', '2026-10', '2026-11']);
+    expect(purchaseInvoiceOptions('2026-10-31', 30)).toEqual(['2026-10', '2026-11', '2026-12']);
+  });
+
+  it('SHOULD wrap the year', () => {
+    expect(purchaseInvoiceOptions('2026-12-20', 10)).toEqual(['2026-12', '2027-01', '2027-02']);
+    expect(purchaseInvoiceOptions('2027-01-05', 10)).toEqual(['2026-12', '2027-01', '2027-02']);
+  });
+
+  it('SHOULD clamp a closing day past the end of February', () => {
+    expect(purchaseInvoiceOptions('2026-02-28', 31)).toEqual(['2026-01', '2026-02', '2026-03']);
+  });
+});
+
+describe('isPurchaseInvoiceAllowed (spec 095)', () => {
+  it.each([
+    ['2026-09', true],
+    ['2026-10', true],
+    ['2026-11', true],
+    ['2026-08', false],
+    ['2026-12', false],
+  ])('SHOULD answer %s -> %s for a purchase on 2026-10-30 (closing day 31)', (month, expected) => {
+    expect(isPurchaseInvoiceAllowed('2026-10-30', 31, month)).toBe(expected);
+  });
+});
+
+describe('monthsBetween (spec 095)', () => {
+  it('SHOULD return signed whole months across years', () => {
+    expect(monthsBetween('2026-11', '2027-02')).toBe(3);
+    expect(monthsBetween('2027-01', '2026-11')).toBe(-2);
+    expect(monthsBetween('2026-05', '2026-05')).toBe(0);
+  });
 });

@@ -5,6 +5,7 @@ import {
   CalendarDateSchema,
   CurrencySchema,
   DescriptionSchema,
+  InvoiceMonthSchema,
   NotesSchema,
   OwnerIdSchema,
   OwnerTypeSchema,
@@ -22,7 +23,9 @@ export const CreateInstallmentPlanSchema = z
     creditCardId: z.string().min(1),
     currency: CurrencySchema.optional(),
     date: CalendarDateSchema,
+    // Spec 095: the invoice of the 1st installment (previous, computed or next of the date).
     description: DescriptionSchema,
+    firstInvoiceMonth: InvoiceMonthSchema.optional(),
     installments: InstallmentsSchema,
     notes: NotesSchema.optional(),
     owner: OwnerTypeSchema,

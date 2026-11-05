@@ -25,7 +25,10 @@ import {
   isStructuralChange,
   splitInstallments,
 } from '@finance/domain/service/InstallmentPlan';
-import { invoiceMonthOf } from '@finance/domain/service/InvoiceCalculator';
+import {
+  invoiceMonthOf,
+  isPurchaseInvoiceAllowed,
+} from '@finance/domain/service/InvoiceCalculator';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -58,8 +61,16 @@ export class UpdateInstallmentPlanUseCase implements UseCaseWithParams<
     ensureOwnerWritable(input.accessibleOwners, plan);
 
     const total = plan.installments.reduce((sum, row) => sum + row.value, 0);
+    // Rows are ordered by installment number: the first one carries the plan's first invoice.
+    const storedFirstMonth = plan.installments[0].invoiceMonth as string;
     const structural = isStructuralChange(
-      { count: plan.installmentCount, creditCardId: plan.creditCardId, date: plan.date, total },
+      {
+        count: plan.installmentCount,
+        creditCardId: plan.creditCardId,
+        date: plan.date,
+        firstInvoiceMonth: storedFirstMonth,
+        total,
+      },
       input,
     );
 
@@ -93,6 +104,22 @@ export class UpdateInstallmentPlanUseCase implements UseCaseWithParams<
       }
 
       const date = input.date ?? plan.date;
+      // Spec 095 FR 6: a chosen first invoice is checked against the final date and card; without one, months
+      // are recomputed when the date or the card changed, otherwise the stored first invoice stays.
+      const dateOrCardChanged =
+        (input.date !== undefined && input.date !== plan.date) ||
+        (input.creditCardId !== undefined && input.creditCardId !== plan.creditCardId);
+
+      if (
+        input.firstInvoiceMonth !== undefined &&
+        !isPurchaseInvoiceAllowed(date, card.closingDay, input.firstInvoiceMonth)
+      ) {
+        throw new UnprocessableEntityException('Invoice is not available for this date');
+      }
+
+      const firstMonth =
+        input.firstInvoiceMonth ??
+        (dateOrCardChanged ? invoiceMonthOf(date, card.closingDay) : storedFirstMonth);
 
       await this.installmentPlanRepository.recreatePlan({
         categoryId: input.categoryId ?? plan.categoryId,
@@ -100,7 +127,7 @@ export class UpdateInstallmentPlanUseCase implements UseCaseWithParams<
         date,
         description: input.description ?? plan.description,
         id: plan.id,
-        months: installmentInvoiceMonths(invoiceMonthOf(date, card.closingDay), count),
+        months: installmentInvoiceMonths(firstMonth, count),
         notes: input.notes === undefined ? plan.notes : input.notes,
         tags: input.tags,
         values: splitInstallments(newTotal, count),

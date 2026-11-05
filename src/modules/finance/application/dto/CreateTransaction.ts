@@ -5,6 +5,7 @@ import {
   CalendarDateSchema,
   CurrencySchema,
   DescriptionSchema,
+  InvoiceMonthSchema,
   NotesSchema,
   OwnerIdSchema,
   OwnerTypeSchema,
@@ -22,6 +23,8 @@ export const CreateTransactionSchema = z
     currency: CurrencySchema.optional(),
     date: CalendarDateSchema,
     description: DescriptionSchema,
+    // Spec 095: card purchases only; previous, computed or next invoice of the date. Omitted → computed.
+    invoiceMonth: InvoiceMonthSchema.optional(),
     notes: NotesSchema.optional(),
     owner: OwnerTypeSchema,
     ownerId: OwnerIdSchema,

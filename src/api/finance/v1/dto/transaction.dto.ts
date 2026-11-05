@@ -15,6 +15,7 @@ import {
   ValueApiSchema,
 } from '@api/finance/v1/dto/finance-fields';
 import { TagRefApiSchema } from '@api/finance/v1/dto/tag.dto';
+import { InvoiceMonthSchema } from '@finance/application/dto/FinanceCommon';
 import { InstallmentEditScope, RecurrenceFrequency, SystemCategoryKey } from '@finance/domain/enum';
 
 const TransactionFieldsSchema = z.object({
@@ -23,6 +24,8 @@ const TransactionFieldsSchema = z.object({
   creditCardId: z.uuid(),
   date: CalendarDateApiSchema,
   description: DescriptionApiSchema,
+  // Spec 095: card purchases only (installment rows with `scope`).
+  invoiceMonth: InvoiceMonthSchema,
   notes: NotesApiSchema,
   owner: OwnerTypeApiSchema,
   ownerId: OwnerIdApiSchema,
@@ -38,6 +41,7 @@ const TransactionFieldsSchema = z.object({
 export const CreateTransactionApiSchema = TransactionFieldsSchema.partial({
   accountId: true,
   creditCardId: true,
+  invoiceMonth: true,
   notes: true,
   paid: true,
   tags: true,

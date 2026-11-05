@@ -27,6 +27,7 @@ const prepaymentDeleteSpy = jest.fn();
 const prepaymentFindUniqueSpy = jest.fn();
 const prepaymentUpdateSpy = jest.fn();
 const planFindUniqueOrThrowSpy = jest.fn();
+const executeRawSpy = jest.fn();
 const queryRawSpy = jest.fn();
 const rowFindFirstSpy = jest.fn();
 const tagCreateSpy = jest.fn();
@@ -42,6 +43,7 @@ const transactionSpy = jest.fn();
 // endregion Spies
 
 const clientMock = {
+  $executeRaw: executeRawSpy,
   $queryRaw: queryRawSpy,
   $transaction: transactionSpy,
   financialInstallmentPlan: {
@@ -102,6 +104,7 @@ const mocks = {
   ],
 };
 const spies = {
+  executeRaw: executeRawSpy,
   invoiceTotalsKeysWhere: jest.mocked(invoiceTotalsKeysWhere),
   paymentFindFirst: paymentFindFirstSpy,
   planCreate: planCreateSpy,
