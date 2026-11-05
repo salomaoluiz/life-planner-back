@@ -137,6 +137,32 @@ describe('card purchases (spec 029)', () => {
     );
   });
 
+  describe('projected (spec 096)', () => {
+    it('SHOULD create a projected card expense', async () => {
+      await setup.execute({ ...cardInput(), projected: true });
+
+      expect(mocks.transactionRepository.createTransaction).toHaveBeenCalledWith(
+        expect.objectContaining({ creditCardId: mocks.card.id, projected: true }),
+      );
+    });
+
+    it('SHOULD refuse projected on an account row', async () => {
+      mocks.ensureConsistency.execute.mockResolvedValue({ account: mocks.account });
+
+      await expect(setup.execute({ ...mocks.input, projected: true })).rejects.toThrow(
+        new UnprocessableEntityException('Projected is only for card expenses'),
+      );
+      expect(mocks.transactionRepository.createTransaction).not.toHaveBeenCalled();
+    });
+
+    it('SHOULD refuse projected on a card income', async () => {
+      await expect(
+        setup.execute({ ...cardInput(), projected: true, type: TransactionType.INCOME }),
+      ).rejects.toThrow(new UnprocessableEntityException('Projected is only for card expenses'));
+      expect(mocks.transactionRepository.createTransaction).not.toHaveBeenCalled();
+    });
+  });
+
   describe('chosen invoice (spec 095)', () => {
     it('SHOULD store the chosen next invoice instead of the computed one', async () => {
       await setup.execute({ ...cardInput(), date: '2026-10-30', invoiceMonth: '2026-11' });

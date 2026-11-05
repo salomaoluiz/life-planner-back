@@ -46,7 +46,7 @@ export const CreateTransactionApiSchema = TransactionFieldsSchema.partial({
   paid: true,
   tags: true,
 })
-  .extend({ currency: CurrencyApiSchema.optional() })
+  .extend({ currency: CurrencyApiSchema.optional(), projected: z.boolean().optional() })
   .refine((value) => (value.accountId === undefined) !== (value.creditCardId === undefined), {
     message: 'Send either accountId or creditCardId',
   });

@@ -75,6 +75,16 @@ describe('SplitRecurrenceUseCase', () => {
     expect(result.ended).toBeNull();
   });
 
+  it('SHOULD keep projected on the new series (spec 096)', async () => {
+    mocks.recurrenceRepository.findById.mockResolvedValueOnce({ ...mocks.series, projected: true });
+
+    await setup.execute({ ...base, value: 220000 });
+
+    expect(mocks.recurrenceRepository.applyChange.mock.calls[0][0].newSeries).toEqual(
+      expect.objectContaining({ projected: true }),
+    );
+  });
+
   it('SHOULD regenerate the rows by the new frequency up to the horizon AND drop the skipped numbers', async () => {
     await setup.execute({ ...base, frequency: RecurrenceFrequency.WEEKLY });
 

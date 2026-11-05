@@ -202,6 +202,27 @@ describe('search (spec 084)', () => {
   });
 });
 
+describe('projected (spec 096)', () => {
+  it('SHOULD send projected as a column on create', async () => {
+    await setup.createTransaction({
+      categoryId: 'c',
+      creditCardId: 'card',
+      currency: 'BRL',
+      date: '2026-10-03',
+      description: 'x',
+      owner: OwnerType.USER,
+      ownerId: 'o',
+      projected: true,
+      type: TransactionType.EXPENSE,
+      value: 1,
+    });
+
+    expect(mocks.transactionDatasource.create).toHaveBeenCalledWith(
+      expect.objectContaining({ projected: true }),
+    );
+  });
+});
+
 describe('tags (spec 043)', () => {
   it('SHOULD send the names as tag_names on create AND update', async () => {
     await setup.createTransaction({

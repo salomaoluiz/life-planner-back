@@ -32,6 +32,7 @@ const paramsMock: RecurrenceEntity = {
   occurrenceCount: 12,
   owner: OwnerType.USER,
   ownerId: 'owner-uuid-1',
+  projected: false,
   skippedNumbers: [],
   startDate: '2026-10-05',
   status: RecurrenceStatus.ACTIVE,

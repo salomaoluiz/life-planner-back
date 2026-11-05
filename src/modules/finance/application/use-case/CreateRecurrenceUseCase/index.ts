@@ -10,11 +10,13 @@ import {
   CardInvoiceData,
   ComputeCardInvoicesUseCase,
 } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
+import { PROJECTED_ONLY_CARD_EXPENSES } from '@finance/application/use-case/CreateTransactionUseCase';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import AccountEntity from '@finance/domain/entity/AccountEntity';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
+import { TransactionType } from '@finance/domain/enum';
 import { IFinanceRecurrenceRepository } from '@finance/domain/repository';
 import { isOverLimit } from '@finance/domain/service/InvoiceCalculator';
 import {
@@ -73,6 +75,10 @@ export class CreateRecurrenceUseCase implements UseCaseWithParams<
       type: input.type,
     });
 
+    if (input.projected === true && (!card || input.type !== TransactionType.EXPENSE)) {
+      throw new UnprocessableEntityException(PROJECTED_ONLY_CARD_EXPENSES);
+    }
+
     const rule = { endDate: input.endDate, frequency: input.frequency, startDate: input.date };
     const plan = planMaterialization({
       firstNumber: 1,
@@ -102,6 +108,7 @@ export class CreateRecurrenceUseCase implements UseCaseWithParams<
       notes: input.notes,
       owner: input.owner,
       ownerId: input.ownerId,
+      projected: input.projected,
       rows,
       startDate: input.date,
       status: plan.status,

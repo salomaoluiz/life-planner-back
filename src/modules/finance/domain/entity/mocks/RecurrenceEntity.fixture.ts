@@ -56,6 +56,7 @@ class RecurrenceEntityFixture {
       occurrenceCount: null,
       owner: OwnerType.USER,
       ownerId: faker.string.uuid(),
+      projected: false,
       skippedNumbers: [],
       startDate: '2026-10-05',
       status: RecurrenceStatus.ACTIVE,

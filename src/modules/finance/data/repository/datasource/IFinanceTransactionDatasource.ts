@@ -40,6 +40,7 @@ export interface CreateTransactionDatasourceParams {
   owner_id: string;
   // Account rows only (spec 033); card rows stay NULL.
   paid?: boolean | null;
+  projected?: boolean;
   tag_names?: string[];
   type: TransactionType;
   value: number;

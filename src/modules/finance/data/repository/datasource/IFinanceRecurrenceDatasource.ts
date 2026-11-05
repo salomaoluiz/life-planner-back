@@ -50,6 +50,7 @@ export interface CreateRecurrenceDatasourceParams {
   notes?: null | string;
   owner: OwnerType;
   owner_id: string;
+  projected?: boolean;
   rows: OccurrenceRowDatasourceParams[];
   start_date: Date;
   status: RecurrenceStatus;
@@ -130,6 +131,7 @@ export interface NewSeriesDatasourceParams {
   notes?: null | string;
   owner: OwnerType;
   owner_id: string;
+  projected?: boolean;
   skipped_numbers: number[];
   start_date: Date;
   status: RecurrenceStatus;

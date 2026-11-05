@@ -271,6 +271,7 @@ export function toCreateParams(params: CreateTransactionRepositoryParams) {
     owner: params.owner,
     owner_id: params.ownerId,
     paid: params.paid,
+    projected: params.projected,
     tag_names: params.tags,
     type: params.type,
     value: params.value,

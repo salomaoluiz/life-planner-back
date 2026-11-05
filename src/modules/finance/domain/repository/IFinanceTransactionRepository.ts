@@ -163,6 +163,8 @@ interface CreateTransactionRepositoryParams {
   ownerId: string;
   // Account rows only; omitted for card rows.
   paid?: boolean;
+  // Spec 096: a card expense not charged yet.
+  projected?: boolean;
   // Spec 043: tag names, resolved (or created) in the owner inside the write.
   tags?: string[];
   type: TransactionType;

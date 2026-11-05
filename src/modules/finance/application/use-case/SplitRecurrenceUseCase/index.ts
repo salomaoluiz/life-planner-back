@@ -181,6 +181,7 @@ export class SplitRecurrenceUseCase implements UseCaseWithParams<
         nextOccurrenceDate: state.nextOccurrenceDate,
         owner: series.owner,
         ownerId: series.ownerId,
+        projected: series.projected,
         skippedNumbers,
         startDate: splitDate,
         status: state.status,

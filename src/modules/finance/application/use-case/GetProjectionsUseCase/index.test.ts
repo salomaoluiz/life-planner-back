@@ -24,6 +24,12 @@ describe('GetProjectionsUseCase', () => {
     });
   });
 
+  it('SHOULD flag the occurrences of a projected series (spec 096)', async () => {
+    const result = await setup.execute(base);
+
+    expect(result.every((item) => item.projected === false)).toBe(true);
+  });
+
   it('SHOULD never project dates up to the end of the current month (they are real rows)', async () => {
     const result = await setup.execute({ ...base, from: '2026-10' });
 
