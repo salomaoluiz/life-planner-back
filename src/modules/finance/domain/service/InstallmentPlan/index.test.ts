@@ -80,7 +80,13 @@ describe('reassignInstallmentMonths', () => {
 });
 
 describe('isStructuralChange', () => {
-  const current = { count: 3, creditCardId: 'card', date: '2026-10-20', total: 3000 };
+  const current = {
+    count: 3,
+    creditCardId: 'card',
+    date: '2026-10-20',
+    firstInvoiceMonth: '2026-10',
+    total: 3000,
+  };
 
   it('is false when nothing really changes', () => {
     expect(isStructuralChange(current, {})).toBe(false);
@@ -88,6 +94,7 @@ describe('isStructuralChange', () => {
       isStructuralChange(current, {
         creditCardId: 'card',
         date: '2026-10-20',
+        firstInvoiceMonth: '2026-10',
         installments: 3,
         value: 3000,
       }),
@@ -99,6 +106,7 @@ describe('isStructuralChange', () => {
     { installments: 4 },
     { creditCardId: 'other' },
     { date: '2026-10-21' },
+    { firstInvoiceMonth: '2026-11' },
   ])('is true for %p', (patch) => {
     expect(isStructuralChange(current, patch)).toBe(true);
   });

@@ -1,4 +1,4 @@
-import { ForbiddenException, Inject } from '@nestjs/common';
+import { ForbiddenException, Inject, UnprocessableEntityException } from '@nestjs/common';
 
 import {
   CreateInstallmentPlanInput,
@@ -19,7 +19,10 @@ import {
   installmentInvoiceMonths,
   splitInstallments,
 } from '@finance/domain/service/InstallmentPlan';
-import { invoiceMonthOf } from '@finance/domain/service/InvoiceCalculator';
+import {
+  invoiceMonthOf,
+  isPurchaseInvoiceAllowed,
+} from '@finance/domain/service/InvoiceCalculator';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -62,6 +65,15 @@ export class CreateInstallmentPlanUseCase implements UseCaseWithParams<
     // A credit card id always resolves to the card (or the consistency check threw).
     const card = consistency.card as CreditCardEntity;
 
+    // Spec 095 FR 5: the first installment may sit on the previous, computed or next invoice of the date.
+    // Paid months are refused by the datasource under the card lock (`Invoice is paid`).
+    if (
+      input.firstInvoiceMonth !== undefined &&
+      !isPurchaseInvoiceAllowed(input.date, card.closingDay, input.firstInvoiceMonth)
+    ) {
+      throw new UnprocessableEntityException('Invoice is not available for this date');
+    }
+
     const id = await this.installmentPlanRepository.createPlan({
       categoryId: input.categoryId,
       creditCardId: card.id,
@@ -69,7 +81,7 @@ export class CreateInstallmentPlanUseCase implements UseCaseWithParams<
       date: input.date,
       description: input.description,
       months: installmentInvoiceMonths(
-        invoiceMonthOf(input.date, card.closingDay),
+        input.firstInvoiceMonth ?? invoiceMonthOf(input.date, card.closingDay),
         input.installments,
       ),
       notes: input.notes,

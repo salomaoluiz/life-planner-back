@@ -24,12 +24,26 @@ export function installmentInvoiceMonths(firstMonth: string, count: number): str
   return Array.from({ length: count }, (_, index) => addInvoiceMonths(firstMonth, index));
 }
 
-// A patch is structural (rows are deleted and recreated) only when it really changes the total, count, card or date.
+// A patch is structural (rows are deleted and recreated) only when it really changes the total, count, card, date or first invoice (spec 095).
 export function isStructuralChange(
-  current: { count: number; creditCardId: string; date: string; total: number },
-  patch: { creditCardId?: string; date?: string; installments?: number; value?: number },
+  current: {
+    count: number;
+    creditCardId: string;
+    date: string;
+    firstInvoiceMonth: string;
+    total: number;
+  },
+  patch: {
+    creditCardId?: string;
+    date?: string;
+    firstInvoiceMonth?: string;
+    installments?: number;
+    value?: number;
+  },
 ): boolean {
   return (
+    (patch.firstInvoiceMonth !== undefined &&
+      patch.firstInvoiceMonth !== current.firstInvoiceMonth) ||
     (patch.value !== undefined && patch.value !== current.total) ||
     (patch.installments !== undefined && patch.installments !== current.count) ||
     (patch.creditCardId !== undefined && patch.creditCardId !== current.creditCardId) ||
