@@ -60,6 +60,7 @@ function toDetailOutput({ card, credits, filtered, invoice, purchases }: Invoice
       notes: purchase.notes,
       ownerId: purchase.ownerId,
       prepaid: purchase.prepaymentId !== null,
+      projected: purchase.projected,
       value: purchase.value,
     })),
   };

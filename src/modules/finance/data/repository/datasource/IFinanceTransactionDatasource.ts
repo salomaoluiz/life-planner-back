@@ -127,6 +127,7 @@ export interface FindTransactionsFilter {
   invoiceRefs?: CardInvoiceKey[];
   limit?: number;
   paid?: boolean;
+  projected?: boolean;
   search?: SearchTerms;
   tagIds?: string[];
   to?: string;

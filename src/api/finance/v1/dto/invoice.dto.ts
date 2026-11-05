@@ -27,6 +27,7 @@ const PurchaseApiSchema = z.object({
   notes: z.string().nullable(),
   ownerId: z.uuid(),
   prepaid: z.boolean(),
+  projected: z.boolean(),
   value: z.number().int(),
 });
 const InvoiceCreditApiSchema = z.object({

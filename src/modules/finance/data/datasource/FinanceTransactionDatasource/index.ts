@@ -708,6 +708,8 @@ function exportWhere(
       toOwnerWhere(params.owners),
       { date: { gte: fromCalendarDate(params.from), lte: fromCalendarDate(params.to) } },
       ...(picked.length > 0 ? [{ OR: picked }] : []),
+      // Spec 096 FR 13: a projected purchase is not a real charge yet.
+      { projected: false },
     ],
   };
 }
@@ -739,6 +741,10 @@ function filterWhere(source: TransactionSource, filter: FindTransactionsFilter) 
 
   if (filter.tagIds?.length) {
     where.push({ tags: { some: { tag_id: { in: filter.tagIds } } } });
+  }
+
+  if (filter.projected !== undefined) {
+    where.push({ projected: filter.projected });
   }
 
   if (source === TransactionSource.CARD) {

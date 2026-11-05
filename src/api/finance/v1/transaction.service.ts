@@ -70,6 +70,7 @@ function toTransactionOutput(
     owner: transaction.owner,
     ownerId: transaction.ownerId,
     paid: transaction.paid,
+    projected: transaction.projected,
     recurrenceFrequency: transaction.recurrenceFrequency,
     recurrenceId: transaction.recurrenceId,
     tags: transaction.tags,
@@ -101,6 +102,8 @@ function toTransactionItem(transaction: TransactionEntity, overLimit?: boolean):
     owner: transaction.owner,
     ownerId: transaction.ownerId,
     paid: transaction.paid,
+    // Lean payload: only a projected row carries the flag.
+    projected: transaction.projected ? true : undefined,
     recurrenceFrequency: transaction.recurrenceFrequency ?? undefined,
     recurrenceId: transaction.recurrenceId ?? undefined,
     tagIds: transaction.tags.length > 0 ? transaction.tags.map((tag) => tag.id) : undefined,

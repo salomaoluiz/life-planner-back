@@ -9,6 +9,8 @@ export interface TransactionFilter {
   // `YYYY-MM-DD`, both inclusive and always together.
   from?: string;
   paid?: boolean;
+  // Spec 096: only honoured by the transactions list.
+  projected?: boolean;
   q?: string;
   tagIds?: string[];
   to?: string;

@@ -44,6 +44,36 @@ it('SHOULD mark a card row as paid WHEN its invoice has a payment record', async
   expect(result.map((row) => row.paid)).toEqual([false, true]);
 });
 
+it('SHOULD never mark a projected row as paid, even on a paid invoice (spec 096)', async () => {
+  mocks.compute.execute.mockResolvedValue([
+    {
+      card: mocks.card,
+      payments: [
+        {
+          accountId: null,
+          accountName: null,
+          amount: 7000,
+          method: 'BOLETO',
+          paidOn: '2026-10-10',
+          referenceMonth: '2026-09',
+        },
+      ],
+      totals: [{ amount: 7000, invoiceMonth: '2026-09' }],
+    },
+  ]);
+  const projectedRow = { ...mocks.closedRow, projected: true };
+
+  const result = await setup.execute({ today: mocks.today, transactions: [projectedRow] });
+  const onlyPaid = await setup.execute({
+    paid: true,
+    today: mocks.today,
+    transactions: [projectedRow],
+  });
+
+  expect(result[0].paid).toBe(false);
+  expect(onlyPaid).toEqual([]);
+});
+
 it('SHOULD mark a card row as paid WHEN its closed invoice has nothing to pay', async () => {
   mocks.compute.execute.mockResolvedValue([
     { card: mocks.card, payments: [], totals: [{ amount: 0, invoiceMonth: '2026-09' }] },

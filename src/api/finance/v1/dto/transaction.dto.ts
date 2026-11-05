@@ -110,6 +110,7 @@ export const TransactionApiSchema = z.object({
   ownerId: z.uuid(),
   // Stored for account rows; derived from the invoice for card rows.
   paid: z.boolean(),
+  projected: z.boolean(),
   recurrenceFrequency: z.enum(RecurrenceFrequency).nullable(),
   recurrenceId: z.uuid().nullable(),
   tags: z.array(TagRefApiSchema),
@@ -146,6 +147,7 @@ export const TransactionItemApiSchema = z.strictObject({
   owner: OwnerTypeApiSchema,
   ownerId: z.uuid(),
   paid: z.boolean(),
+  projected: z.boolean().optional(),
   recurrenceFrequency: z.enum(RecurrenceFrequency).optional(),
   recurrenceId: z.uuid().optional(),
   tagIds: z.array(z.uuid()).optional(),

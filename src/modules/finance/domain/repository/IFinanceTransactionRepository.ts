@@ -182,6 +182,8 @@ interface TransactionQuery {
   limit?: number;
   // Account rows only: card rows derive it from their invoice.
   paid?: boolean;
+  // Spec 096: only projected (true) or only effective (false) rows.
+  projected?: boolean;
   // Spec 084: the text search, applied in SQL before the page is cut.
   search?: SearchTerms;
   tagIds?: string[];

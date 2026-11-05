@@ -363,6 +363,19 @@ describe('Method findByOwners keyset pages (spec 078)', () => {
   });
 });
 
+describe('Method findByOwners projected filter (spec 096)', () => {
+  it.each([
+    [TransactionSource.ACCOUNT, true],
+    [TransactionSource.CARD, false],
+  ])('SHOULD add the projected condition on %s rows (%s)', async (source, projected) => {
+    spies.findMany.mockResolvedValue([]);
+
+    await setup.findByOwners(mocks.owners, source, { projected });
+
+    expect(spies.findMany.mock.calls[0][0].where.AND).toContainEqual({ projected });
+  });
+});
+
 describe('Method findByOwners filters (spec 045)', () => {
   it('SHOULD add one AND condition per filter on account rows', async () => {
     spies.findMany.mockResolvedValue([]);
@@ -1076,9 +1089,16 @@ describe('Method countForExport / findForExport (spec 047)', () => {
               lte: new Date('2026-12-31T00:00:00.000Z'),
             },
           },
+          { projected: false },
         ],
       },
     });
+  });
+
+  it('SHOULD leave projected rows out of the export (spec 096)', async () => {
+    await setup.findForExport(params);
+
+    expect(spies.findMany.mock.calls[0][0].where.AND).toContainEqual({ projected: false });
   });
 
   it('SHOULD match a row of a chosen account OR card, ordered by date then creation', async () => {
