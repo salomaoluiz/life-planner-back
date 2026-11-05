@@ -24,8 +24,10 @@ import {
   TransactionScalars,
 } from '@finance/domain/repository';
 import {
+  addInvoiceMonths,
   invoiceMonthOf,
   isPurchaseInvoiceAllowed,
+  monthsBetween,
 } from '@finance/domain/service/InvoiceCalculator';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
@@ -185,6 +187,37 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
     };
   }
 
+  // Spec 095 FR 7: the chosen invoice must be the previous, natural or next one of this installment
+  // (`first + (n - 1)`); returns the months between the stored and the chosen invoice. A paid month is
+  // refused by the datasource, which also moves the rows and the stored totals in one transaction.
+  private async invoiceShiftOf(
+    transaction: TransactionScalars,
+    card: CreditCardEntity,
+    invoiceMonth: string,
+  ): Promise<number> {
+    const plan = await this.installmentPlanRepository.findPlanById(
+      transaction.installmentPlanId as string,
+    );
+
+    if (!plan) {
+      throw new NotFoundException();
+    }
+    if (plan.prepayment) {
+      throw new UnprocessableEntityException('Undo the prepayment first');
+    }
+
+    const natural = addInvoiceMonths(
+      invoiceMonthOf(plan.date, card.closingDay),
+      (transaction.installmentNumber as number) - 1,
+    );
+
+    if (Math.abs(monthsBetween(natural, invoiceMonth)) > 1) {
+      throw new UnprocessableEntityException('Invoice is not available for this date');
+    }
+
+    return monthsBetween(transaction.invoiceMonth as string, invoiceMonth);
+  }
+
   // Spec 030 FR 11-17: an installment changes only value, description and category, for the rows `scope` names.
   private async updateInstallment(
     input: ParsedUpdateInput,
@@ -222,6 +255,10 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
     });
     // The transaction has a credit card id, so the consistency check resolves the card.
     const card = consistency.card as CreditCardEntity;
+    const invoiceShift =
+      input.invoiceMonth === undefined
+        ? undefined
+        : await this.invoiceShiftOf(transaction, card, input.invoiceMonth);
     let updated: TransactionEntity;
 
     if (input.scope === InstallmentEditScope.ONLY_THIS) {
@@ -229,6 +266,7 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
         categoryId: input.categoryId,
         description: input.description,
         id: input.id,
+        invoiceMonth: input.invoiceMonth,
         notes: input.notes,
         tags: input.tags,
         value: input.value,
@@ -238,6 +276,7 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
         categoryId: input.categoryId,
         description: input.description,
         fromNumber: transaction.installmentNumber as number,
+        invoiceMonthShift: invoiceShift === 0 ? undefined : invoiceShift,
         notes: input.notes,
         planId: transaction.installmentPlanId as string,
         tags: input.tags,

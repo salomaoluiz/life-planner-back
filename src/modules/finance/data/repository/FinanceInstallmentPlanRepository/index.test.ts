@@ -101,6 +101,14 @@ describe('updates', () => {
     });
   });
 
+  it('SHOULD translate the invoice month shift of updateFromNumber (spec 095)', async () => {
+    await setup.updateFromNumber({ fromNumber: 3, invoiceMonthShift: -1, planId: 'plan-1' });
+
+    expect(mocks.planDatasource.updateFromNumber).toHaveBeenCalledWith(
+      expect.objectContaining({ from_number: 3, invoice_month_shift: -1, plan_id: 'plan-1' }),
+    );
+  });
+
   it('SHOULD translate updatePlanText', async () => {
     await setup.updatePlanText({ categoryId: 'cat-2', id: 'plan-1' });
 
