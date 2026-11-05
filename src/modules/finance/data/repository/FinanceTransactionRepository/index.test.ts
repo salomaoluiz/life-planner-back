@@ -161,7 +161,7 @@ describe('updateTransaction', () => {
 
 describe('card helpers', () => {
   it('SHOULD sum invoices, find purchases and count by card', async () => {
-    expect(await setup.sumCardInvoices(['card-1'])).toEqual([
+    expect(await setup.findInvoiceTotals(['card-1'])).toEqual([
       { amount: 450, creditCardId: 'card-1', invoiceMonth: '2026-10' },
     ]);
     expect(

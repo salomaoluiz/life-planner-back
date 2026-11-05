@@ -1,6 +1,6 @@
 {
   "name": "life-planner-back",
-  "version": "3.1.6",
+  "version": "3.1.9",
   "description": "",
   "author": "",
   "private": true,
@@ -24,6 +24,7 @@
     "e2e": "node scripts/e2e.mjs",
     "perf:check": "ts-node -r tsconfig-paths/register scripts/perf/check/run.ts",
     "perf": "ts-node -r tsconfig-paths/register scripts/perf/cli.ts",
+    "perf:invoice-totals:check": "ts-node -r tsconfig-paths/register scripts/perf/invoice-totals/check.ts",
     "perf:seed": "ts-node -r tsconfig-paths/register scripts/perf/seed.ts",
     "version:check": "node scripts/check-version.mjs",
     "test:e2e": "jest --config ./test/jest-e2e.json",

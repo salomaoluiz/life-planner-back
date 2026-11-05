@@ -23,6 +23,7 @@ import {
   PayInvoiceApiSchema,
   PayInvoiceBody,
 } from '@api/finance/v1/dto/invoice.dto';
+import { FinanceEtag } from '@api/finance/v1/finance-etag';
 import {
   OwnerIdQuerySchema,
   TodayQuerySchema,
@@ -54,6 +55,7 @@ const ListInvoicesQuerySchema = withPeriodRules(
   path: 'finance/credit-cards',
   version: '1',
 })
+@FinanceEtag()
 export class InvoiceController {
   constructor(private readonly invoiceService: InvoiceService) {}
 

@@ -147,6 +147,7 @@ model FinancialCreditCard {
   invoice_payments  FinancialInvoicePayment[]
   installment_plans FinancialInstallmentPlan[]
   recurrences       FinancialRecurrence[]
+  invoice_totals    FinancialCardInvoiceTotal[]
 
   @@index([owner, owner_id])
   @@index([payment_account_id])
@@ -288,6 +289,35 @@ model FinancialInvoicePayment {
   @@unique([credit_card_id, invoice_month])
   @@index([owner, owner_id])
   @@map("financial_credit_card_invoice_payments")
+}
+
+// Spec 090: stored totals of the card rows of each (card, invoice month), kept by the write transactions and read by every
+// card invoice computation (spec 091). Aggregation: every card row, no exclusions.
+model FinancialCardInvoiceTotal {
+  credit_card_id String
+  invoice_month  String   @db.Char(7)
+  income         Int      @default(0)
+  expense        Int      @default(0)
+  early_paid     Int      @default(0)
+  purchase_count Int      @default(0)
+  updated_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  credit_card FinancialCreditCard @relation(fields: [credit_card_id], references: [id], onDelete: Cascade)
+
+  @@id([credit_card_id, invoice_month])
+  @@map("financial_card_invoice_totals")
+}
+
+// Spec 092: bumped (by database triggers, once per transaction and owner) by every write that changes what the owner
+// reads; the finance GET routes build their ETag from it. A missing row means version 0.
+model FinanceOwnerVersion {
+  owner      OwnerType
+  owner_id   String
+  version    BigInt   @default(1)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@id([owner, owner_id])
+  @@map("finance_owner_versions")
 }
 
 // Lowercase members on purpose: the client validates against member names, so they must equal the DB/wire values.

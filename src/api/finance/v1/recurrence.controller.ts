@@ -35,6 +35,7 @@ import {
   UpdateRecurrenceBody,
 } from '@api/finance/v1/dto/recurrence.dto';
 import { TransactionOutput } from '@api/finance/v1/dto/transaction.dto';
+import { FinanceEtag } from '@api/finance/v1/finance-etag';
 import { TodayQuerySchema, toOwnerIds } from '@api/finance/v1/finance-query';
 import { RecurrenceService } from '@api/finance/v1/recurrence.service';
 import { JwtPayload } from '@shared/infra/jwt/types';
@@ -46,6 +47,7 @@ import { validate } from '@shared/infra/validation';
   path: 'finance/recurrences',
   version: '1',
 })
+@FinanceEtag()
 export class RecurrenceController {
   constructor(private readonly recurrenceService: RecurrenceService) {}
 

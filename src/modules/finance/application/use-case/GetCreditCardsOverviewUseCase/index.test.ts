@@ -23,6 +23,9 @@ describe('GetCreditCardsOverviewUseCase', () => {
     expect(result.cards[0].used).toBe(4000);
     expect(result.cards[0].available).toBe(496000);
     expect(mocks.compute.execute).toHaveBeenCalledTimes(1);
+    expect(mocks.compute.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ fromMonth: '2026-07' }),
+    );
   });
 
   it('SHOULD aggregate limit, used and available over the returned cards', async () => {

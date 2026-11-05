@@ -1,3 +1,4 @@
+import { resolvedAccessStore } from '@api/finance/v1/finance-access.service';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { mocks, setup } from './finance-access.service.mocks';
@@ -42,4 +43,27 @@ it('SHOULD return no family names WHEN the caller has no family', async () => {
   mocks.getUserFamilyAccessUseCase.execute.mockResolvedValueOnce([]);
 
   expect((await setup.resolveWithNames(mocks.userId)).familyNames).toEqual({});
+});
+
+it('SHOULD reuse the access the ETag guard already read WHEN it runs inside the store (spec 092)', async () => {
+  const preloaded = {
+    accessibleOwners: [{ owner: OwnerType.USER, ownerId: mocks.userId }],
+    familyNames: {},
+    userId: mocks.userId,
+  };
+
+  const result = await resolvedAccessStore.run(preloaded, async () =>
+    setup.resolveWithNames(mocks.userId),
+  );
+
+  expect(mocks.getUserFamilyAccessUseCase.execute).not.toHaveBeenCalled();
+  expect(result).toEqual({ accessibleOwners: preloaded.accessibleOwners, familyNames: {} });
+});
+
+it('SHOULD read the families WHEN the stored access belongs to another user', async () => {
+  const preloaded = { accessibleOwners: [], familyNames: {}, userId: 'someone-else' };
+
+  await resolvedAccessStore.run(preloaded, async () => setup.resolveWithNames(mocks.userId));
+
+  expect(mocks.getUserFamilyAccessUseCase.execute).toHaveBeenCalledTimes(1);
 });

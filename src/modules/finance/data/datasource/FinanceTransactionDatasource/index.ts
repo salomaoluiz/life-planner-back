@@ -2,6 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { OwnerType, Prisma } from '@db/client';
 import {
+  invoiceTotalsKeysOf,
+  refreshCardInvoiceTotals,
+} from '@finance/data/datasource/cardInvoiceTotals';
+import {
   applyLedgerDeltas,
   assertInvoiceNotPaid,
   lockCards,
@@ -37,7 +41,6 @@ import {
   UpdateTransactionDatasourceParams,
 } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
-import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
 import { SystemCategoryKey, TransactionSource, TransactionType } from '@finance/domain/enum';
 import { ledgerDeltas } from '@finance/domain/service/LedgerBalance';
 import { SearchTerms } from '@finance/domain/service/TransactionSearch';
@@ -73,7 +76,9 @@ export const TRANSACTION_RELATIONS = {
 // Spec 085: what the ledger and the tags need inside a write transaction; the full row (relations) is read after commit.
 const WRITE_SELECT = {
   account_id: true,
+  credit_card_id: true,
   id: true,
+  invoice_month: true,
   owner: true,
   owner_id: true,
   paid: true,
@@ -120,6 +125,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
       const { tag_names: tagNames, ...data } = params;
       const created = await tx.financialTransaction.create({ data, select: WRITE_SELECT });
       await applyLedgerDeltas(tx, ledgerDeltas(undefined, toLedgerEntry(created)));
+      await refreshCardInvoiceTotals(tx, invoiceTotalsKeysOf([created]));
       if (tagNames !== undefined && tagNames.length > 0) {
         await applyTagNames(tx, {
           names: tagNames,
@@ -178,6 +184,12 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
       await assertInvoiceNotPaid(tx, stored.creditCardId, stored.invoiceMonth);
       await tx.financialTransaction.deleteMany({ where: { id } });
       await applyLedgerDeltas(tx, ledgerDeltas(stored, undefined));
+      await refreshCardInvoiceTotals(
+        tx,
+        invoiceTotalsKeysOf([
+          { credit_card_id: stored.creditCardId, invoice_month: stored.invoiceMonth },
+        ]),
+      );
     });
   }
 
@@ -390,34 +402,31 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
 
     return rows.map((row) => row.id);
   }
-  // One grouped query for every card: the sum of each (card, invoice month).
-  async sumCardInvoices(creditCardIds: string[]): Promise<CardInvoiceSum[]> {
+  // Spec 091: the stored totals of each (card, invoice month) from `financial_card_invoice_totals` (one row per invoice
+  // with purchases, kept by every card-row write, spec 090), never a grouping of the card history.
+  // NET = purchases (EXPENSE) minus every credit (INCOME); early payments are also counted apart.
+  async findInvoiceTotals(creditCardIds: string[]): Promise<CardInvoiceSum[]> {
     if (creditCardIds.length === 0) {
       return [];
     }
-    const rows = await this.db.client.financialTransaction.groupBy({
-      _sum: { value: true },
-      by: ['credit_card_id', 'invoice_month', 'type', 'category_id'],
+    const rows = await this.db.client.financialCardInvoiceTotal.findMany({
+      orderBy: [{ credit_card_id: 'asc' }, { invoice_month: 'asc' }],
+      select: {
+        credit_card_id: true,
+        early_paid: true,
+        expense: true,
+        income: true,
+        invoice_month: true,
+      },
       where: { credit_card_id: { in: creditCardIds } },
     });
-    const sums = new Map<string, CardInvoiceSum>();
-    // Net = purchases (EXPENSE) minus every credit (INCOME); early payments are also counted apart.
-    for (const row of rows) {
-      const key = `${row.credit_card_id}|${row.invoice_month}`;
-      const sum = sums.get(key) ?? {
-        amount: 0,
-        credit_card_id: row.credit_card_id as string,
-        early_paid: 0,
-        invoice_month: row.invoice_month as string,
-      };
-      const value = row._sum.value ?? 0;
-      sum.amount += row.type === TransactionType.INCOME ? -value : value;
-      if (row.category_id === SYSTEM_CATEGORY_IDS[SystemCategoryKey.CARD_EARLY_PAYMENT]) {
-        sum.early_paid += value;
-      }
-      sums.set(key, sum);
-    }
-    return [...sums.values()];
+
+    return rows.map((row) => ({
+      amount: row.expense - row.income,
+      credit_card_id: row.credit_card_id,
+      early_paid: row.early_paid,
+      invoice_month: row.invoice_month,
+    }));
   }
   // Spec 046: one grouped query for the dashboard, in the database (never the rows in memory).
   async sumDashboardRows(params: DashboardSumsParams): Promise<DashboardSumRow[]> {
@@ -487,6 +496,13 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
         where: { id: params.id },
       });
       await applyLedgerDeltas(tx, ledgerDeltas(stored, toLedgerEntry(updated)));
+      await refreshCardInvoiceTotals(
+        tx,
+        invoiceTotalsKeysOf([
+          { credit_card_id: stored.creditCardId, invoice_month: stored.invoiceMonth },
+          updated,
+        ]),
+      );
       // Spec 043 FR 9/12: names replace the set; a new owner re-resolves the current names in that owner.
       const ownerChanged = updated.owner !== stored.owner || updated.owner_id !== stored.ownerId;
       const names =
@@ -798,13 +814,21 @@ export async function insertRows(
   });
   const created = await tx.financialTransaction.createManyAndReturn({
     data: entries.map((entry) => entry.data),
-    select: { account_id: true, paid: true, type: true, value: true },
+    select: {
+      account_id: true,
+      credit_card_id: true,
+      invoice_month: true,
+      paid: true,
+      type: true,
+      value: true,
+    },
   });
 
   await applyLedgerDeltas(
     tx,
     sumLedgerDeltas(created.flatMap((row) => ledgerDeltas(undefined, toLedgerEntry(row)))),
   );
+  await refreshCardInvoiceTotals(tx, invoiceTotalsKeysOf(created));
   // Tags belong to the owner of their rows: one resolution per owner (spec 047, owner per row).
   const byOwner = new Map<string, typeof entries>();
 

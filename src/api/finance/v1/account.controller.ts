@@ -27,6 +27,7 @@ import {
   UpdateAccountApiSchema,
   UpdateAccountBody,
 } from '@api/finance/v1/dto/account.dto';
+import { FinanceEtag } from '@api/finance/v1/finance-etag';
 import {
   OwnerIdQuerySchema,
   resolveToday,
@@ -45,6 +46,7 @@ const DailyBalancesRequestSchema = ListAccountsQuerySchema.extend(DailyBalancesQ
   path: 'finance/accounts',
   version: '1',
 })
+@FinanceEtag()
 export class AccountController {
   constructor(private readonly accountService: AccountService) {}
 

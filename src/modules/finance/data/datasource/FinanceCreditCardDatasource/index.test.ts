@@ -196,6 +196,15 @@ describe('Method update with a new closing day (spec 029 FR 9)', () => {
       ['r1', '2026-11'],
       ['r2', '2026-12'],
     ]);
+    // Spec 090: the months the rows leave and the ones they reach.
+    expect(spies.refreshInvoiceTotals.mock.calls[0][1]).toEqual(
+      expect.arrayContaining(
+        ['2026-10', '2026-11', '2026-12'].map((invoiceMonth) => ({
+          creditCardId: mocks.card.id,
+          invoiceMonth,
+        })),
+      ),
+    );
   });
 
   it('SHOULD NOT run a statement WHEN no row moves', async () => {

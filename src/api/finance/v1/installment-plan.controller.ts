@@ -26,6 +26,7 @@ import {
   UpdateInstallmentPlanApiSchema,
   UpdateInstallmentPlanBody,
 } from '@api/finance/v1/dto/installment-plan.dto';
+import { FinanceEtag } from '@api/finance/v1/finance-etag';
 import { TodayQuerySchema } from '@api/finance/v1/finance-query';
 import { InstallmentPlanService } from '@api/finance/v1/installment-plan.service';
 import { JwtPayload } from '@shared/infra/jwt/types';
@@ -36,6 +37,7 @@ import { validate } from '@shared/infra/validation';
   path: 'finance/installment-plans',
   version: '1',
 })
+@FinanceEtag()
 export class InstallmentPlanController {
   constructor(private readonly installmentPlanService: InstallmentPlanService) {}
 

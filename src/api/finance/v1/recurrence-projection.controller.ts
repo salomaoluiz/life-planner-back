@@ -6,6 +6,7 @@ import {
   ProjectedOccurrenceOutput,
   ProjectionsQuerySchema,
 } from '@api/finance/v1/dto/recurrence.dto';
+import { FinanceEtag } from '@api/finance/v1/finance-etag';
 import { toOwnerIds, toTransactionFilter } from '@api/finance/v1/finance-query';
 import { RecurrenceService } from '@api/finance/v1/recurrence.service';
 import { JwtPayload } from '@shared/infra/jwt/types';
@@ -18,6 +19,7 @@ import { validate } from '@shared/infra/validation';
   path: 'finance/recurrences/projections',
   version: '1',
 })
+@FinanceEtag()
 export class RecurrenceProjectionController {
   constructor(private readonly recurrenceService: RecurrenceService) {}
 

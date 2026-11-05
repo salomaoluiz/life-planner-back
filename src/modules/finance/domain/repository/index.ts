@@ -6,6 +6,7 @@ export * from './IFinanceCreditCardRepository';
 export * from './IFinanceInstallmentPlanRepository';
 export * from './IFinanceInvoicePaymentRepository';
 export * from './IFinanceOwnerDataRepository';
+export * from './IFinanceOwnerVersionRepository';
 export * from './IFinancePrepaymentRepository';
 export * from './IFinanceRecurrenceRepository';
 export * from './IFinanceTagRepository';

@@ -109,6 +109,17 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
     }));
   }
 
+  async findInvoiceTotals(creditCardIds: string[]): Promise<CardInvoiceTotal[]> {
+    const rows = await this.transactionDatasource.findInvoiceTotals(creditCardIds);
+
+    return rows.map((row) => ({
+      amount: row.amount,
+      creditCardId: row.credit_card_id,
+      earlyPaid: row.early_paid,
+      invoiceMonth: row.invoice_month,
+    }));
+  }
+
   async findTransactionById(id: string): Promise<TransactionEntity | undefined> {
     const result = await this.transactionDatasource.findById(id);
 
@@ -184,17 +195,6 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
       recurrenceId: row.recurrence_id,
       type: TransactionType[row.type],
       value: row.value,
-    }));
-  }
-
-  async sumCardInvoices(creditCardIds: string[]): Promise<CardInvoiceTotal[]> {
-    const rows = await this.transactionDatasource.sumCardInvoices(creditCardIds);
-
-    return rows.map((row) => ({
-      amount: row.amount,
-      creditCardId: row.credit_card_id,
-      earlyPaid: row.early_paid,
-      invoiceMonth: row.invoice_month,
     }));
   }
 

@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 
 import { DashboardController } from '@api/finance/v1/dashboard.controller';
 import { DashboardService } from '@api/finance/v1/dashboard.service';
+import { FinanceEtagGuard } from '@api/finance/v1/finance-etag';
 import { ValidationError } from '@shared/domain/error/ValidationError';
 
 const serviceMock = {
@@ -18,7 +19,10 @@ async function build() {
   const module = await Test.createTestingModule({
     controllers: [DashboardController],
     providers: [{ provide: DashboardService, useValue: serviceMock }],
-  }).compile();
+  })
+    .overrideGuard(FinanceEtagGuard)
+    .useValue({ canActivate: () => true })
+    .compile();
 
   return module.get(DashboardController);
 }

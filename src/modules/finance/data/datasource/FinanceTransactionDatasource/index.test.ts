@@ -1,7 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 
-import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
-import { SystemCategoryKey, TransactionSource } from '@finance/domain/enum';
+import { TransactionSource } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { mocks, setup, spies } from './index.mocks';
@@ -9,7 +8,9 @@ import { mocks, setup, spies } from './index.mocks';
 // Spec 085: inside the database transaction only the columns the ledger and the tags need are selected.
 const WRITE_SELECT = {
   account_id: true,
+  credit_card_id: true,
   id: true,
+  invoice_month: true,
   owner: true,
   owner_id: true,
   paid: true,
@@ -67,6 +68,20 @@ describe('Method create', () => {
       data: { ledger_balance: { increment: -23490 } },
       where: { id: mocks.transaction.account_id },
     });
+  });
+
+  it('SHOULD refresh the stored invoice totals of the invoice of a card row in the same transaction (spec 090)', async () => {
+    spies.create.mockResolvedValue({
+      ...mocks.transaction,
+      credit_card_id: 'card-1',
+      invoice_month: '2026-05',
+    });
+
+    await setup.create(params);
+
+    expect(spies.refreshInvoiceTotals).toHaveBeenCalledWith(expect.anything(), [
+      { creditCardId: 'card-1', invoiceMonth: '2026-05' },
+    ]);
   });
 
   it('SHOULD read the row with its relations only AFTER the database transaction committed', async () => {
@@ -146,6 +161,27 @@ describe('Method delete', () => {
       data: { ledger_balance: { increment: 1000 } },
       where: { id: 'acc-1' },
     });
+  });
+
+  it('SHOULD refresh the invoice totals of the stored card invoice (spec 090)', async () => {
+    spies.queryRaw.mockResolvedValue([
+      {
+        account_id: null,
+        credit_card_id: 'card-1',
+        invoice_month: '2026-05',
+        paid: null,
+        ...OWNER,
+        type: 'EXPENSE',
+        value: 1000,
+      },
+    ]);
+    spies.deleteMany.mockResolvedValue({ count: 1 });
+
+    await setup.delete(mocks.transaction.id);
+
+    expect(spies.refreshInvoiceTotals).toHaveBeenCalledWith(expect.anything(), [
+      { creditCardId: 'card-1', invoiceMonth: '2026-05' },
+    ]);
   });
 
   it('SHOULD do nothing (idempotent) WHEN the row is already gone', async () => {
@@ -403,6 +439,34 @@ describe('Method update', () => {
     expect(spies.queryRaw).toHaveBeenCalledTimes(1);
   });
 
+  it('SHOULD refresh the invoice totals of BOTH the stored and the new invoice WHEN a card row moves (spec 090)', async () => {
+    spies.queryRaw.mockResolvedValue([
+      {
+        account_id: null,
+        credit_card_id: 'card-1',
+        invoice_month: '2026-05',
+        paid: null,
+        ...OWNER,
+        type: 'EXPENSE',
+        value: 1000,
+      },
+    ]);
+    spies.update.mockResolvedValue({
+      ...mocks.transaction,
+      account_id: null,
+      credit_card_id: 'card-2',
+      invoice_month: '2026-06',
+      paid: null,
+    });
+
+    await setup.update({ id: mocks.transaction.id, invoice_month: '2026-06' });
+
+    expect(spies.refreshInvoiceTotals).toHaveBeenCalledWith(expect.anything(), [
+      { creditCardId: 'card-1', invoiceMonth: '2026-05' },
+      { creditCardId: 'card-2', invoiceMonth: '2026-06' },
+    ]);
+  });
+
   it('SHOULD lock the stored row BEFORE updating AND compute the delta from the LOCKED row (not from an earlier read)', async () => {
     spies.queryRaw.mockResolvedValue(lockedRow); // another request already changed it to 1000
     spies.update.mockResolvedValue({
@@ -556,36 +620,23 @@ describe('Card purchases', () => {
     expect(spies.deleteMany).not.toHaveBeenCalled();
   });
 
-  it('SHOULD sum the NET of each invoice (purchases minus credits) AND the early payments apart', async () => {
-    spies.groupBy.mockResolvedValue([
+  it('SHOULD read the NET of each invoice (purchases minus credits) AND the early payments from the stored totals', async () => {
+    spies.invoiceTotalsFindMany.mockResolvedValue([
       {
-        _sum: { value: 1000 },
-        category_id: 'c1',
         credit_card_id: 'card-1',
+        early_paid: 600,
+        expense: 1000,
+        income: 700,
         invoice_month: '2026-10',
-        type: 'EXPENSE',
-      },
-      {
-        _sum: { value: 600 },
-        category_id: SYSTEM_CATEGORY_IDS[SystemCategoryKey.CARD_EARLY_PAYMENT],
-        credit_card_id: 'card-1',
-        invoice_month: '2026-10',
-        type: 'INCOME',
-      },
-      {
-        _sum: { value: 100 },
-        category_id: SYSTEM_CATEGORY_IDS[SystemCategoryKey.CARD_REFUND],
-        credit_card_id: 'card-1',
-        invoice_month: '2026-10',
-        type: 'INCOME',
       },
     ]);
 
-    expect(await setup.sumCardInvoices(['card-1'])).toEqual([
+    expect(await setup.findInvoiceTotals(['card-1'])).toEqual([
       { amount: 300, credit_card_id: 'card-1', early_paid: 600, invoice_month: '2026-10' },
     ]);
-    expect(await setup.sumCardInvoices([])).toEqual([]);
-    expect(spies.groupBy).toHaveBeenCalledTimes(1);
+    expect(await setup.findInvoiceTotals([])).toEqual([]);
+    expect(spies.invoiceTotalsFindMany).toHaveBeenCalledTimes(1);
+    expect(spies.groupBy).not.toHaveBeenCalled();
   });
 
   it('SHOULD return no purchases without keys AND count by card', async () => {
@@ -1066,6 +1117,24 @@ describe('Method createMany (spec 047)', () => {
       data: { ledger_balance: { increment: -5000 } },
       where: { id: 'acc-b' },
     });
+  });
+
+  it('SHOULD refresh the invoice totals of every card invoice of the file with ONE call (spec 090)', async () => {
+    spies.paymentFindFirst.mockResolvedValue(null);
+    spies.createManyAndReturn.mockImplementationOnce(async ({ data }) => data);
+
+    await setup.createMany([
+      row({ account_id: null, credit_card_id: 'card-1', invoice_month: '2026-06', paid: null }),
+      row({ account_id: null, credit_card_id: 'card-1', invoice_month: '2026-06', paid: null }),
+      row({ account_id: null, credit_card_id: 'card-1', invoice_month: '2026-05', paid: null }),
+      row({}),
+    ]);
+
+    expect(spies.refreshInvoiceTotals).toHaveBeenCalledTimes(1);
+    expect(spies.refreshInvoiceTotals).toHaveBeenCalledWith(expect.anything(), [
+      { creditCardId: 'card-1', invoiceMonth: '2026-05' },
+      { creditCardId: 'card-1', invoiceMonth: '2026-06' },
+    ]);
   });
 
   it('SHOULD NOT touch an account whose rows net to zero (spec 086)', async () => {

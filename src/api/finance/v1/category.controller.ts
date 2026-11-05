@@ -27,6 +27,7 @@ import {
   UpdateCategoryBody,
 } from '@api/finance/v1/dto/category.dto';
 import { TransactionTypeApiSchema } from '@api/finance/v1/dto/finance-fields';
+import { FinanceEtag } from '@api/finance/v1/finance-etag';
 import { OwnerIdQuerySchema, toOwnerIds } from '@api/finance/v1/finance-query';
 import { JwtPayload } from '@shared/infra/jwt/types';
 import { validate } from '@shared/infra/validation';
@@ -41,6 +42,7 @@ const ListCategoriesQuerySchema = z.object({
   path: 'finance/categories',
   version: '1',
 })
+@FinanceEtag()
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 

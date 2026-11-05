@@ -3,6 +3,24 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.1.9] - 2026-11-05
+
+### Changed
+
+- Finance screens now revalidate unchanged data almost instantly: each owner (you or a family) has a data version that every finance write bumps, and a finance read whose `If-None-Match` still matches is answered with an empty 304 before any work is done. Responses also carry an `X-Data-Version` header. Bodies do not change (spec 092).
+
+## [3.1.8] - 2026-11-04
+
+### Changed
+
+- Card screens (list, invoices, dashboard, daily balances, upcoming and the month view) now read the stored invoice totals instead of adding up the whole card history, so they stay fast as history grows. The credit card overview also skips old, fully paid invoices when it walks the invoice chain. Responses do not change (spec 091).
+
+## [3.1.7] - 2026-11-04
+
+### Changed
+
+- Card invoice totals are now also stored per card and invoice month and kept up to date by every card purchase, credit, installment, recurrence and import, ready for faster card screens. Nothing reads them yet and responses do not change (spec 090).
+
 ## [3.1.6] - 2026-11-04
 
 ### Changed

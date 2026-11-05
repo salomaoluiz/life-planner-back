@@ -158,9 +158,9 @@ export interface IFinanceTransactionDatasource {
   findForExport(
     params: ExportTransactionsDatasourceParams,
   ): Promise<FinancialTransactionWithRelations[]>;
+  findInvoiceTotals(creditCardIds: string[]): Promise<CardInvoiceSum[]>;
   findScalarsById(id: string): Promise<null | TransactionScalarsRecord>;
   findUnpaidAccountRows(owners: OwnerAccess[], to: string): Promise<UnpaidAccountRowRecord[]>;
-  sumCardInvoices(creditCardIds: string[]): Promise<CardInvoiceSum[]>;
   sumDashboardRows(params: DashboardSumsParams): Promise<DashboardSumRow[]>;
   update(params: UpdateTransactionDatasourceParams): Promise<FinancialTransactionWithRelations>;
 }

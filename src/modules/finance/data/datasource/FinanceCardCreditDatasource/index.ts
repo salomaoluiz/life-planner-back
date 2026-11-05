@@ -6,6 +6,10 @@ import {
 } from '@nestjs/common';
 
 import { InvoicePaymentMethod, Prisma, TransactionType } from '@db/client';
+import {
+  invoiceTotalsKeysOf,
+  refreshCardInvoiceTotals,
+} from '@finance/data/datasource/cardInvoiceTotals';
 import { insertInvoicePayment } from '@finance/data/datasource/FinanceInvoicePaymentDatasource';
 import {
   insertRows,
@@ -165,6 +169,7 @@ export class FinanceCardCreditDatasource implements IFinanceCardCreditDatasource
       assertCredit(stored.category_id);
       await assertInvoiceNotPaid(tx, locked.creditCardId, locked.invoiceMonth);
       await tx.financialTransaction.deleteMany({ where: { id } });
+      await refreshCardInvoiceTotals(tx, invoiceTotalsKeysOf([stored]));
 
       if (stored.paid_from_transaction_id) {
         const debit = await lockTransactionRow(tx, stored.paid_from_transaction_id);
@@ -251,6 +256,8 @@ export class FinanceCardCreditDatasource implements IFinanceCardCreditDatasource
         where: { id: params.id },
       });
 
+      await refreshCardInvoiceTotals(tx, invoiceTotalsKeysOf([stored, updated]));
+
       if (method === InvoicePaymentMethod.EXTERNAL && stored.paid_from_transaction_id) {
         await tx.financialTransaction.deleteMany({
           where: { id: stored.paid_from_transaction_id },
@@ -304,7 +311,7 @@ export class FinanceCardCreditDatasource implements IFinanceCardCreditDatasource
         });
       }
 
-      return tx.financialTransaction.update({
+      const updated = await tx.financialTransaction.update({
         data: {
           date: params.date,
           description: params.description,
@@ -316,6 +323,10 @@ export class FinanceCardCreditDatasource implements IFinanceCardCreditDatasource
         include: TRANSACTION_RELATIONS,
         where: { id: params.id },
       });
+
+      await refreshCardInvoiceTotals(tx, invoiceTotalsKeysOf([stored, updated]));
+
+      return updated;
     });
   }
 }
@@ -429,7 +440,7 @@ export async function insertEarlyPayment(
         })
       : null;
 
-  return tx.financialTransaction.create({
+  const created = await tx.financialTransaction.create({
     data: {
       category_id: params.category_id,
       credit_card_id: params.credit_card_id,
@@ -446,6 +457,10 @@ export async function insertEarlyPayment(
     },
     include: TRANSACTION_RELATIONS,
   });
+
+  await refreshCardInvoiceTotals(tx, invoiceTotalsKeysOf([created]));
+
+  return created;
 }
 
 // A standalone refund or discount row (no link, no prepayment). The caller holds the card lock and did the checks.
@@ -453,7 +468,7 @@ export async function insertRefund(
   tx: Prisma.TransactionClient,
   params: CreateRefundDatasourceParams,
 ): Promise<FinancialTransactionWithRelations> {
-  return tx.financialTransaction.create({
+  const created = await tx.financialTransaction.create({
     data: {
       category_id: params.category_id,
       credit_card_id: params.credit_card_id,
@@ -470,4 +485,8 @@ export async function insertRefund(
     },
     include: TRANSACTION_RELATIONS,
   });
+
+  await refreshCardInvoiceTotals(tx, invoiceTotalsKeysOf([created]));
+
+  return created;
 }

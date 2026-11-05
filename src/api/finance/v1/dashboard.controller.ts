@@ -12,6 +12,7 @@ import {
   TotalsOutput,
   TotalsQuerySchema,
 } from '@api/finance/v1/dto/dashboard.dto';
+import { FinanceEtag } from '@api/finance/v1/finance-etag';
 import { resolveToday, toOwnerIds } from '@api/finance/v1/finance-query';
 import { JwtPayload } from '@shared/infra/jwt/types';
 import { validate } from '@shared/infra/validation';
@@ -42,6 +43,7 @@ function toRequest(query: CommonQuery): DashboardRequest {
   path: 'finance/dashboard',
   version: '1',
 })
+@FinanceEtag()
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 

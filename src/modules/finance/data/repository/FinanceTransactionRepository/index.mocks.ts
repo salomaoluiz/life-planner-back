@@ -41,6 +41,9 @@ const transactionDatasourceMock = {
     },
   ]),
   findForExport: jest.fn().mockResolvedValue([transactionPersistenceMock]),
+  findInvoiceTotals: jest
+    .fn()
+    .mockResolvedValue([{ amount: 450, credit_card_id: 'card-1', invoice_month: '2026-10' }]),
   findScalarsById: jest.fn(),
   findUnpaidAccountRows: jest.fn().mockResolvedValue([
     {
@@ -58,9 +61,6 @@ const transactionDatasourceMock = {
       value: 1000,
     },
   ]),
-  sumCardInvoices: jest
-    .fn()
-    .mockResolvedValue([{ amount: 450, credit_card_id: 'card-1', invoice_month: '2026-10' }]),
   sumDashboardRows: jest.fn().mockResolvedValue([
     {
       amount: 900,

@@ -135,6 +135,29 @@ export function calculateInvoices(
     used,
   };
 }
+// Spec 091: drops the settled prefix of `totals`. The chain may start after the latest month `S` (strictly before
+// `beforeMonth`) such that every stored month up to `S` has a payment record: a paid month ends the carry (carry-out 0),
+// is not unpaid, adds nothing to `used` and is only listed within the recent-paid window. The result equals the full
+// chain for every month from `beforeMonth` on; a card with no such prefix keeps all its totals.
+export function trimSettledPrefix(
+  totals: InvoiceTotal[],
+  payments: InvoicePaymentInfo[],
+  beforeMonth: string,
+): InvoiceTotal[] {
+  const paidMonths = new Set(payments.map((payment) => payment.referenceMonth));
+  const ordered = [...totals].sort((a, b) => a.invoiceMonth.localeCompare(b.invoiceMonth));
+  let settled = 0;
+
+  while (
+    settled < ordered.length &&
+    ordered[settled].invoiceMonth < beforeMonth &&
+    paidMonths.has(ordered[settled].invoiceMonth)
+  ) {
+    settled += 1;
+  }
+
+  return settled === 0 ? totals : ordered.slice(settled);
+}
 // Memoizes the chain per card: `(referenceMonth) => Invoice` equals `buildInvoiceFor` for every month (spec 070).
 export function effectiveDay(day: number, year: number, month: number): number {
   return Math.min(day, daysInMonth(year, month));

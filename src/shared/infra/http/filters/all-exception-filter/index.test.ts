@@ -1,5 +1,6 @@
 import { HttpStatus } from '@nestjs/common';
 
+import { NotModifiedException } from '@shared/infra/http/not-modified';
 import { LogLevel } from '@shared/infra/logger/types';
 
 import { mocks, setup } from './index.mocks';
@@ -202,6 +203,21 @@ describe('GIVEN an Unprocessable Entity (422)', () => {
         timestamp: '2025-11-30T12:00:00.000Z',
       },
       422,
+    );
+  });
+});
+
+describe('GIVEN a NotModifiedException (spec 092)', () => {
+  beforeEach(() => {
+    setup.catch(new NotModifiedException(), mocks.argumentsHost);
+  });
+
+  it('SHOULD reply with an empty 304 AND log nothing', () => {
+    expect(mocks.logger.log).not.toHaveBeenCalled();
+    expect(mocks.httpAdapterHost.httpAdapter.reply).toHaveBeenCalledWith(
+      mocks.getResponse,
+      undefined,
+      HttpStatus.NOT_MODIFIED,
     );
   });
 });

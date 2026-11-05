@@ -110,7 +110,7 @@ export async function checkMain(
     for (let round = 0; round < (update ? BASELINE_ROUNDS : 1); round += 1) {
       for (const name of modules) {
         for (const [key, entry] of Object.entries(registry[name])) {
-          if (entry.kind !== 'read') continue;
+          if (entry.kind !== 'read' || entry.revalidate) continue;
           let path: string;
           try {
             path = pathOf(name, key);
@@ -206,7 +206,9 @@ export async function checkMain(
 
     const entries: ExplainEntry[] = modules.flatMap((name) =>
       Object.entries(registry[name])
-        .filter(([, entry]) => entry.kind === 'read' && entry.table && entry.indexes)
+        .filter(
+          ([, entry]) => entry.kind === 'read' && !entry.revalidate && entry.table && entry.indexes,
+        )
         .map(([key, entry]) => ({
           indexes: entry.indexes ?? [],
           key,
