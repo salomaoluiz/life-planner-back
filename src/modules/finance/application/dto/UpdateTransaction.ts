@@ -4,6 +4,7 @@ import {
   AccessibleOwnersSchema,
   CalendarDateSchema,
   DescriptionSchema,
+  InvoiceMonthSchema,
   NotesSchema,
   OwnerIdSchema,
   OwnerTypeSchema,
@@ -22,6 +23,8 @@ export const UpdateTransactionSchema = z
     date: CalendarDateSchema.optional(),
     description: DescriptionSchema.optional(),
     id: z.string().min(1),
+    // Spec 095: the invoice of a card purchase (or of an installment row, with `scope`).
+    invoiceMonth: InvoiceMonthSchema.optional(),
     notes: NotesSchema.optional(),
     owner: OwnerTypeSchema.optional(),
     ownerId: OwnerIdSchema.optional(),
@@ -44,6 +47,7 @@ export const UpdateTransactionSchema = z
       input.creditCardId !== undefined ||
       input.date !== undefined ||
       input.description !== undefined ||
+      input.invoiceMonth !== undefined ||
       input.notes !== undefined ||
       input.owner !== undefined ||
       input.ownerId !== undefined ||

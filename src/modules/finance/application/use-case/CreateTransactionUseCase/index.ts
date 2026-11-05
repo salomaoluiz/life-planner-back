@@ -14,7 +14,10 @@ import AccountEntity from '@finance/domain/entity/AccountEntity';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { IFinanceTransactionRepository } from '@finance/domain/repository';
-import { invoiceMonthOf } from '@finance/domain/service/InvoiceCalculator';
+import {
+  invoiceMonthOf,
+  isPurchaseInvoiceAllowed,
+} from '@finance/domain/service/InvoiceCalculator';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -65,6 +68,14 @@ export class CreateTransactionUseCase implements UseCaseWithParams<
       type: input.type,
     });
 
+    if (input.invoiceMonth !== undefined) {
+      // Spec 095 FR 1, 3: only a card purchase, and only the previous, computed or next invoice of its date.
+      // A paid month is refused by the datasource under the card lock (`Invoice is paid`), with no extra query.
+      if (!card || !isPurchaseInvoiceAllowed(input.date, card.closingDay, input.invoiceMonth)) {
+        throw new UnprocessableEntityException('Invoice is not available for this date');
+      }
+    }
+
     const transaction = await this.transactionRepository.createTransaction({
       accountId: input.accountId,
       categoryId: input.categoryId,
@@ -72,7 +83,9 @@ export class CreateTransactionUseCase implements UseCaseWithParams<
       currency: (card ?? (account as AccountEntity)).currency,
       date: input.date,
       description: input.description,
-      invoiceMonth: card ? invoiceMonthOf(input.date, card.closingDay) : undefined,
+      invoiceMonth: card
+        ? (input.invoiceMonth ?? invoiceMonthOf(input.date, card.closingDay))
+        : undefined,
       notes: input.notes,
       owner: input.owner,
       ownerId: input.ownerId,
