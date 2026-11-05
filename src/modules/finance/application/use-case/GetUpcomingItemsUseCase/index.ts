@@ -94,7 +94,7 @@ export class GetUpcomingItemsUseCase implements UseCaseWithParams<
       today: input.today,
     });
     const open = found.filter(
-      ({ invoice }) => invoice.status !== InvoiceStatus.PAID && invoice.amountDue > 0,
+      ({ invoice }) => invoice.status !== InvoiceStatus.PAID && invoice.projectedTotal > 0,
     );
 
     if (open.length === 0) {
@@ -121,13 +121,14 @@ export class GetUpcomingItemsUseCase implements UseCaseWithParams<
       occurrenceNumber: null,
       owner: card.owner,
       ownerId: card.ownerId,
+      projectedAmount: invoice.projectedAmount > 0 ? invoice.projectedAmount : undefined,
       purchaseCount:
         counts.find(
           (row) => row.creditCardId === card.id && row.invoiceMonth === invoice.referenceMonth,
         )?.count ?? 0,
       recurrenceId: null,
       type: TransactionType.EXPENSE,
-      valueCents: invoice.amountDue,
+      valueCents: invoice.projectedTotal,
     }));
   }
 

@@ -121,6 +121,8 @@ interface DashboardSum {
   invoiceMonth: null | string;
   // Account rows only.
   paid: boolean | null;
+  // Spec 096: a projected card purchase; it never counts as realized.
+  projected: boolean;
   tagId: null | string;
   type: TransactionType;
 }

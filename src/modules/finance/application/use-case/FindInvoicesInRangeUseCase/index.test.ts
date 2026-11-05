@@ -8,6 +8,21 @@ it('SHOULD return the invoices whose list date is inside the range', async () =>
   expect(result[0].invoice.referenceMonth).toBe('2026-10');
 });
 
+it('SHOULD keep an invoice that has only projected purchases (spec 096)', async () => {
+  mocks.compute.execute.mockResolvedValueOnce([
+    {
+      card: mocks.card,
+      invoices: {},
+      payments: [],
+      totals: [{ amount: 0, invoiceMonth: '2026-10', projectedAmount: 700, projectedCount: 1 }],
+    },
+  ]);
+
+  const result = await setup.execute(mocks.input);
+
+  expect(result.map((match) => match.invoice.referenceMonth)).toEqual(['2026-10']);
+});
+
 it('SHOULD leave out an invoice listed outside the range', async () => {
   expect(await setup.execute({ ...mocks.input, from: '2026-12-01', to: '2026-12-31' })).toEqual([]);
 });

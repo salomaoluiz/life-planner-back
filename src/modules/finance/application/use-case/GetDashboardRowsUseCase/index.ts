@@ -134,7 +134,10 @@ export class GetDashboardRowsUseCase implements UseCaseWithParams<
       if (!counted || (!counted.realized && counted.date < monthStart)) {
         return [];
       }
-      if (filter.paid !== undefined && counted.realized !== filter.paid) {
+      // Spec 096 FR 11: a projected card purchase never counts as realized, whatever its invoice owes.
+      const realized = counted.realized && !sum.projected;
+
+      if (filter.paid !== undefined && realized !== filter.paid) {
         return [];
       }
 
@@ -144,7 +147,7 @@ export class GetDashboardRowsUseCase implements UseCaseWithParams<
           bucketDate: counted.date,
           categoryId: sum.categoryId,
           count: sum.count,
-          projected: !counted.realized,
+          projected: !realized,
           tagId: sum.tagId,
           type: sum.type,
         },

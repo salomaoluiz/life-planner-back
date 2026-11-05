@@ -250,6 +250,7 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
       date: row.date,
       invoiceMonth: row.invoice_month,
       paid: row.paid,
+      projected: row.projected,
       tagId: row.tag_id,
       type: TransactionType[row.type],
     }));

@@ -53,6 +53,7 @@ export interface DashboardSumRow {
   date: null | string;
   invoice_month: null | string;
   paid: boolean | null;
+  projected: boolean;
   tag_id: null | string;
   type: TransactionType;
 }

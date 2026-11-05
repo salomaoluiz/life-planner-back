@@ -1005,6 +1005,29 @@ describe('Method sumDashboardRows (spec 046)', () => {
     expect(sqlOf(0)).not.toContain('financial_transaction_tags');
   });
 
+  it('SHOULD select and group by the projected flag (spec 096)', async () => {
+    spies.queryRaw.mockResolvedValue([
+      {
+        amount: BigInt(700),
+        category_id: 'cat-1',
+        count: BigInt(1),
+        credit_card_id: 'card-1',
+        date: null,
+        invoice_month: '2026-10',
+        paid: null,
+        projected: true,
+        tag_id: null,
+        type: 'EXPENSE',
+      },
+    ]);
+
+    const rows = await setup.sumDashboardRows(params);
+
+    expect(rows).toEqual([expect.objectContaining({ amount: 700, projected: true })]);
+    expect(sqlOf(0)).toContain('t."projected"');
+    expect(sqlOf(0)).toContain('GROUP BY 1, 2, 3, 4, 5, 6, 7, 8');
+  });
+
   it('SHOULD join the tags only by tag AND apply the filters', async () => {
     spies.queryRaw.mockResolvedValue([]);
 

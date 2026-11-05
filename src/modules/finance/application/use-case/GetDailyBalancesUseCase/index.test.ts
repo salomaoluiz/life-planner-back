@@ -90,6 +90,24 @@ describe('GetDailyBalancesUseCase', () => {
     expect(day(result.days, '2026-11-05').accounts[0].balance).toBe(70000);
   });
 
+  it('SHOULD put the projected total of the invoice on the payment day (spec 096)', async () => {
+    mocks.creditCardRepository.findCreditCards.mockResolvedValue([mocks.card]);
+    mocks.compute.execute.mockResolvedValue([
+      {
+        card: mocks.card,
+        invoices: {},
+        payments: [],
+        totals: [
+          { amount: 45000, invoiceMonth: '2026-10', projectedAmount: 10000, projectedCount: 1 },
+        ],
+      },
+    ]);
+
+    const result = await setup.execute(mocks.input);
+
+    expect(day(result.days, '2026-11-05').cardsDue).toBe(-55000);
+  });
+
   it('SHOULD add projected card occurrences to their invoice', async () => {
     mocks.creditCardRepository.findCreditCards.mockResolvedValue([mocks.card]);
     mocks.compute.execute.mockResolvedValue(invoiceData());

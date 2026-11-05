@@ -19,6 +19,8 @@ export interface UpcomingItem {
   occurrenceNumber: null | number;
   owner: OwnerType;
   ownerId: string;
+  // Spec 096: the projected part of an invoice item; left out when there is none.
+  projectedAmount?: number;
   purchaseCount: null | number;
   recurrenceId: null | string;
   type: TransactionType;

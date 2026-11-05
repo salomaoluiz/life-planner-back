@@ -462,6 +462,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
         date: null | string;
         invoice_month: null | string;
         paid: boolean | null;
+        projected: boolean;
         tag_id: null | string;
         type: TransactionType;
       }[]
@@ -629,7 +630,7 @@ function dashboardSumsSql(params: DashboardSumsParams): Prisma.Sql {
 
   return Prisma.sql`
     SELECT to_char(CASE WHEN t."credit_card_id" IS NULL THEN t."date" END, 'YYYY-MM-DD') AS "date", t."credit_card_id", t."invoice_month", t."type"::text AS "type",
-      t."category_id", t."paid", ${tagColumn} AS "tag_id",
+      t."category_id", t."paid", ${tagColumn} AS "tag_id", t."projected",
       COALESCE(SUM(t."value"), 0) AS "amount", COUNT(*) AS "count"
     FROM "financial_transactions" t
     JOIN "financial_categories" c ON c."id" = t."category_id"
@@ -637,7 +638,7 @@ function dashboardSumsSql(params: DashboardSumsParams): Prisma.Sql {
     LEFT JOIN "financial_credit_cards" cc ON cc."id" = t."credit_card_id"
     ${tagJoin}
     WHERE ${Prisma.join(conditions, ' AND ')}
-    GROUP BY 1, 2, 3, 4, 5, 6, 7`;
+    GROUP BY 1, 2, 3, 4, 5, 6, 7, 8`;
 }
 // Spec 059 FR 14 / spec 084: description or notes (case and accent insensitive), category ids, or amount range.
 function searchSql(search: SearchTerms): Prisma.Sql {

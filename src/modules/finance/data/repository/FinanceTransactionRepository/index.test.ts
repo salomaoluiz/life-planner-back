@@ -220,6 +220,36 @@ describe('findProjectedByInvoice (spec 096)', () => {
   });
 });
 
+describe('sumDashboardRows projected (spec 096)', () => {
+  it('SHOULD map the projected flag of each sum', async () => {
+    mocks.transactionDatasource.sumDashboardRows.mockResolvedValueOnce([
+      {
+        amount: 700,
+        category_id: 'c',
+        count: 1,
+        credit_card_id: 'card-1',
+        date: null,
+        invoice_month: '2026-10',
+        paid: null,
+        projected: true,
+        tag_id: null,
+        type: 'EXPENSE',
+      },
+    ]);
+
+    const rows = await setup.sumDashboardRows({
+      byTag: false,
+      currency: 'BRL',
+      from: '2026-10-01',
+      invoiceRefs: [],
+      owners: [{ owner: OwnerType.USER, ownerId: 'o' }],
+      to: '2026-10-31',
+    });
+
+    expect(rows).toEqual([expect.objectContaining({ projected: true })]);
+  });
+});
+
 describe('projected (spec 096)', () => {
   it('SHOULD send projected as a column on create', async () => {
     await setup.createTransaction({
