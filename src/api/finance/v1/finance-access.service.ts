@@ -3,6 +3,17 @@ import { Injectable } from '@nestjs/common';
 import { GetUserFamilyAccessUseCase } from '@family/application/use-case/GetUserFamilyAccessUseCase';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
+import { RequestContextStore } from '@shared/infra/http/request-context';
+
+export interface ResolvedAccess {
+  accessibleOwners: OwnerAccess[];
+  familyNames: Record<string, string>;
+  userId: string;
+}
+
+// Spec 092: the ETag guard resolves the access before the handler runs; `FinanceEtagInterceptor` runs the handler
+// inside this store so the services reuse that read instead of repeating it.
+export const resolvedAccessStore = new RequestContextStore<ResolvedAccess>();
 
 // The finance use cases never call the family module: this service resolves, once per request,
 // the owners the caller can act on (themself + every family they own or joined).
@@ -18,6 +29,12 @@ export class FinanceAccessService {
   async resolveWithNames(
     userId: string,
   ): Promise<{ accessibleOwners: OwnerAccess[]; familyNames: Record<string, string> }> {
+    const preloaded = resolvedAccessStore.get();
+
+    if (preloaded?.userId === userId) {
+      return { accessibleOwners: preloaded.accessibleOwners, familyNames: preloaded.familyNames };
+    }
+
     const families = await this.getUserFamilyAccessUseCase.execute(userId);
 
     return {

@@ -3,6 +3,7 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 
 import { UpcomingOutput, UpcomingQuerySchema } from '@api/finance/v1/dto/upcoming.dto';
+import { FinanceEtag } from '@api/finance/v1/finance-etag';
 import { resolveToday, toOwnerIds } from '@api/finance/v1/finance-query';
 import { UpcomingService } from '@api/finance/v1/upcoming.service';
 import { JwtPayload } from '@shared/infra/jwt/types';
@@ -13,6 +14,7 @@ import { validate } from '@shared/infra/validation';
   path: 'finance/upcoming',
   version: '1',
 })
+@FinanceEtag()
 export class UpcomingController {
   constructor(private readonly upcomingService: UpcomingService) {}
 

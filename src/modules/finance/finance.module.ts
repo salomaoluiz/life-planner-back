@@ -52,6 +52,7 @@ import { GetInstallmentPlanUseCase } from '@finance/application/use-case/GetInst
 import { GetInvoicesForListUseCase } from '@finance/application/use-case/GetInvoicesForListUseCase';
 import { GetInvoiceUseCase } from '@finance/application/use-case/GetInvoiceUseCase';
 import { GetMonthSummaryUseCase } from '@finance/application/use-case/GetMonthSummaryUseCase';
+import { GetOwnerDataVersionsUseCase } from '@finance/application/use-case/GetOwnerDataVersionsUseCase';
 import { GetPrepaymentPreviewUseCase } from '@finance/application/use-case/GetPrepaymentPreviewUseCase';
 import { GetProjectionsUseCase } from '@finance/application/use-case/GetProjectionsUseCase';
 import { GetRecurrencesUseCase } from '@finance/application/use-case/GetRecurrencesUseCase';
@@ -93,6 +94,7 @@ import { FinanceCreditCardDatasource } from '@finance/data/datasource/FinanceCre
 import { FinanceInstallmentPlanDatasource } from '@finance/data/datasource/FinanceInstallmentPlanDatasource';
 import { FinanceInvoicePaymentDatasource } from '@finance/data/datasource/FinanceInvoicePaymentDatasource';
 import { FinanceOwnerDataDatasource } from '@finance/data/datasource/FinanceOwnerDataDatasource';
+import { FinanceOwnerVersionDatasource } from '@finance/data/datasource/FinanceOwnerVersionDatasource';
 import { FinancePrepaymentDatasource } from '@finance/data/datasource/FinancePrepaymentDatasource';
 import { FinanceRecurrenceDatasource } from '@finance/data/datasource/FinanceRecurrenceDatasource';
 import { FinanceTagDatasource } from '@finance/data/datasource/FinanceTagDatasource';
@@ -105,6 +107,7 @@ import { FinanceCreditCardRepository } from '@finance/data/repository/FinanceCre
 import { FinanceInstallmentPlanRepository } from '@finance/data/repository/FinanceInstallmentPlanRepository';
 import { FinanceInvoicePaymentRepository } from '@finance/data/repository/FinanceInvoicePaymentRepository';
 import { FinanceOwnerDataRepository } from '@finance/data/repository/FinanceOwnerDataRepository';
+import { FinanceOwnerVersionRepository } from '@finance/data/repository/FinanceOwnerVersionRepository';
 import { FinancePrepaymentRepository } from '@finance/data/repository/FinancePrepaymentRepository';
 import { FinanceRecurrenceRepository } from '@finance/data/repository/FinanceRecurrenceRepository';
 import { FinanceTagRepository } from '@finance/data/repository/FinanceTagRepository';
@@ -176,6 +179,7 @@ const useCases = [
   GetTransactionByIdUseCase,
   GetTransactionsUseCase,
   ImportTransactionsUseCase,
+  GetOwnerDataVersionsUseCase,
   HasFinanceDataByOwnerUseCase,
   PayInvoiceUseCase,
   PrepayInstallmentPlanUseCase,
@@ -218,6 +222,8 @@ const useCases = [
     { provide: 'IFinanceInvoicePaymentDatasource', useClass: FinanceInvoicePaymentDatasource },
     { provide: 'IFinanceOwnerDataRepository', useClass: FinanceOwnerDataRepository },
     { provide: 'IFinanceOwnerDataDatasource', useClass: FinanceOwnerDataDatasource },
+    { provide: 'IFinanceOwnerVersionRepository', useClass: FinanceOwnerVersionRepository },
+    { provide: 'IFinanceOwnerVersionDatasource', useClass: FinanceOwnerVersionDatasource },
     { provide: 'IFinancePrepaymentRepository', useClass: FinancePrepaymentRepository },
     { provide: 'IFinancePrepaymentDatasource', useClass: FinancePrepaymentDatasource },
     { provide: 'IFinanceRecurrenceRepository', useClass: FinanceRecurrenceRepository },

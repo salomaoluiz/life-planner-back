@@ -308,6 +308,18 @@ model FinancialCardInvoiceTotal {
   @@map("financial_card_invoice_totals")
 }
 
+// Spec 092: bumped (by database triggers, once per transaction and owner) by every write that changes what the owner
+// reads; the finance GET routes build their ETag from it. A missing row means version 0.
+model FinanceOwnerVersion {
+  owner      OwnerType
+  owner_id   String
+  version    BigInt   @default(1)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@id([owner, owner_id])
+  @@map("finance_owner_versions")
+}
+
 // Lowercase members on purpose: the client validates against member names, so they must equal the DB/wire values.
 enum StockUnit {
   unit

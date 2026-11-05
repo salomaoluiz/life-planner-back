@@ -92,6 +92,76 @@ describe('measureRequest', () => {
   });
 });
 
+describe('measureRequest revalidate (spec 092)', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  function withEtag(status: number, etag?: string) {
+    return {
+      headers: { get: () => etag ?? null },
+      json: async () => ({}),
+      ok: status < 400,
+      status,
+    } as unknown as Response;
+  }
+
+  it('SHOULD send the ETag of the warm-up call back AND count only the 304', async () => {
+    jest.spyOn(QueryCounter, 'begin').mockImplementation();
+    jest
+      .spyOn(QueryCounter, 'end')
+      .mockReturnValue({ control: 0, statements: [], total: 3, values: [] });
+    const fetchFn = jest
+      .fn()
+      .mockResolvedValueOnce(withEtag(200, 'W/"x"'))
+      .mockResolvedValueOnce(withEtag(304));
+
+    const result = await measureRequest({
+      baseUrl: 'http://localhost:1',
+      fetchFn,
+      key: 'GET /a',
+      request: { method: 'GET', path: '/a' },
+      revalidate: true,
+      token: 't',
+    });
+
+    expect(result).toEqual({ measured: 3, status: 304 });
+    expect(fetchFn.mock.calls[1][1].headers['If-None-Match']).toBe('W/"x"');
+  });
+
+  it('SHOULD fail WHEN the warm-up response has no ETag', async () => {
+    const fetchFn = jest.fn().mockResolvedValue(withEtag(200));
+
+    await expect(
+      measureRequest({
+        baseUrl: 'http://localhost:1',
+        fetchFn,
+        key: 'GET /a',
+        request: { method: 'GET', path: '/a' },
+        revalidate: true,
+        token: 't',
+      }),
+    ).rejects.toThrow('GET /a -> no ETag to revalidate');
+  });
+
+  it('SHOULD fail WHEN the conditional call is not a 304', async () => {
+    jest.spyOn(QueryCounter, 'begin').mockImplementation();
+    jest
+      .spyOn(QueryCounter, 'end')
+      .mockReturnValue({ control: 0, statements: [], total: 9, values: [] });
+    const fetchFn = jest.fn().mockResolvedValue(withEtag(200, 'W/"x"'));
+
+    await expect(
+      measureRequest({
+        baseUrl: 'http://localhost:1',
+        fetchFn,
+        key: 'GET /a',
+        request: { method: 'GET', path: '/a' },
+        revalidate: true,
+        token: 't',
+      }),
+    ).rejects.toThrow('GET /a -> 200, not 304');
+  });
+});
+
 describe('applyBaseline', () => {
   it('SHOULD rewrite only maxQueries of the measured keys and keep the order', () => {
     const file = join(mkdtempSync(join(tmpdir(), 'perf-baseline-')), 'stock.json');

@@ -8,6 +8,8 @@ export interface MeasureArgs {
   key: string;
   onResponse?: (body: unknown) => void;
   request: { body?: unknown; method: string; path: string };
+  // Spec 092: send the ETag of the warm-up response back and expect a 304.
+  revalidate?: boolean;
   token: string;
 }
 
@@ -34,7 +36,23 @@ export async function measureRequest(
       method,
     });
 
-  if (method === 'GET') await call();
+  const warm = method === 'GET' ? await call() : undefined;
+
+  if (args.revalidate) {
+    const etag = warm?.headers.get('etag');
+    if (!etag) throw new Error(`${args.key} -> no ETag to revalidate`);
+    QueryCounter.begin();
+    const revalidated = await fetchFn(`${args.baseUrl}${path}`, {
+      headers: { Authorization: `Bearer ${args.token}`, 'If-None-Match': etag },
+      method,
+    });
+    const counted = QueryCounter.end();
+    if (revalidated.status !== 304)
+      throw new Error(`${args.key} -> ${revalidated.status}, not 304`);
+
+    return { measured: counted.total, status: revalidated.status };
+  }
+
   QueryCounter.begin();
   const response = await call();
   const { total } = QueryCounter.end();

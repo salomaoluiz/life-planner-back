@@ -19,6 +19,8 @@ const entrySchema = z
     p50Ms: z.number().nonnegative().nullable(),
     params: z.record(z.string(), z.string()).optional(),
     reason: z.string().min(1).optional(),
+    // Spec 092: measured as a conditional GET (`If-None-Match` of a first response): it must answer 304 within maxQueries.
+    revalidate: z.boolean().optional(),
     scenario: z.string(),
     seqScanException: z.string().min(1).optional(),
     table: z.string().min(1).optional(),

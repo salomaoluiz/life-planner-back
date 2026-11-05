@@ -1,6 +1,7 @@
 import { faker } from '@faker-js/faker';
 import { Test } from '@nestjs/testing';
 
+import { FinanceEtagGuard } from '@api/finance/v1/finance-etag';
 import { TagController } from '@api/finance/v1/tag.controller';
 import { TagService } from '@api/finance/v1/tag.service';
 import { JwtPayload } from '@shared/infra/jwt/types';
@@ -38,7 +39,10 @@ beforeEach(async () => {
   const module = await Test.createTestingModule({
     controllers: [TagController],
     providers: [{ provide: TagService, useValue: tagServiceMock }],
-  }).compile();
+  })
+    .overrideGuard(FinanceEtagGuard)
+    .useValue({ canActivate: () => true })
+    .compile();
 
   setup = module.get(TagController);
 });

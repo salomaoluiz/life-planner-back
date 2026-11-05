@@ -25,6 +25,7 @@ import {
   UpdateCreditCardApiSchema,
   UpdateCreditCardBody,
 } from '@api/finance/v1/dto/credit-card.dto';
+import { FinanceEtag } from '@api/finance/v1/finance-etag';
 import { OwnerIdQuerySchema, TodayQuerySchema, toOwnerIds } from '@api/finance/v1/finance-query';
 import { AccountStatus } from '@finance/domain/enum';
 import { JwtPayload } from '@shared/infra/jwt/types';
@@ -43,6 +44,7 @@ const OverviewQuerySchema = z
   path: 'finance/credit-cards',
   version: '1',
 })
+@FinanceEtag()
 export class CreditCardController {
   constructor(private readonly creditCardService: CreditCardService) {}
 

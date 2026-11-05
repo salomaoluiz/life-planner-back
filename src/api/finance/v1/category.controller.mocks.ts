@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 
 import { CategoryController } from '@api/finance/v1/category.controller';
 import { CategoryService } from '@api/finance/v1/category.service';
+import { FinanceEtagGuard } from '@api/finance/v1/finance-etag';
 import { JwtPayload } from '@shared/infra/jwt/types';
 
 // region Mocks
@@ -41,7 +42,10 @@ beforeEach(async () => {
   const module = await Test.createTestingModule({
     controllers: [CategoryController],
     providers: [{ provide: CategoryService, useValue: categoryServiceMock }],
-  }).compile();
+  })
+    .overrideGuard(FinanceEtagGuard)
+    .useValue({ canActivate: () => true })
+    .compile();
 
   setup = module.get(CategoryController);
 });
