@@ -20,6 +20,7 @@ export const CreateAccountApiSchema = z
     currency: CurrencyApiSchema.default(DEFAULT_CURRENCY),
     icon: IconApiSchema,
     initialBalance: BalanceApiSchema.default(0),
+    isFavorite: z.boolean().optional(),
     name: NameApiSchema,
     owner: OwnerTypeApiSchema,
     ownerId: OwnerIdApiSchema,
@@ -30,6 +31,7 @@ export const CreateAccountApiSchema = z
 export const UpdateAccountApiSchema = z
   .object({
     icon: IconApiSchema,
+    isFavorite: z.boolean(),
     name: NameApiSchema,
     status: AccountStatusApiSchema,
   })
@@ -48,6 +50,8 @@ export const AccountApiSchema = z.object({
   icon: z.string(),
   id: z.uuid(),
   initialBalance: z.number().int(),
+  // Spec 094: the favorite account of the requesting user only.
+  isFavorite: z.boolean(),
   name: z.string(),
   owner: OwnerTypeApiSchema,
   ownerId: z.uuid(),

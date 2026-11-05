@@ -10,6 +10,7 @@ import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { AdjustAccountBalanceUseCase } from '@finance/application/use-case/AdjustAccountBalanceUseCase';
 import { CreateAccountUseCase } from '@finance/application/use-case/CreateAccountUseCase';
 import { DeleteAccountUseCase } from '@finance/application/use-case/DeleteAccountUseCase';
+import { GetAccountFavoriteUseCase } from '@finance/application/use-case/GetAccountFavoriteUseCase';
 import { GetAccountsUseCase } from '@finance/application/use-case/GetAccountsUseCase';
 import {
   DailyBalances,
@@ -20,11 +21,10 @@ import { UpdateAccountUseCase } from '@finance/application/use-case/UpdateAccoun
 import { AccountWithBalances } from '@finance/domain/service/AccountBalance';
 
 // `ledgerBalance` is internal and never copied to the output.
-function toAccountOutput({
-  account,
-  balance,
-  projectedBalance,
-}: AccountWithBalances): AccountOutput {
+function toAccountOutput(
+  { account, balance, projectedBalance }: AccountWithBalances,
+  favoriteId: string | undefined,
+): AccountOutput {
   return {
     archivedAt: account.archivedAt?.toISOString() ?? null,
     balance,
@@ -33,6 +33,7 @@ function toAccountOutput({
     icon: account.icon,
     id: account.id,
     initialBalance: account.initialBalance,
+    isFavorite: account.id === favoriteId,
     name: account.name,
     owner: account.owner,
     ownerId: account.ownerId,
@@ -64,6 +65,7 @@ export class AccountService {
     private readonly createAccountUseCase: CreateAccountUseCase,
     private readonly deleteAccountUseCase: DeleteAccountUseCase,
     private readonly financeAccessService: FinanceAccessService,
+    private readonly getAccountFavoriteUseCase: GetAccountFavoriteUseCase,
     private readonly getAccountsUseCase: GetAccountsUseCase,
     private readonly getDailyBalancesUseCase: GetDailyBalancesUseCase,
     private readonly materializeRecurrencesUseCase: MaterializeRecurrencesUseCase,
@@ -85,7 +87,7 @@ export class AccountService {
       today,
     });
 
-    return toAccountOutput(result);
+    return toAccountOutput(result, await this.getAccountFavoriteUseCase.execute({ userId }));
   }
 
   async create(
@@ -95,9 +97,14 @@ export class AccountService {
   ): Promise<AccountOutput> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
-    const account = await this.createAccountUseCase.execute({ ...input, accessibleOwners, today });
+    const account = await this.createAccountUseCase.execute({
+      ...input,
+      accessibleOwners,
+      today,
+      userId,
+    });
 
-    return toAccountOutput(account);
+    return toAccountOutput(account, await this.getAccountFavoriteUseCase.execute({ userId }));
   }
 
   async delete(userId: string, id: string): Promise<void> {
@@ -117,8 +124,10 @@ export class AccountService {
     await this.materializeRecurrencesUseCase.execute({ accessibleOwners, ownerIds, today });
 
     const accounts = await this.getAccountsUseCase.execute({ accessibleOwners, ownerIds, today });
+    // ONE extra read for the whole list (spec 094 FR 9).
+    const favoriteId = await this.getAccountFavoriteUseCase.execute({ userId });
 
-    return accounts.map((account) => toAccountOutput(account));
+    return accounts.map((account) => toAccountOutput(account, favoriteId));
   }
 
   async getDailyBalances(
@@ -155,8 +164,9 @@ export class AccountService {
       accessibleOwners,
       id,
       today,
+      userId,
     });
 
-    return toAccountOutput(account);
+    return toAccountOutput(account, await this.getAccountFavoriteUseCase.execute({ userId }));
   }
 }
