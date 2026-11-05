@@ -49,6 +49,8 @@ interface FindUnpaidSumsUntilRepositoryParams {
 }
 interface UpdateAccountRepositoryParams {
   archivedAt?: Date | null;
+  // Archiving: the favorites of every user pointing to this account go away in the same database transaction (spec 094 FR 4).
+  clearFavorites?: boolean;
   icon?: string;
   id: string;
   name?: string;

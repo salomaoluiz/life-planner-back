@@ -39,6 +39,8 @@ const findFirstSpy = jest.fn();
 const findManySpy = jest.fn();
 const findUniqueSpy = jest.fn();
 const queryRawSpy = jest.fn();
+const transactionSpy = jest.fn();
+const favoriteDeleteManySpy = jest.fn();
 const updateSpy = jest.fn();
 
 // endregion Spies
@@ -46,6 +48,7 @@ const updateSpy = jest.fn();
 const databaseMock = {
   client: {
     $queryRaw: queryRawSpy,
+    $transaction: transactionSpy,
     financialAccount: {
       create: createSpy,
       deleteMany: deleteManySpy,
@@ -54,6 +57,7 @@ const databaseMock = {
       findUnique: findUniqueSpy,
       update: updateSpy,
     },
+    financialAccountFavorite: { deleteMany: favoriteDeleteManySpy },
   },
 } as unknown as Database;
 
@@ -73,10 +77,12 @@ const mocks = { account: accountMock, owners: ownersMock };
 const spies = {
   create: createSpy,
   deleteMany: deleteManySpy,
+  favoriteDeleteMany: favoriteDeleteManySpy,
   findFirst: findFirstSpy,
   findMany: findManySpy,
   findUnique: findUniqueSpy,
   queryRaw: queryRawSpy,
+  transaction: transactionSpy,
   update: updateSpy,
 };
 

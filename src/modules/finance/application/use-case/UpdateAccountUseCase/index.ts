@@ -1,11 +1,14 @@
-import { Inject, NotFoundException } from '@nestjs/common';
+import { Inject, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 
 import { UpdateAccountInput, UpdateAccountSchema } from '@finance/application/dto/UpdateAccount';
 import { AttachAccountBalancesUseCase } from '@finance/application/use-case/AttachAccountBalancesUseCase';
 import { EndRecurrencesBySourceUseCase } from '@finance/application/use-case/EndRecurrencesBySourceUseCase';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { AccountStatus } from '@finance/domain/enum';
-import { IFinanceAccountRepository } from '@finance/domain/repository';
+import {
+  IFinanceAccountFavoriteRepository,
+  IFinanceAccountRepository,
+} from '@finance/domain/repository';
 import { AccountWithBalances } from '@finance/domain/service/AccountBalance';
 import { archivedAtFor } from '@finance/domain/service/ArchiveDay';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -18,6 +21,8 @@ export class UpdateAccountUseCase implements UseCaseWithParams<
   constructor(
     @Inject(AttachAccountBalancesUseCase)
     private readonly attachAccountBalancesUseCase: AttachAccountBalancesUseCase,
+    @Inject('IFinanceAccountFavoriteRepository')
+    private readonly favoriteRepository: IFinanceAccountFavoriteRepository,
     @Inject('IFinanceAccountRepository')
     private readonly accountRepository: IFinanceAccountRepository,
     @Inject(EndRecurrencesBySourceUseCase)
@@ -33,15 +38,34 @@ export class UpdateAccountUseCase implements UseCaseWithParams<
       throw new NotFoundException();
     }
 
-    const updated = await this.accountRepository.updateAccount({
-      archivedAt: archivedAtFor(account.status, input.status, new Date()),
-      icon: input.icon,
-      id: input.id,
-      name: input.name,
-      status: input.status,
-    });
+    const archiving =
+      input.status === AccountStatus.ARCHIVED && account.status !== AccountStatus.ARCHIVED;
+
+    // Spec 094 FR 4: an archived account can't be the favorite, neither already nor by this very request.
+    if (input.isFavorite && (input.status ?? account.status) === AccountStatus.ARCHIVED) {
+      throw new UnprocessableEntityException("An archived account can't be the favorite");
+    }
+
+    const changesAccount =
+      input.icon !== undefined || input.name !== undefined || input.status !== undefined;
+    const updated = changesAccount
+      ? await this.accountRepository.updateAccount({
+          archivedAt: archivedAtFor(account.status, input.status, new Date()),
+          clearFavorites: archiving,
+          icon: input.icon,
+          id: input.id,
+          name: input.name,
+          status: input.status,
+        })
+      : account;
+
+    if (input.userId !== undefined && input.isFavorite === true) {
+      await this.favoriteRepository.set(input.userId, account.id);
+    } else if (input.userId !== undefined && input.isFavorite === false) {
+      await this.favoriteRepository.clear(input.userId, account.id);
+    }
     // Archiving ends its recurring series (spec 034 FR 34); reactivating does not restart them.
-    if (input.status === AccountStatus.ARCHIVED && account.status !== AccountStatus.ARCHIVED) {
+    if (archiving) {
       await this.endRecurrencesBySourceUseCase.execute({
         accessibleOwners: input.accessibleOwners,
         accountId: account.id,

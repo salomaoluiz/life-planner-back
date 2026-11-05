@@ -189,3 +189,31 @@ describe('Method findUnpaidSumsUntil', () => {
     expect(spies.queryRaw).not.toHaveBeenCalled();
   });
 });
+
+describe('Method update clear_favorites (spec 094)', () => {
+  it('SHOULD delete every favorite of the account AND update it in ONE transaction', async () => {
+    spies.update.mockReturnValue('update-op');
+    spies.favoriteDeleteMany.mockReturnValue('delete-op');
+    spies.transaction.mockResolvedValue([{ count: 2 }, mocks.account]);
+
+    const result = await setup.update({
+      clear_favorites: true,
+      id: mocks.account.id,
+      status: 'ARCHIVED' as never,
+    });
+
+    expect(spies.favoriteDeleteMany).toHaveBeenCalledWith({
+      where: { account_id: mocks.account.id },
+    });
+    expect(spies.transaction).toHaveBeenCalledWith(['delete-op', 'update-op']);
+    expect(result).toBe(mocks.account);
+  });
+
+  it('SHOULD NOT open a transaction WHEN clear_favorites is not set', async () => {
+    spies.update.mockResolvedValue(mocks.account);
+
+    await setup.update({ id: mocks.account.id, name: 'x' });
+
+    expect(spies.transaction).not.toHaveBeenCalled();
+  });
+});

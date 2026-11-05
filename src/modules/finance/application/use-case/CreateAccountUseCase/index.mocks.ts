@@ -24,6 +24,7 @@ const inputMock = {
 };
 
 const accountRepositoryMock = { createAccount: jest.fn() };
+const favoriteRepositoryMock = { set: jest.fn() };
 const attachMock = { execute: jest.fn() };
 
 // endregion Mocks
@@ -39,6 +40,7 @@ beforeEach(async () => {
     providers: [
       CreateAccountUseCase,
       { provide: AttachAccountBalancesUseCase, useValue: attachMock },
+      { provide: 'IFinanceAccountFavoriteRepository', useValue: favoriteRepositoryMock },
       { provide: 'IFinanceAccountRepository', useValue: accountRepositoryMock },
     ],
   }).compile();
@@ -50,6 +52,7 @@ const mocks = {
   account: accountMock,
   accountRepository: accountRepositoryMock,
   attach: attachMock,
+  favoriteRepository: favoriteRepositoryMock,
   input: inputMock,
   withBalances: withBalancesMock,
 };

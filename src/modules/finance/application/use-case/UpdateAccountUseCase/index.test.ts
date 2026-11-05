@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 
 import { AccountStatus } from '@finance/domain/enum';
 import { ValidationError } from '@shared/domain/error/ValidationError';
@@ -13,6 +13,7 @@ it('SHOULD update only the sent fields AND return the account with its balances'
   const result = await setup.execute({ ...base(), name: ' Renamed ' });
 
   expect(mocks.accountRepository.updateAccount).toHaveBeenCalledWith({
+    clearFavorites: false,
     icon: undefined,
     id: mocks.account.id,
     name: 'Renamed',
@@ -105,5 +106,96 @@ describe('archivedAt (spec 052)', () => {
     await setup.execute({ ...base(), status: AccountStatus.ARCHIVED });
 
     expect(mocks.accountRepository.updateAccount.mock.calls[0][0].archivedAt).toBeUndefined();
+  });
+});
+
+describe('favorite account (spec 094)', () => {
+  const userId = 'user-id';
+
+  it('SHOULD set the favorite of the user AND skip the account write WHEN only isFavorite is sent', async () => {
+    await setup.execute({ ...base(), isFavorite: true, userId });
+
+    expect(mocks.favoriteRepository.set).toHaveBeenCalledWith(userId, mocks.account.id);
+    expect(mocks.accountRepository.updateAccount).not.toHaveBeenCalled();
+    expect(mocks.attach.execute).toHaveBeenCalledWith({
+      accounts: [mocks.account],
+      today: '2026-10-15',
+    });
+  });
+
+  it('SHOULD clear the favorite only for that account WHEN isFavorite is false', async () => {
+    await setup.execute({ ...base(), isFavorite: false, userId });
+
+    expect(mocks.favoriteRepository.clear).toHaveBeenCalledWith(userId, mocks.account.id);
+    expect(mocks.favoriteRepository.set).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD NOT touch the favorite WHEN isFavorite is omitted', async () => {
+    await setup.execute({ ...base(), name: 'x', userId });
+
+    expect(mocks.favoriteRepository.set).not.toHaveBeenCalled();
+    expect(mocks.favoriteRepository.clear).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['the account is already archived', { isFavorite: true }, AccountStatus.ARCHIVED],
+    [
+      'archiving in the same request',
+      { isFavorite: true, status: AccountStatus.ARCHIVED },
+      AccountStatus.ACTIVE,
+    ],
+  ])('SHOULD throw 422 AND write nothing WHEN %s', async (_label, patch, current) => {
+    mocks.accountRepository.findAccountById.mockResolvedValueOnce({
+      ...mocks.account,
+      status: current,
+    });
+
+    await expect(setup.execute({ ...base(), ...patch, userId })).rejects.toThrow(
+      new UnprocessableEntityException("An archived account can't be the favorite"),
+    );
+    expect(mocks.accountRepository.updateAccount).not.toHaveBeenCalled();
+    expect(mocks.favoriteRepository.set).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD ask the repository to clear the favorite of every user WHEN archiving', async () => {
+    await setup.execute({ ...base(), status: AccountStatus.ARCHIVED, userId });
+
+    expect(mocks.accountRepository.updateAccount).toHaveBeenCalledWith(
+      expect.objectContaining({ clearFavorites: true }),
+    );
+  });
+
+  it('SHOULD NOT clear favorites WHEN reactivating OR already archived', async () => {
+    mocks.accountRepository.findAccountById.mockResolvedValueOnce({
+      ...mocks.account,
+      status: AccountStatus.ARCHIVED,
+    });
+    await setup.execute({ ...base(), status: AccountStatus.ACTIVE, userId });
+    mocks.accountRepository.findAccountById.mockResolvedValueOnce({
+      ...mocks.account,
+      status: AccountStatus.ARCHIVED,
+    });
+    await setup.execute({ ...base(), status: AccountStatus.ARCHIVED, userId });
+
+    for (const [call] of mocks.accountRepository.updateAccount.mock.calls) {
+      expect(call.clearFavorites).toBeFalsy();
+    }
+    expect(mocks.favoriteRepository.set).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD throw 404 AND not set the favorite WHEN the account is not readable', async () => {
+    mocks.accountRepository.findAccountById.mockResolvedValueOnce({
+      ...mocks.account,
+      ownerId: 'someone-else',
+    });
+
+    await expect(setup.execute({ ...base(), isFavorite: true, userId })).rejects.toThrow(
+      NotFoundException,
+    );
+    expect(mocks.favoriteRepository.set).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD throw ValidationError WHEN isFavorite comes without userId', async () => {
+    await expect(setup.execute({ ...base(), isFavorite: true })).rejects.toThrow(ValidationError);
   });
 });

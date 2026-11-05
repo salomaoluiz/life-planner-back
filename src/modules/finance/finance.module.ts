@@ -34,6 +34,7 @@ import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-ca
 import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
 import { ExportTransactionsUseCase } from '@finance/application/use-case/ExportTransactionsUseCase';
 import { FindInvoicesInRangeUseCase } from '@finance/application/use-case/FindInvoicesInRangeUseCase';
+import { GetAccountFavoriteUseCase } from '@finance/application/use-case/GetAccountFavoriteUseCase';
 import { GetAccountsByIdsUseCase } from '@finance/application/use-case/GetAccountsByIdsUseCase';
 import { GetAccountsUseCase } from '@finance/application/use-case/GetAccountsUseCase';
 import { GetBalanceSeriesUseCase } from '@finance/application/use-case/GetBalanceSeriesUseCase';
@@ -153,6 +154,7 @@ const useCases = [
   DeleteTransactionUseCase,
   DetachCategoryCreatorFromFamilyUseCase,
   EnsureTransactionConsistencyUseCase,
+  GetAccountFavoriteUseCase,
   GetAccountsUseCase,
   GetCategoriesUseCase,
   ExpandCategoryIdsUseCase,
