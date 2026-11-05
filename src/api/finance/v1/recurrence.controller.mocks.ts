@@ -1,6 +1,7 @@
 import { faker } from '@faker-js/faker';
 import { Test } from '@nestjs/testing';
 
+import { FinanceEtagGuard } from '@api/finance/v1/finance-etag';
 import { RecurrenceController } from '@api/finance/v1/recurrence.controller';
 import { RecurrenceService } from '@api/finance/v1/recurrence.service';
 import { JwtPayload } from '@shared/infra/jwt/types';
@@ -33,7 +34,10 @@ beforeEach(async () => {
   const module = await Test.createTestingModule({
     controllers: [RecurrenceController],
     providers: [{ provide: RecurrenceService, useValue: serviceMock }],
-  }).compile();
+  })
+    .overrideGuard(FinanceEtagGuard)
+    .useValue({ canActivate: () => true })
+    .compile();
 
   setup = module.get(RecurrenceController);
 });

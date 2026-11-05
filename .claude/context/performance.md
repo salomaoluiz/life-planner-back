@@ -27,14 +27,15 @@ Read only `perf-report/summary.md` (git-ignored). It ends with `PERF PASSED: N/N
 
 `perf/budgets/<module>.json`, one entry per route, key `METHOD /path` (optionally `#scenario` suffix):
 
-| Field                                  | Meaning                                                                                            |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `kind`                                 | `read` or `unmeasured` (needs `reason`; every write route is `unmeasured`)                         |
-| `scenario`                             | name of the seeded scenario the measurement uses                                                   |
-| `maxQueries`                           | max Prisma queries for one request                                                                 |
-| `maxBytes`, `p50Ms`                    | payload and median latency budgets (`null` when not measured)                                      |
-| `indexes`, `table`, `seqScanException` | expected indexes for EXPLAIN; a sequential scan needs a justification                              |
-| `knownException`                       | a budget above the default limit (for example a list over 256 KB), naming the spec that removes it |
+| Field                                  | Meaning                                                                                                                                                                             |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kind`                                 | `read` or `unmeasured` (needs `reason`; every write route is `unmeasured`)                                                                                                          |
+| `scenario`                             | name of the seeded scenario the measurement uses                                                                                                                                    |
+| `maxQueries`                           | max Prisma queries for one request                                                                                                                                                  |
+| `maxBytes`, `p50Ms`                    | payload and median latency budgets (`null` when not measured)                                                                                                                       |
+| `indexes`, `table`, `seqScanException` | expected indexes for EXPLAIN; a sequential scan needs a justification                                                                                                               |
+| `knownException`                       | a budget above the default limit (for example a list over 256 KB), naming the spec that removes it                                                                                  |
+| `revalidate`                           | spec 092: measured as a conditional GET (the ETag of the warm-up response sent back); must answer 304 within `maxQueries` (3: auth, owners, versions). Skipped by `yarn perf:check` |
 
 A route without an entry fails `yarn test` (`scripts/perf/registry.coverage.test.ts`): add the entry in the same PR as the route, then `yarn perf --module <m> --update-baseline`.
 

@@ -23,6 +23,7 @@ import {
   UpdateTagApiSchema,
   UpdateTagBody,
 } from '@api/finance/v1/dto/tag.dto';
+import { FinanceEtag } from '@api/finance/v1/finance-etag';
 import { OwnerIdQuerySchema, toOwnerIds } from '@api/finance/v1/finance-query';
 import { TagService } from '@api/finance/v1/tag.service';
 import { JwtPayload } from '@shared/infra/jwt/types';
@@ -38,6 +39,7 @@ const ListTagsQuerySchema = z.object({
   path: 'finance/tags',
   version: '1',
 })
+@FinanceEtag()
 export class TagController {
   constructor(private readonly tagService: TagService) {}
 

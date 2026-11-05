@@ -87,6 +87,7 @@ for (const name of modules) {
             baseUrl,
             key,
             request,
+            revalidate: entry.revalidate,
             token: client.accessToken ?? '',
           }));
         } finally {

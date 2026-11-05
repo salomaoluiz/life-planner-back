@@ -25,6 +25,7 @@ import {
   UpdateTransactionApiSchema,
   UpdateTransactionBody,
 } from '@api/finance/v1/dto/transaction.dto';
+import { FinanceEtag } from '@api/finance/v1/finance-etag';
 import {
   OwnerIdQuerySchema,
   TodayQuerySchema,
@@ -80,6 +81,7 @@ const DeleteTransactionQuerySchema = z.object({ scope: z.enum(InstallmentEditSco
   path: 'finance/transactions',
   version: '1',
 })
+@FinanceEtag()
 export class TransactionController {
   constructor(private readonly transactionService: TransactionService) {}
 

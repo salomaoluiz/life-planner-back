@@ -113,25 +113,52 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": 6998,
-    "maxQueries": 4,
+    "maxQueries": 5,
     "p50Ms": 46,
     "scenario": ""
+  },
+  "GET /api/v1/finance/accounts #revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "scenario": "",
+    "revalidate": true
   },
   "GET /api/v1/finance/accounts/daily-balances": {
     "indexes": null,
     "kind": "read",
     "maxBytes": 41828,
-    "maxQueries": 5,
+    "maxQueries": 6,
     "p50Ms": 53,
     "scenario": "month={referenceMonth}"
+  },
+  "GET /api/v1/finance/accounts/daily-balances #revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "scenario": "month={referenceMonth}",
+    "revalidate": true
   },
   "GET /api/v1/finance/categories": {
     "indexes": null,
     "kind": "read",
     "maxBytes": 84115,
-    "maxQueries": 3,
+    "maxQueries": 4,
     "p50Ms": 43,
     "scenario": ""
+  },
+  "GET /api/v1/finance/categories #revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "scenario": "",
+    "revalidate": true
   },
   "GET /api/v1/finance/category-icons": {
     "indexes": null,
@@ -145,26 +172,47 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": 2257,
-    "maxQueries": 3,
+    "maxQueries": 4,
     "p50Ms": 28,
     "scenario": ""
+  },
+  "GET /api/v1/finance/credit-cards #revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "scenario": "",
+    "revalidate": true
   },
   "GET /api/v1/finance/credit-cards/:id": {
     "indexes": null,
     "kind": "read",
     "maxBytes": 448,
-    "maxQueries": 3,
+    "maxQueries": 4,
     "p50Ms": 26,
     "params": {
       "id": "card"
     },
     "scenario": ""
   },
+  "GET /api/v1/finance/credit-cards/:id #revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "params": {
+      "id": "card"
+    },
+    "scenario": "",
+    "revalidate": true
+  },
   "GET /api/v1/finance/credit-cards/:id/invoices/:month": {
     "indexes": null,
     "kind": "read",
     "maxBytes": 8027,
-    "maxQueries": 6,
+    "maxQueries": 7,
     "p50Ms": 62,
     "params": {
       "id": "card",
@@ -172,56 +220,126 @@
     },
     "scenario": ""
   },
+  "GET /api/v1/finance/credit-cards/:id/invoices/:month #revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "params": {
+      "id": "card",
+      "month": "referenceMonth"
+    },
+    "scenario": "",
+    "revalidate": true
+  },
   "GET /api/v1/finance/credit-cards/invoices": {
     "indexes": null,
     "kind": "read",
     "maxBytes": 24467,
-    "maxQueries": 6,
+    "maxQueries": 7,
     "p50Ms": 116,
     "scenario": "month={referenceMonth}"
+  },
+  "GET /api/v1/finance/credit-cards/invoices #revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "scenario": "month={referenceMonth}",
+    "revalidate": true
   },
   "GET /api/v1/finance/credit-cards/overview": {
     "indexes": null,
     "kind": "read",
     "maxBytes": 98646,
-    "maxQueries": 5,
+    "maxQueries": 6,
     "p50Ms": 81,
     "scenario": ""
+  },
+  "GET /api/v1/finance/credit-cards/overview #revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "scenario": "",
+    "revalidate": true
   },
   "GET /api/v1/finance/dashboard/balance-series #day": {
     "indexes": null,
     "kind": "read",
     "maxBytes": 42850,
-    "maxQueries": 4,
+    "maxQueries": 5,
     "p50Ms": 52,
     "scenario": "currency=BRL&from={monthStart}&to={monthEnd}&granularity=DAY"
+  },
+  "GET /api/v1/finance/dashboard/balance-series #day-revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "scenario": "currency=BRL&from={monthStart}&to={monthEnd}&granularity=DAY",
+    "revalidate": true
   },
   "GET /api/v1/finance/dashboard/summary": {
     "indexes": null,
     "kind": "read",
     "maxBytes": 341,
-    "maxQueries": 11,
+    "maxQueries": 12,
     "p50Ms": 142,
     "scenario": "currency=BRL&from={monthStart}&to={monthEnd}"
+  },
+  "GET /api/v1/finance/dashboard/summary #revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "scenario": "currency=BRL&from={monthStart}&to={monthEnd}",
+    "revalidate": true
   },
   "GET /api/v1/finance/dashboard/totals": {
     "indexes": null,
     "kind": "read",
     "maxBytes": 1893,
-    "maxQueries": 7,
+    "maxQueries": 8,
     "p50Ms": 111,
     "scenario": "currency=BRL&from={monthStart}&to={monthEnd}&groupBy=CATEGORY&type=EXPENSE"
+  },
+  "GET /api/v1/finance/dashboard/totals #revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "scenario": "currency=BRL&from={monthStart}&to={monthEnd}&groupBy=CATEGORY&type=EXPENSE",
+    "revalidate": true
   },
   "GET /api/v1/finance/installment-plans/:id": {
     "indexes": null,
     "kind": "read",
     "maxBytes": 739,
-    "maxQueries": 6,
+    "maxQueries": 7,
     "p50Ms": 54,
     "params": {
       "id": "plan"
     },
     "scenario": ""
+  },
+  "GET /api/v1/finance/installment-plans/:id #revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "params": {
+      "id": "plan"
+    },
+    "scenario": "",
+    "revalidate": true
   },
   "GET /api/v1/finance/installment-plans/:id/prepayment-preview": {
     "indexes": null,
@@ -236,91 +354,187 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": 198367,
-    "maxQueries": 10,
+    "maxQueries": 11,
     "p50Ms": 110,
     "scenario": "month={referenceMonth}"
+  },
+  "GET /api/v1/finance/month #revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "scenario": "month={referenceMonth}",
+    "revalidate": true
   },
   "GET /api/v1/finance/recurrences": {
     "indexes": null,
     "kind": "read",
     "maxBytes": 16591,
-    "maxQueries": 3,
+    "maxQueries": 4,
     "p50Ms": 34,
     "scenario": ""
+  },
+  "GET /api/v1/finance/recurrences #revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "scenario": "",
+    "revalidate": true
   },
   "GET /api/v1/finance/recurrences/:id": {
     "indexes": null,
     "kind": "read",
     "maxBytes": 26132,
-    "maxQueries": 4,
+    "maxQueries": 5,
     "p50Ms": 49,
     "params": {
       "id": "recurrence"
     },
     "scenario": ""
   },
+  "GET /api/v1/finance/recurrences/:id #revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "params": {
+      "id": "recurrence"
+    },
+    "scenario": "",
+    "revalidate": true
+  },
   "GET /api/v1/finance/recurrences/projections": {
     "indexes": null,
     "kind": "read",
     "maxBytes": 3,
-    "maxQueries": 3,
+    "maxQueries": 4,
     "p50Ms": 41,
     "scenario": "from={referenceMonth}&to={nextMonth}"
+  },
+  "GET /api/v1/finance/recurrences/projections #revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "scenario": "from={referenceMonth}&to={nextMonth}",
+    "revalidate": true
   },
   "GET /api/v1/finance/tags": {
     "indexes": null,
     "kind": "read",
     "maxBytes": 17157,
-    "maxQueries": 5,
+    "maxQueries": 6,
     "p50Ms": 60,
     "scenario": ""
+  },
+  "GET /api/v1/finance/tags #revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "scenario": "",
+    "revalidate": true
   },
   "GET /api/v1/finance/transactions #card-month": {
     "indexes": ["financial_transactions_credit_card_id_invoice_month_idx"],
     "kind": "read",
     "maxBytes": 30007,
-    "maxQueries": 6,
+    "maxQueries": 7,
     "p50Ms": 162,
     "scenario": "source=CARD&from={monthStart}&to={monthEnd}",
     "table": "financial_transactions"
+  },
+  "GET /api/v1/finance/transactions #card-month-revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "scenario": "source=CARD&from={monthStart}&to={monthEnd}",
+    "revalidate": true
   },
   "GET /api/v1/finance/transactions #month": {
     "indexes": ["financial_transactions_account_list_idx"],
     "kind": "read",
     "maxBytes": 93119,
-    "maxQueries": 3,
+    "maxQueries": 4,
     "p50Ms": 95,
     "scenario": "from={monthStart}&to={monthEnd}",
     "table": "financial_transactions"
+  },
+  "GET /api/v1/finance/transactions #month-revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "scenario": "from={monthStart}&to={monthEnd}",
+    "revalidate": true
   },
   "GET /api/v1/finance/transactions #search-2y": {
     "indexes": ["financial_transactions_account_list_idx"],
     "kind": "read",
     "maxBytes": 64588,
-    "maxQueries": 5,
+    "maxQueries": 6,
     "p50Ms": 46,
     "scenario": "from={twoYearsStart}&to={monthEnd}&q=perf%20tx%2001",
     "table": "financial_transactions"
+  },
+  "GET /api/v1/finance/transactions #search-2y-revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "scenario": "from={twoYearsStart}&to={monthEnd}&q=perf%20tx%2001",
+    "revalidate": true
   },
   "GET /api/v1/finance/transactions #search-month": {
     "indexes": ["financial_transactions_account_list_idx"],
     "kind": "read",
     "maxBytes": 3986,
-    "maxQueries": 5,
+    "maxQueries": 6,
     "p50Ms": 22,
     "scenario": "from={monthStart}&to={monthEnd}&q=perf%20tx%2001",
     "table": "financial_transactions"
+  },
+  "GET /api/v1/finance/transactions #search-month-revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "scenario": "from={monthStart}&to={monthEnd}&q=perf%20tx%2001",
+    "revalidate": true
   },
   "GET /api/v1/finance/transactions/:id": {
     "indexes": null,
     "kind": "read",
     "maxBytes": 775,
-    "maxQueries": 3,
+    "maxQueries": 4,
     "p50Ms": 40,
     "params": {
       "id": "transaction"
     },
     "scenario": ""
+  },
+  "GET /api/v1/finance/transactions/:id #revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "params": {
+      "id": "transaction"
+    },
+    "scenario": "",
+    "revalidate": true
   },
   "GET /api/v1/finance/transactions/export": {
     "indexes": null,
@@ -344,10 +558,19 @@
     "kind": "read",
     "knownException": "Oversized payload: the overdue list is unlimited and the contract is unchanged (spec 082 keeps the response byte-identical)",
     "maxBytes": 511948,
-    "maxQueries": 7,
+    "maxQueries": 8,
     "p50Ms": 63,
     "scenario": "ownerId={userId}",
     "table": "financial_transactions"
+  },
+  "GET /api/v1/finance/upcoming #revalidate": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "scenario": "ownerId={userId}",
+    "revalidate": true
   },
   "PATCH /api/v1/finance/accounts/:id": {
     "indexes": null,

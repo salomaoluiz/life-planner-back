@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 
 import { CreditCardController } from '@api/finance/v1/credit-card.controller';
 import { CreditCardService } from '@api/finance/v1/credit-card.service';
+import { FinanceEtagGuard } from '@api/finance/v1/finance-etag';
 import { JwtPayload } from '@shared/infra/jwt/types';
 
 // region Mocks
@@ -43,7 +44,10 @@ beforeEach(async () => {
   const module = await Test.createTestingModule({
     controllers: [CreditCardController],
     providers: [{ provide: CreditCardService, useValue: creditCardServiceMock }],
-  }).compile();
+  })
+    .overrideGuard(FinanceEtagGuard)
+    .useValue({ canActivate: () => true })
+    .compile();
 
   setup = module.get(CreditCardController);
 });

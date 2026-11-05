@@ -3,6 +3,12 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.1.9] - 2026-11-05
+
+### Changed
+
+- Finance screens now revalidate unchanged data almost instantly: each owner (you or a family) has a data version that every finance write bumps, and a finance read whose `If-None-Match` still matches is answered with an empty 304 before any work is done. Responses also carry an `X-Data-Version` header. Bodies do not change (spec 092).
+
 ## [3.1.8] - 2026-11-04
 
 ### Changed

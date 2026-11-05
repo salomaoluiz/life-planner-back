@@ -9,6 +9,7 @@ import {
 import { HttpAdapterHost } from '@nestjs/core';
 
 import { ValidationError } from '@shared/domain/error/ValidationError';
+import { NotModifiedException } from '@shared/infra/http/not-modified';
 import { redactSensitivePath } from '@shared/infra/http/redact-path';
 import { ILogger, LogLevel } from '@shared/infra/logger/types';
 
@@ -26,6 +27,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const httpStatus =
       exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+
+    if (exception instanceof NotModifiedException) {
+      httpAdapter.reply(ctx.getResponse(), undefined, httpStatus);
+
+      return;
+    }
 
     const message = this.getMessageFromException(exception);
 

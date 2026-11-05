@@ -1,6 +1,7 @@
 import { PATH_METADATA, VERSION_METADATA } from '@nestjs/common/constants';
 import { Test } from '@nestjs/testing';
 
+import { FinanceEtagGuard } from '@api/finance/v1/finance-etag';
 import { MonthController } from '@api/finance/v1/month.controller';
 import { MonthService } from '@api/finance/v1/month.service';
 import { ValidationError } from '@shared/domain/error/ValidationError';
@@ -13,7 +14,10 @@ async function build() {
   const module = await Test.createTestingModule({
     controllers: [MonthController],
     providers: [{ provide: MonthService, useValue: serviceMock }],
-  }).compile();
+  })
+    .overrideGuard(FinanceEtagGuard)
+    .useValue({ canActivate: () => true })
+    .compile();
 
   return module.get(MonthController);
 }

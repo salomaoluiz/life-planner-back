@@ -3,6 +3,7 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 
 import { MonthOutput, MonthQuerySchema } from '@api/finance/v1/dto/month.dto';
+import { FinanceEtag } from '@api/finance/v1/finance-etag';
 import { toOwnerIds, toTransactionFilter } from '@api/finance/v1/finance-query';
 import { MonthService } from '@api/finance/v1/month.service';
 import { JwtPayload } from '@shared/infra/jwt/types';
@@ -14,6 +15,7 @@ import { validate } from '@shared/infra/validation';
   path: 'finance/month',
   version: '1',
 })
+@FinanceEtag()
 export class MonthController {
   constructor(private readonly monthService: MonthService) {}
 
