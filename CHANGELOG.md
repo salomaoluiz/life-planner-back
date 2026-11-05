@@ -3,6 +3,18 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.4.0] - 2026-11-05
+
+### Added
+
+- Projected ("Prevista") card purchases: `projected` on `POST /finance/transactions` and `POST /finance/recurrences`, and `POST /finance/transactions/:id/confirm` to make one effective with the real value and date (spec 096).
+- Invoices expose `projectedAmount`, `projectedCount` and `projectedTotal`; the cards overview exposes `projectedUsed` and the available limit subtracts it; upcoming items, daily balances and the dashboard use the projected total (spec 096).
+- `GET /finance/transactions?projected=true|false`; the CSV export leaves projected rows out (spec 096).
+
+### Changed
+
+- Paying an invoice that still has projected purchases answers `409` with the list to resolve (spec 096).
+
 ## [3.3.0] - 2026-11-05
 
 ### Added

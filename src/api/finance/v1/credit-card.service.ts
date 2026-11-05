@@ -26,7 +26,10 @@ import { Invoice } from '@finance/domain/service/InvoiceCalculator';
 
 // Account ids are uuid strings; the calculator keeps them as plain strings, so the shape is already the wire shape.
 export function toInvoiceOutput(invoice: Invoice): z.infer<typeof InvoiceApiSchema> {
-  return invoice;
+  const { projectedAmount, projectedCount, projectedTotal, ...rest } = invoice;
+
+  // Spec 096: lean payload, the three projected fields travel only for an invoice that has projected purchases.
+  return projectedCount > 0 ? { ...rest, projectedAmount, projectedCount, projectedTotal } : rest;
 }
 
 function toCreditCardOutput(

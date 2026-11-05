@@ -23,7 +23,7 @@ describe('findForList', () => {
     });
     expect(result.invoice.amount).toBe(45000);
     expect(result.purchases[0].prepaid).toBe(false);
-    expect(result.purchases[0].projected).toBe(false);
+    expect(result.purchases[0].projected).toBeUndefined();
     expect(result.purchases[0].notes).toBe(mocks.purchase.notes);
     expect(result.credits[0]).toMatchObject({
       id: mocks.refund.id,

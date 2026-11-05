@@ -107,9 +107,9 @@ export const InvoiceApiSchema = z.object({
   periodEnd: z.string(),
   periodStart: z.string(),
   // Spec 096: projected rows of the invoice, apart from the effective amount.
-  projectedAmount: z.number().int(),
-  projectedCount: z.number().int(),
-  projectedTotal: z.number().int(),
+  projectedAmount: z.number().int().optional(),
+  projectedCount: z.number().int().optional(),
+  projectedTotal: z.number().int().optional(),
   referenceMonth: z.string(),
   status: z.enum(InvoiceStatus),
   total: z.number().int(),
