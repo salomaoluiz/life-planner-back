@@ -3,6 +3,13 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.3.0] - 2026-11-05
+
+### Added
+
+- A card purchase or an installment plan can be put on the previous, the computed or the next invoice: optional `invoiceMonth` on `POST`/`PATCH /finance/transactions` and `firstInvoiceMonth` on `POST`/`PATCH /finance/installment-plans`. A paid invoice is refused (spec 095).
+- Installment rows can be moved to another invoice with the `ONLY_THIS` and `THIS_AND_NEXT` scopes, keeping the invoice totals in step (spec 095).
+
 ## [3.2.0] - 2026-11-05
 
 ### Added
