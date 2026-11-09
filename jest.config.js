@@ -24,6 +24,7 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@api/(.*)$': '<rootDir>/src/api/$1',
     '^@family/(.*)$': '<rootDir>/src/modules/family/$1',
+    '^@investment/(.*)$': '<rootDir>/src/modules/investment/$1',
     '^@finance/(.*)$': '<rootDir>/src/modules/finance/$1',
     '^@shared/(.*)$': '<rootDir>/src/shared/$1',
     '^@stock/(.*)$': '<rootDir>/src/modules/stock/$1',
