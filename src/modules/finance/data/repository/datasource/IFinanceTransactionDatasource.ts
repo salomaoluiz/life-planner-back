@@ -126,6 +126,7 @@ export interface FindTransactionsFilter {
   from?: string;
   invoiceMonth?: string;
   invoiceRefs?: CardInvoiceKey[];
+  kind?: 'TRANSFER';
   limit?: number;
   paid?: boolean;
   projected?: boolean;

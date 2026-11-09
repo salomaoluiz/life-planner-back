@@ -389,6 +389,24 @@ describe('Method findByOwners projected filter (spec 096)', () => {
   });
 });
 
+describe('Method findByOwners kind filter (spec 098)', () => {
+  it('SHOULD keep only rows with a transfer on account rows', async () => {
+    spies.findMany.mockResolvedValue([]);
+
+    await setup.findByOwners(mocks.owners, TransactionSource.ACCOUNT, { kind: 'TRANSFER' });
+
+    expect(spies.findMany.mock.calls[0][0].where.AND).toContainEqual({ transfer_id: { not: null } });
+  });
+
+  it('SHOULD ignore the kind on card rows (a transfer has no card)', async () => {
+    spies.findMany.mockResolvedValue([]);
+
+    await setup.findByOwners(mocks.owners, TransactionSource.CARD, { kind: 'TRANSFER' });
+
+    expect(spies.findMany.mock.calls[0][0].where.AND).not.toContainEqual({ transfer_id: { not: null } });
+  });
+});
+
 describe('Method findByOwners filters (spec 045)', () => {
   it('SHOULD add one AND condition per filter on account rows', async () => {
     spies.findMany.mockResolvedValue([]);

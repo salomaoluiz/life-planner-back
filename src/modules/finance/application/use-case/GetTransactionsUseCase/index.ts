@@ -113,6 +113,7 @@ export class GetTransactionsUseCase implements UseCaseWithParams<
       from: filter.from,
       invoiceMonth: input.invoiceMonth,
       invoiceRefs,
+      kind: filter.kind,
       limit: input.limit,
       paid: filter.paid,
       projected: filter.projected,

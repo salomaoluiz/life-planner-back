@@ -95,6 +95,16 @@ describe('filters (spec 045)', () => {
     );
   });
 
+  it('SHOULD pass the transfer kind filter to the repository (spec 098)', async () => {
+    await setup.execute({ accessibleOwners: mocks.accessibleOwners, filter: { kind: 'TRANSFER' } });
+
+    expect(mocks.transactionRepository.findTransactions).toHaveBeenCalledWith(
+      mocks.accessibleOwners,
+      'ACCOUNT',
+      expect.objectContaining({ kind: 'TRANSFER' }),
+    );
+  });
+
   it('SHOULD hand the text to the repository as search terms AND return its rows as they are', async () => {
     const rows = [{ description: 'MERCADÃO' }];
     mocks.transactionRepository.findTransactions.mockResolvedValue(rows);

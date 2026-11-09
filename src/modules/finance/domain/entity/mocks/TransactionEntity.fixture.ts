@@ -119,6 +119,7 @@ class TransactionEntityFixture {
       paymentMethod: null,
       prepaymentId: null,
       projected: false,
+      transferId: null,
       recurrenceFrequency: null,
       recurrenceId: null,
       refundedName: null,

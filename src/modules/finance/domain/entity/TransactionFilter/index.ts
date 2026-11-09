@@ -8,6 +8,8 @@ export interface TransactionFilter {
   creditCardIds?: string[];
   // `YYYY-MM-DD`, both inclusive and always together.
   from?: string;
+  // Spec 098: `TRANSFER` keeps only the rows of a transfer (the transactions list).
+  kind?: 'TRANSFER';
   paid?: boolean;
   // Spec 096: only honoured by the transactions list.
   projected?: boolean;

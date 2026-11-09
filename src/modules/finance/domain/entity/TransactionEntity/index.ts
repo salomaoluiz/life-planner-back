@@ -79,6 +79,8 @@ interface ITransactionEntity {
   refundedTransactionId?: null | string;
   // Spec 043: the tags of the row, in the stored order.
   tags?: TagRef[];
+  // Spec 098: set on the out, in and fee rows of a transfer.
+  transferId?: null | string;
   type: TransactionType;
   updatedAt: Date;
   value: number;
@@ -128,6 +130,7 @@ class TransactionEntity {
   refundedPlanId: null | string;
   refundedTransactionId: null | string;
   tags: TagRef[];
+  transferId: null | string;
   type: TransactionType;
   updatedAt: Date;
   // Integer cents, always > 0; the sign comes from `type`.
@@ -168,6 +171,7 @@ class TransactionEntity {
     this.refundedPlanId = params.refundedPlanId ?? null;
     this.refundedTransactionId = params.refundedTransactionId ?? null;
     this.tags = params.tags ?? [];
+    this.transferId = params.transferId ?? null;
     this.type = params.type;
     this.updatedAt = params.updatedAt;
     this.value = params.value;

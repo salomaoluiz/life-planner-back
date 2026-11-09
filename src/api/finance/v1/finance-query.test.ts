@@ -78,3 +78,12 @@ describe('projected filter (spec 096)', () => {
     expect(TransactionFilterQuerySchema.safeParse({ projected: 'yes' }).success).toBe(false);
   });
 });
+
+describe('kind filter (spec 098)', () => {
+  it('SHOULD parse kind=TRANSFER AND reject another value', () => {
+    const query = TransactionFilterQuerySchema.parse({ kind: 'TRANSFER' });
+
+    expect(toTransactionFilter(query)).toEqual(expect.objectContaining({ kind: 'TRANSFER' }));
+    expect(TransactionFilterQuerySchema.safeParse({ kind: 'OTHER' }).success).toBe(false);
+  });
+});

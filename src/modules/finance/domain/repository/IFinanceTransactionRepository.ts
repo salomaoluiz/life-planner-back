@@ -191,6 +191,8 @@ interface TransactionQuery {
   from?: string;
   invoiceMonth?: string;
   invoiceRefs?: CardInvoiceRef[];
+  // Spec 098: only the rows of a transfer.
+  kind?: 'TRANSFER';
   limit?: number;
   // Account rows only: card rows derive it from their invoice.
   paid?: boolean;

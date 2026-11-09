@@ -47,6 +47,7 @@ describe('FinanceTransactionMapper.toDomain', () => {
       refundedPlanId: null,
       refundedTransactionId: null,
       tags: [],
+      transferId: null,
       type: 'EXPENSE',
       updatedAt: mocks.raw.updated_at,
       value: 23490,
@@ -58,6 +59,13 @@ describe('FinanceTransactionMapper.toDomain', () => {
 
     expect(FinanceTransactionMapper.toDomain(raw).date).toBe('2026-10-03');
   });
+});
+
+it('SHOULD map the transfer id of a transfer row (spec 098)', () => {
+  expect(FinanceTransactionMapper.toDomain(mocks.raw).transferId).toBeNull();
+  expect(FinanceTransactionMapper.toDomain({ ...mocks.raw, transfer_id: 'transfer-1' }).transferId).toBe(
+    'transfer-1',
+  );
 });
 
 it('SHOULD map the projected flag (spec 096)', () => {
