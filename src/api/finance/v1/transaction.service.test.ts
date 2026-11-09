@@ -2,7 +2,7 @@ import TransactionEntityFixture from '@finance/domain/entity/mocks/TransactionEn
 import { SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
-import { mocks, setup } from './transaction.service.mocks';
+import { mocks, setup, spies } from './transaction.service.mocks';
 
 describe('create', () => {
   it('SHOULD add the accessible owners AND return the API shape with embedded summaries and ISO dates', async () => {
@@ -82,6 +82,26 @@ describe('findAll', () => {
     );
     expect(mocks.resolveCardRowsPaidUseCase.execute).toHaveBeenCalledWith(
       expect.objectContaining({ paid: false }),
+    );
+  });
+});
+
+describe('transfer lookups (spec 098)', () => {
+  it('SHOULD attach the transfers of the listed rows AND of the row read by id', async () => {
+    const attached = { ...mocks.transactionLookups, transfers: {} };
+    spies.transferLookupsService.attach
+      .mockResolvedValueOnce(attached as never)
+      .mockResolvedValueOnce(attached as never);
+
+    const list = await setup.findAll(mocks.userId);
+    const single = await setup.findById(mocks.userId, mocks.transactionResult.id);
+
+    expect(list.lookups).toBe(attached);
+    expect(single.lookups).toBe(attached);
+    expect(spies.transferLookupsService.attach).toHaveBeenCalledWith(
+      mocks.accessibleOwners,
+      expect.any(Array),
+      expect.any(Object),
     );
   });
 });

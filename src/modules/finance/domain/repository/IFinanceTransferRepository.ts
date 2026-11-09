@@ -27,5 +27,6 @@ export interface IFinanceTransferRepository {
   createTransfer(params: WriteTransferRepositoryParams): Promise<TransferEntity>;
   deleteTransfer(id: string): Promise<void>;
   findTransferById(id: string): Promise<TransferEntity | undefined>;
+  findTransfersByIds(ids: string[]): Promise<TransferEntity[]>;
   updateTransfer(id: string, params: WriteTransferRepositoryParams): Promise<TransferEntity>;
 }

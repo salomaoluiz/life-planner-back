@@ -24,7 +24,10 @@ const record = {
   paid: true,
   recurrence_id: null,
   to_account_id: 'acc-a',
-  transactions: [{ id: 'row-out' }, { id: 'row-in' }],
+  transactions: [
+    { category_id: '00000000-0000-4000-8000-000000000006', id: 'row-out' },
+    { category_id: '00000000-0000-4000-8000-000000000007', id: 'row-in' },
+  ],
   updated_at: new Date('2026-11-04T10:00:00.000Z'),
 };
 const params: WriteTransferRepositoryParams = {

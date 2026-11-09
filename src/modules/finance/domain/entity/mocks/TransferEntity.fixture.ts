@@ -33,6 +33,7 @@ class TransferEntityFixture {
       dateOut: '2026-11-04',
       description: faker.lorem.words(2),
       fee: null,
+      feeRowId: null,
       fromAccountId: faker.string.uuid(),
       id: faker.string.uuid(),
       notes: null,

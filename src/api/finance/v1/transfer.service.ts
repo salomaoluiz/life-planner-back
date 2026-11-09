@@ -8,6 +8,7 @@ import {
 } from '@api/finance/v1/dto/transfer.dto';
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { toTransactionItem, toTransactionLookups } from '@api/finance/v1/transaction.service';
+import { TransferLookupsService } from '@api/finance/v1/transfer-lookups.service';
 import { CreateTransferUseCase } from '@finance/application/use-case/CreateTransferUseCase';
 import { DeleteTransferUseCase } from '@finance/application/use-case/DeleteTransferUseCase';
 import { GetTransactionByIdUseCase } from '@finance/application/use-case/GetTransactionByIdUseCase';
@@ -52,6 +53,7 @@ export class TransferService {
     private readonly financeAccessService: FinanceAccessService,
     private readonly getTransactionByIdUseCase: GetTransactionByIdUseCase,
     private readonly getTransferUseCase: GetTransferUseCase,
+    private readonly transferLookupsService: TransferLookupsService,
     private readonly updateTransferUseCase: UpdateTransferUseCase,
   ) {}
 
@@ -100,7 +102,11 @@ export class TransferService {
 
     return {
       item: toTransferItem(transfer),
-      lookups: toTransactionLookups(rows),
+      lookups: await this.transferLookupsService.attach(
+        accessibleOwners,
+        rows,
+        toTransactionLookups(rows),
+      ),
       rows: rows.map((row) => toTransactionItem(row)),
     };
   }

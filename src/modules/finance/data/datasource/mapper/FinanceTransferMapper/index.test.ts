@@ -18,7 +18,11 @@ const record = {
   paid: true,
   recurrence_id: null,
   to_account_id: 'acc-a',
-  transactions: [{ id: 'row-out' }, { id: 'row-in' }],
+  transactions: [
+    { category_id: '00000000-0000-4000-8000-000000000006', id: 'row-out' },
+    { category_id: '00000000-0000-4000-8000-000000000007', id: 'row-in' },
+    { category_id: '00000000-0000-4000-8000-000000000008', id: 'row-fee' },
+  ],
   updated_at: new Date('2026-11-04T10:00:00.000Z'),
 };
 
@@ -32,7 +36,8 @@ it('SHOULD map a record to the entity with calendar dates AND row ids', () => {
     dateIn: '2026-11-06',
     dateOut: '2026-11-04',
     fromAccountId: 'acc-b',
-    rowIds: ['row-out', 'row-in'],
+    feeRowId: 'row-fee',
+    rowIds: ['row-out', 'row-in', 'row-fee'],
     toAccountId: 'acc-a',
   });
 });

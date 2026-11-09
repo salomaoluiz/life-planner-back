@@ -1,6 +1,6 @@
 import { ForbiddenException } from '@nestjs/common';
 
-import { mocks, setup } from './month.service.mocks';
+import { mocks, setup, spies } from './month.service.mocks';
 
 const today = '2026-11-02';
 
@@ -124,4 +124,18 @@ it('SHOULD read the filter categories ONCE AND hand them to the rows, the invoic
       expect.objectContaining({ preloaded: { categories } }),
     );
   }
+});
+
+it('SHOULD attach the transfer lookups of the month rows (spec 098)', async () => {
+  const attached = { accounts: {}, categories: {}, creditCards: {}, tags: {}, transfers: {} };
+  spies.transferLookupsService.attach.mockResolvedValueOnce(attached as never);
+
+  const result = await setup.find(mocks.userId, '2026-11', undefined, undefined, today);
+
+  expect(result.lookups).toBe(attached);
+  expect(spies.transferLookupsService.attach).toHaveBeenCalledWith(
+    mocks.accessibleOwners,
+    expect.any(Array),
+    expect.any(Object),
+  );
 });

@@ -61,6 +61,12 @@ export class FinanceTransferRepository implements IFinanceTransferRepository {
     return record ? FinanceTransferMapper.toDomain(record) : undefined;
   }
 
+  async findTransfersByIds(ids: string[]): Promise<TransferEntity[]> {
+    const records = await this.transferDatasource.findByIds(ids);
+
+    return records.map((record) => FinanceTransferMapper.toDomain(record));
+  }
+
   async updateTransfer(id: string, params: WriteTransferRepositoryParams): Promise<TransferEntity> {
     return FinanceTransferMapper.toDomain(
       await this.transferDatasource.update(id, toDatasourceParams(params)),

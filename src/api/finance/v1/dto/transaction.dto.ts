@@ -151,6 +151,8 @@ export const TransactionItemApiSchema = z.strictObject({
   recurrenceFrequency: z.enum(RecurrenceFrequency).optional(),
   recurrenceId: z.uuid().optional(),
   tagIds: z.array(z.uuid()).optional(),
+  // Spec 098: out, in and fee rows of a transfer (`lookups.transfers[transferId]`).
+  transferId: z.uuid().optional(),
   type: TransactionTypeApiSchema,
   value: z.number().int(),
 });
@@ -176,6 +178,26 @@ export const TransactionLookupsApiSchema = z.strictObject({
     }),
   ),
   tags: z.record(z.uuid(), z.strictObject({ name: z.string() })),
+  // Spec 098: present only when a row belongs to a transfer. A side the caller cannot read is left out and
+  // `counterpartHidden` is true (the row is read-only, "Conta de outro dono").
+  transfers: z
+    .record(
+      z.uuid(),
+      z.strictObject({
+        amountIn: z.number().int().nullable().optional(),
+        amountOut: z.number().int().nullable().optional(),
+        counterpartHidden: z.literal(true).optional(),
+        currencyIn: CurrencyApiSchema,
+        currencyOut: CurrencyApiSchema,
+        dateIn: z.string(),
+        dateOut: z.string(),
+        feeTransactionId: z.uuid().optional(),
+        fromAccountId: z.uuid().optional(),
+        recurrenceId: z.uuid().optional(),
+        toAccountId: z.uuid().optional(),
+      }),
+    )
+    .optional(),
 });
 
 // Spec 078: one keyset page of the list; `nextCursor` is null on the last page.

@@ -39,6 +39,16 @@ it('SHOULD omit the rate while the amount in is unknown', async () => {
   expect((await setup.findById(mocks.userId, 'id')).item.rate).toBeUndefined();
 });
 
+it('SHOULD attach the transfer lookups to the response', async () => {
+  await setup.findById(mocks.userId, mocks.sameCurrency.id);
+
+  expect(spies.transferLookupsService.attach).toHaveBeenCalledWith(
+    mocks.accessibleOwners,
+    expect.any(Array),
+    expect.any(Object),
+  );
+});
+
 it('SHOULD update AND delete with the accessible owners', async () => {
   await setup.update(mocks.userId, 'id', { paid: false });
   await setup.delete(mocks.userId, 'id');

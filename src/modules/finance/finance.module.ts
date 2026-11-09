@@ -80,6 +80,7 @@ import { SplitRecurrenceUseCase } from '@finance/application/use-case/SplitRecur
 import { UndoInstallmentPrepaymentUseCase } from '@finance/application/use-case/UndoInstallmentPrepaymentUseCase';
 import { CreateTransferUseCase } from '@finance/application/use-case/CreateTransferUseCase';
 import { DeleteTransferUseCase } from '@finance/application/use-case/DeleteTransferUseCase';
+import { GetTransferLookupsUseCase } from '@finance/application/use-case/GetTransferLookupsUseCase';
 import { GetTransferUseCase } from '@finance/application/use-case/GetTransferUseCase';
 import { UpdateTransferUseCase } from '@finance/application/use-case/UpdateTransferUseCase';
 import { UndoInvoicePaymentUseCase } from '@finance/application/use-case/UndoInvoicePaymentUseCase';
@@ -203,6 +204,7 @@ const useCases = [
   UndoInvoicePaymentUseCase,
   CreateTransferUseCase,
   DeleteTransferUseCase,
+  GetTransferLookupsUseCase,
   GetTransferUseCase,
   UpdateTransferUseCase,
   UpdateAccountUseCase,

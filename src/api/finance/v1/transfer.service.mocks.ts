@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { TransferService } from '@api/finance/v1/transfer.service';
+import { TransferLookupsService } from '@api/finance/v1/transfer-lookups.service';
 import { CreateTransferUseCase } from '@finance/application/use-case/CreateTransferUseCase';
 import { DeleteTransferUseCase } from '@finance/application/use-case/DeleteTransferUseCase';
 import { GetTransactionByIdUseCase } from '@finance/application/use-case/GetTransactionByIdUseCase';
@@ -33,6 +34,10 @@ const getTransactionByIdUseCaseMock = { execute: jest.fn().mockResolvedValue(row
 const getTransferUseCaseMock = { execute: jest.fn().mockResolvedValue(sameCurrency) };
 const updateTransferUseCaseMock = { execute: jest.fn().mockResolvedValue(sameCurrency) };
 
+const transferLookupsServiceMock = {
+  attach: jest.fn(async (_owners: unknown, _rows: unknown, lookups: unknown) => lookups),
+};
+
 // endregion Mocks
 
 let setup: TransferService;
@@ -49,6 +54,7 @@ beforeEach(async () => {
       { provide: GetTransactionByIdUseCase, useValue: getTransactionByIdUseCaseMock },
       { provide: GetTransferUseCase, useValue: getTransferUseCaseMock },
       { provide: UpdateTransferUseCase, useValue: updateTransferUseCaseMock },
+      { provide: TransferLookupsService, useValue: transferLookupsServiceMock },
     ],
   }).compile();
 
@@ -57,6 +63,7 @@ beforeEach(async () => {
 
 const mocks = { accessibleOwners, crossCurrency, row: rowMock, sameCurrency, userId };
 const spies = {
+  transferLookupsService: transferLookupsServiceMock,
   createTransfer: createTransferUseCaseMock,
   deleteTransfer: deleteTransferUseCaseMock,
   getTransaction: getTransactionByIdUseCaseMock,

@@ -10,6 +10,8 @@ interface ITransferEntity {
   dateOut: string;
   description: string;
   fee: null | number;
+  // The expense row of the fee on the destination account, when there is a fee.
+  feeRowId: null | string;
   // Null once the account was deleted (FK SetNull).
   fromAccountId: null | string;
   id: string;
@@ -35,6 +37,7 @@ class TransferEntity {
   dateOut: string;
   description: string;
   fee: null | number;
+  feeRowId: null | string;
   fromAccountId: null | string;
   id: string;
   notes: null | string;
@@ -56,6 +59,7 @@ class TransferEntity {
     this.dateOut = params.dateOut;
     this.description = params.description;
     this.fee = params.fee;
+    this.feeRowId = params.feeRowId;
     this.fromAccountId = params.fromAccountId;
     this.id = params.id;
     this.notes = params.notes;

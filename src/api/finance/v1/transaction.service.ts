@@ -10,6 +10,7 @@ import {
 } from '@api/finance/v1/dto/transaction.dto';
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { resolveToday } from '@api/finance/v1/finance-query';
+import { TransferLookupsService } from '@api/finance/v1/transfer-lookups.service';
 import { ConfirmProjectedTransactionUseCase } from '@finance/application/use-case/ConfirmProjectedTransactionUseCase';
 import { CreateTransactionUseCase } from '@finance/application/use-case/CreateTransactionUseCase';
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
@@ -107,6 +108,7 @@ function toTransactionItem(transaction: TransactionEntity, overLimit?: boolean):
     recurrenceFrequency: transaction.recurrenceFrequency ?? undefined,
     recurrenceId: transaction.recurrenceId ?? undefined,
     tagIds: transaction.tags.length > 0 ? transaction.tags.map((tag) => tag.id) : undefined,
+    transferId: transaction.transferId ?? undefined,
     type: transaction.type,
     value: transaction.value,
   };
@@ -172,6 +174,7 @@ export class TransactionService {
     private readonly getTransactionsUseCase: GetTransactionsUseCase,
     private readonly materializeRecurrencesUseCase: MaterializeRecurrencesUseCase,
     private readonly resolveCardRowsPaidUseCase: ResolveCardRowsPaidUseCase,
+    private readonly transferLookupsService: TransferLookupsService,
     private readonly updateTransactionUseCase: UpdateTransactionUseCase,
   ) {}
 
@@ -267,7 +270,11 @@ export class TransactionService {
 
     return {
       items: resolved.map((transaction) => toTransactionItem(transaction)),
-      lookups: toTransactionLookups(resolved),
+      lookups: await this.transferLookupsService.attach(
+        accessibleOwners,
+        resolved,
+        toTransactionLookups(resolved),
+      ),
       nextCursor,
     };
   }
@@ -282,7 +289,16 @@ export class TransactionService {
       transactions: [transaction],
     });
 
-    return toWithLookups(resolved);
+    const withLookups = toWithLookups(resolved);
+
+    return {
+      ...withLookups,
+      lookups: await this.transferLookupsService.attach(
+        accessibleOwners,
+        [resolved],
+        withLookups.lookups,
+      ),
+    };
   }
 
   async update(

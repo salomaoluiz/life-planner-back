@@ -1,6 +1,8 @@
 import { toCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
 import { FinancialTransferRecord } from '@finance/data/repository/datasource/IFinanceTransferDatasource';
+import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
 import TransferEntity from '@finance/domain/entity/TransferEntity';
+import { SystemCategoryKey } from '@finance/domain/enum';
 
 export class FinanceTransferMapper {
   static toDomain(record: FinancialTransferRecord): TransferEntity {
@@ -15,6 +17,9 @@ export class FinanceTransferMapper {
       dateOut: toCalendarDate(record.date_out),
       description: record.description,
       fee: record.fee,
+      feeRowId:
+        record.transactions.find((row) => row.category_id === SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_FEE])
+          ?.id ?? null,
       fromAccountId: record.from_account_id,
       id: record.id,
       notes: record.notes,

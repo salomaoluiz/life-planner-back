@@ -17,7 +17,7 @@ import { SystemCategoryKey } from '@finance/domain/enum';
 import { LedgerDelta, ledgerDeltas } from '@finance/domain/service/LedgerBalance';
 import { Database } from '@shared/infra/db/Database';
 
-const TRANSFER_INCLUDE = { transactions: { select: { id: true } } } as const;
+const TRANSFER_INCLUDE = { transactions: { select: { category_id: true, id: true } } } as const;
 const ROW_SELECT = { account_id: true, category_id: true, id: true, paid: true, type: true, value: true } as const;
 
 interface PlannedRow {
@@ -168,6 +168,13 @@ export class FinanceTransferDatasource implements IFinanceTransferDatasource {
       await applyLedgerDeltas(tx, sumLedgerDeltas(deltas));
       await tx.financialTransfer.delete({ where: { id } });
     });
+  }
+
+  async findByIds(ids: string[]): Promise<FinancialTransferRecord[]> {
+    return this.db.client.financialTransfer.findMany({
+      include: TRANSFER_INCLUDE,
+      where: { id: { in: ids } },
+    }) as Promise<FinancialTransferRecord[]>;
   }
 
   async findById(id: string): Promise<FinancialTransferRecord | null> {

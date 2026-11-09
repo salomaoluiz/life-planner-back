@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { TransactionService } from '@api/finance/v1/transaction.service';
+import { TransferLookupsService } from '@api/finance/v1/transfer-lookups.service';
 import { ConfirmProjectedTransactionUseCase } from '@finance/application/use-case/ConfirmProjectedTransactionUseCase';
 import { CreateTransactionUseCase } from '@finance/application/use-case/CreateTransactionUseCase';
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
@@ -104,6 +105,10 @@ const updateTransactionUseCaseMock = {
 
 const materializeRecurrencesUseCaseMock = { execute: jest.fn().mockResolvedValue(undefined) };
 
+const transferLookupsServiceMock = {
+  attach: jest.fn(async (_owners: unknown, _rows: unknown, lookups: unknown) => lookups),
+};
+
 // endregion Mocks
 
 let setup: TransactionService;
@@ -125,6 +130,7 @@ beforeEach(async () => {
       { provide: GetTransactionsUseCase, useValue: getTransactionsUseCaseMock },
       { provide: ResolveCardRowsPaidUseCase, useValue: resolveCardRowsPaidUseCaseMock },
       { provide: UpdateTransactionUseCase, useValue: updateTransactionUseCaseMock },
+      { provide: TransferLookupsService, useValue: transferLookupsServiceMock },
       { provide: MaterializeRecurrencesUseCase, useValue: materializeRecurrencesUseCaseMock },
     ],
   }).compile();
@@ -148,6 +154,8 @@ const mocks = {
   updateTransactionUseCase: updateTransactionUseCaseMock,
   userId,
 };
-const spies = {};
+const spies = {
+  transferLookupsService: transferLookupsServiceMock,
+};
 
 export { mocks, setup, spies };
