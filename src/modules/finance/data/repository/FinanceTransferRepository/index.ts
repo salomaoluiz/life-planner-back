@@ -8,10 +8,12 @@ import {
 } from '@finance/data/repository/datasource/IFinanceTransferDatasource';
 import TransferEntity from '@finance/domain/entity/TransferEntity';
 import {
+  CreateTransferSeriesRepositoryParams,
   IFinanceTransferRepository,
+  MaterializeTransferSeriesRepositoryParams,
   WriteTransferRepositoryParams,
 } from '@finance/domain/repository';
-import { OwnerType } from '@db/client';
+import { OwnerType, RecurrenceFrequency, RecurrenceStatus } from '@db/client';
 
 function toDatasourceParams(params: WriteTransferRepositoryParams): WriteTransferDatasourceParams {
   const side = (item: WriteTransferRepositoryParams['from']) => ({
@@ -51,6 +53,23 @@ export class FinanceTransferRepository implements IFinanceTransferRepository {
     );
   }
 
+  async createTransferSeries(
+    params: CreateTransferSeriesRepositoryParams,
+  ): Promise<TransferEntity> {
+    return FinanceTransferMapper.toDomain(
+      await this.transferDatasource.createSeries({
+        end_date: params.endDate ? fromCalendarDate(params.endDate) : null,
+        frequency: params.frequency as RecurrenceFrequency,
+        last_generated_number: params.lastGeneratedNumber,
+        next_occurrence_date: params.nextOccurrenceDate
+          ? fromCalendarDate(params.nextOccurrenceDate)
+          : null,
+        occurrences: params.occurrences.map((occurrence) => toDatasourceParams(occurrence)),
+        status: params.status as RecurrenceStatus,
+      }),
+    );
+  }
+
   async deleteTransfer(id: string): Promise<void> {
     await this.transferDatasource.delete(id);
   }
@@ -65,6 +84,24 @@ export class FinanceTransferRepository implements IFinanceTransferRepository {
     const records = await this.transferDatasource.findByIds(ids);
 
     return records.map((record) => FinanceTransferMapper.toDomain(record));
+  }
+
+  async materializeTransferSeries(
+    params: MaterializeTransferSeriesRepositoryParams,
+  ): Promise<void> {
+    await this.transferDatasource.materializeSeries({
+      expected_last: params.expectedLast,
+      id: params.id,
+      last_generated_number: params.lastGeneratedNumber,
+      next_occurrence_date: params.nextOccurrenceDate
+        ? fromCalendarDate(params.nextOccurrenceDate)
+        : null,
+      occurrences: params.occurrences.map((occurrence) => ({
+        date: fromCalendarDate(occurrence.date),
+        number: occurrence.number,
+      })),
+      status: params.status as RecurrenceStatus,
+    });
   }
 
   async updateTransfer(id: string, params: WriteTransferRepositoryParams): Promise<TransferEntity> {

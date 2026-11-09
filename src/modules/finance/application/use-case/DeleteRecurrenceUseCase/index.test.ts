@@ -67,7 +67,12 @@ it('SHOULD invalidate the gate of the series owner after the removal (spec 081)'
 });
 
 it('SHOULD answer NotFound for a transfer series (spec 098): it changes only through the transfer', async () => {
-  mocks.recurrenceRepository.findById.mockResolvedValueOnce({ ...mocks.series, toAccountId: 'acc-to' });
+  mocks.recurrenceRepository.findById.mockResolvedValueOnce({
+    ...mocks.series,
+    toAccountId: 'acc-to',
+  });
 
-  await expect(setup.execute({ accessibleOwners: mocks.accessibleOwners, id: 'series-1' } as never)).rejects.toThrow(NotFoundException);
+  await expect(
+    setup.execute({ accessibleOwners: mocks.accessibleOwners, id: 'series-1' } as never),
+  ).rejects.toThrow(NotFoundException);
 });

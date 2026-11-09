@@ -46,7 +46,10 @@ describe('GetRecurrenceUseCase', () => {
 });
 
 it('SHOULD answer NotFound for a transfer series (spec 098): it changes only through the transfer', async () => {
-  mocks.recurrenceRepository.findById.mockResolvedValueOnce({ ...mocks.series, toAccountId: 'acc-to' });
+  mocks.recurrenceRepository.findById.mockResolvedValueOnce({
+    ...mocks.series,
+    toAccountId: 'acc-to',
+  });
 
   await expect(setup.execute(base as never)).rejects.toThrow(NotFoundException);
 });

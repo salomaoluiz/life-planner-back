@@ -11,14 +11,21 @@ import { GetTransferUseCase } from '@finance/application/use-case/GetTransferUse
 import TransferEntity from '@finance/domain/entity/TransferEntity';
 import { AccountStatus } from '@finance/domain/enum';
 import { IFinanceAccountRepository, IFinanceTransferRepository } from '@finance/domain/repository';
-import { assertAccounts, assertDates, resolveAmountIn } from '@finance/domain/service/TransferRules';
+import {
+  assertAccounts,
+  assertDates,
+  resolveAmountIn,
+} from '@finance/domain/service/TransferRules';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
 // Rows of an archived account only follow `paid` and `notes` (spec 098 section 4).
 const ARCHIVED_EDITABLE = ['accessibleOwners', 'id', 'notes', 'paid'];
 
-export class UpdateTransferUseCase implements UseCaseWithParams<UpdateTransferInput, TransferEntity> {
+export class UpdateTransferUseCase implements UseCaseWithParams<
+  UpdateTransferInput,
+  TransferEntity
+> {
   constructor(
     @Inject('IFinanceAccountRepository')
     private readonly accountRepository: IFinanceAccountRepository,

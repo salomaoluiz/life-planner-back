@@ -18,8 +18,9 @@ export class FinanceTransferMapper {
       description: record.description,
       fee: record.fee,
       feeRowId:
-        record.transactions.find((row) => row.category_id === SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_FEE])
-          ?.id ?? null,
+        record.transactions.find(
+          (row) => row.category_id === SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_FEE],
+        )?.id ?? null,
       fromAccountId: record.from_account_id,
       id: record.id,
       notes: record.notes,

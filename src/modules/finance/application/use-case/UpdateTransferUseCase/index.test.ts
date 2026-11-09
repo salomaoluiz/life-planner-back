@@ -42,7 +42,9 @@ it('SHOULD load the new account WHEN the destination changes AND reject the same
     expect.objectContaining({ to: expect.objectContaining({ accountId: 'acc-other' }) }),
   );
 
-  await expect(setup.execute({ ...base, toAccountId: 'acc-from' })).rejects.toThrow('TRANSFER_SAME_ACCOUNT');
+  await expect(setup.execute({ ...base, toAccountId: 'acc-from' })).rejects.toThrow(
+    'TRANSFER_SAME_ACCOUNT',
+  );
 });
 
 it('SHOULD keep the stored amount in for different currencies AND require it when paying a series occurrence without it', async () => {
@@ -60,7 +62,9 @@ it('SHOULD keep the stored amount in for different currencies AND require it whe
     paid: false,
     recurrenceId: 'series-1',
   });
-  await expect(setup.execute({ ...base, paid: true })).rejects.toThrow('TRANSFER_AMOUNT_IN_REQUIRED');
+  await expect(setup.execute({ ...base, paid: true })).rejects.toThrow(
+    'TRANSFER_AMOUNT_IN_REQUIRED',
+  );
 });
 
 describe('WHEN an account is archived', () => {

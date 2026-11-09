@@ -48,6 +48,8 @@ const params: WriteTransferRepositoryParams = {
 
 const datasourceMock = {
   create: jest.fn(),
+  createSeries: jest.fn(),
+  materializeSeries: jest.fn(),
   delete: jest.fn(),
   findById: jest.fn(),
   update: jest.fn(),

@@ -18,10 +18,12 @@ it('SHOULD validate the body AND create with the JWT user', async () => {
 });
 
 it('SHOULD throw ValidationError WHEN the body has an unknown key or a missing amount', async () => {
-  await expect(setup.create(mocks.request, { ...mocks.body, owner: 'USER' } as never)).rejects.toThrow(
+  await expect(
+    setup.create(mocks.request, { ...mocks.body, owner: 'USER' } as never),
+  ).rejects.toThrow(ValidationError);
+  await expect(setup.create(mocks.request, { description: 'x' } as never)).rejects.toThrow(
     ValidationError,
   );
-  await expect(setup.create(mocks.request, { description: 'x' } as never)).rejects.toThrow(ValidationError);
   expect(mocks.transferService.create).not.toHaveBeenCalled();
 });
 

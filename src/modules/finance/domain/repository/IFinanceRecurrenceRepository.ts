@@ -15,6 +15,8 @@ export interface DueRecurrence {
   lastGeneratedNumber: number;
   skippedNumbers: number[];
   startDate: string;
+  // Set = a transfer series (spec 098), materialized by `MaterializeTransferSeries`.
+  toAccountId: null | string;
 }
 export type IFinanceRecurrenceRepository = {
   // One database transaction (spec 034 FR 20-25): patches the series and its rows from `fromNumber`, optionally

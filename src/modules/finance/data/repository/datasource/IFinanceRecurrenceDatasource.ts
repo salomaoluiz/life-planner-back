@@ -68,6 +68,7 @@ export type DueRecurrenceRow = Pick<
   | 'last_generated_number'
   | 'skipped_numbers'
   | 'start_date'
+  | 'to_account_id'
 >;
 export type FinancialRecurrenceWithRelations = {
   account: null | Pick<FinancialAccount, 'icon' | 'id' | 'name'>;

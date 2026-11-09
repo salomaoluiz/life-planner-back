@@ -64,9 +64,9 @@ export class GetTransferLookupsUseCase implements UseCaseWithParams<
     const transfers = await this.transferRepository.findTransfersByIds(ids);
     const accountIds = [
       ...new Set(
-        transfers.flatMap((transfer) => [transfer.fromAccountId, transfer.toAccountId]).filter(
-          (id): id is string => id !== null,
-        ),
+        transfers
+          .flatMap((transfer) => [transfer.fromAccountId, transfer.toAccountId])
+          .filter((id): id is string => id !== null),
       ),
     ];
     const accounts = await this.accountRepository.findAccountsByIds(accountIds);
@@ -77,7 +77,8 @@ export class GetTransferLookupsUseCase implements UseCaseWithParams<
       transfers: transfers.map((transfer) => {
         const from = accounts.find((account) => account.id === transfer.fromAccountId);
         const to = accounts.find((account) => account.id === transfer.toAccountId);
-        const fromHidden = transfer.fromAccountId !== null && !canRead(input.accessibleOwners, from);
+        const fromHidden =
+          transfer.fromAccountId !== null && !canRead(input.accessibleOwners, from);
         const toHidden = transfer.toAccountId !== null && !canRead(input.accessibleOwners, to);
 
         return {

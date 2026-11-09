@@ -29,7 +29,7 @@ const input = {
 // endregion Mocks
 
 const accountRepositoryMock = { findAccountsByIds: jest.fn() };
-const transferRepositoryMock = { createTransfer: jest.fn() };
+const transferRepositoryMock = { createTransfer: jest.fn(), createTransferSeries: jest.fn() };
 
 let setup: CreateTransferUseCase;
 
@@ -37,6 +37,7 @@ beforeEach(async () => {
   jest.clearAllMocks();
   accountRepositoryMock.findAccountsByIds.mockResolvedValue([fromAccount, toAccount]);
   transferRepositoryMock.createTransfer.mockResolvedValue(transferMock);
+  transferRepositoryMock.createTransferSeries.mockResolvedValue(transferMock);
 
   const module = await Test.createTestingModule({
     providers: [

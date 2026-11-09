@@ -17,9 +17,7 @@ export class TransferLookupsService {
     rows: TransactionEntity[],
     lookups: TransactionLookups,
   ): Promise<TransactionLookups> {
-    const transferIds = rows
-      .map((row) => row.transferId)
-      .filter((id): id is string => id !== null);
+    const transferIds = rows.map((row) => row.transferId).filter((id): id is string => id !== null);
 
     if (transferIds.length === 0) {
       return lookups;

@@ -682,7 +682,8 @@
     "p50Ms": null,
     "reason": "Writes are not measured: perf tests only read (spec 093).",
     "scenario": ""
-  },  "PATCH /api/v1/finance/transfers/:id": {
+  },
+  "PATCH /api/v1/finance/transfers/:id": {
     "indexes": null,
     "kind": "unmeasured",
     "maxBytes": null,

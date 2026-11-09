@@ -46,7 +46,10 @@ export async function loadWritableSides(
     toAccountId: string;
   },
 ): Promise<LoadedSides> {
-  const accounts = await accountRepository.findAccountsByIds([params.fromAccountId, params.toAccountId]);
+  const accounts = await accountRepository.findAccountsByIds([
+    params.fromAccountId,
+    params.toAccountId,
+  ]);
   const from = accounts.find((account) => account.id === params.fromAccountId);
   const to = accounts.find((account) => account.id === params.toAccountId);
 

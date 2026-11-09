@@ -18,7 +18,10 @@ it('SHOULD add the accessible owners AND the requester on create, then return th
     requesterId: mocks.userId,
   });
   expect(spies.getTransaction.execute).toHaveBeenCalledTimes(mocks.sameCurrency.rowIds.length);
-  expect(result.item).toMatchObject({ amountIn: mocks.sameCurrency.amountIn, id: mocks.sameCurrency.id });
+  expect(result.item).toMatchObject({
+    amountIn: mocks.sameCurrency.amountIn,
+    id: mocks.sameCurrency.id,
+  });
   expect(result.item.rate).toBeUndefined();
   expect(result.rows).toHaveLength(mocks.sameCurrency.rowIds.length);
   expect(result.lookups.categories[mocks.row.categoryId]).toBeDefined();

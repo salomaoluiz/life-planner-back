@@ -26,10 +26,22 @@ it('SHOULD keep the fixed adjustment description', () => {
 });
 
 it('SHOULD give the transfer keys fixed ids AND mark only the out and in sides as outside the totals', () => {
-  expect(SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_OUT]).toBe('00000000-0000-4000-8000-000000000006');
-  expect(SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_IN]).toBe('00000000-0000-4000-8000-000000000007');
-  expect(SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_FEE]).toBe('00000000-0000-4000-8000-000000000008');
-  expect(isTransferExcludedFromTotals(SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_OUT])).toBe(true);
-  expect(isTransferExcludedFromTotals(SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_IN])).toBe(true);
-  expect(isTransferExcludedFromTotals(SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_FEE])).toBe(false);
+  expect(SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_OUT]).toBe(
+    '00000000-0000-4000-8000-000000000006',
+  );
+  expect(SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_IN]).toBe(
+    '00000000-0000-4000-8000-000000000007',
+  );
+  expect(SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_FEE]).toBe(
+    '00000000-0000-4000-8000-000000000008',
+  );
+  expect(isTransferExcludedFromTotals(SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_OUT])).toBe(
+    true,
+  );
+  expect(isTransferExcludedFromTotals(SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_IN])).toBe(
+    true,
+  );
+  expect(isTransferExcludedFromTotals(SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_FEE])).toBe(
+    false,
+  );
 });

@@ -1,4 +1,4 @@
-import { OwnerType } from '@db/client';
+import { OwnerType, RecurrenceFrequency, RecurrenceStatus } from '@db/client';
 
 export interface TransferSideRecord {
   account_id: string;
@@ -45,10 +45,33 @@ export interface FinancialTransferRecord {
   updated_at: Date;
 }
 
+// Spec 098 FR 8: the first transfers of a new series (occurrence numbers set by the caller, the first one is the
+// user's) and where the series stands afterwards.
+export interface CreateTransferSeriesDatasourceParams {
+  end_date: Date | null;
+  frequency: RecurrenceFrequency;
+  last_generated_number: number;
+  next_occurrence_date: Date | null;
+  occurrences: WriteTransferDatasourceParams[];
+  status: RecurrenceStatus;
+}
+
+export interface MaterializeTransferSeriesDatasourceParams {
+  expected_last: number;
+  id: string;
+  last_generated_number: number;
+  next_occurrence_date: Date | null;
+  // Unpaid transfers of the series template; the amount in is the series' (null for different currencies).
+  occurrences: { date: Date; number: number }[];
+  status: RecurrenceStatus;
+}
+
 export interface IFinanceTransferDatasource {
+  createSeries(params: CreateTransferSeriesDatasourceParams): Promise<FinancialTransferRecord>;
   create(params: WriteTransferDatasourceParams): Promise<FinancialTransferRecord>;
   delete(id: string): Promise<void>;
   findById(id: string): Promise<FinancialTransferRecord | null>;
   findByIds(ids: string[]): Promise<FinancialTransferRecord[]>;
+  materializeSeries(params: MaterializeTransferSeriesDatasourceParams): Promise<void>;
   update(id: string, params: WriteTransferDatasourceParams): Promise<FinancialTransferRecord>;
 }

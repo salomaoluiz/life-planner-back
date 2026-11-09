@@ -61,7 +61,9 @@ it('SHOULD hide the origin AND its amount WHEN the caller reads only the destina
 });
 
 it('SHOULD not hide anything for a removed account (null id) AND skip the reads WHEN there are no ids', async () => {
-  spies.transferRepository.findTransfersByIds.mockResolvedValueOnce([{ ...mocks.transfer, toAccountId: null }]);
+  spies.transferRepository.findTransfersByIds.mockResolvedValueOnce([
+    { ...mocks.transfer, toAccountId: null },
+  ]);
 
   const result = await setup.execute({
     accessibleOwners: mocks.accessibleOwners,
@@ -71,7 +73,9 @@ it('SHOULD not hide anything for a removed account (null id) AND skip the reads 
   expect(result.transfers[0]).toMatchObject({ counterpartHidden: false, toAccountId: null });
 
   spies.transferRepository.findTransfersByIds.mockClear();
-  expect(await setup.execute({ accessibleOwners: mocks.accessibleOwners, transferIds: [] })).toEqual({
+  expect(
+    await setup.execute({ accessibleOwners: mocks.accessibleOwners, transferIds: [] }),
+  ).toEqual({
     accounts: [],
     transfers: [],
   });

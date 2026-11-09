@@ -634,13 +634,11 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
         last_generated_number: true,
         skipped_numbers: true,
         start_date: true,
+        // Spec 098: one read serves both kinds; a transfer series is materialized by its own use case.
+        to_account_id: true,
       },
       where: {
-        AND: [
-          toOwnerWhere(owners),
-          // Spec 098: transfer series are materialized by their own use case.
-          { next_occurrence_date: { lte: horizon }, status: 'ACTIVE', to_account_id: null },
-        ],
+        AND: [toOwnerWhere(owners), { next_occurrence_date: { lte: horizon }, status: 'ACTIVE' }],
       },
     });
   }

@@ -52,7 +52,10 @@ const transferRecord = {
 
 // region Spies
 
+const accountFindManySpy = jest.fn();
 const accountUpdateSpy = jest.fn();
+const recurrenceCreateSpy = jest.fn();
+const recurrenceUpdateSpy = jest.fn();
 const queryRawSpy = jest.fn();
 const transactionCreateSpy = jest.fn();
 const transactionDeleteSpy = jest.fn();
@@ -60,6 +63,8 @@ const transactionDeleteManySpy = jest.fn();
 const transactionUpdateSpy = jest.fn();
 const transferCreateSpy = jest.fn();
 const transferDeleteSpy = jest.fn();
+const transferFindFirstSpy = jest.fn();
+const transferFindManySpy = jest.fn();
 const transferFindUniqueSpy = jest.fn();
 const transferFindUniqueOrThrowSpy = jest.fn();
 const transferUpdateSpy = jest.fn();
@@ -70,7 +75,8 @@ const transactionSpy = jest.fn();
 const clientMock = {
   $queryRaw: queryRawSpy,
   $transaction: transactionSpy,
-  financialAccount: { update: accountUpdateSpy },
+  financialAccount: { findMany: accountFindManySpy, update: accountUpdateSpy },
+  financialRecurrence: { create: recurrenceCreateSpy, update: recurrenceUpdateSpy },
   financialTransaction: {
     create: transactionCreateSpy,
     delete: transactionDeleteSpy,
@@ -80,6 +86,8 @@ const clientMock = {
   financialTransfer: {
     create: transferCreateSpy,
     delete: transferDeleteSpy,
+    findFirst: transferFindFirstSpy,
+    findMany: transferFindManySpy,
     findUnique: transferFindUniqueSpy,
     findUniqueOrThrow: transferFindUniqueOrThrowSpy,
     update: transferUpdateSpy,
@@ -107,7 +115,10 @@ beforeEach(async () => {
 
 const mocks = { transferRecord, writeParams };
 const spies = {
+  accountFindMany: accountFindManySpy,
   accountUpdate: accountUpdateSpy,
+  recurrenceCreate: recurrenceCreateSpy,
+  recurrenceUpdate: recurrenceUpdateSpy,
   queryRaw: queryRawSpy,
   transactionCreate: transactionCreateSpy,
   transactionDelete: transactionDeleteSpy,
@@ -115,6 +126,8 @@ const spies = {
   transactionUpdate: transactionUpdateSpy,
   transferCreate: transferCreateSpy,
   transferDelete: transferDeleteSpy,
+  transferFindFirst: transferFindFirstSpy,
+  transferFindMany: transferFindManySpy,
   transferFindUnique: transferFindUniqueSpy,
   transferFindUniqueOrThrow: transferFindUniqueOrThrowSpy,
   transferUpdate: transferUpdateSpy,

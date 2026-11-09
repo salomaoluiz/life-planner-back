@@ -40,6 +40,9 @@ beforeEach(async () => {
 });
 
 const mocks = { accessibleOwners, fromAccount, toAccount, transfer };
-const spies = { accountRepository: accountRepositoryMock, transferRepository: transferRepositoryMock };
+const spies = {
+  accountRepository: accountRepositoryMock,
+  transferRepository: transferRepositoryMock,
+};
 
 export { mocks, setup, spies };

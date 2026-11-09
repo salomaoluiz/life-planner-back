@@ -45,7 +45,12 @@ beforeEach(async () => {
   setup = module.get(TransferController);
 });
 
-const mocks = { body, request: requestMock, response: responseMock, transferService: transferServiceMock };
+const mocks = {
+  body,
+  request: requestMock,
+  response: responseMock,
+  transferService: transferServiceMock,
+};
 const spies = {};
 
 export { mocks, setup, spies };

@@ -3,9 +3,9 @@ import { NotFoundException } from '@nestjs/common';
 import { mocks, setup, spies } from './index.mocks';
 
 it('SHOULD return the transfer WHEN the caller can read both sides', async () => {
-  expect(await setup.execute({ accessibleOwners: mocks.accessibleOwners, id: mocks.transfer.id })).toBe(
-    mocks.transfer,
-  );
+  expect(
+    await setup.execute({ accessibleOwners: mocks.accessibleOwners, id: mocks.transfer.id }),
+  ).toBe(mocks.transfer);
 });
 
 it('SHOULD throw NotFound WHEN the caller reads only one side', async () => {

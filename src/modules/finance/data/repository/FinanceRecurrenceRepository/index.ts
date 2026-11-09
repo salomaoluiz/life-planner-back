@@ -146,6 +146,7 @@ export class FinanceRecurrenceRepository implements IFinanceRecurrenceRepository
       lastGeneratedNumber: row.last_generated_number,
       skippedNumbers: row.skipped_numbers,
       startDate: toCalendarDate(row.start_date),
+      toAccountId: row.to_account_id,
     }));
   }
 

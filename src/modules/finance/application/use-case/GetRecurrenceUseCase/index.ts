@@ -40,7 +40,11 @@ export class GetRecurrenceUseCase implements UseCaseWithParams<
     const recurrence = await this.recurrenceRepository.findById(input.id);
 
     // Spec 098: a transfer series is read and changed only through the transfer.
-    if (!recurrence || recurrence.toAccountId !== null || !hasOwnerAccess(input.accessibleOwners, recurrence)) {
+    if (
+      !recurrence ||
+      recurrence.toAccountId !== null ||
+      !hasOwnerAccess(input.accessibleOwners, recurrence)
+    ) {
       throw new NotFoundException();
     }
 

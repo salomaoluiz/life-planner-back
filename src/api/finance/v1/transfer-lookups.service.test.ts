@@ -36,7 +36,13 @@ it('SHOULD flag the hidden counterpart AND leave its account out', async () => {
   spies.getTransferLookups.execute.mockResolvedValueOnce({
     accounts: [],
     transfers: [
-      { ...mocks.transferLookup, amountIn: null, counterpartHidden: true, feeRowId: null, toAccountId: null },
+      {
+        ...mocks.transferLookup,
+        amountIn: null,
+        counterpartHidden: true,
+        feeRowId: null,
+        toAccountId: null,
+      },
     ],
   });
 

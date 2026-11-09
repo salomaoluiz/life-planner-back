@@ -43,7 +43,9 @@ export function isTransferExcludedFromTotals(id: string): boolean {
 }
 
 export function isTransferCategoryId(id: string): boolean {
-  return isTransferExcludedFromTotals(id) || id === SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_FEE];
+  return (
+    isTransferExcludedFromTotals(id) || id === SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_FEE]
+  );
 }
 
 // Spec 098: transfer rows change only through the transfer (PATCH/DELETE /transactions/:id answers 422).
