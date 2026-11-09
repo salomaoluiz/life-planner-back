@@ -1023,6 +1023,7 @@ describe('Method sumDashboardRows (spec 046)', () => {
     expect(rows).toEqual([expect.objectContaining({ amount: 1500, count: 2 })]);
     expect(sqlOf(0)).toContain('GROUP BY');
     expect(sqlOf(0)).toContain('"system_key"::text NOT IN');
+    expect(sqlOf(0)).toContain('c."exclude_from_totals" = false');
     expect(sqlOf(0)).toContain('"currency" =');
     expect(sqlOf(0)).not.toContain('financial_transaction_tags');
   });

@@ -209,6 +209,23 @@ describe('transfer rows (spec 098)', () => {
   );
 });
 
+describe('investment rows (spec 102)', () => {
+  it.each([SystemCategoryKey.INVESTMENT_CONTRIBUTION, SystemCategoryKey.INVESTMENT_REDEMPTION])(
+    'SHOULD refuse to edit a %s row (422) AND update nothing',
+    async (systemKey) => {
+      mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce({
+        ...mocks.transaction,
+        category: { ...mocks.transaction.category, systemKey },
+      });
+
+      await expect(run({ value: 1 })).rejects.toThrow(
+        new UnprocessableEntityException('Edit this transaction through its investment operation'),
+      );
+      expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
+    },
+  );
+});
+
 describe('card purchases and the invoice payment (spec 029)', () => {
   it('SHOULD refuse to edit the INVOICE_PAYMENT transaction (422) AND update nothing', async () => {
     mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce({

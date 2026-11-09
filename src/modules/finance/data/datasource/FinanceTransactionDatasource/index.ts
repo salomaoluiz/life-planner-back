@@ -571,6 +571,8 @@ function dashboardSumsSql(params: DashboardSumsParams): Prisma.Sql {
       params.owners.map((access) => Prisma.sql`(${access.owner}::"OwnerType", ${access.ownerId})`),
     )})`,
     Prisma.sql`(c."system_key" IS NULL OR c."system_key"::text NOT IN (${Prisma.join(DASHBOARD_EXCLUDED_KEYS)}))`,
+    // Specs 098 and 102: transfer sides and investment operations move balances but are not income or expense.
+    Prisma.sql`c."exclude_from_totals" = false`,
   ];
   const sources: Prisma.Sql[] = [];
 

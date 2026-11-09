@@ -74,5 +74,9 @@ export const INVESTMENT_KEYS: SystemCategoryKey[] = [
   SystemCategoryKey.INVESTMENT_REDEMPTION,
 ];
 
+export function isInvestmentCategoryId(id: string): boolean {
+  return INVESTMENT_KEYS.some((key) => SYSTEM_CATEGORY_IDS[key] === id);
+}
+
 export const INVESTMENT_ROW_USE_OPERATION =
   'Edit this transaction through its investment operation';

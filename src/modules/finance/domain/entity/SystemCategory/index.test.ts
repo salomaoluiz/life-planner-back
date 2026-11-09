@@ -5,6 +5,7 @@ import { SystemCategoryKey } from '@finance/domain/enum';
 import {
   BALANCE_ADJUSTMENT_DESCRIPTION,
   INVESTMENT_KEYS,
+  isInvestmentCategoryId,
   isSystemCategoryId,
   isTransferExcludedFromTotals,
   SYSTEM_CATEGORY_IDS,
@@ -61,4 +62,8 @@ it('SHOULD give the investment keys fixed ids, list them AND treat them as syste
   expect(isSystemCategoryId(SYSTEM_CATEGORY_IDS[SystemCategoryKey.INVESTMENT_REDEMPTION])).toBe(
     true,
   );
+  expect(isInvestmentCategoryId(SYSTEM_CATEGORY_IDS[SystemCategoryKey.INVESTMENT_REDEMPTION])).toBe(
+    true,
+  );
+  expect(isInvestmentCategoryId(SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_OUT])).toBe(false);
 });

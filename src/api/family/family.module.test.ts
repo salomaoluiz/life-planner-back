@@ -3,6 +3,7 @@ import { FactoryProvider, Provider } from '@nestjs/common';
 import { FamilyAPIModule } from '@api/family/family.module';
 import { FAMILY_OWNED_RECORDS_CHECKS } from '@api/family/v1/family-records-checks';
 import { HasFinanceDataByOwnerUseCase } from '@finance/application/use-case/HasFinanceDataByOwnerUseCase';
+import { HasInvestmentsByOwnerUseCase } from '@investment/application/use-case/HasInvestmentsByOwnerUseCase';
 import { HasStockItemsByOwnerUseCase } from '@stock/application/use-case/HasStockItemsByOwnerUseCase';
 
 function checksProvider(): FactoryProvider {
@@ -16,11 +17,16 @@ function checksProvider(): FactoryProvider {
   ) as FactoryProvider;
 }
 
-it('SHOULD register the finance AND stock checks in the family-delete guard', () => {
+it('SHOULD register the finance, stock AND investment checks in the family-delete guard', () => {
   const provider = checksProvider();
   const finance = { execute: jest.fn() };
   const stock = { execute: jest.fn() };
+  const investments = { execute: jest.fn() };
 
-  expect(provider.inject).toEqual([HasFinanceDataByOwnerUseCase, HasStockItemsByOwnerUseCase]);
-  expect(provider.useFactory(finance, stock)).toEqual([finance, stock]);
+  expect(provider.inject).toEqual([
+    HasFinanceDataByOwnerUseCase,
+    HasStockItemsByOwnerUseCase,
+    HasInvestmentsByOwnerUseCase,
+  ]);
+  expect(provider.useFactory(finance, stock, investments)).toEqual([finance, stock, investments]);
 });

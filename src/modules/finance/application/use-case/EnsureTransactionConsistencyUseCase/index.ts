@@ -13,7 +13,11 @@ import AccountEntity from '@finance/domain/entity/AccountEntity';
 import { belongsToOwner, isVisibleTo } from '@finance/domain/entity/CategoryScope';
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { hasOwnerAccess, OwnerAccess } from '@finance/domain/entity/OwnerAccess';
-import { isSystemCategoryId } from '@finance/domain/entity/SystemCategory';
+import {
+  INVESTMENT_ROW_USE_OPERATION,
+  isInvestmentCategoryId,
+  isSystemCategoryId,
+} from '@finance/domain/entity/SystemCategory';
 import { AccountStatus, TransactionType } from '@finance/domain/enum';
 import { CurrencyCode } from '@finance/domain/enum/Currency';
 import {
@@ -86,6 +90,9 @@ export class EnsureTransactionConsistencyUseCase implements UseCaseWithParams<
     const input = validate(EnsureTransactionConsistencySchema, params);
 
     // Reserved ids are recognised without a lookup: only the feature that owns them may write them.
+    if (isInvestmentCategoryId(input.categoryId)) {
+      throw new UnprocessableEntityException(INVESTMENT_ROW_USE_OPERATION);
+    }
     if (isSystemCategoryId(input.categoryId)) {
       throw new UnprocessableEntityException('System category is reserved');
     }

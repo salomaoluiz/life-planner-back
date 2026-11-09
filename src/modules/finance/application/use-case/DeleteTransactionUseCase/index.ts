@@ -9,6 +9,8 @@ import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable'
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import {
   CARD_CREDIT_KEYS,
+  INVESTMENT_KEYS,
+  INVESTMENT_ROW_USE_OPERATION,
   TRANSFER_KEYS,
   TRANSFER_ROW_USE_TRANSFER,
 } from '@finance/domain/entity/SystemCategory';
@@ -62,6 +64,14 @@ export class DeleteTransactionUseCase implements UseCaseWithParams<DeleteTransac
       TRANSFER_KEYS.includes(transaction.category.systemKey)
     ) {
       throw new UnprocessableEntityException(TRANSFER_ROW_USE_TRANSFER);
+    }
+
+    // Spec 102 FR 22: the rows of an investment operation change through the operation.
+    if (
+      transaction.category.systemKey !== null &&
+      INVESTMENT_KEYS.includes(transaction.category.systemKey)
+    ) {
+      throw new UnprocessableEntityException(INVESTMENT_ROW_USE_OPERATION);
     }
 
     // The payment transaction goes away only with the payment itself.

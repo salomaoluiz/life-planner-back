@@ -16,7 +16,12 @@ import { TransactionWithLimit } from '@finance/application/use-case/CreateTransa
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
-import { TRANSFER_KEYS, TRANSFER_ROW_USE_TRANSFER } from '@finance/domain/entity/SystemCategory';
+import {
+  INVESTMENT_KEYS,
+  INVESTMENT_ROW_USE_OPERATION,
+  TRANSFER_KEYS,
+  TRANSFER_ROW_USE_TRANSFER,
+} from '@finance/domain/entity/SystemCategory';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { InstallmentEditScope, SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 import {
@@ -70,6 +75,14 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
       TRANSFER_KEYS.includes(transaction.category.systemKey)
     ) {
       throw new UnprocessableEntityException(TRANSFER_ROW_USE_TRANSFER);
+    }
+
+    // Spec 102 FR 22: the rows of an investment operation change through the operation.
+    if (
+      transaction.category.systemKey !== null &&
+      INVESTMENT_KEYS.includes(transaction.category.systemKey)
+    ) {
+      throw new UnprocessableEntityException(INVESTMENT_ROW_USE_OPERATION);
     }
 
     // Payments are removed by undoing the invoice payment; adjustments can be deleted, never edited.
