@@ -6,7 +6,7 @@ import {
   IconSchema,
   NameSchema,
 } from '@finance/application/dto/FinanceCommon';
-import { AccountStatus } from '@finance/domain/enum';
+import { AccountStatus, AccountType } from '@finance/domain/enum';
 
 export const UpdateAccountSchema = z
   .object({
@@ -17,6 +17,7 @@ export const UpdateAccountSchema = z
     name: NameSchema.optional(),
     status: z.enum(AccountStatus).optional(),
     today: CalendarDateSchema,
+    type: z.enum(AccountType).optional(),
     // Required with `isFavorite`: the favorite is the preference of this user.
     userId: z.string().min(1).optional(),
   })
@@ -25,7 +26,8 @@ export const UpdateAccountSchema = z
       input.icon !== undefined ||
       input.isFavorite !== undefined ||
       input.name !== undefined ||
-      input.status !== undefined,
+      input.status !== undefined ||
+      input.type !== undefined,
     { message: 'At least one field is required' },
   )
   .refine((input) => input.isFavorite === undefined || input.userId !== undefined, {

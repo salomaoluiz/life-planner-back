@@ -16,6 +16,7 @@ const rawAccountMock: FinancialAccount = {
   owner: 'FAMILY',
   owner_id: faker.string.uuid(),
   status: 'ARCHIVED',
+  type: 'BROKERAGE',
   updated_at: faker.date.recent(),
 };
 

@@ -10,7 +10,7 @@ import {
   OwnerIdSchema,
   OwnerTypeSchema,
 } from '@finance/application/dto/FinanceCommon';
-import { AccountStatus } from '@finance/domain/enum';
+import { AccountStatus, AccountType } from '@finance/domain/enum';
 import { DEFAULT_CURRENCY } from '@finance/domain/enum/Currency';
 
 export const CreateAccountSchema = z
@@ -25,6 +25,7 @@ export const CreateAccountSchema = z
     ownerId: OwnerIdSchema,
     status: z.enum(AccountStatus).default(AccountStatus.ACTIVE),
     today: CalendarDateSchema,
+    type: z.enum(AccountType).default(AccountType.CHECKING),
     // Required with `isFavorite`: the favorite is the preference of this user.
     userId: z.string().min(1).optional(),
   })

@@ -127,6 +127,7 @@ export class FinanceAccountDatasource implements IFinanceAccountDatasource {
       icon: params.icon,
       name: params.name,
       status: params.status,
+      type: params.type,
     };
 
     if (!params.clear_favorites) {

@@ -1,7 +1,7 @@
 import { ForbiddenException, UnprocessableEntityException } from '@nestjs/common';
 
 import { INT4_MAX, INT4_MIN } from '@finance/application/dto/FinanceCommon';
-import { AccountStatus } from '@finance/domain/enum';
+import { AccountStatus, AccountType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { ValidationError } from '@shared/domain/error/ValidationError';
 
@@ -18,6 +18,7 @@ it('SHOULD create the account with its initial balance for an accessible owner A
     owner: OwnerType.USER,
     ownerId: mocks.input.ownerId,
     status: AccountStatus.ACTIVE,
+    type: AccountType.CHECKING,
   });
   expect(mocks.attach.execute).toHaveBeenCalledWith({
     accounts: [mocks.account],
@@ -131,4 +132,18 @@ describe('favorite account (spec 094)', () => {
     );
     expect(mocks.accountRepository.createAccount).not.toHaveBeenCalled();
   });
+});
+
+it('SHOULD forward an explicit type', async () => {
+  await setup.execute({ ...mocks.input, type: AccountType.BROKERAGE });
+
+  expect(mocks.accountRepository.createAccount).toHaveBeenCalledWith(
+    expect.objectContaining({ type: AccountType.BROKERAGE }),
+  );
+});
+
+it('SHOULD throw ValidationError WHEN the type is unknown', async () => {
+  await expect(setup.execute({ ...mocks.input, type: 'FOO' } as never)).rejects.toThrow(
+    ValidationError,
+  );
 });

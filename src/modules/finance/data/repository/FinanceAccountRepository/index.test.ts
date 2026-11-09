@@ -1,4 +1,4 @@
-import { AccountStatus } from '@finance/domain/enum';
+import { AccountStatus, AccountType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { mocks, setup, spies } from './index.mocks';
@@ -13,6 +13,7 @@ describe('createAccount', () => {
       owner: OwnerType.USER,
       ownerId: 'owner-id',
       status: AccountStatus.ACTIVE,
+      type: AccountType.BROKERAGE,
     });
 
     expect(mocks.accountDatasource.create).toHaveBeenCalledWith({
@@ -24,6 +25,7 @@ describe('createAccount', () => {
       owner: 'USER',
       owner_id: 'owner-id',
       status: 'ACTIVE',
+      type: 'BROKERAGE',
     });
     expect(spies.mapper.toDomain).toHaveBeenCalledWith(mocks.accountPersistence);
     expect(result).toBe(mocks.accountEntity);
@@ -99,6 +101,7 @@ describe('updateAccount', () => {
       id: 'id-1',
       name: 'New',
       status: undefined,
+      type: undefined,
     });
     expect(result).toBe(mocks.accountEntity);
   });

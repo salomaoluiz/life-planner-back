@@ -1,7 +1,7 @@
 import { faker } from '@faker-js/faker';
 
 import AccountEntity from '@finance/domain/entity/AccountEntity';
-import { AccountStatus } from '@finance/domain/enum';
+import { AccountStatus, AccountType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 class AccountEntityFixture {
@@ -34,6 +34,7 @@ class AccountEntityFixture {
       owner: OwnerType.USER,
       ownerId: faker.string.uuid(),
       status: AccountStatus.ACTIVE,
+      type: AccountType.CHECKING,
       updatedAt: faker.date.recent(),
     };
     return this;
@@ -71,6 +72,11 @@ class AccountEntityFixture {
 
   withStatus(status: AccountStatus) {
     this.value.status = status;
+    return this;
+  }
+
+  withType(type: AccountType) {
+    this.value.type = type;
     return this;
   }
 }

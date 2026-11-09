@@ -75,6 +75,15 @@ enum AccountStatus {
   ARCHIVED
 }
 
+// Spec 101: what the account is. Every type behaves like an account (same totals and rules).
+enum AccountType {
+  CHECKING
+  SAVINGS
+  BROKERAGE
+  CASH
+  OTHER
+}
+
 enum SystemCategoryKey {
   BALANCE_ADJUSTMENT
   INVOICE_PAYMENT
@@ -101,6 +110,7 @@ model FinancialAccount {
   ledger_balance  Int           @default(0)
   currency        String        @default("BRL") @db.VarChar(3)
   status          AccountStatus @default(ACTIVE)
+  type            AccountType   @default(CHECKING)
   archived_at     DateTime?     @db.Timestamptz(6)
   owner           OwnerType
   owner_id        String

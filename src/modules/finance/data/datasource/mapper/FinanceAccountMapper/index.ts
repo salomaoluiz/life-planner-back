@@ -1,6 +1,6 @@
 import { FinancialAccount } from '@db/client';
 import AccountEntity from '@finance/domain/entity/AccountEntity';
-import { AccountStatus } from '@finance/domain/enum';
+import { AccountStatus, AccountType } from '@finance/domain/enum';
 import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
@@ -18,6 +18,7 @@ export class FinanceAccountMapper {
       owner: OwnerType[raw.owner],
       ownerId: raw.owner_id,
       status: AccountStatus[raw.status],
+      type: AccountType[raw.type],
       updatedAt: raw.updated_at,
     });
   }

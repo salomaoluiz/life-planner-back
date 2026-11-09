@@ -1,4 +1,4 @@
-import { AccountStatus } from '@finance/domain/enum';
+import { AccountStatus, AccountType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import AccountEntity from './index';
@@ -16,12 +16,13 @@ const paramsMock: AccountEntity = {
   owner: OwnerType.USER,
   ownerId: 'owner-uuid-456',
   status: AccountStatus.ACTIVE,
+  type: AccountType.BROKERAGE,
   updatedAt: new Date('2026-10-04T13:00:00.000Z'),
 };
 
 // endregion Mocks
 
-function setup(params = paramsMock) {
+function setup(params: { type?: AccountType } & Omit<AccountEntity, 'type'> = paramsMock) {
   return new AccountEntity(params);
 }
 

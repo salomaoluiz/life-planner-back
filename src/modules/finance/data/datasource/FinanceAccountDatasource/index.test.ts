@@ -12,6 +12,7 @@ describe('Method create', () => {
       owner: 'USER' as const,
       owner_id: mocks.account.owner_id,
       status: 'ACTIVE' as const,
+      type: 'BROKERAGE' as const,
     };
 
     const result = await setup.create(params);
@@ -111,9 +112,21 @@ describe('Method update', () => {
 
     expect(result).toEqual(mocks.account);
     expect(spies.update).toHaveBeenCalledWith({
-      data: { icon: undefined, name: 'Renamed', status: undefined },
+      data: { icon: undefined, name: 'Renamed', status: undefined, type: undefined },
       where: { id: mocks.account.id },
     });
+  });
+});
+
+describe('Method update type (spec 101)', () => {
+  it('SHOULD forward the type', async () => {
+    spies.update.mockResolvedValue(mocks.account);
+
+    await setup.update({ id: mocks.account.id, type: 'SAVINGS' as const });
+
+    expect(spies.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ type: 'SAVINGS' }) }),
+    );
   });
 });
 
