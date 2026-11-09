@@ -446,3 +446,30 @@ describe('series reads and template (spec 098)', () => {
     });
   });
 });
+
+describe('Method createMany (spec 098)', () => {
+  beforeEach(() => {
+    spies.transferCreate.mockResolvedValue({ id: 'transfer-x' });
+    spies.transactionCreate.mockImplementation(createdRow);
+  });
+
+  it('SHOULD lock the accounts once AND apply one net ledger change per account', async () => {
+    const count = await setup.createMany([
+      { ...mocks.writeParams, amount_in: 92000, fee: null },
+      { ...mocks.writeParams, amount_in: 92000, fee: null },
+    ]);
+
+    expect(count).toBe(2);
+    expect(spies.queryRaw).toHaveBeenCalledTimes(1);
+    expect(spies.transferCreate).toHaveBeenCalledTimes(2);
+    expect(spies.accountUpdate.mock.calls).toEqual([
+      [{ data: { ledger_balance: { increment: 184000 } }, where: { id: 'acc-a' } }],
+      [{ data: { ledger_balance: { increment: -1000000 } }, where: { id: 'acc-b' } }],
+    ]);
+  });
+
+  it('SHOULD touch nothing WHEN there is nothing to write', async () => {
+    expect(await setup.createMany([])).toBe(0);
+    expect(spies.queryRaw).not.toHaveBeenCalled();
+  });
+});

@@ -61,6 +61,8 @@ export interface TransferSeriesTemplatePatch {
 }
 
 export interface IFinanceTransferRepository {
+  // Spec 098 FR 12 (CSV import): every transfer in ONE database transaction; returns how many were written.
+  createTransfers(params: WriteTransferRepositoryParams[]): Promise<number>;
   createTransfer(params: WriteTransferRepositoryParams): Promise<TransferEntity>;
   createTransferSeries(params: CreateTransferSeriesRepositoryParams): Promise<TransferEntity>;
   deleteTransfer(id: string): Promise<void>;

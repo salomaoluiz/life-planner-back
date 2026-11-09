@@ -82,6 +82,7 @@ export interface UpdateTransferSeriesTemplateDatasourceParams {
 }
 
 export interface IFinanceTransferDatasource {
+  createMany(params: WriteTransferDatasourceParams[]): Promise<number>;
   createSeries(params: CreateTransferSeriesDatasourceParams): Promise<FinancialTransferRecord>;
   create(params: WriteTransferDatasourceParams): Promise<FinancialTransferRecord>;
   delete(id: string): Promise<void>;

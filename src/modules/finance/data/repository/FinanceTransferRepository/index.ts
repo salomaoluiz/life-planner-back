@@ -55,6 +55,10 @@ export class FinanceTransferRepository implements IFinanceTransferRepository {
     );
   }
 
+  async createTransfers(params: WriteTransferRepositoryParams[]): Promise<number> {
+    return this.transferDatasource.createMany(params.map((item) => toDatasourceParams(item)));
+  }
+
   async createTransferSeries(
     params: CreateTransferSeriesRepositoryParams,
   ): Promise<TransferEntity> {

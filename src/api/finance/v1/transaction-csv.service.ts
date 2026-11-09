@@ -70,6 +70,7 @@ export class TransactionCsvService {
     return this.importTransactionsUseCase.execute({
       ...input,
       accessibleOwners,
+      requesterId: userId,
       today: resolveToday(today),
     });
   }

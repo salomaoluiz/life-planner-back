@@ -56,7 +56,8 @@ const base = {
 };
 
 const ensureMock = { execute: jest.fn() };
-const accountRepositoryMock = { findAccountById: jest.fn() };
+const accountRepositoryMock = { findAccountById: jest.fn(), findAccountsByIds: jest.fn() };
+const transferRepositoryMock = { createTransfers: jest.fn() };
 const cardCreditRepositoryMock = { createImportRows: jest.fn() };
 const computeMock = { execute: jest.fn() };
 const creditCardRepositoryMock = { findCreditCardById: jest.fn() };
@@ -78,6 +79,8 @@ beforeEach(async () => {
     async (rows: unknown[]) => rows.length,
   );
   transactionRepositoryMock.findDuplicateCandidates.mockResolvedValue([]);
+  transferRepositoryMock.createTransfers.mockImplementation(async (rows: unknown[]) => rows.length);
+  accountRepositoryMock.findAccountsByIds.mockResolvedValue([]);
   cardCreditRepositoryMock.createImportRows.mockImplementation(
     async (params: Record<string, unknown[]>) =>
       Object.values(params).reduce((sum, rows) => sum + rows.length, 0),
@@ -98,6 +101,7 @@ beforeEach(async () => {
       { provide: 'IFinanceCardCreditRepository', useValue: cardCreditRepositoryMock },
       { provide: 'IFinanceCreditCardRepository', useValue: creditCardRepositoryMock },
       { provide: 'IFinanceTransactionRepository', useValue: transactionRepositoryMock },
+      { provide: 'IFinanceTransferRepository', useValue: transferRepositoryMock },
     ],
   }).compile();
 
@@ -118,6 +122,7 @@ const mocks = {
     unprocessable: (message: string) => new UnprocessableEntityException(message),
   },
   transactionRepository: transactionRepositoryMock,
+  transferRepository: transferRepositoryMock,
   validRow,
 };
 

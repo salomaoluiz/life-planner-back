@@ -161,3 +161,13 @@ it('SHOULD rename the template fields for the datasource', async () => {
     value: 90000,
   });
 });
+
+it('SHOULD write many transfers through one datasource call AND return how many', async () => {
+  spies.createMany.mockResolvedValue(2);
+
+  expect(await setup.createTransfers([mocks.params, mocks.params])).toBe(2);
+  expect(spies.createMany).toHaveBeenCalledWith([
+    expect.objectContaining({ date_out: new Date('2026-11-04T00:00:00.000Z') }),
+    expect.objectContaining({ date_out: new Date('2026-11-04T00:00:00.000Z') }),
+  ]);
+});

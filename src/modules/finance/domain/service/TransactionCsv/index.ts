@@ -29,6 +29,7 @@ export const TRANSACTION_CSV_HEADERS: Record<CsvLanguage, string[]> = {
     'Installment',
     'Recurring',
     'Notes',
+    'Transfer ID',
   ],
   'pt-BR': [
     'Data',
@@ -46,6 +47,7 @@ export const TRANSACTION_CSV_HEADERS: Record<CsvLanguage, string[]> = {
     'Parcela',
     'Recorrente',
     'Notas',
+    'ID da transferência',
   ],
 };
 
@@ -128,5 +130,6 @@ export function toCsvRow(row: ExportRow, format: CsvFormat, lang: CsvLanguage): 
       : '',
     yesNo(transaction.recurrenceId !== null),
     transaction.notes ?? '',
+    transaction.transferId ?? '',
   ];
 }

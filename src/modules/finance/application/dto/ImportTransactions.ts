@@ -31,6 +31,8 @@ export const ImportRowSchema = z.object({
   // Spec 048: the account debited by an early payment or an invoice payment.
   paidFromAccountId: z.string().min(1).nullish(),
   tags: z.array(z.string()).nullish(),
+  // Spec 098: groups the out, in and fee rows of one transfer (the CSV `Transfer ID` column).
+  transferId: z.string().min(1).nullish(),
   type: TransactionTypeSchema,
   value: z.number(),
 });
@@ -42,6 +44,8 @@ export const ImportTransactionsSchema = z.object({
   includeDuplicates: z.array(z.number().int()).optional(),
   owner: OwnerTypeSchema,
   ownerId: OwnerIdSchema,
+  // The user who imports (`created_by` of the transfers); defaults to the owner of the request.
+  requesterId: z.string().min(1).optional(),
   rows: z.array(ImportRowSchema).min(1).max(MAX_IMPORT_ROWS),
   // The caller's local day: the default paid status of account rows.
   today: CalendarDateSchema,

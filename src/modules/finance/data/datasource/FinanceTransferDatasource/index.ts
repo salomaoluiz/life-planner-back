@@ -173,6 +173,28 @@ export class FinanceTransferDatasource implements IFinanceTransferDatasource {
     }) as Promise<FinancialTransferRecord>;
   }
 
+  // All transfers or none: every account is locked once, in id order, and each ledger moves by its net total.
+  async createMany(params: WriteTransferDatasourceParams[]): Promise<number> {
+    if (params.length === 0) {
+      return 0;
+    }
+
+    return this.db.client.$transaction(async (tx) => {
+      await lockAccounts(
+        tx,
+        params.flatMap((item) => [item.from.account_id, item.to.account_id]),
+      );
+      const deltas: LedgerDelta[] = [];
+
+      for (const item of params) {
+        deltas.push(...(await insertTransfer(tx, item)).deltas);
+      }
+      await applyLedgerDeltas(tx, sumLedgerDeltas(deltas));
+
+      return params.length;
+    });
+  }
+
   // The series row and its first occurrences (the first one is what the user typed) commit together.
   async createSeries(
     params: CreateTransferSeriesDatasourceParams,
