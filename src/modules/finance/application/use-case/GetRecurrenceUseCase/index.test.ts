@@ -1,3 +1,5 @@
+import { NotFoundException } from '@nestjs/common';
+
 import { mocks, setup } from './index.mocks';
 
 const base = { accessibleOwners: mocks.accessibleOwners, id: 'series-1', today: '2026-10-17' };
@@ -41,4 +43,10 @@ describe('GetRecurrenceUseCase', () => {
 
     await expect(setup.execute(base)).rejects.toThrow('Not Found');
   });
+});
+
+it('SHOULD answer NotFound for a transfer series (spec 098): it changes only through the transfer', async () => {
+  mocks.recurrenceRepository.findById.mockResolvedValueOnce({ ...mocks.series, toAccountId: 'acc-to' });
+
+  await expect(setup.execute(base as never)).rejects.toThrow(NotFoundException);
 });

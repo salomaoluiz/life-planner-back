@@ -1,3 +1,5 @@
+import { NotFoundException } from '@nestjs/common';
+
 import { InstallmentEditScope } from '@finance/domain/enum';
 
 import { mocks, setup } from './index.mocks';
@@ -147,4 +149,10 @@ describe('gate invalidation (spec 081)', () => {
 
     expect(mocks.gate.invalidate).toHaveBeenCalledWith(['user-id']);
   });
+});
+
+it('SHOULD answer NotFound for a transfer series (spec 098): it changes only through the transfer', async () => {
+  mocks.recurrenceRepository.findById.mockResolvedValueOnce({ ...mocks.series, toAccountId: 'acc-to' });
+
+  await expect(setup.execute(base as never)).rejects.toThrow(NotFoundException);
 });

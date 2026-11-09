@@ -42,7 +42,8 @@ export class MaterializeOccurrenceUseCase implements UseCaseWithParams<
     const input = validate(MaterializeOccurrenceSchema, params);
     const series = await this.recurrenceRepository.findById(input.recurrenceId);
 
-    if (!series || !hasOwnerAccess(input.accessibleOwners, series)) {
+    // Spec 098: a transfer series is read and changed only through the transfer.
+    if (!series || series.toAccountId !== null || !hasOwnerAccess(input.accessibleOwners, series)) {
       throw new NotFoundException();
     }
 
