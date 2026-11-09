@@ -194,6 +194,8 @@ Row kinds come from type, card/account and category (`ImportRowKind`): account t
 
 ## Favorite account (spec 094)
 
+Spec 101: `POST /finance/accounts` takes an optional `type` (`CHECKING` default, `SAVINGS`, `BROKERAGE`, `CASH`, `OTHER`; unknown → `400`), `PATCH` takes an optional `type` (a type-only patch is valid; an account write on an archived family answers `422`), and every account response carries `type`. Transaction `lookups`, daily balances, CSV and filters do not change.
+
 `POST /finance/accounts` and `PATCH /finance/accounts/:id` accept an optional `isFavorite: boolean` (`PATCH { isFavorite }` alone is valid). `true` makes the account the favorite of the requesting user and replaces the previous one; `false` clears it only if it is this account; omitted changes nothing. `isFavorite: true` on an archived account, or together with `status: ARCHIVED`, answers `422` `An archived account can't be the favorite`. Archiving an account clears the favorite of every user. Every account response carries `isFavorite` (computed for the requesting user, never exposed for others). Removing a member, leaving or deleting a family clears the affected favorites.
 
 ## Choose the card invoice (spec 095)

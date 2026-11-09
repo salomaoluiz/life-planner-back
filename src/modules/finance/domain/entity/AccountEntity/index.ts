@@ -1,4 +1,4 @@
-import { AccountStatus } from '@finance/domain/enum';
+import { AccountStatus, AccountType } from '@finance/domain/enum';
 import { CurrencyCode, DEFAULT_CURRENCY } from '@finance/domain/enum/Currency';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
@@ -14,6 +14,7 @@ interface IAccountEntity {
   owner: OwnerType;
   ownerId: string;
   status: AccountStatus;
+  type?: AccountType;
   updatedAt: Date;
 }
 
@@ -31,6 +32,7 @@ class AccountEntity {
   owner: OwnerType;
   ownerId: string;
   status: AccountStatus;
+  type: AccountType;
   updatedAt: Date;
 
   constructor(params: IAccountEntity) {
@@ -45,6 +47,7 @@ class AccountEntity {
     this.owner = params.owner;
     this.ownerId = params.ownerId;
     this.status = params.status;
+    this.type = params.type ?? AccountType.CHECKING;
     this.updatedAt = params.updatedAt;
   }
 }

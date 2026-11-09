@@ -21,6 +21,7 @@ const accountMock: FinancialAccount = {
   owner: 'USER',
   owner_id: faker.string.uuid(),
   status: 'ACTIVE',
+  type: 'CHECKING',
   updated_at: faker.date.recent(),
 };
 

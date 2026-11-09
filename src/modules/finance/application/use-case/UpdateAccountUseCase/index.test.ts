@@ -1,6 +1,6 @@
 import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 
-import { AccountStatus } from '@finance/domain/enum';
+import { AccountStatus, AccountType } from '@finance/domain/enum';
 import { ValidationError } from '@shared/domain/error/ValidationError';
 
 import { mocks, setup } from './index.mocks';
@@ -18,6 +18,7 @@ it('SHOULD update only the sent fields AND return the account with its balances'
     id: mocks.account.id,
     name: 'Renamed',
     status: undefined,
+    type: undefined,
   });
   expect(mocks.attach.execute).toHaveBeenCalledWith({
     accounts: [mocks.updated],
@@ -197,5 +198,33 @@ describe('favorite account (spec 094)', () => {
 
   it('SHOULD throw ValidationError WHEN isFavorite comes without userId', async () => {
     await expect(setup.execute({ ...base(), isFavorite: true })).rejects.toThrow(ValidationError);
+  });
+});
+
+describe('account type (spec 101)', () => {
+  it('SHOULD accept a patch with only the type AND forward it', async () => {
+    await setup.execute({ ...base(), type: AccountType.SAVINGS });
+
+    expect(mocks.accountRepository.updateAccount).toHaveBeenCalledWith(
+      expect.objectContaining({ id: mocks.account.id, type: AccountType.SAVINGS }),
+    );
+  });
+
+  it('SHOULD throw ValidationError WHEN the type is unknown', async () => {
+    await expect(setup.execute({ ...base(), type: 'FOO' } as never)).rejects.toThrow(
+      ValidationError,
+    );
+  });
+
+  it('SHOULD throw 422 AND update nothing WHEN the account belongs to an archived family', async () => {
+    const accessibleOwners = mocks.accessibleOwners.map((access) => ({
+      ...access,
+      archived: true,
+    }));
+
+    await expect(
+      setup.execute({ ...base(), accessibleOwners, type: AccountType.CASH }),
+    ).rejects.toThrow(UnprocessableEntityException);
+    expect(mocks.accountRepository.updateAccount).not.toHaveBeenCalled();
   });
 });

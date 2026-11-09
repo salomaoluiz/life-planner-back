@@ -10,10 +10,11 @@ import {
   OwnerIdApiSchema,
   OwnerTypeApiSchema,
 } from '@api/finance/v1/dto/finance-fields';
-import { AccountStatus } from '@finance/domain/enum';
+import { AccountStatus, AccountType } from '@finance/domain/enum';
 import { DEFAULT_CURRENCY } from '@finance/domain/enum/Currency';
 
 const AccountStatusApiSchema = z.enum(AccountStatus);
+const AccountTypeApiSchema = z.enum(AccountType);
 
 export const CreateAccountApiSchema = z
   .object({
@@ -25,6 +26,7 @@ export const CreateAccountApiSchema = z
     owner: OwnerTypeApiSchema,
     ownerId: OwnerIdApiSchema,
     status: AccountStatusApiSchema.default(AccountStatus.ACTIVE),
+    type: AccountTypeApiSchema.default(AccountType.CHECKING),
   })
   .strict();
 
@@ -34,6 +36,7 @@ export const UpdateAccountApiSchema = z
     isFavorite: z.boolean(),
     name: NameApiSchema,
     status: AccountStatusApiSchema,
+    type: AccountTypeApiSchema,
   })
   .partial()
   .strict()
@@ -58,6 +61,8 @@ export const AccountApiSchema = z.object({
   // Initial + transactions dated up to the end of today's month.
   projectedBalance: z.number().int(),
   status: AccountStatusApiSchema,
+  // Spec 101.
+  type: AccountTypeApiSchema,
   updatedAt: z.iso.datetime(),
 });
 

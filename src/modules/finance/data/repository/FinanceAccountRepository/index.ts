@@ -32,6 +32,7 @@ export class FinanceAccountRepository implements IFinanceAccountRepository {
       owner: params.owner,
       owner_id: params.ownerId,
       status: params.status,
+      type: params.type,
     });
 
     return FinanceAccountMapper.toDomain(result);
@@ -101,6 +102,7 @@ export class FinanceAccountRepository implements IFinanceAccountRepository {
       id: params.id,
       name: params.name,
       status: params.status,
+      type: params.type,
     });
 
     return FinanceAccountMapper.toDomain(result);

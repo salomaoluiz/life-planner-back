@@ -39,6 +39,7 @@ function toAccountOutput(
     ownerId: account.ownerId,
     projectedBalance,
     status: account.status,
+    type: account.type,
     updatedAt: account.updatedAt.toISOString(),
   };
 }

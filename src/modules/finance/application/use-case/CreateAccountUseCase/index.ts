@@ -48,6 +48,7 @@ export class CreateAccountUseCase implements UseCaseWithParams<
       owner: input.owner,
       ownerId: input.ownerId,
       status: input.status,
+      type: input.type,
     });
     if (input.isFavorite && input.userId !== undefined) {
       await this.favoriteRepository.set(input.userId, account.id);

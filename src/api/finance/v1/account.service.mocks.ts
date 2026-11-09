@@ -27,6 +27,7 @@ const accountResultMock = {
   owner: OwnerType.USER,
   ownerId: userId,
   status: 'ACTIVE',
+  type: 'BROKERAGE',
   updatedAt: new Date('2026-10-04T13:00:00.000Z'),
 };
 const withBalancesMock = { account: accountResultMock, balance: 150000, projectedBalance: 152075 };
@@ -43,6 +44,7 @@ const accountApiMock = {
   ownerId: userId,
   projectedBalance: 152075,
   status: 'ACTIVE',
+  type: 'BROKERAGE',
   updatedAt: '2026-10-04T13:00:00.000Z',
 };
 

@@ -2,6 +2,13 @@ export enum AccountStatus {
   ACTIVE = 'ACTIVE',
   ARCHIVED = 'ARCHIVED',
 }
+export enum AccountType {
+  BROKERAGE = 'BROKERAGE',
+  CASH = 'CASH',
+  CHECKING = 'CHECKING',
+  OTHER = 'OTHER',
+  SAVINGS = 'SAVINGS',
+}
 export enum CreditCardBrand {
   AMEX = 'AMEX',
   ELO = 'ELO',

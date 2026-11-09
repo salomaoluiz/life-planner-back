@@ -18,6 +18,7 @@ describe('FinanceAccountMapper', () => {
         owner: 'FAMILY',
         ownerId: mocks.raw.owner_id,
         status: 'ARCHIVED',
+        type: 'BROKERAGE',
         updatedAt: mocks.raw.updated_at,
       });
     });

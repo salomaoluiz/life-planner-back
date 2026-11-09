@@ -3,6 +3,12 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.6.0] - 2026-11-09
+
+### Added
+
+- Account types: every account has a `type` (`CHECKING`, `SAVINGS`, `BROKERAGE`, `CASH`, `OTHER`, default `CHECKING`), accepted on `POST` and `PATCH /finance/accounts` and returned in every account response; existing accounts become `CHECKING` (spec 101).
+
 ## [3.5.0] - 2026-11-09
 
 ### Added

@@ -1,6 +1,7 @@
 import { Inject, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 
 import { UpdateAccountInput, UpdateAccountSchema } from '@finance/application/dto/UpdateAccount';
+import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { AttachAccountBalancesUseCase } from '@finance/application/use-case/AttachAccountBalancesUseCase';
 import { EndRecurrencesBySourceUseCase } from '@finance/application/use-case/EndRecurrencesBySourceUseCase';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
@@ -47,7 +48,14 @@ export class UpdateAccountUseCase implements UseCaseWithParams<
     }
 
     const changesAccount =
-      input.icon !== undefined || input.name !== undefined || input.status !== undefined;
+      input.icon !== undefined ||
+      input.name !== undefined ||
+      input.status !== undefined ||
+      input.type !== undefined;
+    // Spec 042 FR 9 / spec 101: an account write on an archived family is refused (422); the favorite is a user preference.
+    if (changesAccount) {
+      ensureOwnerWritable(input.accessibleOwners, account);
+    }
     const updated = changesAccount
       ? await this.accountRepository.updateAccount({
           archivedAt: archivedAtFor(account.status, input.status, new Date()),
@@ -56,6 +64,7 @@ export class UpdateAccountUseCase implements UseCaseWithParams<
           id: input.id,
           name: input.name,
           status: input.status,
+          type: input.type,
         })
       : account;
 

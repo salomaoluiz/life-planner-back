@@ -1,4 +1,4 @@
-import { AccountStatus, FinancialAccount, OwnerType } from '@db/client';
+import { AccountStatus, AccountType, FinancialAccount, OwnerType } from '@db/client';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { CurrencyCode } from '@finance/domain/enum/Currency';
 
@@ -11,6 +11,7 @@ export interface CreateAccountDatasourceParams {
   owner: OwnerType;
   owner_id: string;
   status: AccountStatus;
+  type: AccountType;
 }
 export interface DatedSumRow {
   account_id: string;
@@ -57,4 +58,5 @@ export interface UpdateAccountDatasourceParams {
   id: string;
   name?: string;
   status?: AccountStatus;
+  type?: AccountType;
 }

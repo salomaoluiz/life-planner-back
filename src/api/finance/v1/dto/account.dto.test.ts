@@ -24,7 +24,13 @@ describe('CreateAccountApiSchema', () => {
       ...valid,
       initialBalance: 0,
       status: AccountStatus.ACTIVE,
+      type: 'CHECKING',
     });
+  });
+
+  it('SHOULD accept an explicit type AND reject an unknown one with 400 (spec 101)', () => {
+    expect(CreateAccountApiSchema.parse({ ...valid, type: 'BROKERAGE' }).type).toBe('BROKERAGE');
+    expect(CreateAccountApiSchema.safeParse({ ...valid, type: 'FOO' }).success).toBe(false);
   });
 
   it('SHOULD accept the int4 bounds', () => {
@@ -58,6 +64,11 @@ describe('UpdateAccountApiSchema', () => {
   it('SHOULD accept isFavorite alone (spec 094)', () => {
     expect(UpdateAccountApiSchema.parse({ isFavorite: true })).toEqual({ isFavorite: true });
     expect(UpdateAccountApiSchema.safeParse({ isFavorite: 'yes' }).success).toBe(false);
+  });
+
+  it('SHOULD accept the type alone AND reject an unknown one (spec 101)', () => {
+    expect(UpdateAccountApiSchema.parse({ type: 'SAVINGS' })).toEqual({ type: 'SAVINGS' });
+    expect(UpdateAccountApiSchema.safeParse({ type: 'FOO' }).success).toBe(false);
   });
 
   it('SHOULD accept any subset of icon / name / status', () => {

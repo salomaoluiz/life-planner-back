@@ -138,6 +138,8 @@ Additive: `GET /api/v1/finance/transactions/:id` (see `api.md`). The app opens a
 
 The transactions screen reads `GET /finance/month` (see `api.md`) instead of the five separate month requests; the separate endpoints stay for the filtered period views, Home and the forms. Deploy the backend first (additive).
 
+Spec 101 contract: account output gains `type` (always present); `POST`/`PATCH /accounts` take an optional `type` (additive, old apps ignore it and new accounts default to `CHECKING`). Migration `20261109000300_account_types`.
+
 Spec 094 contract: account output gains `isFavorite: boolean` (per requesting user); `POST`/`PATCH /accounts` take an optional `isFavorite` (additive, old apps ignore it). New table `financial_account_favorites` (migration `20261105000200_financial_account_favorites`).
 
 Spec 095 contract: additive and optional `invoiceMonth` (`POST`/`PATCH /finance/transactions`) and `firstInvoiceMonth` (`POST`/`PATCH /finance/installment-plans`), `YYYY-MM`, previous/computed/next invoice of the date; new `422` messages `Invoice is not available for this date` and `Recurring transactions follow the date` (`Invoice is paid` already existed). Old apps send nothing and get today's behaviour. No migration.

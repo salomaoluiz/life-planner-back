@@ -1,6 +1,6 @@
 import AccountEntity from '@finance/domain/entity/AccountEntity';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
-import { AccountStatus } from '@finance/domain/enum';
+import { AccountStatus, AccountType } from '@finance/domain/enum';
 import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { UnpaidSums } from '@finance/domain/service/AccountBalance';
 import { DatedAmount } from '@finance/domain/service/DailyBalance';
@@ -31,6 +31,7 @@ interface CreateAccountRepositoryParams {
   owner: OwnerType;
   ownerId: string;
   status: AccountStatus;
+  type: AccountType;
 }
 interface FindPaidSumsFromRepositoryParams {
   accountIds: string[];
@@ -55,6 +56,7 @@ interface UpdateAccountRepositoryParams {
   id: string;
   name?: string;
   status?: AccountStatus;
+  type?: AccountType;
 }
 
 export {
