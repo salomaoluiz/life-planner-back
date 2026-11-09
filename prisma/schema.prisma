@@ -81,6 +81,9 @@ enum SystemCategoryKey {
   INSTALLMENT_PREPAYMENT_DISCOUNT
   CARD_REFUND
   CARD_EARLY_PAYMENT
+  TRANSFER_OUT
+  TRANSFER_IN
+  TRANSFER_FEE
 }
 
 enum InvoicePaymentMethod {
@@ -106,6 +109,9 @@ model FinancialAccount {
 
   transactions     FinancialTransaction[]
   recurrences      FinancialRecurrence[]
+  incoming_series  FinancialRecurrence[]     @relation("TransferSeriesDestination")
+  transfers_out    FinancialTransfer[]        @relation("TransferFrom")
+  transfers_in     FinancialTransfer[]        @relation("TransferTo")
   invoice_payments FinancialInvoicePayment[]
   payment_cards    FinancialCreditCard[]      @relation("CardPaymentAccount")
   favorites        FinancialAccountFavorite[]
@@ -251,6 +257,8 @@ model FinancialTransaction {
   paid_from_transaction_id String?               @unique
   // Spec 096: a card EXPENSE not charged yet (CHECK in the migration); counts apart from the effective totals.
   projected                Boolean               @default(false)
+  // Spec 098: out, in and fee rows of a transfer; they change only through the transfer.
+  transfer_id              String?
   currency                 String                @default("BRL") @db.VarChar(3)
   owner                    OwnerType
   owner_id                 String
@@ -263,6 +271,7 @@ model FinancialTransaction {
   invoice_payment  FinancialInvoicePayment?
   installment_plan FinancialInstallmentPlan? @relation(fields: [installment_plan_id], references: [id], onDelete: Restrict)
   recurrence       FinancialRecurrence?      @relation(fields: [recurrence_id], references: [id], onDelete: Restrict)
+  transfer         FinancialTransfer?        @relation(fields: [transfer_id], references: [id], onDelete: Restrict)
 
   refunded_transaction  FinancialTransaction?           @relation("RefundedPurchase", fields: [refunded_transaction_id], references: [id], onDelete: Restrict)
   refunds               FinancialTransaction[]          @relation("RefundedPurchase")
@@ -281,6 +290,7 @@ model FinancialTransaction {
   @@index([credit_card_id, invoice_month])
   @@index([account_id, date])
   @@index([category_id])
+  @@index([transfer_id])
   @@index([owner, owner_id, date])
   @@map("financial_transactions")
 }
@@ -413,6 +423,9 @@ model FinancialRecurrence {
   category_id           String
   account_id            String?
   credit_card_id        String?
+  // Spec 098: set = transfer series (`value` is the amount out); `amount_in` only when both currencies are equal.
+  to_account_id         String?
+  amount_in             Int?
   frequency             RecurrenceFrequency
   start_date            DateTime            @db.Date
   end_date              DateTime?           @db.Date
@@ -432,11 +445,14 @@ model FinancialRecurrence {
   category     FinancialCategory        @relation(fields: [category_id], references: [id], onDelete: Restrict)
   account      FinancialAccount?        @relation(fields: [account_id], references: [id], onDelete: Restrict)
   credit_card  FinancialCreditCard?     @relation(fields: [credit_card_id], references: [id], onDelete: Restrict)
+  to_account   FinancialAccount?        @relation("TransferSeriesDestination", fields: [to_account_id], references: [id], onDelete: Restrict)
   transactions FinancialTransaction[]
+  transfers    FinancialTransfer[]
   tags         FinancialRecurrenceTag[]
 
   @@index([owner, owner_id, status, next_occurrence_date])
   @@index([account_id])
+  @@index([to_account_id])
   @@index([credit_card_id])
   @@index([category_id])
   @@map("financial_recurrences")
@@ -566,4 +582,38 @@ model CategoryIcon {
 
   @@index([search], map: "category_icons_search_idx", type: Gin)
   @@map("category_icons")
+}
+
+// Spec 098: one movement between two accounts. Amounts in cents of each account's currency; `amount_in` is NULL only for an
+// unpaid occurrence of a different-currency series. The account FKs are SetNull so deleting a user keeps the family side.
+// CHECKs in the migration: from <> to, date_in >= date_out, amount_out > 0, amount_in > 0 or NULL, fee > 0 or NULL.
+model FinancialTransfer {
+  id                String    @id @default(uuid())
+  description       String
+  notes             String?
+  from_account_id   String?
+  to_account_id     String?
+  amount_out        Int
+  amount_in         Int?
+  currency_out      String    @db.VarChar(3)
+  currency_in       String    @db.VarChar(3)
+  date_out          DateTime  @db.Date
+  date_in           DateTime  @db.Date
+  paid              Boolean   @default(false)
+  fee               Int?
+  recurrence_id     String?
+  occurrence_number Int?
+  created_by        String
+  created_at        DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime  @updatedAt @db.Timestamptz(6)
+
+  from_account FinancialAccount?       @relation("TransferFrom", fields: [from_account_id], references: [id], onDelete: SetNull)
+  to_account   FinancialAccount?       @relation("TransferTo", fields: [to_account_id], references: [id], onDelete: SetNull)
+  recurrence   FinancialRecurrence?    @relation(fields: [recurrence_id], references: [id], onDelete: Restrict)
+  transactions FinancialTransaction[]
+
+  @@unique([recurrence_id, occurrence_number])
+  @@index([from_account_id])
+  @@index([to_account_id])
+  @@map("financial_transfers")
 }
