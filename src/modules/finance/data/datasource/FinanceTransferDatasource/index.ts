@@ -9,9 +9,11 @@ import {
 } from '@finance/data/datasource/ledger';
 import {
   CreateTransferSeriesDatasourceParams,
+  DeleteTransferSeriesFromDatasourceParams,
   FinancialTransferRecord,
   IFinanceTransferDatasource,
   MaterializeTransferSeriesDatasourceParams,
+  UpdateTransferSeriesTemplateDatasourceParams,
   WriteTransferDatasourceParams,
 } from '@finance/data/repository/datasource/IFinanceTransferDatasource';
 import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
@@ -251,11 +253,79 @@ export class FinanceTransferDatasource implements IFinanceTransferDatasource {
     });
   }
 
+  async findSeriesFrom(
+    recurrenceId: string,
+    fromNumber: number,
+  ): Promise<FinancialTransferRecord[]> {
+    return this.db.client.financialTransfer.findMany({
+      include: TRANSFER_INCLUDE,
+      orderBy: { occurrence_number: 'asc' },
+      where: { occurrence_number: { gte: fromNumber }, recurrence_id: recurrenceId },
+    }) as Promise<FinancialTransferRecord[]>;
+  }
+
+  async updateSeriesTemplate(
+    recurrenceId: string,
+    patch: UpdateTransferSeriesTemplateDatasourceParams,
+  ): Promise<void> {
+    await this.db.client.financialRecurrence.update({ data: patch, where: { id: recurrenceId } });
+  }
+
   async findByIds(ids: string[]): Promise<FinancialTransferRecord[]> {
     return this.db.client.financialTransfer.findMany({
       include: TRANSFER_INCLUDE,
       where: { id: { in: ids } },
     }) as Promise<FinancialTransferRecord[]>;
+  }
+
+  // The occurrences from a number on go away with their rows (ledgers reverted); the series then ends at the previous
+  // one, or is removed when nothing is left of it.
+  async deleteSeriesFrom(params: DeleteTransferSeriesFromDatasourceParams): Promise<void> {
+    await this.db.client.$transaction(async (tx) => {
+      await tx.$queryRaw(
+        Prisma.sql`SELECT "id" FROM "financial_recurrences" WHERE "id" = ${params.recurrence_id} FOR UPDATE`,
+      );
+      const transfers = await tx.financialTransfer.findMany({
+        select: {
+          from_account_id: true,
+          id: true,
+          to_account_id: true,
+          transactions: { select: ROW_SELECT },
+        },
+        where: {
+          occurrence_number: { gte: params.from_number },
+          recurrence_id: params.recurrence_id,
+        },
+      });
+      const rows = transfers.flatMap((transfer) => transfer.transactions);
+
+      await lockAccounts(
+        tx,
+        transfers.flatMap((transfer) => accountIdsOf(transfer)),
+      );
+      const ids = transfers.map((transfer) => transfer.id);
+
+      await tx.financialTransaction.deleteMany({ where: { transfer_id: { in: ids } } });
+      await applyLedgerDeltas(
+        tx,
+        sumLedgerDeltas(rows.flatMap((row) => ledgerDeltas(toLedgerEntry(row), undefined))),
+      );
+      await tx.financialTransfer.deleteMany({ where: { id: { in: ids } } });
+
+      if (params.delete_series) {
+        await tx.financialRecurrence.delete({ where: { id: params.recurrence_id } });
+      } else {
+        await tx.financialRecurrence.update({
+          data: {
+            end_date: params.end_date,
+            last_generated_number: params.last_generated_number,
+            next_occurrence_date: null,
+            status: 'ENDED',
+          },
+          where: { id: params.recurrence_id },
+        });
+      }
+    });
   }
 
   async findById(id: string): Promise<FinancialTransferRecord | null> {

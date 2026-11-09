@@ -51,7 +51,10 @@ const datasourceMock = {
   createSeries: jest.fn(),
   materializeSeries: jest.fn(),
   delete: jest.fn(),
+  deleteSeriesFrom: jest.fn(),
   findById: jest.fn(),
+  findSeriesFrom: jest.fn(),
+  updateSeriesTemplate: jest.fn(),
   update: jest.fn(),
 };
 

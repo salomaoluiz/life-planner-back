@@ -62,7 +62,7 @@ it('SHOULD keep the stored amount in for different currencies AND require it whe
     paid: false,
     recurrenceId: 'series-1',
   });
-  await expect(setup.execute({ ...base, paid: true })).rejects.toThrow(
+  await expect(setup.execute({ ...base, paid: true, scope: 'ONLY_THIS' as never })).rejects.toThrow(
     'TRANSFER_AMOUNT_IN_REQUIRED',
   );
 });
@@ -85,6 +85,93 @@ describe('WHEN an account is archived', () => {
     await expect(setup.execute({ ...base, amountOut: 1000 })).rejects.toThrow(
       new UnprocessableEntityException('TRANSFER_ACCOUNT_ARCHIVED'),
     );
+    expect(spies.transferRepository.updateTransfer).not.toHaveBeenCalled();
+  });
+});
+
+describe('series occurrences (spec 098 FR 8)', () => {
+  const occurrence = { ...mocks.transfer, occurrenceNumber: 2, recurrenceId: 'series-1' };
+  const later = {
+    ...mocks.transfer,
+    id: 'later-3',
+    occurrenceNumber: 3,
+    paid: false,
+    recurrenceId: 'series-1',
+  };
+  const paidLater = { ...later, id: 'later-4', occurrenceNumber: 4, paid: true };
+
+  beforeEach(() => {
+    spies.getTransfer.execute.mockResolvedValue(occurrence);
+    spies.transferRepository.findSeriesTransfersFrom.mockResolvedValue([later, paidLater]);
+  });
+
+  it('SHOULD require a scope for an occurrence of a series', async () => {
+    await expect(setup.execute({ ...base, description: 'x' })).rejects.toThrow(
+      'Choose the edit scope',
+    );
+    expect(spies.transferRepository.updateTransfer).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD change only this occurrence WHEN the scope is ONLY_THIS', async () => {
+    await setup.execute({ ...base, description: 'x', scope: 'ONLY_THIS' as never });
+
+    expect(spies.transferRepository.updateTransfer).toHaveBeenCalledTimes(1);
+    expect(spies.transferRepository.updateSeriesTemplate).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD change this and the later UNPAID occurrences AND the series template WHEN the scope is THIS_AND_NEXT', async () => {
+    await setup.execute({
+      ...base,
+      amountOut: 40000,
+      description: 'New',
+      scope: 'THIS_AND_NEXT' as never,
+    });
+
+    const calls = spies.transferRepository.updateTransfer.mock.calls;
+    expect(calls.map((call) => call[0])).toEqual([occurrence.id, 'later-3']);
+    expect(calls[1][1]).toMatchObject({ amountIn: 40000, amountOut: 40000, description: 'New' });
+    expect(spies.transferRepository.findSeriesTransfersFrom).toHaveBeenCalledWith('series-1', 3);
+    expect(spies.transferRepository.updateSeriesTemplate).toHaveBeenCalledWith('series-1', {
+      amountIn: 40000,
+      amountOut: 40000,
+      description: 'New',
+      notes: null,
+    });
+    expect(spies.gate.invalidate).toHaveBeenCalled();
+  });
+
+  it('SHOULD keep the later amounts in for different currencies AND leave the template amount in empty', async () => {
+    spies.accountRepository.findAccountsByIds.mockResolvedValue([
+      mocks.fromAccount,
+      { ...mocks.toAccount, currency: 'USD' },
+    ]);
+    spies.getTransfer.execute.mockResolvedValue({ ...occurrence, amountIn: 20000 });
+    spies.transferRepository.findSeriesTransfersFrom.mockResolvedValue([
+      { ...later, amountIn: null },
+    ]);
+
+    await setup.execute({ ...base, amountOut: 90000, scope: 'THIS_AND_NEXT' as never });
+
+    expect(spies.transferRepository.updateTransfer.mock.calls[1][1].amountIn).toBeNull();
+    expect(spies.transferRepository.updateSeriesTemplate).toHaveBeenCalledWith('series-1', {
+      amountIn: null,
+      amountOut: 90000,
+      description: expect.any(String),
+      notes: null,
+    });
+  });
+
+  it('SHOULD refuse THIS_AND_NEXT for dates, accounts, fee and paid', async () => {
+    for (const patch of [
+      { dateOut: '2026-12-01' },
+      { toAccountId: 'acc-other' },
+      { fee: 1 },
+      { paid: true },
+    ]) {
+      await expect(
+        setup.execute({ ...base, ...patch, scope: 'THIS_AND_NEXT' as never }),
+      ).rejects.toThrow('Scope only supports amount, description and notes');
+    }
     expect(spies.transferRepository.updateTransfer).not.toHaveBeenCalled();
   });
 });

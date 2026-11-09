@@ -9,8 +9,10 @@ import {
 import TransferEntity from '@finance/domain/entity/TransferEntity';
 import {
   CreateTransferSeriesRepositoryParams,
+  DeleteTransferSeriesFromRepositoryParams,
   IFinanceTransferRepository,
   MaterializeTransferSeriesRepositoryParams,
+  TransferSeriesTemplatePatch,
   WriteTransferRepositoryParams,
 } from '@finance/domain/repository';
 import { OwnerType, RecurrenceFrequency, RecurrenceStatus } from '@db/client';
@@ -74,6 +76,25 @@ export class FinanceTransferRepository implements IFinanceTransferRepository {
     await this.transferDatasource.delete(id);
   }
 
+  async deleteTransferSeriesFrom(params: DeleteTransferSeriesFromRepositoryParams): Promise<void> {
+    await this.transferDatasource.deleteSeriesFrom({
+      delete_series: params.deleteSeries,
+      end_date: params.endDate ? fromCalendarDate(params.endDate) : null,
+      from_number: params.fromNumber,
+      last_generated_number: params.lastGeneratedNumber,
+      recurrence_id: params.recurrenceId,
+    });
+  }
+
+  async findSeriesTransfersFrom(
+    recurrenceId: string,
+    fromNumber: number,
+  ): Promise<TransferEntity[]> {
+    const records = await this.transferDatasource.findSeriesFrom(recurrenceId, fromNumber);
+
+    return records.map((record) => FinanceTransferMapper.toDomain(record));
+  }
+
   async findTransferById(id: string): Promise<TransferEntity | undefined> {
     const record = await this.transferDatasource.findById(id);
 
@@ -101,6 +122,18 @@ export class FinanceTransferRepository implements IFinanceTransferRepository {
         number: occurrence.number,
       })),
       status: params.status as RecurrenceStatus,
+    });
+  }
+
+  async updateSeriesTemplate(
+    recurrenceId: string,
+    patch: TransferSeriesTemplatePatch,
+  ): Promise<void> {
+    await this.transferDatasource.updateSeriesTemplate(recurrenceId, {
+      amount_in: patch.amountIn,
+      description: patch.description,
+      notes: patch.notes,
+      value: patch.amountOut,
     });
   }
 

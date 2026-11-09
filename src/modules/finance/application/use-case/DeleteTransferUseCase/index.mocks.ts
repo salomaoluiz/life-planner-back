@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 
+import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import { GetTransferUseCase } from '@finance/application/use-case/GetTransferUseCase';
 import AccountEntityFixture from '@finance/domain/entity/mocks/AccountEntity.fixture';
 import TransferEntityFixture from '@finance/domain/entity/mocks/TransferEntity.fixture';
@@ -21,7 +22,9 @@ const accessibleOwners = [
 
 const accountRepositoryMock = { findAccountsByIds: jest.fn() };
 const getTransferMock = { execute: jest.fn() };
-const transferRepositoryMock = { deleteTransfer: jest.fn() };
+const gateMock = { invalidate: jest.fn() };
+const recurrenceRepositoryMock = { findById: jest.fn() };
+const transferRepositoryMock = { deleteTransfer: jest.fn(), deleteTransferSeriesFrom: jest.fn() };
 
 let setup: DeleteTransferUseCase;
 
@@ -30,12 +33,21 @@ beforeEach(async () => {
   accountRepositoryMock.findAccountsByIds.mockResolvedValue([fromAccount, toAccount]);
   getTransferMock.execute.mockResolvedValue(transfer);
   transferRepositoryMock.deleteTransfer.mockResolvedValue(undefined);
+  transferRepositoryMock.deleteTransferSeriesFrom.mockResolvedValue(undefined);
+  recurrenceRepositoryMock.findById.mockResolvedValue({
+    frequency: 'MONTHLY',
+    id: 'series-1',
+    ownerId: fromAccount.ownerId,
+    startDate: '2026-09-04',
+  });
 
   const module = await Test.createTestingModule({
     providers: [
       DeleteTransferUseCase,
       { provide: GetTransferUseCase, useValue: getTransferMock },
+      { provide: MaterializationGate, useValue: gateMock },
       { provide: 'IFinanceAccountRepository', useValue: accountRepositoryMock },
+      { provide: 'IFinanceRecurrenceRepository', useValue: recurrenceRepositoryMock },
       { provide: 'IFinanceTransferRepository', useValue: transferRepositoryMock },
     ],
   }).compile();
@@ -46,7 +58,9 @@ beforeEach(async () => {
 const mocks = { accessibleOwners, transfer };
 const spies = {
   accountRepository: accountRepositoryMock,
+  gate: gateMock,
   getTransfer: getTransferMock,
+  recurrenceRepository: recurrenceRepositoryMock,
   transferRepository: transferRepositoryMock,
 };
 

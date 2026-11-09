@@ -7,10 +7,15 @@ import {
   sidesToRepository,
   TRANSFER_ACCOUNT_ARCHIVED,
 } from '@finance/application/service/TransferSides';
+import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import { GetTransferUseCase } from '@finance/application/use-case/GetTransferUseCase';
 import TransferEntity from '@finance/domain/entity/TransferEntity';
-import { AccountStatus } from '@finance/domain/enum';
-import { IFinanceAccountRepository, IFinanceTransferRepository } from '@finance/domain/repository';
+import { AccountStatus, InstallmentEditScope } from '@finance/domain/enum';
+import {
+  IFinanceAccountRepository,
+  IFinanceTransferRepository,
+  WriteTransferRepositoryParams,
+} from '@finance/domain/repository';
 import {
   assertAccounts,
   assertDates,
@@ -20,7 +25,18 @@ import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
 // Rows of an archived account only follow `paid` and `notes` (spec 098 section 4).
-const ARCHIVED_EDITABLE = ['accessibleOwners', 'id', 'notes', 'paid'];
+const ARCHIVED_EDITABLE = ['accessibleOwners', 'id', 'notes', 'paid', 'scope'];
+// THIS_AND_NEXT changes the series template: only what every occurrence shares.
+const SERIES_FIELDS = [
+  'accessibleOwners',
+  'amountIn',
+  'amountOut',
+  'description',
+  'id',
+  'notes',
+  'scope',
+];
+export const SCOPE_FIELDS_MESSAGE = 'Scope only supports amount, description and notes';
 
 export class UpdateTransferUseCase implements UseCaseWithParams<
   UpdateTransferInput,
@@ -31,6 +47,8 @@ export class UpdateTransferUseCase implements UseCaseWithParams<
     private readonly accountRepository: IFinanceAccountRepository,
     @Inject(GetTransferUseCase)
     private readonly getTransferUseCase: GetTransferUseCase,
+    @Inject(MaterializationGate)
+    private readonly materializationGate: MaterializationGate,
     @Inject('IFinanceTransferRepository')
     private readonly transferRepository: IFinanceTransferRepository,
   ) {}
@@ -38,6 +56,23 @@ export class UpdateTransferUseCase implements UseCaseWithParams<
   async execute(params: UpdateTransferInput): Promise<TransferEntity> {
     const input = validate(UpdateTransferSchema, params);
     const stored = await this.getTransferUseCase.execute(input);
+
+    // Spec 034: an occurrence of a series asks the scope.
+    if (stored.recurrenceId !== null && input.scope === undefined) {
+      throw new UnprocessableEntityException('Choose the edit scope');
+    }
+
+    const wide = stored.recurrenceId !== null && input.scope === InstallmentEditScope.THIS_AND_NEXT;
+
+    if (
+      wide &&
+      Object.keys(params).some(
+        (key) =>
+          (params as Record<string, unknown>)[key] !== undefined && !SERIES_FIELDS.includes(key),
+      )
+    ) {
+      throw new UnprocessableEntityException(SCOPE_FIELDS_MESSAGE);
+    }
 
     const touchedKeys = Object.keys(params).filter(
       (key) => (params as Record<string, unknown>)[key] !== undefined,
@@ -89,7 +124,7 @@ export class UpdateTransferUseCase implements UseCaseWithParams<
       }),
     );
 
-    return this.transferRepository.updateTransfer(stored.id, {
+    const write = {
       amountIn,
       amountOut,
       createdBy: stored.createdBy,
@@ -102,6 +137,54 @@ export class UpdateTransferUseCase implements UseCaseWithParams<
       paid,
       recurrenceId: stored.recurrenceId,
       ...sidesToRepository(sides),
+    };
+    const updated = await this.transferRepository.updateTransfer(stored.id, write);
+
+    if (wide) {
+      await this.applyToLaterOccurrences(stored, write, sides);
+    }
+
+    return updated;
+  }
+
+  // THIS_AND_NEXT: the later UNPAID occurrences and the series template follow the shared fields. The amount in follows
+  // the amount out for the same currency; for different ones each occurrence keeps its own (none until it is paid).
+  private async applyToLaterOccurrences(
+    stored: TransferEntity,
+    shared: Pick<WriteTransferRepositoryParams, 'amountOut' | 'description' | 'notes'>,
+    sides: Awaited<ReturnType<typeof loadWritableSides>>,
+  ): Promise<void> {
+    const recurrenceId = stored.recurrenceId as string;
+    const sameCurrency = sides.from.currency === sides.to.currency;
+    const later = (
+      await this.transferRepository.findSeriesTransfersFrom(
+        recurrenceId,
+        (stored.occurrenceNumber as number) + 1,
+      )
+    ).filter((item) => !item.paid);
+
+    for (const item of later) {
+      await this.transferRepository.updateTransfer(item.id, {
+        amountIn: sameCurrency ? shared.amountOut : item.amountIn,
+        amountOut: shared.amountOut,
+        createdBy: item.createdBy,
+        dateIn: item.dateIn,
+        dateOut: item.dateOut,
+        description: shared.description,
+        fee: item.fee,
+        notes: shared.notes,
+        occurrenceNumber: item.occurrenceNumber,
+        paid: item.paid,
+        recurrenceId,
+        ...sidesToRepository(sides),
+      });
+    }
+    await this.transferRepository.updateSeriesTemplate(recurrenceId, {
+      amountIn: sameCurrency ? shared.amountOut : null,
+      amountOut: shared.amountOut,
+      description: shared.description,
+      notes: shared.notes,
     });
+    this.materializationGate.invalidate([sides.from.ownerId]);
   }
 }

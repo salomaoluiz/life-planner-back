@@ -188,7 +188,10 @@ describe('projected recurrences (spec 053)', () => {
 
   it('SHOULD leave the projected transfer sides out of the totals (spec 098)', async () => {
     mocks.projections.executeChunked.mockResolvedValue([
-      mocks.occurrenceOf({ category: { excludeFromTotals: true, id: 'transfer-out' }, date: '2026-11-10' }),
+      mocks.occurrenceOf({
+        category: { excludeFromTotals: true, id: 'transfer-out' },
+        date: '2026-11-10',
+      }),
       mocks.occurrenceOf({ date: '2026-11-11' }),
     ]);
 

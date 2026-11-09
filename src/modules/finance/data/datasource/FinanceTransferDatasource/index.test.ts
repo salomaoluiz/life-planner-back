@@ -347,3 +347,102 @@ describe('Method materializeSeries (spec 098)', () => {
     expect(spies.recurrenceUpdate).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('Method deleteSeriesFrom (spec 098)', () => {
+  const found = [
+    {
+      from_account_id: 'acc-b',
+      id: 'transfer-3',
+      to_account_id: 'acc-a',
+      transactions: [
+        { account_id: 'acc-b', id: 'row-out', paid: true, type: 'EXPENSE', value: 100000 },
+        { account_id: 'acc-a', id: 'row-in', paid: true, type: 'INCOME', value: 20000 },
+      ],
+    },
+    {
+      from_account_id: 'acc-b',
+      id: 'transfer-4',
+      to_account_id: 'acc-a',
+      transactions: [
+        { account_id: 'acc-b', id: 'row-out-4', paid: false, type: 'EXPENSE', value: 100000 },
+      ],
+    },
+  ];
+
+  beforeEach(() => {
+    spies.transferFindMany.mockResolvedValue(found);
+  });
+
+  it('SHOULD delete the rows and transfers from the number, revert only the paid ledgers AND end the series', async () => {
+    const endDate = new Date('2026-10-04T00:00:00.000Z');
+
+    await setup.deleteSeriesFrom({
+      delete_series: false,
+      end_date: endDate,
+      from_number: 3,
+      last_generated_number: 2,
+      recurrence_id: 'series-1',
+    });
+
+    expect(spies.transferFindMany.mock.calls[0][0].where).toEqual({
+      occurrence_number: { gte: 3 },
+      recurrence_id: 'series-1',
+    });
+    expect(spies.transactionDeleteMany).toHaveBeenCalledWith({
+      where: { transfer_id: { in: ['transfer-3', 'transfer-4'] } },
+    });
+    expect(spies.accountUpdate.mock.calls).toEqual([
+      [{ data: { ledger_balance: { increment: -20000 } }, where: { id: 'acc-a' } }],
+      [{ data: { ledger_balance: { increment: 100000 } }, where: { id: 'acc-b' } }],
+    ]);
+    expect(spies.transferDeleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ['transfer-3', 'transfer-4'] } },
+    });
+    expect(spies.recurrenceUpdate).toHaveBeenCalledWith({
+      data: {
+        end_date: endDate,
+        last_generated_number: 2,
+        next_occurrence_date: null,
+        status: 'ENDED',
+      },
+      where: { id: 'series-1' },
+    });
+    expect(spies.recurrenceDelete).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD delete the series row WHEN nothing is left of it', async () => {
+    await setup.deleteSeriesFrom({
+      delete_series: true,
+      end_date: null,
+      from_number: 1,
+      last_generated_number: 0,
+      recurrence_id: 'series-1',
+    });
+
+    expect(spies.recurrenceDelete).toHaveBeenCalledWith({ where: { id: 'series-1' } });
+    expect(spies.recurrenceUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe('series reads and template (spec 098)', () => {
+  it('SHOULD read the occurrences of a series from a number, oldest first', async () => {
+    spies.transferFindMany.mockResolvedValue([mocks.transferRecord]);
+
+    expect(await setup.findSeriesFrom('series-1', 3)).toEqual([mocks.transferRecord]);
+    expect(spies.transferFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { occurrence_number: 'asc' },
+        where: { occurrence_number: { gte: 3 }, recurrence_id: 'series-1' },
+      }),
+    );
+  });
+
+  it('SHOULD patch the series template', async () => {
+    await setup.updateSeriesTemplate('series-1', { amount_in: null, value: 90000 });
+
+    expect(spies.recurrenceUpdate).toHaveBeenCalledWith({
+      data: { amount_in: null, value: 90000 },
+      where: { id: 'series-1' },
+    });
+  });
+});

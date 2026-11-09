@@ -66,12 +66,33 @@ export interface MaterializeTransferSeriesDatasourceParams {
   status: RecurrenceStatus;
 }
 
+export interface DeleteTransferSeriesFromDatasourceParams {
+  delete_series: boolean;
+  end_date: Date | null;
+  from_number: number;
+  last_generated_number: number;
+  recurrence_id: string;
+}
+
+export interface UpdateTransferSeriesTemplateDatasourceParams {
+  amount_in?: null | number;
+  description?: string;
+  notes?: null | string;
+  value?: number;
+}
+
 export interface IFinanceTransferDatasource {
   createSeries(params: CreateTransferSeriesDatasourceParams): Promise<FinancialTransferRecord>;
   create(params: WriteTransferDatasourceParams): Promise<FinancialTransferRecord>;
   delete(id: string): Promise<void>;
+  deleteSeriesFrom(params: DeleteTransferSeriesFromDatasourceParams): Promise<void>;
   findById(id: string): Promise<FinancialTransferRecord | null>;
+  findSeriesFrom(recurrenceId: string, fromNumber: number): Promise<FinancialTransferRecord[]>;
   findByIds(ids: string[]): Promise<FinancialTransferRecord[]>;
   materializeSeries(params: MaterializeTransferSeriesDatasourceParams): Promise<void>;
+  updateSeriesTemplate(
+    recurrenceId: string,
+    patch: UpdateTransferSeriesTemplateDatasourceParams,
+  ): Promise<void>;
   update(id: string, params: WriteTransferDatasourceParams): Promise<FinancialTransferRecord>;
 }

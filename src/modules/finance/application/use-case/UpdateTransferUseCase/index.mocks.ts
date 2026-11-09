@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 
+import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import { GetTransferUseCase } from '@finance/application/use-case/GetTransferUseCase';
 import AccountEntityFixture from '@finance/domain/entity/mocks/AccountEntity.fixture';
 import TransferEntityFixture from '@finance/domain/entity/mocks/TransferEntity.fixture';
@@ -23,7 +24,12 @@ const accessibleOwners = [
 
 const accountRepositoryMock = { findAccountsByIds: jest.fn() };
 const getTransferMock = { execute: jest.fn() };
-const transferRepositoryMock = { updateTransfer: jest.fn() };
+const gateMock = { invalidate: jest.fn() };
+const transferRepositoryMock = {
+  findSeriesTransfersFrom: jest.fn(),
+  updateSeriesTemplate: jest.fn(),
+  updateTransfer: jest.fn(),
+};
 
 let setup: UpdateTransferUseCase;
 
@@ -34,11 +40,14 @@ beforeEach(async () => {
   );
   getTransferMock.execute.mockResolvedValue(transfer);
   transferRepositoryMock.updateTransfer.mockResolvedValue(transfer);
+  transferRepositoryMock.findSeriesTransfersFrom.mockResolvedValue([]);
+  transferRepositoryMock.updateSeriesTemplate.mockResolvedValue(undefined);
 
   const module = await Test.createTestingModule({
     providers: [
       UpdateTransferUseCase,
       { provide: GetTransferUseCase, useValue: getTransferMock },
+      { provide: MaterializationGate, useValue: gateMock },
       { provide: 'IFinanceAccountRepository', useValue: accountRepositoryMock },
       { provide: 'IFinanceTransferRepository', useValue: transferRepositoryMock },
     ],
@@ -50,6 +59,7 @@ beforeEach(async () => {
 const mocks = { accessibleOwners, fromAccount, otherAccount, toAccount, transfer };
 const spies = {
   accountRepository: accountRepositoryMock,
+  gate: gateMock,
   getTransfer: getTransferMock,
   transferRepository: transferRepositoryMock,
 };

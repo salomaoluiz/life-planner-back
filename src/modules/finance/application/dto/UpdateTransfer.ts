@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { InstallmentEditScope } from '@finance/domain/enum';
 import {
   AccessibleOwnersSchema,
   CalendarDateSchema,
@@ -21,6 +22,8 @@ export const UpdateTransferSchema = z.object({
   id: z.string().min(1),
   notes: NotesSchema.optional(),
   paid: z.boolean().optional(),
+  // Required on an occurrence of a series (spec 034 scopes).
+  scope: z.enum(InstallmentEditScope).optional(),
   toAccountId: z.string().min(1).optional(),
 });
 

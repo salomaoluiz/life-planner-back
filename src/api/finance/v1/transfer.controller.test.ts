@@ -13,15 +13,21 @@ it('SHOULD be served at /finance/transfers under URI version 1', () => {
 });
 
 it('SHOULD validate the body AND create with the JWT user', async () => {
-  expect(await setup.create(mocks.request, mocks.body as never)).toBe(mocks.response);
-  expect(mocks.transferService.create).toHaveBeenCalledWith(mocks.request.user.id, mocks.body);
+  expect(await setup.create(mocks.request, mocks.body as never, { today: '2026-11-09' })).toBe(
+    mocks.response,
+  );
+  expect(mocks.transferService.create).toHaveBeenCalledWith(
+    mocks.request.user.id,
+    mocks.body,
+    '2026-11-09',
+  );
 });
 
 it('SHOULD throw ValidationError WHEN the body has an unknown key or a missing amount', async () => {
   await expect(
-    setup.create(mocks.request, { ...mocks.body, owner: 'USER' } as never),
+    setup.create(mocks.request, { ...mocks.body, owner: 'USER' } as never, {}),
   ).rejects.toThrow(ValidationError);
-  await expect(setup.create(mocks.request, { description: 'x' } as never)).rejects.toThrow(
+  await expect(setup.create(mocks.request, { description: 'x' } as never, {})).rejects.toThrow(
     ValidationError,
   );
   expect(mocks.transferService.create).not.toHaveBeenCalled();
@@ -29,10 +35,10 @@ it('SHOULD throw ValidationError WHEN the body has an unknown key or a missing a
 
 it('SHOULD read AND delete by id with the JWT user', async () => {
   await setup.findById(mocks.request, id);
-  await setup.delete(mocks.request, id);
+  await setup.delete(mocks.request, id, {});
 
   expect(mocks.transferService.findById).toHaveBeenCalledWith(mocks.request.user.id, id);
-  expect(mocks.transferService.delete).toHaveBeenCalledWith(mocks.request.user.id, id);
+  expect(mocks.transferService.delete).toHaveBeenCalledWith(mocks.request.user.id, id, undefined);
 });
 
 it('SHOULD update with the validated patch AND reject an empty patch', async () => {
@@ -43,4 +49,25 @@ it('SHOULD update with the validated patch AND reject an empty patch', async () 
     paid: false,
   });
   await expect(setup.update(mocks.request, id, {} as never)).rejects.toThrow(ValidationError);
+});
+
+it('SHOULD accept a recurrence on create AND pass the delete scope', async () => {
+  await setup.create(
+    mocks.request,
+    { ...mocks.body, recurrence: { frequency: 'MONTHLY' } } as never,
+    {},
+  );
+  await setup.delete(mocks.request, id, { scope: 'THIS_AND_NEXT' });
+
+  expect(mocks.transferService.create).toHaveBeenCalledWith(
+    mocks.request.user.id,
+    { ...mocks.body, recurrence: { frequency: 'MONTHLY' } },
+    undefined,
+  );
+  expect(mocks.transferService.delete).toHaveBeenCalledWith(
+    mocks.request.user.id,
+    id,
+    'THIS_AND_NEXT',
+  );
+  await expect(setup.delete(mocks.request, id, { scope: 'ALL' })).rejects.toThrow(ValidationError);
 });

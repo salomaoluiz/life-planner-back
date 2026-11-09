@@ -108,3 +108,56 @@ it('SHOULD materialize a series with Date occurrences', async () => {
     expect.objectContaining({ next_occurrence_date: null, occurrences: [] }),
   );
 });
+
+it('SHOULD delete the occurrences of a series from a number with the end date as a Date', async () => {
+  await setup.deleteTransferSeriesFrom({
+    deleteSeries: false,
+    endDate: '2026-10-04',
+    fromNumber: 3,
+    lastGeneratedNumber: 2,
+    recurrenceId: 'series-1',
+  });
+  await setup.deleteTransferSeriesFrom({
+    deleteSeries: true,
+    endDate: null,
+    fromNumber: 1,
+    lastGeneratedNumber: 0,
+    recurrenceId: 'series-1',
+  });
+
+  expect(spies.deleteSeriesFrom).toHaveBeenNthCalledWith(1, {
+    delete_series: false,
+    end_date: new Date('2026-10-04T00:00:00.000Z'),
+    from_number: 3,
+    last_generated_number: 2,
+    recurrence_id: 'series-1',
+  });
+  expect(spies.deleteSeriesFrom).toHaveBeenNthCalledWith(
+    2,
+    expect.objectContaining({ delete_series: true, end_date: null }),
+  );
+});
+
+it('SHOULD read the occurrences of a series from a number AND map them', async () => {
+  spies.findSeriesFrom.mockResolvedValue([mocks.record]);
+
+  const result = await setup.findSeriesTransfersFrom('series-1', 3);
+
+  expect(spies.findSeriesFrom).toHaveBeenCalledWith('series-1', 3);
+  expect(result.map((item) => item.id)).toEqual(['transfer-1']);
+});
+
+it('SHOULD rename the template fields for the datasource', async () => {
+  await setup.updateSeriesTemplate('series-1', {
+    amountIn: null,
+    amountOut: 90000,
+    description: 'New',
+  });
+
+  expect(spies.updateSeriesTemplate).toHaveBeenCalledWith('series-1', {
+    amount_in: null,
+    description: 'New',
+    notes: undefined,
+    value: 90000,
+  });
+});

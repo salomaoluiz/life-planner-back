@@ -7,6 +7,7 @@ import {
   UpdateTransferApiInput,
 } from '@api/finance/v1/dto/transfer.dto';
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
+import { resolveToday } from '@api/finance/v1/finance-query';
 import { toTransactionItem, toTransactionLookups } from '@api/finance/v1/transaction.service';
 import { TransferLookupsService } from '@api/finance/v1/transfer-lookups.service';
 import { CreateTransferUseCase } from '@finance/application/use-case/CreateTransferUseCase';
@@ -16,6 +17,7 @@ import { GetTransferUseCase } from '@finance/application/use-case/GetTransferUse
 import { UpdateTransferUseCase } from '@finance/application/use-case/UpdateTransferUseCase';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import TransferEntity from '@finance/domain/entity/TransferEntity';
+import { InstallmentEditScope } from '@finance/domain/enum';
 import { computeRate } from '@finance/domain/service/TransferRate';
 
 function toTransferItem(transfer: TransferEntity): TransferOutputItem {
@@ -57,21 +59,26 @@ export class TransferService {
     private readonly updateTransferUseCase: UpdateTransferUseCase,
   ) {}
 
-  async create(userId: string, input: CreateTransferApiInput): Promise<TransferWithRows> {
+  async create(
+    userId: string,
+    input: CreateTransferApiInput,
+    today?: string,
+  ): Promise<TransferWithRows> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
     const transfer = await this.createTransferUseCase.execute({
       ...input,
       accessibleOwners,
       requesterId: userId,
+      today: resolveToday(today),
     });
 
     return this.toResponse(accessibleOwners, transfer);
   }
 
-  async delete(userId: string, id: string): Promise<void> {
+  async delete(userId: string, id: string, scope?: InstallmentEditScope): Promise<void> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
-    await this.deleteTransferUseCase.execute({ accessibleOwners, id });
+    await this.deleteTransferUseCase.execute({ accessibleOwners, id, scope });
   }
 
   async findById(userId: string, id: string): Promise<TransferWithRows> {

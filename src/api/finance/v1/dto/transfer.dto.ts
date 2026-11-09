@@ -9,6 +9,7 @@ import {
   NotesApiSchema,
   ValueApiSchema,
 } from '@api/finance/v1/dto/finance-fields';
+import { InstallmentEditScope, RecurrenceFrequency } from '@finance/domain/enum';
 import {
   TransactionItemApiSchema,
   TransactionLookupsApiSchema,
@@ -25,6 +26,13 @@ export const CreateTransferApiSchema = z.strictObject({
   fromAccountId: z.uuid(),
   notes: NotesApiSchema.optional(),
   paid: z.boolean(),
+  // Spec 098 FR 8: a transfer series whose first occurrence is `dateOut`.
+  recurrence: z
+    .strictObject({
+      endDate: CalendarDateApiSchema.optional(),
+      frequency: z.enum(RecurrenceFrequency),
+    })
+    .optional(),
   toAccountId: z.uuid(),
 });
 
@@ -40,6 +48,8 @@ export const UpdateTransferApiSchema = z
     fromAccountId: z.uuid(),
     notes: NotesApiSchema,
     paid: z.boolean(),
+    // Required on an occurrence of a series (spec 034 scopes).
+    scope: z.enum(InstallmentEditScope),
     toAccountId: z.uuid(),
   })
   .partial()

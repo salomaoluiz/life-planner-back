@@ -10,12 +10,13 @@ const body = {
 };
 
 it('SHOULD add the accessible owners AND the requester on create, then return the item, its rows and lookups', async () => {
-  const result = await setup.create(mocks.userId, body);
+  const result = await setup.create(mocks.userId, body, '2026-11-09');
 
   expect(spies.createTransfer.execute).toHaveBeenCalledWith({
     ...body,
     accessibleOwners: mocks.accessibleOwners,
     requesterId: mocks.userId,
+    today: '2026-11-09',
   });
   expect(spies.getTransaction.execute).toHaveBeenCalledTimes(mocks.sameCurrency.rowIds.length);
   expect(result.item).toMatchObject({
@@ -54,7 +55,7 @@ it('SHOULD attach the transfer lookups to the response', async () => {
 
 it('SHOULD update AND delete with the accessible owners', async () => {
   await setup.update(mocks.userId, 'id', { paid: false });
-  await setup.delete(mocks.userId, 'id');
+  await setup.delete(mocks.userId, 'id', 'THIS_AND_NEXT' as never);
 
   expect(spies.updateTransfer.execute).toHaveBeenCalledWith({
     accessibleOwners: mocks.accessibleOwners,
@@ -64,5 +65,6 @@ it('SHOULD update AND delete with the accessible owners', async () => {
   expect(spies.deleteTransfer.execute).toHaveBeenCalledWith({
     accessibleOwners: mocks.accessibleOwners,
     id: 'id',
+    scope: 'THIS_AND_NEXT',
   });
 });

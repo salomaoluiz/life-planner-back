@@ -9,10 +9,12 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   Request,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
+import { z } from 'zod';
 
 import {
   CreateTransferApiSchema,
@@ -22,9 +24,14 @@ import {
   UpdateTransferBody,
 } from '@api/finance/v1/dto/transfer.dto';
 import { FinanceEtag } from '@api/finance/v1/finance-etag';
+import { TodayQuerySchema } from '@api/finance/v1/finance-query';
 import { TransferService } from '@api/finance/v1/transfer.service';
+import { InstallmentEditScope } from '@finance/domain/enum';
 import { JwtPayload } from '@shared/infra/jwt/types';
 import { validate } from '@shared/infra/validation';
+
+// `scope` is required (ONLY_THIS or THIS_AND_NEXT) to delete an occurrence of a series (spec 034 FR 29).
+const DeleteTransferQuerySchema = z.object({ scope: z.enum(InstallmentEditScope).optional() });
 
 // Spec 098: one movement between two accounts; its rows are listed through `/finance/transactions`.
 @ApiBearerAuth('JWT')
@@ -38,15 +45,27 @@ export class TransferController {
 
   @Post()
   @ZodResponse({ status: 201, type: TransferWithRowsOutput })
-  async create(@Request() req: JwtPayload & Request, @Body() body: CreateTransferBody) {
-    return this.transferService.create(req.user.id, validate(CreateTransferApiSchema, body));
+  async create(
+    @Request() req: JwtPayload & Request,
+    @Body() body: CreateTransferBody,
+    @Query() query: Record<string, unknown>,
+  ) {
+    const { today } = validate(TodayQuerySchema, query);
+
+    return this.transferService.create(req.user.id, validate(CreateTransferApiSchema, body), today);
   }
 
   @ApiNoContentResponse()
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async delete(@Request() req: JwtPayload & Request, @Param('id', ParseUUIDPipe) id: string) {
-    await this.transferService.delete(req.user.id, id);
+  async delete(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: Record<string, unknown>,
+  ) {
+    const { scope } = validate(DeleteTransferQuerySchema, query);
+
+    await this.transferService.delete(req.user.id, id, scope);
   }
 
   @Get(':id')

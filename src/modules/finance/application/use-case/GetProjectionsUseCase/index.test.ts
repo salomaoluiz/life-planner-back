@@ -308,7 +308,11 @@ describe('transfer series (spec 098)', () => {
     expect(result).toHaveLength(2);
     const out = result.find((item) => item.transferSide === 'OUT');
     const inSide = result.find((item) => item.transferSide === 'IN');
-    expect(out).toMatchObject({ account: mocks.series.account, amountPending: false, value: mocks.series.value });
+    expect(out).toMatchObject({
+      account: mocks.series.account,
+      amountPending: false,
+      value: mocks.series.value,
+    });
     expect(inSide).toMatchObject({
       account: { icon: 'bank', id: 'acc-to', name: 'Savings' },
       amountPending: true,
@@ -322,7 +326,9 @@ describe('transfer series (spec 098)', () => {
   });
 
   it('SHOULD give the in side the fixed amount WHEN the series has one', async () => {
-    mocks.recurrenceRepository.findByOwners.mockResolvedValue([{ ...transferSeries(), amountIn: mocks.series.value }]);
+    mocks.recurrenceRepository.findByOwners.mockResolvedValue([
+      { ...transferSeries(), amountIn: mocks.series.value },
+    ]);
 
     const result = await setup.execute({ ...base, to: '2026-11' });
 

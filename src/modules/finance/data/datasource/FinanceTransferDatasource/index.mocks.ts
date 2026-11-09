@@ -55,6 +55,7 @@ const transferRecord = {
 const accountFindManySpy = jest.fn();
 const accountUpdateSpy = jest.fn();
 const recurrenceCreateSpy = jest.fn();
+const recurrenceDeleteSpy = jest.fn();
 const recurrenceUpdateSpy = jest.fn();
 const queryRawSpy = jest.fn();
 const transactionCreateSpy = jest.fn();
@@ -62,6 +63,7 @@ const transactionDeleteSpy = jest.fn();
 const transactionDeleteManySpy = jest.fn();
 const transactionUpdateSpy = jest.fn();
 const transferCreateSpy = jest.fn();
+const transferDeleteManySpy = jest.fn();
 const transferDeleteSpy = jest.fn();
 const transferFindFirstSpy = jest.fn();
 const transferFindManySpy = jest.fn();
@@ -76,7 +78,11 @@ const clientMock = {
   $queryRaw: queryRawSpy,
   $transaction: transactionSpy,
   financialAccount: { findMany: accountFindManySpy, update: accountUpdateSpy },
-  financialRecurrence: { create: recurrenceCreateSpy, update: recurrenceUpdateSpy },
+  financialRecurrence: {
+    create: recurrenceCreateSpy,
+    delete: recurrenceDeleteSpy,
+    update: recurrenceUpdateSpy,
+  },
   financialTransaction: {
     create: transactionCreateSpy,
     delete: transactionDeleteSpy,
@@ -86,6 +92,7 @@ const clientMock = {
   financialTransfer: {
     create: transferCreateSpy,
     delete: transferDeleteSpy,
+    deleteMany: transferDeleteManySpy,
     findFirst: transferFindFirstSpy,
     findMany: transferFindManySpy,
     findUnique: transferFindUniqueSpy,
@@ -118,6 +125,7 @@ const spies = {
   accountFindMany: accountFindManySpy,
   accountUpdate: accountUpdateSpy,
   recurrenceCreate: recurrenceCreateSpy,
+  recurrenceDelete: recurrenceDeleteSpy,
   recurrenceUpdate: recurrenceUpdateSpy,
   queryRaw: queryRawSpy,
   transactionCreate: transactionCreateSpy,
@@ -126,6 +134,7 @@ const spies = {
   transactionUpdate: transactionUpdateSpy,
   transferCreate: transferCreateSpy,
   transferDelete: transferDeleteSpy,
+  transferDeleteMany: transferDeleteManySpy,
   transferFindFirst: transferFindFirstSpy,
   transferFindMany: transferFindManySpy,
   transferFindUnique: transferFindUniqueSpy,
