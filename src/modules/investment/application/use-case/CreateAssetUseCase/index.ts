@@ -3,6 +3,7 @@ import { ConflictException, ForbiddenException, Inject } from '@nestjs/common';
 import { CreateAssetInput, CreateAssetSchema } from '@investment/application/dto/CreateAsset';
 import { AssetView, detailToListRow, toAssetView } from '@investment/application/service/AssetView';
 import { ensureOwnerWritable } from '@investment/application/service/OwnerWritable';
+import { today } from '@investment/application/service/Today';
 import { hasOwnerAccess } from '@investment/domain/entity/OwnerAccess';
 import { IInvestmentRepository } from '@investment/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -36,7 +37,7 @@ export class CreateAssetUseCase implements UseCaseWithParams<CreateAssetInput, A
       assetClass: input.assetClass,
       currency: input.currency,
       initialValuation: input.currentUnitPrice
-        ? { date: new Date().toISOString().slice(0, 10), unitPrice: input.currentUnitPrice }
+        ? { date: today(), unitPrice: input.currentUnitPrice }
         : undefined,
       name: input.name,
       owner: input.owner,
