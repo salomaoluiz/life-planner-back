@@ -128,6 +128,7 @@ export class FinanceRecurrenceRepository implements IFinanceRecurrenceRepository
       account_id: filter.accountId,
       credit_card_id: filter.creditCardId,
       status: filter.status,
+      transfers: filter.transfers,
     });
 
     return result.map((row) => FinanceRecurrenceMapper.toDomain(row));

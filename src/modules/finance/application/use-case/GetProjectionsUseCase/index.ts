@@ -92,7 +92,10 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
         : [],
     );
     const series = (
-      await this.recurrenceRepository.findByOwners(owners, { status: RecurrenceStatus.ACTIVE })
+      await this.recurrenceRepository.findByOwners(owners, {
+        status: RecurrenceStatus.ACTIVE,
+        transfers: 'ALL',
+      })
     ).filter((item) => matchesSeries(item, filter, categoryIds, searchCategoryIds));
 
     if (series.length === 0 || from > to) {

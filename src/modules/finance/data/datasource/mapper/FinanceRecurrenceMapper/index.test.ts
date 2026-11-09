@@ -6,6 +6,7 @@ describe('FinanceRecurrenceMapper.toDomain', () => {
     expect(FinanceRecurrenceMapper.toDomain(mocks.raw)).toEqual({
       account: { icon: 'bank', id: mocks.raw.account?.id, name: 'Checking' },
       accountId: mocks.raw.account_id,
+      amountIn: null,
       category: {
         excludeFromTotals: false,
         icon: 'home',
@@ -35,6 +36,8 @@ describe('FinanceRecurrenceMapper.toDomain', () => {
       startDate: '2026-10-05',
       status: 'ACTIVE',
       tags: [],
+      toAccount: null,
+      toAccountId: null,
       type: 'EXPENSE',
       updatedAt: mocks.raw.updated_at,
       value: 200000,
@@ -78,5 +81,20 @@ describe('FinanceRecurrenceMapper.toDomain notes', () => {
     const raw = { ...mocks.raw, notes: 'Casa\nAeroporto' };
 
     expect(FinanceRecurrenceMapper.toDomain(raw).notes).toBe('Casa\nAeroporto');
+  });
+});
+
+it('SHOULD map the destination of a transfer series (spec 098)', () => {
+  const entity = FinanceRecurrenceMapper.toDomain({
+    ...mocks.raw,
+    amount_in: 20000,
+    to_account: { icon: 'bank', id: 'acc-to', name: 'Savings' },
+    to_account_id: 'acc-to',
+  });
+
+  expect(entity).toMatchObject({
+    amountIn: 20000,
+    toAccount: { icon: 'bank', id: 'acc-to', name: 'Savings' },
+    toAccountId: 'acc-to',
   });
 });

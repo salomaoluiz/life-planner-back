@@ -76,12 +76,17 @@ export type FinancialRecurrenceWithRelations = {
     'exclude_from_totals' | 'icon_color' | 'icon' | 'id' | 'name' | 'system_key'
   >;
   credit_card: null | Pick<FinancialCreditCard, 'color' | 'id' | 'last_digits' | 'title'>;
+  // Spec 098: the destination of a transfer series.
+  to_account: null | Pick<FinancialAccount, 'icon' | 'id' | 'name'>;
   tags?: { tag: { id: string; name: string } }[];
 } & FinancialRecurrence;
 export interface FindRecurrencesDatasourceFilter {
+  // For a transfer series it matches the origin OR the destination.
   account_id?: string;
   credit_card_id?: string;
   status?: RecurrenceStatus;
+  // Spec 098: transfer series (`to_account_id` set) are left out unless asked: ALL keeps both, ONLY just them.
+  transfers?: 'ALL' | 'EXCLUDE' | 'ONLY';
 }
 export interface FutureOccurrenceNumberRow {
   occurrence_number: number;

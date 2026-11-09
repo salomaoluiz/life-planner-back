@@ -95,9 +95,12 @@ interface CreateRecurrenceRepositoryParams {
   value: number;
 }
 interface FindRecurrencesFilter {
+  // For a transfer series it matches the origin OR the destination.
   accountId?: string;
   creditCardId?: string;
   status?: RecurrenceStatus;
+  // Spec 098: transfer series are left out unless asked (ALL = both kinds, ONLY = just transfers).
+  transfers?: 'ALL' | 'EXCLUDE' | 'ONLY';
 }
 interface FutureOccurrenceNumber {
   occurrenceNumber: number;

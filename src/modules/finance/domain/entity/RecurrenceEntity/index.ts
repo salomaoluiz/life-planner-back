@@ -11,6 +11,8 @@ import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 interface IRecurrenceEntity {
   account: null | TransactionAccountSummary;
   accountId: null | string;
+  // Spec 098: only for a transfer series (`value` is then the amount out).
+  amountIn?: null | number;
   category: TransactionCategorySummary;
   categoryId: string;
   createdAt: Date;
@@ -33,6 +35,8 @@ interface IRecurrenceEntity {
   startDate: string;
   status: RecurrenceStatus;
   tags?: TagRef[];
+  toAccount?: null | TransactionAccountSummary;
+  toAccountId?: null | string;
   type: TransactionType;
   updatedAt: Date;
   value: number;
@@ -43,6 +47,8 @@ interface IRecurrenceEntity {
 class RecurrenceEntity {
   account: null | TransactionAccountSummary;
   accountId: null | string;
+  // Transfer series with the same currency on both sides: the fixed amount in (null otherwise).
+  amountIn: null | number;
   category: TransactionCategorySummary;
   categoryId: string;
   createdAt: Date;
@@ -72,6 +78,9 @@ class RecurrenceEntity {
   status: RecurrenceStatus;
   // Spec 043: the tags the occurrences of the series get, in the stored order.
   tags: TagRef[];
+  // Spec 098: set = transfer series from `accountId` to `toAccountId`.
+  toAccount: null | TransactionAccountSummary;
+  toAccountId: null | string;
   type: TransactionType;
   updatedAt: Date;
   // Integer cents, always > 0.
@@ -80,6 +89,7 @@ class RecurrenceEntity {
   constructor(params: IRecurrenceEntity) {
     this.account = params.account;
     this.accountId = params.accountId;
+    this.amountIn = params.amountIn ?? null;
     this.category = params.category;
     this.categoryId = params.categoryId;
     this.createdAt = params.createdAt;
@@ -102,6 +112,8 @@ class RecurrenceEntity {
     this.startDate = params.startDate;
     this.status = params.status;
     this.tags = params.tags ?? [];
+    this.toAccount = params.toAccount ?? null;
+    this.toAccountId = params.toAccountId ?? null;
     this.type = params.type;
     this.updatedAt = params.updatedAt;
     this.value = params.value;

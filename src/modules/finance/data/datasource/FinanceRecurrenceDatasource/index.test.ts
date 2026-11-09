@@ -124,9 +124,23 @@ describe('reads', () => {
     expect(spies.recurrenceFindMany.mock.calls[0][0].where).toEqual({
       AND: [
         { OR: [{ owner: 'USER', owner_id: 'owner-1' }] },
-        { account_id: 'account-1', credit_card_id: undefined, status: 'ACTIVE' },
+        { credit_card_id: undefined, status: 'ACTIVE' },
+        { OR: [{ account_id: 'account-1' }, { to_account_id: 'account-1' }] },
+        { to_account_id: null },
       ],
     });
+  });
+
+  it.each([
+    ['ALL', []],
+    ['ONLY', [{ to_account_id: { not: null } }]],
+    ['EXCLUDE', [{ to_account_id: null }]],
+  ] as const)('SHOULD handle transfer series with transfers=%s (spec 098)', async (transfers, extra) => {
+    spies.recurrenceFindMany.mockResolvedValue([]);
+
+    await setup.findByOwners(owners, { transfers });
+
+    expect(spies.recurrenceFindMany.mock.calls[0][0].where.AND.slice(2)).toEqual(extra);
   });
 
   it('SHOULD only look for ACTIVE series due up to the horizon', async () => {
@@ -138,7 +152,7 @@ describe('reads', () => {
     expect(spies.recurrenceFindMany.mock.calls[0][0].where).toEqual({
       AND: [
         { OR: [{ owner: 'USER', owner_id: 'owner-1' }] },
-        { next_occurrence_date: { lte: horizon }, status: 'ACTIVE' },
+        { next_occurrence_date: { lte: horizon }, status: 'ACTIVE', to_account_id: null },
       ],
     });
   });
