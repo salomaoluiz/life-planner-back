@@ -96,3 +96,7 @@ Migration `card_invoice_totals`: table `financial_card_invoice_totals` (`Financi
 ## Projected card purchases (spec 096)
 
 `financial_transactions.projected` and `financial_recurrences.projected` (`boolean NOT NULL DEFAULT false`) with CHECKs: a projected row is a card EXPENSE with no installment plan, refund, prepayment or payment method; a projected series is a card EXPENSE series. `financial_card_invoice_totals` gains `projected_amount` and `projected_count`; its `income/expense/early_paid/purchase_count` count effective rows only and the row stays while `purchase_count + projected_count > 0` (`refreshCardInvoiceTotals`; `yarn perf:invoice-totals:check` compares all columns).
+
+## Transfers (spec 098)
+
+`financial_transfers` (CHECKs: accounts differ, `date_in >= date_out`, positive amounts/fee, notes <= 1000; account FKs `SET NULL`, recurrence FK `RESTRICT`, unique `(recurrence_id, occurrence_number)`), `financial_transactions.transfer_id` (FK `RESTRICT`, indexed; transfer rows carry no `recurrence_id`, so the series position lives on the transfer), `financial_recurrences.to_account_id` (indexed, CHECK exclusive with `credit_card_id`) and `amount_in`. The enum values were added in `20261109000100` and the categories seeded in `20261109000200` (a new enum value cannot be used in the transaction that adds it); fixed ids `…0006` (out), `…0007` (in), `…0008` (fee) mirror `SYSTEM_CATEGORY_IDS`.

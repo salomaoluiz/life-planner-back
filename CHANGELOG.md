@@ -3,6 +3,19 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.5.0] - 2026-11-09
+
+### Added
+
+- Transfers between accounts: `POST/GET/PATCH/DELETE /finance/transfers` write one out row, one in row and an optional fee row, with an amount in per account currency, a derived exchange rate, one `paid` flag and the system categories `TRANSFER_OUT`, `TRANSFER_IN` and `TRANSFER_FEE` (spec 098).
+- Transfer series: `recurrence` on the create body, occurrences materialized with the finance reads, projections for both sides and `scope` (`ONLY_THIS` or `THIS_AND_NEXT`) on edit and delete (spec 098).
+- Transaction lists and the month carry `transferId` and `lookups.transfers`, with `counterpartHidden` when only one side is readable; new filter `kind=TRANSFER` (spec 098).
+- CSV export has a `Transfer ID` column and the import groups transfer rows into whole transfers (spec 098).
+
+### Changed
+
+- `PATCH` and `DELETE /finance/transactions/:id` on a transfer row answer `422 TRANSFER_ROW_USE_TRANSFER` (spec 098).
+
 ## [3.4.0] - 2026-11-05
 
 ### Added
