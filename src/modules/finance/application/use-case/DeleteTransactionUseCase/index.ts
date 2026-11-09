@@ -7,7 +7,11 @@ import {
 import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
-import { CARD_CREDIT_KEYS } from '@finance/domain/entity/SystemCategory';
+import {
+  CARD_CREDIT_KEYS,
+  TRANSFER_KEYS,
+  TRANSFER_ROW_USE_TRANSFER,
+} from '@finance/domain/entity/SystemCategory';
 import { InstallmentEditScope, SystemCategoryKey } from '@finance/domain/enum';
 import {
   IFinanceCardCreditRepository,
@@ -50,6 +54,14 @@ export class DeleteTransactionUseCase implements UseCaseWithParams<DeleteTransac
     }
     if (transaction.recurrenceId && input.scope !== InstallmentEditScope.ONLY_THIS) {
       throw new UnprocessableEntityException('Use the recurrence to delete more occurrences');
+    }
+
+    // Spec 098 FR 6: a transfer row goes away only with its transfer.
+    if (
+      transaction.category.systemKey !== null &&
+      TRANSFER_KEYS.includes(transaction.category.systemKey)
+    ) {
+      throw new UnprocessableEntityException(TRANSFER_ROW_USE_TRANSFER);
     }
 
     // The payment transaction goes away only with the payment itself.

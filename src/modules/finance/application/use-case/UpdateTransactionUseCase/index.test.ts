@@ -186,6 +186,25 @@ describe('archived accounts and balance adjustments (spec 028)', () => {
   });
 });
 
+describe('transfer rows (spec 098)', () => {
+  it.each([SystemCategoryKey.TRANSFER_OUT, SystemCategoryKey.TRANSFER_IN, SystemCategoryKey.TRANSFER_FEE])(
+    'SHOULD refuse to edit a %s row with TRANSFER_ROW_USE_TRANSFER (value AND paid) AND update nothing',
+    async (systemKey) => {
+      for (const patch of [{ value: 1 }, { paid: false }]) {
+        mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce({
+          ...mocks.transaction,
+          category: { ...mocks.transaction.category, systemKey },
+        });
+
+        await expect(run(patch)).rejects.toThrow(
+          new UnprocessableEntityException('TRANSFER_ROW_USE_TRANSFER'),
+        );
+      }
+      expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
+    },
+  );
+});
+
 describe('card purchases and the invoice payment (spec 029)', () => {
   it('SHOULD refuse to edit the INVOICE_PAYMENT transaction (422) AND update nothing', async () => {
     mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce({

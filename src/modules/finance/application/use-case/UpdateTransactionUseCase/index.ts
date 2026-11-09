@@ -16,6 +16,7 @@ import { TransactionWithLimit } from '@finance/application/use-case/CreateTransa
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
+import { TRANSFER_KEYS, TRANSFER_ROW_USE_TRANSFER } from '@finance/domain/entity/SystemCategory';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { InstallmentEditScope, SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 import {
@@ -62,6 +63,14 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
     }
 
     ensureOwnerWritable(input.accessibleOwners, transaction);
+
+    // Spec 098 FR 6: the rows of a transfer, `paid` included, change through the transfer.
+    if (
+      transaction.category.systemKey !== null &&
+      TRANSFER_KEYS.includes(transaction.category.systemKey)
+    ) {
+      throw new UnprocessableEntityException(TRANSFER_ROW_USE_TRANSFER);
+    }
 
     // Payments are removed by undoing the invoice payment; adjustments can be deleted, never edited.
     if (transaction.category.systemKey === SystemCategoryKey.INVOICE_PAYMENT) {
