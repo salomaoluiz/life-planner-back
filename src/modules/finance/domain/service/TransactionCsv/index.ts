@@ -56,6 +56,9 @@ export const SYSTEM_CATEGORY_LABELS: Record<CsvLanguage, Record<SystemCategoryKe
     [SystemCategoryKey.CARD_REFUND]: 'Card refund',
     [SystemCategoryKey.INSTALLMENT_PREPAYMENT_DISCOUNT]: 'Prepayment discount',
     [SystemCategoryKey.INVOICE_PAYMENT]: 'Invoice payment',
+    [SystemCategoryKey.TRANSFER_FEE]: 'Transfer fees',
+    [SystemCategoryKey.TRANSFER_IN]: 'Transfer in',
+    [SystemCategoryKey.TRANSFER_OUT]: 'Transfer out',
   },
   'pt-BR': {
     [SystemCategoryKey.BALANCE_ADJUSTMENT]: 'Ajuste de saldo',
@@ -63,6 +66,9 @@ export const SYSTEM_CATEGORY_LABELS: Record<CsvLanguage, Record<SystemCategoryKe
     [SystemCategoryKey.CARD_REFUND]: 'Estorno no cartão',
     [SystemCategoryKey.INSTALLMENT_PREPAYMENT_DISCOUNT]: 'Desconto de antecipação',
     [SystemCategoryKey.INVOICE_PAYMENT]: 'Pagamento de fatura',
+    [SystemCategoryKey.TRANSFER_FEE]: 'Tarifas de transferência',
+    [SystemCategoryKey.TRANSFER_IN]: 'Transferência recebida',
+    [SystemCategoryKey.TRANSFER_OUT]: 'Transferência enviada',
   },
 };
 

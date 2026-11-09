@@ -78,6 +78,10 @@ import { ResolveRefundLinkUseCase } from '@finance/application/use-case/ResolveR
 import { ResolveSearchCategoryIdsUseCase } from '@finance/application/use-case/ResolveSearchCategoryIdsUseCase';
 import { SplitRecurrenceUseCase } from '@finance/application/use-case/SplitRecurrenceUseCase';
 import { UndoInstallmentPrepaymentUseCase } from '@finance/application/use-case/UndoInstallmentPrepaymentUseCase';
+import { CreateTransferUseCase } from '@finance/application/use-case/CreateTransferUseCase';
+import { DeleteTransferUseCase } from '@finance/application/use-case/DeleteTransferUseCase';
+import { GetTransferUseCase } from '@finance/application/use-case/GetTransferUseCase';
+import { UpdateTransferUseCase } from '@finance/application/use-case/UpdateTransferUseCase';
 import { UndoInvoicePaymentUseCase } from '@finance/application/use-case/UndoInvoicePaymentUseCase';
 import { UpdateAccountUseCase } from '@finance/application/use-case/UpdateAccountUseCase';
 import { UpdateCardEarlyPaymentUseCase } from '@finance/application/use-case/UpdateCardEarlyPaymentUseCase';
@@ -102,6 +106,7 @@ import { FinanceOwnerVersionDatasource } from '@finance/data/datasource/FinanceO
 import { FinancePrepaymentDatasource } from '@finance/data/datasource/FinancePrepaymentDatasource';
 import { FinanceRecurrenceDatasource } from '@finance/data/datasource/FinanceRecurrenceDatasource';
 import { FinanceTagDatasource } from '@finance/data/datasource/FinanceTagDatasource';
+import { FinanceTransferDatasource } from '@finance/data/datasource/FinanceTransferDatasource';
 import { FinanceTransactionDatasource } from '@finance/data/datasource/FinanceTransactionDatasource';
 import { FinanceAccountFavoriteRepository } from '@finance/data/repository/FinanceAccountFavoriteRepository';
 import { FinanceAccountRepository } from '@finance/data/repository/FinanceAccountRepository';
@@ -117,6 +122,7 @@ import { FinancePrepaymentRepository } from '@finance/data/repository/FinancePre
 import { FinanceRecurrenceRepository } from '@finance/data/repository/FinanceRecurrenceRepository';
 import { FinanceTagRepository } from '@finance/data/repository/FinanceTagRepository';
 import { FinanceTransactionRepository } from '@finance/data/repository/FinanceTransactionRepository';
+import { FinanceTransferRepository } from '@finance/data/repository/FinanceTransferRepository';
 
 const useCases = [
   EndRecurrencesBySourceUseCase,
@@ -195,6 +201,10 @@ const useCases = [
   ResolveCardRowsPaidUseCase,
   UndoInstallmentPrepaymentUseCase,
   UndoInvoicePaymentUseCase,
+  CreateTransferUseCase,
+  DeleteTransferUseCase,
+  GetTransferUseCase,
+  UpdateTransferUseCase,
   UpdateAccountUseCase,
   UpdateCategorySubtreeAppearanceUseCase,
   UpdateCategoryUseCase,
@@ -242,6 +252,8 @@ const useCases = [
     { provide: 'IFinanceTagDatasource', useClass: FinanceTagDatasource },
     { provide: 'IFinanceTransactionRepository', useClass: FinanceTransactionRepository },
     { provide: 'IFinanceTransactionDatasource', useClass: FinanceTransactionDatasource },
+    { provide: 'IFinanceTransferRepository', useClass: FinanceTransferRepository },
+    { provide: 'IFinanceTransferDatasource', useClass: FinanceTransferDatasource },
   ],
 })
 export class FinanceModule {}

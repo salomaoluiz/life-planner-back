@@ -12,3 +12,4 @@ export * from './IFinancePrepaymentRepository';
 export * from './IFinanceRecurrenceRepository';
 export * from './IFinanceTagRepository';
 export * from './IFinanceTransactionRepository';
+export * from './IFinanceTransferRepository';

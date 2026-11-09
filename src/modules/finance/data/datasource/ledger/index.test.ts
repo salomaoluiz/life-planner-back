@@ -4,6 +4,7 @@ import {
   applyLedgerDeltas,
   assertInvoicesNotPaid,
   assertNoPaidInstallment,
+  lockAccounts,
   lockTransactionRow,
   lockWriteScope,
   sumLedgerDeltas,
@@ -178,5 +179,22 @@ describe('sumLedgerDeltas (spec 086)', () => {
 
   it('SHOULD return nothing for no deltas', () => {
     expect(sumLedgerDeltas([])).toEqual([]);
+  });
+});
+
+describe('lockAccounts', () => {
+  it('SHOULD lock the distinct accounts in ascending id order WHEN there are ids', async () => {
+    await lockAccounts(mocks.tx, ['b', 'a', 'b']);
+
+    expect(spies.queryRaw).toHaveBeenCalledTimes(1);
+    const [query] = spies.queryRaw.mock.calls[0];
+    expect(query.values).toEqual(['a', 'b']);
+    expect(query.strings.join('?')).toContain('ORDER BY "id" FOR UPDATE');
+  });
+
+  it('SHOULD query nothing WHEN there are no ids', async () => {
+    await lockAccounts(mocks.tx, []);
+
+    expect(spies.queryRaw).not.toHaveBeenCalled();
   });
 });

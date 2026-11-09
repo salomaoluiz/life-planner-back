@@ -35,7 +35,7 @@ describe('headers and labels', () => {
   it('SHOULD have 15 headers per language and a label for every system category', () => {
     expect(TRANSACTION_CSV_HEADERS['pt-BR']).toHaveLength(15);
     expect(TRANSACTION_CSV_HEADERS['en-US']).toHaveLength(15);
-    expect(Object.keys(SYSTEM_CATEGORY_LABELS['pt-BR'])).toHaveLength(5);
+    expect(Object.keys(SYSTEM_CATEGORY_LABELS['pt-BR'])).toHaveLength(8);
   });
 
   it('SHOULD name the file by language', () => {
