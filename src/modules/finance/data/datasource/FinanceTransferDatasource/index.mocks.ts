@@ -124,10 +124,10 @@ const mocks = { transferRecord, writeParams };
 const spies = {
   accountFindMany: accountFindManySpy,
   accountUpdate: accountUpdateSpy,
+  queryRaw: queryRawSpy,
   recurrenceCreate: recurrenceCreateSpy,
   recurrenceDelete: recurrenceDeleteSpy,
   recurrenceUpdate: recurrenceUpdateSpy,
-  queryRaw: queryRawSpy,
   transactionCreate: transactionCreateSpy,
   transactionDelete: transactionDeleteSpy,
   transactionDeleteMany: transactionDeleteManySpy,

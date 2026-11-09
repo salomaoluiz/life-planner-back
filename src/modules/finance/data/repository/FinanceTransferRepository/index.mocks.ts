@@ -50,13 +50,13 @@ const datasourceMock = {
   create: jest.fn(),
   createMany: jest.fn(),
   createSeries: jest.fn(),
-  materializeSeries: jest.fn(),
   delete: jest.fn(),
   deleteSeriesFrom: jest.fn(),
   findById: jest.fn(),
   findSeriesFrom: jest.fn(),
-  updateSeriesTemplate: jest.fn(),
+  materializeSeries: jest.fn(),
   update: jest.fn(),
+  updateSeriesTemplate: jest.fn(),
 };
 
 let setup: FinanceTransferRepository;

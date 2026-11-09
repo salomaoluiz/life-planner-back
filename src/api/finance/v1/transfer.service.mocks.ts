@@ -2,8 +2,8 @@ import { faker } from '@faker-js/faker';
 import { Test } from '@nestjs/testing';
 
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
-import { TransferService } from '@api/finance/v1/transfer.service';
 import { TransferLookupsService } from '@api/finance/v1/transfer-lookups.service';
+import { TransferService } from '@api/finance/v1/transfer.service';
 import { CreateTransferUseCase } from '@finance/application/use-case/CreateTransferUseCase';
 import { DeleteTransferUseCase } from '@finance/application/use-case/DeleteTransferUseCase';
 import { GetTransactionByIdUseCase } from '@finance/application/use-case/GetTransactionByIdUseCase';
@@ -63,11 +63,11 @@ beforeEach(async () => {
 
 const mocks = { accessibleOwners, crossCurrency, row: rowMock, sameCurrency, userId };
 const spies = {
-  transferLookupsService: transferLookupsServiceMock,
   createTransfer: createTransferUseCaseMock,
   deleteTransfer: deleteTransferUseCaseMock,
   getTransaction: getTransactionByIdUseCaseMock,
   getTransfer: getTransferUseCaseMock,
+  transferLookupsService: transferLookupsServiceMock,
   updateTransfer: updateTransferUseCaseMock,
 };
 

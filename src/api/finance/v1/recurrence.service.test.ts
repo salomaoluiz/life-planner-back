@@ -1,6 +1,6 @@
-import { toProjectedOutput } from './recurrence.service';
 import { InstallmentEditScope } from '@finance/domain/enum';
 
+import { toProjectedOutput } from './recurrence.service';
 import { mocks, setup } from './recurrence.service.mocks';
 
 describe('create', () => {

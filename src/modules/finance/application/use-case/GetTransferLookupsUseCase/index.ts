@@ -1,4 +1,5 @@
 import { Inject } from '@nestjs/common';
+import { z } from 'zod';
 
 import { AccessibleOwnersSchema } from '@finance/application/dto/FinanceCommon';
 import AccountEntity from '@finance/domain/entity/AccountEntity';
@@ -6,7 +7,6 @@ import { hasOwnerAccess, OwnerAccess } from '@finance/domain/entity/OwnerAccess'
 import { IFinanceAccountRepository, IFinanceTransferRepository } from '@finance/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
-import { z } from 'zod';
 
 const GetTransferLookupsSchema = z.object({
   accessibleOwners: AccessibleOwnersSchema,
@@ -31,15 +31,10 @@ export interface TransferLookup {
   recurrenceId: null | string;
   toAccountId: null | string;
 }
-
 export interface TransferLookups {
   // The readable accounts of the transfers, for `lookups.accounts`.
   accounts: AccountEntity[];
   transfers: TransferLookup[];
-}
-
-function canRead(accessibleOwners: OwnerAccess[], account: AccountEntity | undefined): boolean {
-  return account !== undefined && hasOwnerAccess(accessibleOwners, account);
 }
 
 export class GetTransferLookupsUseCase implements UseCaseWithParams<
@@ -98,4 +93,8 @@ export class GetTransferLookupsUseCase implements UseCaseWithParams<
       }),
     };
   }
+}
+
+function canRead(accessibleOwners: OwnerAccess[], account: AccountEntity | undefined): boolean {
+  return account !== undefined && hasOwnerAccess(accessibleOwners, account);
 }

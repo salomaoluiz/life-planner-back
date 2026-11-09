@@ -1,13 +1,24 @@
 import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
 import { SystemCategoryKey } from '@finance/domain/enum';
 
+export interface TransferImportError {
+  code: TransferImportErrorCode;
+  line: number;
+  message: string;
+}
 export type TransferImportErrorCode =
   | 'TRANSFER_AMOUNT_MISMATCH'
   | 'TRANSFER_DATE_IN_BEFORE_OUT'
   | 'TRANSFER_INCOMPLETE'
   | 'TRANSFER_SAME_ACCOUNT';
-export type TransferRowKind = 'FEE' | 'IN' | 'OUT';
-
+export interface TransferImportGroup {
+  fee?: number;
+  in: TransferImportRow;
+  // The line of the out row: where the transfer is reported.
+  line: number;
+  out: TransferImportRow;
+  paid: boolean | null;
+}
 export interface TransferImportRow {
   accountId?: null | string;
   categoryId: string;
@@ -20,21 +31,7 @@ export interface TransferImportRow {
   transferId?: null | string;
   value: number;
 }
-
-export interface TransferImportGroup {
-  fee?: number;
-  in: TransferImportRow;
-  // The line of the out row: where the transfer is reported.
-  line: number;
-  out: TransferImportRow;
-  paid: boolean | null;
-}
-
-export interface TransferImportError {
-  code: TransferImportErrorCode;
-  line: number;
-  message: string;
-}
+export type TransferRowKind = 'FEE' | 'IN' | 'OUT';
 
 const KINDS: [SystemCategoryKey, TransferRowKind][] = [
   [SystemCategoryKey.TRANSFER_OUT, 'OUT'],
@@ -76,10 +73,6 @@ export function groupTransferRows(rows: TransferImportRow[]): {
   }
 
   return { errors, groups };
-}
-
-function incomplete(line: number, message: string): TransferImportError {
-  return { code: 'TRANSFER_INCOMPLETE', line, message };
 }
 
 function checkGroup(members: TransferImportRow[]): TransferImportError | TransferImportGroup {
@@ -126,4 +119,7 @@ function checkGroup(members: TransferImportRow[]): TransferImportError | Transfe
     out,
     paid: out.paid ?? null,
   };
+}
+function incomplete(line: number, message: string): TransferImportError {
+  return { code: 'TRANSFER_INCOMPLETE', line, message };
 }

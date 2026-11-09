@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-import { RecurrenceFrequency } from '@finance/domain/enum';
 import {
   AccessibleOwnersSchema,
   CalendarDateSchema,
@@ -8,6 +7,7 @@ import {
   NotesSchema,
   ValueSchema,
 } from '@finance/application/dto/FinanceCommon';
+import { RecurrenceFrequency } from '@finance/domain/enum';
 
 // Spec 098 section 7. `amountIn` may be omitted for the same currency (filled) and for a series occurrence.
 export const CreateTransferSchema = z

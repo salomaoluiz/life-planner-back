@@ -78,8 +78,8 @@ export type FinancialRecurrenceWithRelations = {
   >;
   credit_card: null | Pick<FinancialCreditCard, 'color' | 'id' | 'last_digits' | 'title'>;
   // Spec 098: the destination of a transfer series.
-  to_account: null | Pick<FinancialAccount, 'currency' | 'icon' | 'id' | 'name'>;
   tags?: { tag: { id: string; name: string } }[];
+  to_account: null | Pick<FinancialAccount, 'currency' | 'icon' | 'id' | 'name'>;
 } & FinancialRecurrence;
 export interface FindRecurrencesDatasourceFilter {
   // For a transfer series it matches the origin OR the destination.

@@ -90,7 +90,7 @@ it('SHOULD turn a valid group into one transfer with its accounts, amounts, date
 it('SHOULD default paid to "dated up to today" WHEN the file has no paid column', async () => {
   const { transfers } = await checkTransferRows({
     ...base,
-    rows: [row({ paid: undefined, date: '2026-12-01' }), rows[1]].map((item, index) =>
+    rows: [row({ date: '2026-12-01', paid: undefined }), rows[1]].map((item, index) =>
       index === 1 ? ({ ...(item as object), date: '2026-12-02' } as never) : item,
     ),
   });

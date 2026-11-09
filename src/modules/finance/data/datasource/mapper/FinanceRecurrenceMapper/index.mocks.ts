@@ -7,6 +7,7 @@ import { FinancialRecurrenceWithRelations } from '@finance/data/repository/datas
 const rawRecurrenceMock: FinancialRecurrenceWithRelations = {
   account: { icon: 'bank', id: faker.string.uuid(), name: 'Checking' },
   account_id: faker.string.uuid(),
+  amount_in: null,
   category: {
     exclude_from_totals: false,
     icon: 'home',
@@ -31,12 +32,11 @@ const rawRecurrenceMock: FinancialRecurrenceWithRelations = {
   owner: 'USER',
   owner_id: faker.string.uuid(),
   projected: false,
-  to_account_id: null,
-  amount_in: null,
-  to_account: null,
   skipped_numbers: [3],
   start_date: new Date('2026-10-05T00:00:00.000Z'),
   status: 'ACTIVE',
+  to_account: null,
+  to_account_id: null,
   type: 'EXPENSE',
   updated_at: faker.date.recent(),
   value: 200000,

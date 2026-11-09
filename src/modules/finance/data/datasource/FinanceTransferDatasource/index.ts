@@ -38,6 +38,19 @@ interface PlannedRow {
 
 // Spec 098 FR 2: the out row (origin), the in row (destination, only once the amount in is known) and the fee row
 // (destination, dated with the in side) are ordinary transactions that follow the transfer's `paid`.
+function accountIdsOf(transfer: {
+  from_account_id: null | string;
+  to_account_id: null | string;
+}): string[] {
+  return [transfer.from_account_id, transfer.to_account_id].filter(
+    (id): id is string => id !== null,
+  );
+}
+async function lockTransferRow(tx: Prisma.TransactionClient, id: string) {
+  return tx.$queryRaw(
+    Prisma.sql`SELECT "id" FROM "financial_transfers" WHERE "id" = ${id} FOR UPDATE`,
+  );
+}
 function planRows(params: WriteTransferDatasourceParams): PlannedRow[] {
   const common = {
     description: params.description,
@@ -97,7 +110,6 @@ function planRows(params: WriteTransferDatasourceParams): PlannedRow[] {
 
   return rows;
 }
-
 function transferData(params: WriteTransferDatasourceParams) {
   return {
     amount_in: params.amount_in,
@@ -113,21 +125,6 @@ function transferData(params: WriteTransferDatasourceParams) {
     paid: params.paid,
     to_account_id: params.to.account_id,
   };
-}
-
-function lockTransferRow(tx: Prisma.TransactionClient, id: string) {
-  return tx.$queryRaw(
-    Prisma.sql`SELECT "id" FROM "financial_transfers" WHERE "id" = ${id} FOR UPDATE`,
-  );
-}
-
-function accountIdsOf(transfer: {
-  from_account_id: null | string;
-  to_account_id: null | string;
-}): string[] {
-  return [transfer.from_account_id, transfer.to_account_id].filter(
-    (id): id is string => id !== null,
-  );
 }
 
 // Writes one transfer with its rows; the ledger deltas are returned so a caller can apply many at once.
@@ -275,6 +272,13 @@ export class FinanceTransferDatasource implements IFinanceTransferDatasource {
     });
   }
 
+  async findByIds(ids: string[]): Promise<FinancialTransferRecord[]> {
+    return this.db.client.financialTransfer.findMany({
+      include: TRANSFER_INCLUDE,
+      where: { id: { in: ids } },
+    }) as Promise<FinancialTransferRecord[]>;
+  }
+
   async findSeriesFrom(
     recurrenceId: string,
     fromNumber: number,
@@ -291,13 +295,6 @@ export class FinanceTransferDatasource implements IFinanceTransferDatasource {
     patch: UpdateTransferSeriesTemplateDatasourceParams,
   ): Promise<void> {
     await this.db.client.financialRecurrence.update({ data: patch, where: { id: recurrenceId } });
-  }
-
-  async findByIds(ids: string[]): Promise<FinancialTransferRecord[]> {
-    return this.db.client.financialTransfer.findMany({
-      include: TRANSFER_INCLUDE,
-      where: { id: { in: ids } },
-    }) as Promise<FinancialTransferRecord[]>;
   }
 
   // The occurrences from a number on go away with their rows (ledgers reverted); the series then ends at the previous
@@ -386,7 +383,7 @@ export class FinanceTransferDatasource implements IFinanceTransferDatasource {
           select: { currency: true, id: true, owner: true, owner_id: true },
           where: { id: { in: [series.account_id, series.to_account_id] } },
         });
-        const side = (id: string) => {
+        function side(id: string) {
           const account = accounts.find((item) => item.id === id) as (typeof accounts)[number];
 
           return {
@@ -395,7 +392,7 @@ export class FinanceTransferDatasource implements IFinanceTransferDatasource {
             owner: account.owner,
             owner_id: account.owner_id,
           };
-        };
+        }
         const first = await tx.financialTransfer.findFirst({
           orderBy: { occurrence_number: 'asc' },
           select: { created_by: true },

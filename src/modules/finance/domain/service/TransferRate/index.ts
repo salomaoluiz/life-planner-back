@@ -7,12 +7,6 @@ export interface TransferRateValue {
 
 const RATE_DECIMALS = 4;
 
-function round(value: number): number {
-  const factor = 10 ** RATE_DECIMALS;
-
-  return Math.round(value * factor) / factor;
-}
-
 export function computeRate(amountOut: number, amountIn: null | number): null | TransferRateValue {
   if (amountIn === null || amountIn <= 0 || amountOut <= 0) {
     return null;
@@ -21,6 +15,12 @@ export function computeRate(amountOut: number, amountIn: null | number): null | 
   return amountOut >= amountIn
     ? { base: 'IN', value: round(amountOut / amountIn) }
     : { base: 'OUT', value: round(amountIn / amountOut) };
+}
+
+function round(value: number): number {
+  const factor = 10 ** RATE_DECIMALS;
+
+  return Math.round(value * factor) / factor;
 }
 
 // A typed rate in the "1 IN = rate OUT" direction fills the amount in (cents, rounded to the nearest cent).

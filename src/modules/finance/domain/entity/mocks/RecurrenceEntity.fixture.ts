@@ -32,6 +32,7 @@ class RecurrenceEntityFixture {
     this.value = {
       account: { icon: 'bank', id: accountId, name: faker.finance.accountName() },
       accountId,
+      amountIn: null,
       category: {
         excludeFromTotals: false,
         icon: 'home',
@@ -61,7 +62,6 @@ class RecurrenceEntityFixture {
       startDate: '2026-10-05',
       status: RecurrenceStatus.ACTIVE,
       tags: [],
-      amountIn: null,
       toAccount: null,
       toAccountId: null,
       toCurrency: null,

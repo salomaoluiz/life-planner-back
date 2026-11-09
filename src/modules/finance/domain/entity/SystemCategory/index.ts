@@ -35,16 +35,15 @@ export function isSystemCategoryId(id: string): boolean {
 export const INVOICE_PAYMENT_DESCRIPTION = 'Invoice payment';
 
 // Spec 098: the out and in rows of a transfer stay out of the income/expense totals; the fee counts.
+export function isTransferCategoryId(id: string): boolean {
+  return (
+    isTransferExcludedFromTotals(id) || id === SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_FEE]
+  );
+}
 export function isTransferExcludedFromTotals(id: string): boolean {
   return (
     id === SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_OUT] ||
     id === SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_IN]
-  );
-}
-
-export function isTransferCategoryId(id: string): boolean {
-  return (
-    isTransferExcludedFromTotals(id) || id === SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_FEE]
   );
 }
 

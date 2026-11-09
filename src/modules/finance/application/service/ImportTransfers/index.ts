@@ -64,20 +64,11 @@ export async function checkTransferRows(
   return { errors, transfers };
 }
 
-function side(account: AccountEntity): TransferSide {
-  return {
-    accountId: account.id,
-    currency: account.currency,
-    owner: account.owner,
-    ownerId: account.ownerId,
-  };
-}
-
 function resolveSides(
   group: TransferImportGroup,
   accounts: AccountEntity[],
   accessibleOwners: OwnerAccess[],
-): ImportRowError | { from: TransferSide; to: TransferSide } {
+): { from: TransferSide; to: TransferSide } | ImportRowError {
   const checks: [TransferImportRow, AccountEntity | undefined][] = [
     [group.out, accounts.find((account) => account.id === group.out.accountId)],
     [group.in, accounts.find((account) => account.id === group.in.accountId)],
@@ -112,4 +103,12 @@ function resolveSides(
   }
 
   return { from: side(checks[0][1] as AccountEntity), to: side(checks[1][1] as AccountEntity) };
+}
+function side(account: AccountEntity): TransferSide {
+  return {
+    accountId: account.id,
+    currency: account.currency,
+    owner: account.owner,
+    ownerId: account.ownerId,
+  };
 }

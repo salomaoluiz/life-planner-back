@@ -7,7 +7,7 @@ const OUT = SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_OUT];
 const IN = SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_IN];
 const FEE = SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_FEE];
 
-function createdRow(args: {
+async function createdRow(args: {
   data: { account_id: string; paid: boolean; type: string; value: number };
 }) {
   return Promise.resolve({ ...args.data, id: 'row' });
@@ -116,7 +116,7 @@ describe('Method update', () => {
       to_account_id: 'acc-a',
       transactions: rows,
     });
-    spies.transactionUpdate.mockImplementation((args: { data: Record<string, unknown> }) =>
+    spies.transactionUpdate.mockImplementation(async (args: { data: Record<string, unknown> }) =>
       Promise.resolve({ ...args.data, id: 'row' }),
     );
   });

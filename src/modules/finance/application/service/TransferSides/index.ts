@@ -10,6 +10,11 @@ import { TransferRuleError } from '@finance/domain/service/TransferRules';
 export const TRANSFER_ACCOUNT_ARCHIVED = 'TRANSFER_ACCOUNT_ARCHIVED';
 
 // Runs a pure transfer rule and turns its error into the 422 whose message is the spec code.
+export interface LoadedSides {
+  from: AccountEntity;
+  to: AccountEntity;
+}
+
 export function applyTransferRules<T>(rule: () => T): T {
   try {
     return rule();
@@ -28,11 +33,6 @@ function toSide(account: AccountEntity): TransferSide {
     owner: account.owner,
     ownerId: account.ownerId,
   };
-}
-
-export interface LoadedSides {
-  from: AccountEntity;
-  to: AccountEntity;
 }
 
 // Spec 098 section 4: both accounts must exist and be reachable (404), their owners writable (archived family 422)
@@ -67,7 +67,6 @@ export async function loadWritableSides(
 
   return { from: from as AccountEntity, to: to as AccountEntity };
 }
-
 export function sidesToRepository(sides: LoadedSides): { from: TransferSide; to: TransferSide } {
   return { from: toSide(sides.from), to: toSide(sides.to) };
 }

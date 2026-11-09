@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-import { InstallmentEditScope } from '@finance/domain/enum';
 import {
   AccessibleOwnersSchema,
   CalendarDateSchema,
@@ -8,6 +7,7 @@ import {
   NotesSchema,
   ValueSchema,
 } from '@finance/application/dto/FinanceCommon';
+import { InstallmentEditScope } from '@finance/domain/enum';
 
 // Every field of the create body is optional; an absent field keeps the stored value, `fee: null` removes the fee.
 export const UpdateTransferSchema = z.object({

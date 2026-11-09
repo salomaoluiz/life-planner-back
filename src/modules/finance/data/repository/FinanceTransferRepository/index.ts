@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 
+import { OwnerType, RecurrenceFrequency, RecurrenceStatus } from '@db/client';
 import { fromCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
 import { FinanceTransferMapper } from '@finance/data/datasource/mapper/FinanceTransferMapper';
 import {
@@ -15,15 +16,16 @@ import {
   TransferSeriesTemplatePatch,
   WriteTransferRepositoryParams,
 } from '@finance/domain/repository';
-import { OwnerType, RecurrenceFrequency, RecurrenceStatus } from '@db/client';
 
 function toDatasourceParams(params: WriteTransferRepositoryParams): WriteTransferDatasourceParams {
-  const side = (item: WriteTransferRepositoryParams['from']) => ({
-    account_id: item.accountId,
-    currency: item.currency,
-    owner: item.owner as OwnerType,
-    owner_id: item.ownerId,
-  });
+  function side(item: WriteTransferRepositoryParams['from']) {
+    return {
+      account_id: item.accountId,
+      currency: item.currency,
+      owner: item.owner as OwnerType,
+      owner_id: item.ownerId,
+    };
+  }
 
   return {
     amount_in: params.amountIn,

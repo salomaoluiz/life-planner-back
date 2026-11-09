@@ -288,13 +288,15 @@ describe('categories read once (spec 083)', () => {
 });
 
 describe('transfer series (spec 098)', () => {
-  const transferSeries = () => ({
-    ...mocks.series,
-    amountIn: null,
-    toAccount: { icon: 'bank', id: 'acc-to', name: 'Savings' },
-    toAccountId: 'acc-to',
-    toCurrency: 'USD',
-  });
+  function transferSeries() {
+    return {
+      ...mocks.series,
+      amountIn: null,
+      toAccount: { icon: 'bank', id: 'acc-to', name: 'Savings' },
+      toAccountId: 'acc-to',
+      toCurrency: 'USD',
+    };
+  }
 
   it('SHOULD project the out side AND an in side without amount WHEN the currencies differ', async () => {
     mocks.recurrenceRepository.findByOwners.mockResolvedValue([transferSeries()]);
@@ -316,8 +318,8 @@ describe('transfer series (spec 098)', () => {
     expect(inSide).toMatchObject({
       account: { icon: 'bank', id: 'acc-to', name: 'Savings' },
       amountPending: true,
-      currency: 'USD',
       category: expect.objectContaining({ excludeFromTotals: true, systemKey: 'TRANSFER_IN' }),
+      currency: 'USD',
       date: out?.date,
       occurrenceNumber: out?.occurrenceNumber,
       type: 'INCOME',

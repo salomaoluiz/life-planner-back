@@ -35,8 +35,8 @@ it('SHOULD map a record to the entity with calendar dates AND row ids', () => {
     currencyIn: 'USD',
     dateIn: '2026-11-06',
     dateOut: '2026-11-04',
-    fromAccountId: 'acc-b',
     feeRowId: 'row-fee',
+    fromAccountId: 'acc-b',
     rowIds: ['row-out', 'row-in', 'row-fee'],
     toAccountId: 'acc-a',
   });

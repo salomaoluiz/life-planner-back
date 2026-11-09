@@ -33,7 +33,6 @@ export interface CreateTransferSeriesRepositoryParams {
   occurrences: WriteTransferRepositoryParams[];
   status: RecurrenceStatus;
 }
-
 export interface MaterializeTransferSeriesRepositoryParams {
   expectedLast: number;
   id: string;
@@ -53,17 +52,10 @@ export interface DeleteTransferSeriesFromRepositoryParams {
 }
 
 // What a THIS_AND_NEXT edit changes on the series template (the amount in only for the same currency).
-export interface TransferSeriesTemplatePatch {
-  amountIn?: null | number;
-  amountOut?: number;
-  description?: string;
-  notes?: null | string;
-}
-
 export interface IFinanceTransferRepository {
   // Spec 098 FR 12 (CSV import): every transfer in ONE database transaction; returns how many were written.
-  createTransfers(params: WriteTransferRepositoryParams[]): Promise<number>;
   createTransfer(params: WriteTransferRepositoryParams): Promise<TransferEntity>;
+  createTransfers(params: WriteTransferRepositoryParams[]): Promise<number>;
   createTransferSeries(params: CreateTransferSeriesRepositoryParams): Promise<TransferEntity>;
   deleteTransfer(id: string): Promise<void>;
   deleteTransferSeriesFrom(params: DeleteTransferSeriesFromRepositoryParams): Promise<void>;
@@ -73,4 +65,10 @@ export interface IFinanceTransferRepository {
   materializeTransferSeries(params: MaterializeTransferSeriesRepositoryParams): Promise<void>;
   updateSeriesTemplate(recurrenceId: string, patch: TransferSeriesTemplatePatch): Promise<void>;
   updateTransfer(id: string, params: WriteTransferRepositoryParams): Promise<TransferEntity>;
+}
+export interface TransferSeriesTemplatePatch {
+  amountIn?: null | number;
+  amountOut?: number;
+  description?: string;
+  notes?: null | string;
 }

@@ -2,9 +2,9 @@ import { Injectable } from '@nestjs/common';
 
 import { TransactionLookups } from '@api/finance/v1/dto/transaction.dto';
 import { GetTransferLookupsUseCase } from '@finance/application/use-case/GetTransferLookupsUseCase';
-import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 
 // Spec 098 FR 9: adds `lookups.transfers` (and the readable counterpart accounts) for the rows that belong to a transfer.
 // One extra read, and only when the page has a transfer row, so the list keeps its budget otherwise.

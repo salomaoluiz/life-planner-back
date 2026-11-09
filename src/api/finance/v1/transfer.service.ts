@@ -88,23 +88,14 @@ export class TransferService {
     return this.toResponse(accessibleOwners, transfer);
   }
 
-  async update(
-    userId: string,
-    id: string,
-    input: UpdateTransferApiInput,
-  ): Promise<TransferWithRows> {
-    const accessibleOwners = await this.financeAccessService.resolve(userId);
-    const transfer = await this.updateTransferUseCase.execute({ ...input, accessibleOwners, id });
-
-    return this.toResponse(accessibleOwners, transfer);
-  }
-
   private async toResponse(
     accessibleOwners: OwnerAccess[],
     transfer: TransferEntity,
   ): Promise<TransferWithRows> {
     const rows = await Promise.all(
-      transfer.rowIds.map((id) => this.getTransactionByIdUseCase.execute({ accessibleOwners, id })),
+      transfer.rowIds.map(async (id) =>
+        this.getTransactionByIdUseCase.execute({ accessibleOwners, id }),
+      ),
     );
 
     return {
@@ -116,5 +107,16 @@ export class TransferService {
       ),
       rows: rows.map((row) => toTransactionItem(row)),
     };
+  }
+
+  async update(
+    userId: string,
+    id: string,
+    input: UpdateTransferApiInput,
+  ): Promise<TransferWithRows> {
+    const accessibleOwners = await this.financeAccessService.resolve(userId);
+    const transfer = await this.updateTransferUseCase.execute({ ...input, accessibleOwners, id });
+
+    return this.toResponse(accessibleOwners, transfer);
   }
 }

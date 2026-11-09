@@ -8,8 +8,8 @@ import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { narrowOwners } from '@finance/domain/entity/OwnerAccess';
 import { ProjectedOccurrence } from '@finance/domain/entity/ProjectedOccurrence';
 import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
-import { TransactionFilter } from '@finance/domain/entity/TransactionFilter';
 import { TRANSFER_IN_SUMMARY } from '@finance/domain/entity/SystemCategory';
+import { TransactionFilter } from '@finance/domain/entity/TransactionFilter';
 import { RecurrenceStatus, TransactionType } from '@finance/domain/enum';
 import {
   IFinanceCreditCardRepository,
