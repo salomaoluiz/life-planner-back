@@ -8,6 +8,7 @@ import RecurrenceEntity from './index';
 const paramsMock: RecurrenceEntity = {
   account: { icon: 'bank', id: 'account-uuid-1', name: 'Checking' },
   accountId: 'account-uuid-1',
+  amountIn: null,
   category: {
     excludeFromTotals: false,
     icon: 'home',
@@ -37,6 +38,9 @@ const paramsMock: RecurrenceEntity = {
   startDate: '2026-10-05',
   status: RecurrenceStatus.ACTIVE,
   tags: [],
+  toAccount: null,
+  toAccountId: null,
+  toCurrency: null,
   type: TransactionType.EXPENSE,
   updatedAt: new Date('2026-10-04T13:00:00.000Z'),
   value: 200000,

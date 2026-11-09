@@ -62,6 +62,21 @@ it.each(['CARD_REFUND', 'CARD_EARLY_PAYMENT', 'INSTALLMENT_PREPAYMENT_DISCOUNT']
   },
 );
 
+it.each(['TRANSFER_OUT', 'TRANSFER_IN', 'TRANSFER_FEE'])(
+  'SHOULD refuse to delete a %s row with TRANSFER_ROW_USE_TRANSFER (422): only the transfer removes it',
+  async (systemKey) => {
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce({
+      ...mocks.transaction,
+      category: { ...mocks.transaction.category, systemKey },
+    });
+
+    await expect(
+      setup.execute({ accessibleOwners: mocks.accessibleOwners, id: mocks.transaction.id }),
+    ).rejects.toThrow('TRANSFER_ROW_USE_TRANSFER');
+    expect(mocks.transactionRepository.deleteTransaction).not.toHaveBeenCalled();
+  },
+);
+
 it('SHOULD refuse to delete a purchase that has refunds (422)', async () => {
   mocks.cardCreditRepository.countRefundsByTransactionId.mockResolvedValueOnce(1);
 

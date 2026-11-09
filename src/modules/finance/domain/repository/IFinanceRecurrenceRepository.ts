@@ -15,6 +15,8 @@ export interface DueRecurrence {
   lastGeneratedNumber: number;
   skippedNumbers: number[];
   startDate: string;
+  // Set = a transfer series (spec 098), materialized by `MaterializeTransferSeries`.
+  toAccountId: null | string;
 }
 export type IFinanceRecurrenceRepository = {
   // One database transaction (spec 034 FR 20-25): patches the series and its rows from `fromNumber`, optionally
@@ -95,9 +97,12 @@ interface CreateRecurrenceRepositoryParams {
   value: number;
 }
 interface FindRecurrencesFilter {
+  // For a transfer series it matches the origin OR the destination.
   accountId?: string;
   creditCardId?: string;
   status?: RecurrenceStatus;
+  // Spec 098: transfer series are left out unless asked (ALL = both kinds, ONLY = just transfers).
+  transfers?: 'ALL' | 'EXCLUDE' | 'ONLY';
 }
 interface FutureOccurrenceNumber {
   occurrenceNumber: number;

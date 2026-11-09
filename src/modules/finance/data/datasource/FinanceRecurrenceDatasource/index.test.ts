@@ -124,10 +124,27 @@ describe('reads', () => {
     expect(spies.recurrenceFindMany.mock.calls[0][0].where).toEqual({
       AND: [
         { OR: [{ owner: 'USER', owner_id: 'owner-1' }] },
-        { account_id: 'account-1', credit_card_id: undefined, status: 'ACTIVE' },
+        { credit_card_id: undefined, status: 'ACTIVE' },
+        { OR: [{ account_id: 'account-1' }, { to_account_id: 'account-1' }] },
+        { to_account_id: null },
       ],
     });
   });
+
+  it.each([
+    ['ALL', []],
+    ['ONLY', [{ to_account_id: { not: null } }]],
+    ['EXCLUDE', [{ to_account_id: null }]],
+  ] as const)(
+    'SHOULD handle transfer series with transfers=%s (spec 098)',
+    async (transfers, extra) => {
+      spies.recurrenceFindMany.mockResolvedValue([]);
+
+      await setup.findByOwners(owners, { transfers });
+
+      expect(spies.recurrenceFindMany.mock.calls[0][0].where.AND.slice(2)).toEqual(extra);
+    },
+  );
 
   it('SHOULD only look for ACTIVE series due up to the horizon', async () => {
     const horizon = new Date('2026-10-31T00:00:00.000Z');
@@ -160,6 +177,7 @@ describe('reads', () => {
       'last_generated_number',
       'skipped_numbers',
       'start_date',
+      'to_account_id',
     ]);
   });
 

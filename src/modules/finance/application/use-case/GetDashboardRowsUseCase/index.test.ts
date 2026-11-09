@@ -186,6 +186,20 @@ describe('projected recurrences (spec 053)', () => {
     expect(rows.map((row) => row.bucketDate)).toEqual(['2026-12-05']);
   });
 
+  it('SHOULD leave the projected transfer sides out of the totals (spec 098)', async () => {
+    mocks.projections.executeChunked.mockResolvedValue([
+      mocks.occurrenceOf({
+        category: { excludeFromTotals: true, id: 'transfer-out' },
+        date: '2026-11-10',
+      }),
+      mocks.occurrenceOf({ date: '2026-11-11' }),
+    ]);
+
+    const rows = await setup.execute(future);
+
+    expect(rows.map((row) => row.categoryId)).toEqual(['cat-1']);
+  });
+
   it('SHOULD start the projections at the first month after today even for an earlier period', async () => {
     await setup.execute({ ...future, from: '2026-05-01' });
 

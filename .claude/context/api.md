@@ -214,3 +214,7 @@ A card EXPENSE can be projected ("Prevista"): not charged yet. `projected: boole
 - Rows: lean items carry `projected: true` only when projected; full recurrence rows carry the boolean, invoice `purchases` carry `projected: true` only when projected and `recurrenceId` when they belong to a series; projections (`/recurrences/projections`) return `projected`. `GET /transactions?projected=true|false`; `paid` is always `false` for a projected row. CSV export skips projected rows; import creates effective ones.
 - `POST /credit-cards/:id/invoices/:month/payment` → `409 { message: "Invoice has projected purchases", projected: [{ id, description, value, date, recurrenceId }] }` while the invoice has any projected row (after "already paid", before the amount check).
 - Forecasts use `projectedTotal`: upcoming invoice item (`valueCents`, plus `projectedAmount` when > 0), daily balances / month-end, dashboard (a projected row counts as projected, never realized).
+
+## Transfers (spec 098)
+
+`TransferController` (`/finance/transfers`, `@FinanceEtag()`), `TransferService` (rows read through `GetTransactionByIdUseCase`, `lookups` through `toTransactionLookups` + `TransferLookupsService`), DTOs in `dto/transfer.dto.ts`. `TransferLookupsService.attach` adds `lookups.transfers` (and the readable counterpart accounts) to the transaction list, by-id, month and transfer responses, with one extra read only when a row belongs to a transfer.

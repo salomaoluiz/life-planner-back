@@ -11,6 +11,7 @@ import {
   IFinanceCreditCardRepository,
   IFinanceInvoicePaymentRepository,
   IFinanceRecurrenceRepository,
+  IFinanceTransferRepository,
 } from '@finance/domain/repository';
 import {
   lastDayOfMonth,
@@ -35,6 +36,8 @@ export class MaterializeRecurrencesUseCase implements UseCaseWithParams<
     private readonly invoicePaymentRepository: IFinanceInvoicePaymentRepository,
     @Inject('IFinanceRecurrenceRepository')
     private readonly recurrenceRepository: IFinanceRecurrenceRepository,
+    @Inject('IFinanceTransferRepository')
+    private readonly transferRepository: IFinanceTransferRepository,
   ) {}
 
   async execute(params: MaterializeRecurrencesInput): Promise<void> {
@@ -98,6 +101,30 @@ export class MaterializeRecurrencesUseCase implements UseCaseWithParams<
     });
   }
 
+  // Spec 098 FR 8: each missing occurrence of a transfer series is an unpaid transfer; the amount in is the series'
+  // (null for different currencies, so no in row exists until it is paid).
+  private async materializeTransfer(series: DueRecurrence, horizon: string): Promise<void> {
+    const plan = planMaterialization({
+      firstNumber: series.firstNumber,
+      horizon,
+      lastGeneratedNumber: series.lastGeneratedNumber,
+      rule: series,
+      skippedNumbers: series.skippedNumbers,
+    });
+
+    await this.transferRepository.materializeTransferSeries({
+      expectedLast: series.lastGeneratedNumber,
+      id: series.id,
+      lastGeneratedNumber: plan.lastGeneratedNumber,
+      nextOccurrenceDate: plan.nextOccurrenceDate,
+      occurrences: plan.occurrences.map((occurrence) => ({
+        date: occurrence.date,
+        number: occurrence.number,
+      })),
+      status: plan.status,
+    });
+  }
+
   private async run(owners: OwnerAccess[], horizon: string): Promise<void> {
     const due = await this.recurrenceRepository.findDue(owners, horizon);
 
@@ -105,7 +132,8 @@ export class MaterializeRecurrencesUseCase implements UseCaseWithParams<
       return;
     }
 
-    const cardIds = [...new Set(due.flatMap((series) => series.creditCardId ?? []))];
+    const standard = due.filter((series) => series.toAccountId === null);
+    const cardIds = [...new Set(standard.flatMap((series) => series.creditCardId ?? []))];
     const [payments, cards] =
       cardIds.length === 0
         ? [[], []]
@@ -116,7 +144,11 @@ export class MaterializeRecurrencesUseCase implements UseCaseWithParams<
     const closingDayOf = new Map(cards.map((card) => [card.id, card.closingDay]));
 
     for (const series of due) {
-      await this.materialize(series, horizon, payments, closingDayOf);
+      if (series.toAccountId === null) {
+        await this.materialize(series, horizon, payments, closingDayOf);
+      } else {
+        await this.materializeTransfer(series, horizon);
+      }
     }
   }
 }

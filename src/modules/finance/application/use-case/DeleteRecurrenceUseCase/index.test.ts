@@ -1,3 +1,5 @@
+import { NotFoundException } from '@nestjs/common';
+
 import { mocks, setup } from './index.mocks';
 
 describe('DeleteRecurrenceUseCase', () => {
@@ -62,4 +64,15 @@ it('SHOULD invalidate the gate of the series owner after the removal (spec 081)'
   await setup.execute({ accessibleOwners: mocks.accessibleOwners, id: 'series-1' });
 
   expect(mocks.gate.invalidate).toHaveBeenCalledWith([mocks.series.ownerId]);
+});
+
+it('SHOULD answer NotFound for a transfer series (spec 098): it changes only through the transfer', async () => {
+  mocks.recurrenceRepository.findById.mockResolvedValueOnce({
+    ...mocks.series,
+    toAccountId: 'acc-to',
+  });
+
+  await expect(
+    setup.execute({ accessibleOwners: mocks.accessibleOwners, id: 'series-1' } as never),
+  ).rejects.toThrow(NotFoundException);
 });

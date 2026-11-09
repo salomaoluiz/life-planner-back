@@ -64,6 +64,7 @@ export const TransactionFilterSchema = z
     categoryIds: z.array(z.string().min(1)).optional(),
     creditCardIds: z.array(z.string().min(1)).optional(),
     from: CalendarDateSchema.optional(),
+    kind: z.enum(['TRANSFER']).optional(),
     paid: z.boolean().optional(),
     projected: z.boolean().optional(),
     q: z.string().trim().min(1).max(100).optional(),

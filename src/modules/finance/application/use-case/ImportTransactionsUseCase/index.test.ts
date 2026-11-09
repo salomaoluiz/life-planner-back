@@ -567,3 +567,82 @@ describe('card credits and invoice payments (spec 048)', () => {
     });
   });
 });
+
+describe('transfers (spec 098 FR 12)', () => {
+  const OUT = SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_OUT];
+  const IN = SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_IN];
+  const outRow = {
+    accountId: 'acc-1',
+    categoryId: OUT,
+    date: '2026-10-02',
+    description: 'Savings',
+    line: 2,
+    transferId: 't1',
+    type: TransactionType.EXPENSE,
+    value: 100000,
+  };
+  const inRow = {
+    ...outRow,
+    accountId: 'acc-2',
+    categoryId: IN,
+    line: 3,
+    type: TransactionType.INCOME,
+  };
+  const accounts = [
+    { currency: 'BRL', id: 'acc-1', owner: 'USER', ownerId: 'user-id', status: 'ACTIVE' },
+    { currency: 'BRL', id: 'acc-2', owner: 'USER', ownerId: 'user-id', status: 'ACTIVE' },
+  ];
+
+  beforeEach(() => {
+    mocks.account.findAccountsByIds.mockResolvedValue(accounts);
+  });
+
+  it('SHOULD list the transfers found in a dry run AND write nothing', async () => {
+    const result = await setup.execute({ ...base, rows: [outRow, inRow, validRow] });
+
+    expect(result).toEqual({ created: 0, duplicates: [], errors: [], invoices: [], transfers: 1 });
+    expect(mocks.transferRepository.createTransfers).not.toHaveBeenCalled();
+    expect(mocks.ensure.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('SHOULD write the transfers AND the other rows WHEN the import is for real', async () => {
+    const result = await setup.execute({
+      ...base,
+      dryRun: false,
+      requesterId: 'real-user',
+      rows: [outRow, inRow, validRow],
+    });
+
+    expect(result.created).toBe(2);
+    expect(mocks.transferRepository.createTransfers).toHaveBeenCalledWith([
+      expect.objectContaining({ amountOut: 100000, createdBy: 'real-user', dateOut: '2026-10-02' }),
+    ]);
+    expect(mocks.transactionRepository.createManyTransactions).toHaveBeenCalledTimes(1);
+  });
+
+  it('SHOULD report an incomplete pair AND write nothing at all', async () => {
+    const result = await setup.execute({ ...base, rows: [outRow, validRow] });
+
+    expect(result.errors.map((error) => error.code)).toEqual(['TRANSFER_INCOMPLETE']);
+
+    await expect(
+      setup.execute({ ...base, dryRun: false, rows: [outRow, validRow] }),
+    ).rejects.toThrow(UnprocessableEntityException);
+    expect(mocks.transferRepository.createTransfers).not.toHaveBeenCalled();
+    expect(mocks.transactionRepository.createManyTransactions).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD run the plain row checks on the transfer rows too', async () => {
+    const result = await setup.execute({ ...base, rows: [{ ...outRow, value: 0 }, inRow] });
+
+    expect(result.errors[0].code).toBe('INVALID_VALUE');
+  });
+
+  it('SHOULD default the requester to the owner of the request', async () => {
+    await setup.execute({ ...base, dryRun: false, rows: [outRow, inRow] });
+
+    expect(mocks.transferRepository.createTransfers).toHaveBeenCalledWith([
+      expect.objectContaining({ createdBy: 'user-id' }),
+    ]);
+  });
+});

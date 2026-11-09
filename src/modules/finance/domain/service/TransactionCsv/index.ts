@@ -29,6 +29,7 @@ export const TRANSACTION_CSV_HEADERS: Record<CsvLanguage, string[]> = {
     'Installment',
     'Recurring',
     'Notes',
+    'Transfer ID',
   ],
   'pt-BR': [
     'Data',
@@ -46,6 +47,7 @@ export const TRANSACTION_CSV_HEADERS: Record<CsvLanguage, string[]> = {
     'Parcela',
     'Recorrente',
     'Notas',
+    'ID da transferência',
   ],
 };
 
@@ -56,6 +58,9 @@ export const SYSTEM_CATEGORY_LABELS: Record<CsvLanguage, Record<SystemCategoryKe
     [SystemCategoryKey.CARD_REFUND]: 'Card refund',
     [SystemCategoryKey.INSTALLMENT_PREPAYMENT_DISCOUNT]: 'Prepayment discount',
     [SystemCategoryKey.INVOICE_PAYMENT]: 'Invoice payment',
+    [SystemCategoryKey.TRANSFER_FEE]: 'Transfer fees',
+    [SystemCategoryKey.TRANSFER_IN]: 'Transfer in',
+    [SystemCategoryKey.TRANSFER_OUT]: 'Transfer out',
   },
   'pt-BR': {
     [SystemCategoryKey.BALANCE_ADJUSTMENT]: 'Ajuste de saldo',
@@ -63,6 +68,9 @@ export const SYSTEM_CATEGORY_LABELS: Record<CsvLanguage, Record<SystemCategoryKe
     [SystemCategoryKey.CARD_REFUND]: 'Estorno no cartão',
     [SystemCategoryKey.INSTALLMENT_PREPAYMENT_DISCOUNT]: 'Desconto de antecipação',
     [SystemCategoryKey.INVOICE_PAYMENT]: 'Pagamento de fatura',
+    [SystemCategoryKey.TRANSFER_FEE]: 'Tarifas de transferência',
+    [SystemCategoryKey.TRANSFER_IN]: 'Transferência recebida',
+    [SystemCategoryKey.TRANSFER_OUT]: 'Transferência enviada',
   },
 };
 
@@ -122,5 +130,6 @@ export function toCsvRow(row: ExportRow, format: CsvFormat, lang: CsvLanguage): 
       : '',
     yesNo(transaction.recurrenceId !== null),
     transaction.notes ?? '',
+    transaction.transferId ?? '',
   ];
 }

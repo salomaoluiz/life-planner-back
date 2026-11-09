@@ -32,10 +32,10 @@ describe('formatCsvDate', () => {
 });
 
 describe('headers and labels', () => {
-  it('SHOULD have 15 headers per language and a label for every system category', () => {
-    expect(TRANSACTION_CSV_HEADERS['pt-BR']).toHaveLength(15);
-    expect(TRANSACTION_CSV_HEADERS['en-US']).toHaveLength(15);
-    expect(Object.keys(SYSTEM_CATEGORY_LABELS['pt-BR'])).toHaveLength(5);
+  it('SHOULD have 16 headers per language and a label for every system category', () => {
+    expect(TRANSACTION_CSV_HEADERS['pt-BR']).toHaveLength(16);
+    expect(TRANSACTION_CSV_HEADERS['en-US']).toHaveLength(16);
+    expect(Object.keys(SYSTEM_CATEGORY_LABELS['pt-BR'])).toHaveLength(8);
   });
 
   it('SHOULD name the file by language', () => {
@@ -74,7 +74,7 @@ describe('toCsvRow', () => {
     expect(row[0]).toBe('02/10/2026');
     expect(row.slice(1, 6)).toEqual(['Supermercado', 'Despesa', '312,40', 'BRL', 'Casa > Mercado']);
     expect(row[6]).toBe(transaction.account?.name ?? '');
-    expect(row.slice(7)).toEqual(['', '', 'Sim', 'fixo', 'Pessoal', '', 'Não', '']);
+    expect(row.slice(7)).toEqual(['', '', 'Sim', 'fixo', 'Pessoal', '', 'Não', '', '']);
   });
 
   it('SHOULD write a card purchase with its invoice, installment and recurrence', () => {
@@ -105,24 +105,45 @@ describe('toCsvRow', () => {
       '3/10',
       'Yes',
       '',
+      '',
     ]);
   });
 });
 
 describe('notes column (spec 059)', () => {
-  it('SHOULD end the header with Notes / Notas', () => {
-    expect(TRANSACTION_CSV_HEADERS['en-US'].slice(-1)[0]).toBe('Notes');
-    expect(TRANSACTION_CSV_HEADERS['pt-BR'].slice(-1)[0]).toBe('Notas');
+  it('SHOULD put Notes / Notas right before the Transfer ID column', () => {
+    expect(TRANSACTION_CSV_HEADERS['en-US'].slice(-2)[0]).toBe('Notes');
+    expect(TRANSACTION_CSV_HEADERS['pt-BR'].slice(-2)[0]).toBe('Notas');
   });
 
-  it('SHOULD write the notes last, with line breaks, and leave it empty when null', () => {
+  it('SHOULD write the notes before the transfer id, with line breaks, and leave it empty when null', () => {
     const noted = make({ notes: 'Casa\nAeroporto' });
     const plain = make({ notes: null });
     const args = { belongsTo: 'Pessoal', categoryPath: 'X' };
 
-    expect(toCsvRow({ ...args, transaction: noted }, 'BR', 'pt-BR').slice(-1)[0]).toBe(
+    expect(toCsvRow({ ...args, transaction: noted }, 'BR', 'pt-BR').slice(-2)[0]).toBe(
       'Casa\nAeroporto',
     );
-    expect(toCsvRow({ ...args, transaction: plain }, 'BR', 'pt-BR').slice(-1)[0]).toBe('');
+    expect(toCsvRow({ ...args, transaction: plain }, 'BR', 'pt-BR').slice(-2)[0]).toBe('');
+  });
+});
+
+describe('transfer id column (spec 098)', () => {
+  it('SHOULD end the header with Transfer ID / ID da transferência', () => {
+    expect(TRANSACTION_CSV_HEADERS['en-US'].slice(-1)[0]).toBe('Transfer ID');
+    expect(TRANSACTION_CSV_HEADERS['pt-BR'].slice(-1)[0]).toBe('ID da transferência');
+  });
+
+  it('SHOULD write the transfer id of a transfer row AND leave it empty for the others', () => {
+    const args = { belongsTo: 'Pessoal', categoryPath: 'X' };
+
+    expect(
+      toCsvRow({ ...args, transaction: make({ transferId: 'transfer-1' }) }, 'BR', 'pt-BR').slice(
+        -1,
+      )[0],
+    ).toBe('transfer-1');
+    expect(
+      toCsvRow({ ...args, transaction: make({ transferId: null }) }, 'BR', 'pt-BR').slice(-1)[0],
+    ).toBe('');
   });
 });

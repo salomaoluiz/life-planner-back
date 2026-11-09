@@ -11,6 +11,8 @@ import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 // A future occurrence of a series, computed on read and never stored (spec 034 FR 8, FR 12).
 export interface ProjectedOccurrence {
   account: null | TransactionAccountSummary;
+  // Spec 098: an in side whose amount is not known yet (different currencies) projects with value 0.
+  amountPending?: boolean;
   category: TransactionCategorySummary;
   creditCard: null | TransactionCardSummary;
   currency: CurrencyCode;
@@ -30,6 +32,8 @@ export interface ProjectedOccurrence {
   projected: boolean;
   recurrenceId: string;
   tags: TagRef[];
+  // Spec 098: set on the two sides of a transfer series occurrence.
+  transferSide?: 'IN' | 'OUT';
   type: TransactionType;
   value: number;
 }

@@ -80,6 +80,7 @@ export class FinanceTransactionMapper {
       refundedPlanId: raw.refunded_plan_id,
       refundedTransactionId: raw.refunded_transaction_id,
       tags: toTagRefs(raw.tags),
+      transferId: raw.transfer_id,
       type: TransactionType[raw.type],
       updatedAt: raw.updated_at,
       value: raw.value,

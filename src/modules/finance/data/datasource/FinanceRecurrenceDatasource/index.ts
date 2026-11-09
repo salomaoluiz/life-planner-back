@@ -65,6 +65,7 @@ export const RECURRENCE_RELATIONS = {
   },
   credit_card: { select: { color: true, id: true, last_digits: true, title: true } },
   tags: { ...TAG_INCLUDE.tags, select: { tag: { select: { id: true, name: true } } } },
+  to_account: { select: { currency: true, icon: true, id: true, name: true } },
 };
 
 interface LockableRow {
@@ -595,19 +596,29 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
     owners: OwnerAccess[],
     filter: FindRecurrencesDatasourceFilter = {},
   ): Promise<FinancialRecurrenceWithRelations[]> {
+    const transfers = filter.transfers ?? 'EXCLUDE';
+    const conditions: Prisma.FinancialRecurrenceWhereInput[] = [
+      toOwnerWhere(owners),
+      { credit_card_id: filter.credit_card_id, status: filter.status },
+    ];
+
+    // A transfer series belongs to its destination account too (archiving either one ends it).
+    if (filter.account_id !== undefined) {
+      conditions.push({
+        OR: [{ account_id: filter.account_id }, { to_account_id: filter.account_id }],
+      });
+    }
+    if (transfers === 'EXCLUDE') {
+      conditions.push({ to_account_id: null });
+    }
+    if (transfers === 'ONLY') {
+      conditions.push({ to_account_id: { not: null } });
+    }
+
     return this.db.client.financialRecurrence.findMany({
       include: RECURRENCE_RELATIONS,
       orderBy: [{ start_date: 'asc' }, { created_at: 'asc' }],
-      where: {
-        AND: [
-          toOwnerWhere(owners),
-          {
-            account_id: filter.account_id,
-            credit_card_id: filter.credit_card_id,
-            status: filter.status,
-          },
-        ],
-      },
+      where: { AND: conditions },
     });
   }
 
@@ -623,6 +634,8 @@ export class FinanceRecurrenceDatasource implements IFinanceRecurrenceDatasource
         last_generated_number: true,
         skipped_numbers: true,
         start_date: true,
+        // Spec 098: one read serves both kinds; a transfer series is materialized by its own use case.
+        to_account_id: true,
       },
       where: {
         AND: [toOwnerWhere(owners), { next_occurrence_date: { lte: horizon }, status: 'ACTIVE' }],

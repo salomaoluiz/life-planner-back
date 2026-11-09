@@ -778,6 +778,10 @@ function filterWhere(source: TransactionSource, filter: FindTransactionsFilter) 
     where.push({ account_id: { in: filter.accountIds } });
   }
 
+  if (filter.kind === 'TRANSFER') {
+    where.push({ transfer_id: { not: null } });
+  }
+
   if (filter.paid !== undefined) {
     where.push({ paid: filter.paid });
   }

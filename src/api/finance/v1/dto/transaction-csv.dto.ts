@@ -58,6 +58,8 @@ const ImportRowApiSchema = z.object({
   // Spec 048: the account an early payment or an invoice payment is paid from.
   paidFromAccountId: z.uuid().nullish(),
   tags: z.array(z.string()).nullish(),
+  // Spec 098: the `Transfer ID` column; groups the out, in and fee rows of one transfer.
+  transferId: z.string().min(1).nullish(),
   type: TransactionTypeApiSchema,
   value: z.number(),
 });
@@ -90,6 +92,8 @@ export const ImportDryRunOutputSchema = z.object({
       paid: z.boolean(),
     }),
   ),
+  // Spec 098: how many transfers the file holds (only present when it has any).
+  transfers: z.number().int().min(0).optional(),
 });
 export const ImportCreatedOutputSchema = z.object({ created: z.number().int().min(0) });
 

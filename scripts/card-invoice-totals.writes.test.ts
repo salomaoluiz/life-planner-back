@@ -16,8 +16,12 @@ const REQUIRED_REFRESH_CALLS: Record<string, number> = {
 
 // Writers whose changes never alter a total: the category copy of a family only swaps `category_id` to a user
 // category (the early-payment total is keyed by the system category, which copies never touch); the invoice payment
-// only creates the paid debit row of an ACCOUNT (no card).
-const NO_TOTALS_EFFECT = ['FinanceCategoryDatasource', 'FinanceInvoicePaymentDatasource'];
+// only creates the paid debit row of an ACCOUNT (no card); a transfer (spec 098) writes account rows only.
+const NO_TOTALS_EFFECT = [
+  'FinanceCategoryDatasource',
+  'FinanceInvoicePaymentDatasource',
+  'FinanceTransferDatasource',
+];
 
 const WRITE_CALL =
   /financialTransaction\.(create|createMany|createManyAndReturn|update|updateMany|delete|deleteMany|upsert)\(|batchUpdate\(\s*tx,\s*'financial_transactions'|INSERT INTO "financial_transactions"|UPDATE "financial_transactions"|DELETE FROM "financial_transactions"/;

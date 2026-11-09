@@ -57,6 +57,20 @@ export function sumLedgerDeltas(deltas: LedgerDelta[]): LedgerDelta[] {
     .sort((a, b) => a.accountId.localeCompare(b.accountId));
 }
 
+// Spec 098: locks the account rows (ascending id) until commit, so two transfers over the same accounts serialize
+// in the same order as `applyLedgerDeltas`.
+export async function lockAccounts(tx: Prisma.TransactionClient, ids: string[]): Promise<void> {
+  const unique = [...new Set(ids)].sort();
+
+  if (unique.length === 0) {
+    return;
+  }
+
+  await tx.$queryRaw(
+    Prisma.sql`SELECT "id" FROM "financial_accounts" WHERE "id" IN (${Prisma.join(unique)}) ORDER BY "id" FOR UPDATE`,
+  );
+}
+
 // A purchase can't be written into (or out of) an invoice that already has a payment (spec 029 FR 7).
 export async function assertInvoiceNotPaid(
   tx: Prisma.TransactionClient,

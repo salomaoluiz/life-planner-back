@@ -17,6 +17,7 @@ import {
   normalizeTags,
   validateImportRow,
 } from '@finance/application/service/ImportRows';
+import { checkTransferRows } from '@finance/application/service/ImportTransfers';
 import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
 import {
@@ -37,6 +38,7 @@ import {
   IFinanceCardCreditRepository,
   IFinanceCreditCardRepository,
   IFinanceTransactionRepository,
+  IFinanceTransferRepository,
   PayInvoiceRepositoryParams,
 } from '@finance/domain/repository';
 import { defaultPaymentInvoiceMonth } from '@finance/domain/service/ImportInvoiceMath';
@@ -47,6 +49,7 @@ import {
 } from '@finance/domain/service/ImportRowKind';
 import { invoiceMonthOf } from '@finance/domain/service/InvoiceCalculator';
 import { normalizeNotes } from '@finance/domain/service/Notes';
+import { transferRowKind } from '@finance/domain/service/TransferImport';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -57,6 +60,8 @@ export interface ImportTransactionsResult {
   errors: ImportRowError[];
   // Spec 048 FR 24: the invoices the file touches (dry run, only when it has card credits or payments).
   invoices: ImportInvoiceSummary[];
+  // Spec 098: how many transfers the file holds (only present when it has any).
+  transfers?: number;
 }
 
 interface CardLookup {
@@ -96,6 +101,8 @@ export class ImportTransactionsUseCase implements UseCaseWithParams<
     private readonly ensureTransactionConsistencyUseCase: EnsureTransactionConsistencyUseCase,
     @Inject('IFinanceTransactionRepository')
     private readonly transactionRepository: IFinanceTransactionRepository,
+    @Inject('IFinanceTransferRepository')
+    private readonly transferRepository: IFinanceTransferRepository,
   ) {}
 
   async execute(params: ImportTransactionsInput): Promise<ImportTransactionsResult> {
@@ -114,7 +121,31 @@ export class ImportTransactionsUseCase implements UseCaseWithParams<
     const cardLookups = new Map<string, Promise<CardLookup | ImportRowError>>();
     const wellFormed: ImportRow[] = [];
 
-    for (const row of input.rows) {
+    // Spec 098 FR 12: the rows of the transfer categories are grouped into whole transfers, apart from the others.
+    const transferRows = input.rows.filter((row) => transferRowKind(row.categoryId) !== undefined);
+    const transferErrors: ImportRowError[] = [];
+    const wellFormedTransferRows: ImportRow[] = [];
+
+    for (const row of transferRows) {
+      const invalid = validateImportRow(row);
+
+      if (invalid) {
+        transferErrors.push(invalid);
+      } else {
+        wellFormedTransferRows.push(row);
+      }
+    }
+    const checkedTransfers = await checkTransferRows({
+      accessibleOwners: input.accessibleOwners,
+      accountRepository: this.accountRepository,
+      requesterId: input.requesterId ?? input.ownerId,
+      rows: wellFormedTransferRows,
+      today: input.today,
+    });
+
+    errors.push(...transferErrors, ...checkedTransfers.errors);
+
+    for (const row of input.rows.filter((item) => transferRowKind(item.categoryId) === undefined)) {
       const invalid = validateImportRow(row);
 
       if (invalid) {
@@ -216,8 +247,11 @@ export class ImportTransactionsUseCase implements UseCaseWithParams<
         throw new UnprocessableEntityException({ errors, message: 'The import has invalid rows' });
       }
 
+      // The transfers are validated up front, so they go first in their own single database transaction.
+      const transfers = await this.transferRepository.createTransfers(checkedTransfers.transfers);
+
       return {
-        created: await this.write(checked, cardRows.months, input),
+        created: transfers + (await this.write(checked, cardRows.months, input)),
         duplicates: [],
         errors: [],
         invoices: [],
@@ -229,6 +263,9 @@ export class ImportTransactionsUseCase implements UseCaseWithParams<
       duplicates: [...duplicates].sort((a, b) => a - b),
       errors,
       invoices: cardRows.invoices,
+      ...(checkedTransfers.transfers.length > 0
+        ? { transfers: checkedTransfers.transfers.length }
+        : {}),
     };
   }
 

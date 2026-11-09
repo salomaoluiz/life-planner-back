@@ -47,6 +47,7 @@ const paramsMock: TransactionEntity = {
   refundedPlanId: null,
   refundedTransactionId: null,
   tags: [],
+  transferId: null,
   type: TransactionType.EXPENSE,
   updatedAt: new Date('2026-10-04T13:00:00.000Z'),
   value: 23490,

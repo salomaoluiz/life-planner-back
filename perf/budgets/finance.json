@@ -109,6 +109,16 @@
     "reason": "Writes are not measured: perf tests only read (spec 093).",
     "scenario": ""
   },
+  "DELETE /api/v1/finance/transfers/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "maxQueriesInTx": 12,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
   "GET /api/v1/finance/accounts": {
     "indexes": null,
     "kind": "read",
@@ -553,6 +563,15 @@
     "p50Ms": 41,
     "scenario": "from={monthStart}&to={monthEnd}"
   },
+  "GET /api/v1/finance/transfers/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Not measured: the pinned perf dataset has no transfers (spec 098); the row reads reuse the measured transaction by id.",
+    "scenario": ""
+  },
   "GET /api/v1/finance/upcoming": {
     "indexes": ["financial_transactions_owner_unpaid_idx"],
     "kind": "read",
@@ -664,6 +683,17 @@
     "reason": "Writes are not measured: perf tests only read (spec 093).",
     "scenario": ""
   },
+  "PATCH /api/v1/finance/transfers/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "maxQueriesInTx": 18,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+
   "POST /api/v1/finance/accounts": {
     "indexes": null,
     "kind": "unmeasured",
@@ -809,6 +839,16 @@
     "maxQueries": 0,
     "p50Ms": null,
     "reason": "Bulk import needs a prepared file and a matching cleanup; not covered yet.",
+    "scenario": ""
+  },
+  "POST /api/v1/finance/transfers": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "maxQueriesInTx": 14,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
     "scenario": ""
   }
 }

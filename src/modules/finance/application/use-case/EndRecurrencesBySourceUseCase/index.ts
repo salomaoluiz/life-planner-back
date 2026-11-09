@@ -30,6 +30,7 @@ export class EndRecurrencesBySourceUseCase implements UseCaseWithParams<
       accountId: input.accountId,
       creditCardId: input.creditCardId,
       status: RecurrenceStatus.ACTIVE,
+      transfers: 'ALL',
     });
 
     for (const series of active) {

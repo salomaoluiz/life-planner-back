@@ -45,6 +45,10 @@ export type ImportErrorCode =
   | 'SYSTEM_CATEGORY'
   | 'TAG_TOO_LONG'
   | 'TOO_MANY_TAGS'
+  | 'TRANSFER_AMOUNT_MISMATCH'
+  | 'TRANSFER_DATE_IN_BEFORE_OUT'
+  | 'TRANSFER_INCOMPLETE'
+  | 'TRANSFER_SAME_ACCOUNT'
   | 'UNSUPPORTED_CURRENCY';
 export interface ImportRowError {
   code: ImportErrorCode;

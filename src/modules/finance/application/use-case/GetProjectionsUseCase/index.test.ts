@@ -286,3 +286,63 @@ describe('categories read once (spec 083)', () => {
     );
   });
 });
+
+describe('transfer series (spec 098)', () => {
+  function transferSeries() {
+    return {
+      ...mocks.series,
+      amountIn: null,
+      toAccount: { icon: 'bank', id: 'acc-to', name: 'Savings' },
+      toAccountId: 'acc-to',
+      toCurrency: 'USD',
+    };
+  }
+
+  it('SHOULD project the out side AND an in side without amount WHEN the currencies differ', async () => {
+    mocks.recurrenceRepository.findByOwners.mockResolvedValue([transferSeries()]);
+
+    const result = await setup.execute({ ...base, to: '2026-11' });
+
+    expect(mocks.recurrenceRepository.findByOwners).toHaveBeenCalledWith(
+      mocks.accessibleOwners,
+      expect.objectContaining({ transfers: 'ALL' }),
+    );
+    expect(result).toHaveLength(2);
+    const out = result.find((item) => item.transferSide === 'OUT');
+    const inSide = result.find((item) => item.transferSide === 'IN');
+    expect(out).toMatchObject({
+      account: mocks.series.account,
+      amountPending: false,
+      value: mocks.series.value,
+    });
+    expect(inSide).toMatchObject({
+      account: { icon: 'bank', id: 'acc-to', name: 'Savings' },
+      amountPending: true,
+      category: expect.objectContaining({ excludeFromTotals: true, systemKey: 'TRANSFER_IN' }),
+      currency: 'USD',
+      date: out?.date,
+      occurrenceNumber: out?.occurrenceNumber,
+      type: 'INCOME',
+      value: 0,
+    });
+  });
+
+  it('SHOULD give the in side the fixed amount WHEN the series has one', async () => {
+    mocks.recurrenceRepository.findByOwners.mockResolvedValue([
+      { ...transferSeries(), amountIn: mocks.series.value },
+    ]);
+
+    const result = await setup.execute({ ...base, to: '2026-11' });
+
+    expect(result.find((item) => item.transferSide === 'IN')).toMatchObject({
+      amountPending: false,
+      value: mocks.series.value,
+    });
+  });
+
+  it('SHOULD leave ordinary series without a transfer side', async () => {
+    const result = await setup.execute(base);
+
+    expect(result.every((item) => item.transferSide === undefined)).toBe(true);
+  });
+});

@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { MonthService } from '@api/finance/v1/month.service';
+import { TransferLookupsService } from '@api/finance/v1/transfer-lookups.service';
 import { GetDailyBalancesUseCase } from '@finance/application/use-case/GetDailyBalancesUseCase';
 import { GetInvoicesForListUseCase } from '@finance/application/use-case/GetInvoicesForListUseCase';
 import { GetMonthSummaryUseCase } from '@finance/application/use-case/GetMonthSummaryUseCase';
@@ -38,6 +39,10 @@ const getTransactionsUseCaseMock = { execute: jest.fn() };
 const loadFilterCategoriesUseCaseMock = { execute: jest.fn() };
 const materializeRecurrencesUseCaseMock = { execute: jest.fn() };
 
+const transferLookupsServiceMock = {
+  attach: jest.fn(async (_owners: unknown, _rows: unknown, lookups: unknown) => lookups),
+};
+
 // endregion Mocks
 
 let setup: MonthService;
@@ -52,6 +57,7 @@ beforeEach(async () => {
   getTransactionsUseCaseMock.execute.mockResolvedValue({ items: [rowMock], nextCursor: null });
   loadFilterCategoriesUseCaseMock.execute.mockResolvedValue(undefined);
   materializeRecurrencesUseCaseMock.execute.mockResolvedValue(undefined);
+  transferLookupsServiceMock.attach.mockImplementation(async (_owners, _rows, lookups) => lookups);
 
   const module = await Test.createTestingModule({
     providers: [
@@ -64,6 +70,7 @@ beforeEach(async () => {
       { provide: GetTransactionsUseCase, useValue: getTransactionsUseCaseMock },
       { provide: LoadFilterCategoriesUseCase, useValue: loadFilterCategoriesUseCaseMock },
       { provide: MaterializeRecurrencesUseCase, useValue: materializeRecurrencesUseCaseMock },
+      { provide: TransferLookupsService, useValue: transferLookupsServiceMock },
     ],
   }).compile();
 
@@ -84,6 +91,8 @@ const mocks = {
   summary: summaryMock,
   userId,
 };
-const spies = {};
+const spies = {
+  transferLookupsService: transferLookupsServiceMock,
+};
 
 export { mocks, setup, spies };

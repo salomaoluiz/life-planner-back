@@ -1,3 +1,5 @@
+import { NotFoundException } from '@nestjs/common';
+
 import { mocks, setup } from './index.mocks';
 
 const base = {
@@ -129,4 +131,13 @@ it('SHOULD invalidate the gate of the series owner after the row is created (spe
   await setup.execute(base);
 
   expect(mocks.gate.invalidate).toHaveBeenCalledWith(['user-id']);
+});
+
+it('SHOULD answer NotFound for a transfer series (spec 098): it changes only through the transfer', async () => {
+  mocks.recurrenceRepository.findById.mockResolvedValueOnce({
+    ...mocks.series,
+    toAccountId: 'acc-to',
+  });
+
+  await expect(setup.execute(base as never)).rejects.toThrow(NotFoundException);
 });

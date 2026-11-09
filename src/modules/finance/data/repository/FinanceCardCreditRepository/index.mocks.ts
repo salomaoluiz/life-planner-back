@@ -46,6 +46,7 @@ const rawMock: FinancialTransactionWithRelations = {
   refunded_plan_id: null,
   refunded_transaction: null,
   refunded_transaction_id: null,
+  transfer_id: null,
   type: 'INCOME',
   updated_at: new Date('2026-10-16T13:00:00.000Z'),
   value: 20000,

@@ -26,6 +26,7 @@ const creditCardRepositoryMock = { findCreditCardsByIds: jest.fn() };
 const invoicePaymentRepositoryMock = { findByCardIds: jest.fn() };
 const gateMock = { runOnce: jest.fn() };
 const recurrenceRepositoryMock = { findDue: jest.fn(), materialize: jest.fn() };
+const transferRepositoryMock = { materializeTransferSeries: jest.fn() };
 
 // endregion Mocks
 
@@ -42,6 +43,7 @@ beforeEach(async () => {
   );
   recurrenceRepositoryMock.findDue.mockResolvedValue([weeklySeries]);
   recurrenceRepositoryMock.materialize.mockResolvedValue(undefined);
+  transferRepositoryMock.materializeTransferSeries.mockResolvedValue(undefined);
 
   const module = await Test.createTestingModule({
     providers: [
@@ -50,6 +52,7 @@ beforeEach(async () => {
       { provide: 'IFinanceCreditCardRepository', useValue: creditCardRepositoryMock },
       { provide: 'IFinanceInvoicePaymentRepository', useValue: invoicePaymentRepositoryMock },
       { provide: 'IFinanceRecurrenceRepository', useValue: recurrenceRepositoryMock },
+      { provide: 'IFinanceTransferRepository', useValue: transferRepositoryMock },
     ],
   }).compile();
 
@@ -63,6 +66,7 @@ const mocks = {
   gate: gateMock,
   invoicePaymentRepository: invoicePaymentRepositoryMock,
   recurrenceRepository: recurrenceRepositoryMock,
+  transferRepository: transferRepositoryMock,
   weeklySeries,
 };
 const spies = {};

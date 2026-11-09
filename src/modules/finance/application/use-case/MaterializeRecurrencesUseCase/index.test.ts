@@ -184,3 +184,58 @@ describe('MaterializeRecurrencesUseCase', () => {
     await expect(setup.execute({ ...base, today: 'nope' })).rejects.toThrow();
   });
 });
+
+describe('transfer series (spec 098)', () => {
+  const transferSeries = {
+    creditCardId: null,
+    endDate: null,
+    firstNumber: 1,
+    frequency: RecurrenceFrequency.MONTHLY,
+    id: 'series-t',
+    lastGeneratedNumber: 1,
+    skippedNumbers: [],
+    startDate: '2026-09-17',
+    toAccountId: 'acc-to',
+  };
+
+  it('SHOULD materialize a transfer series through the transfer repository AND leave the card reads alone', async () => {
+    mocks.recurrenceRepository.findDue.mockResolvedValue([transferSeries]);
+
+    await setup.execute(base);
+
+    expect(mocks.transferRepository.materializeTransferSeries).toHaveBeenCalledWith({
+      expectedLast: 1,
+      id: 'series-t',
+      lastGeneratedNumber: 2,
+      nextOccurrenceDate: '2026-11-17',
+      occurrences: [{ date: '2026-10-17', number: 2 }],
+      status: 'ACTIVE',
+    });
+    expect(mocks.recurrenceRepository.materialize).not.toHaveBeenCalled();
+    expect(mocks.creditCardRepository.findCreditCardsByIds).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD handle standard and transfer series in the same run', async () => {
+    mocks.recurrenceRepository.findDue.mockResolvedValue([
+      { ...mocks.weeklySeries, creditCardId: null, toAccountId: null },
+      transferSeries,
+    ]);
+
+    await setup.execute(base);
+
+    expect(mocks.recurrenceRepository.materialize).toHaveBeenCalledTimes(1);
+    expect(mocks.transferRepository.materializeTransferSeries).toHaveBeenCalledTimes(1);
+  });
+
+  it('SHOULD end a transfer series whose end date was reached', async () => {
+    mocks.recurrenceRepository.findDue.mockResolvedValue([
+      { ...transferSeries, endDate: '2026-10-20' },
+    ]);
+
+    await setup.execute(base);
+
+    expect(mocks.transferRepository.materializeTransferSeries).toHaveBeenCalledWith(
+      expect.objectContaining({ nextOccurrenceDate: null, status: 'ENDED' }),
+    );
+  });
+});

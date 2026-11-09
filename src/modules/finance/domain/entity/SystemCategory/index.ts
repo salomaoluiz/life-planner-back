@@ -8,6 +8,9 @@ export const SYSTEM_CATEGORY_IDS: Record<SystemCategoryKey, string> = {
   [SystemCategoryKey.CARD_REFUND]: '00000000-0000-4000-8000-000000000004',
   [SystemCategoryKey.INSTALLMENT_PREPAYMENT_DISCOUNT]: '00000000-0000-4000-8000-000000000003',
   [SystemCategoryKey.INVOICE_PAYMENT]: '00000000-0000-4000-8000-000000000002',
+  [SystemCategoryKey.TRANSFER_FEE]: '00000000-0000-4000-8000-000000000008',
+  [SystemCategoryKey.TRANSFER_IN]: '00000000-0000-4000-8000-000000000007',
+  [SystemCategoryKey.TRANSFER_OUT]: '00000000-0000-4000-8000-000000000006',
 };
 
 // The only INCOME categories a card row may have (spec 032 FR 3).
@@ -30,3 +33,35 @@ export function isSystemCategoryId(id: string): boolean {
 
 // Stored description of every invoice payment transaction; the app shows a translated label from the key.
 export const INVOICE_PAYMENT_DESCRIPTION = 'Invoice payment';
+
+// Spec 098: the out and in rows of a transfer stay out of the income/expense totals; the fee counts.
+export function isTransferCategoryId(id: string): boolean {
+  return (
+    isTransferExcludedFromTotals(id) || id === SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_FEE]
+  );
+}
+export function isTransferExcludedFromTotals(id: string): boolean {
+  return (
+    id === SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_OUT] ||
+    id === SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_IN]
+  );
+}
+
+// Spec 098: transfer rows change only through the transfer (PATCH/DELETE /transactions/:id answers 422).
+export const TRANSFER_KEYS: SystemCategoryKey[] = [
+  SystemCategoryKey.TRANSFER_OUT,
+  SystemCategoryKey.TRANSFER_IN,
+  SystemCategoryKey.TRANSFER_FEE,
+];
+
+// The summary of the TRANSFER_IN category (seeded by the migration) for the projected in side of a series.
+export const TRANSFER_IN_SUMMARY = {
+  excludeFromTotals: true,
+  icon: 'bank-transfer-in',
+  iconColor: '#5A6273',
+  id: SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_IN],
+  name: 'Transfer in',
+  systemKey: SystemCategoryKey.TRANSFER_IN,
+};
+
+export const TRANSFER_ROW_USE_TRANSFER = 'TRANSFER_ROW_USE_TRANSFER';

@@ -1,3 +1,5 @@
+import { NotFoundException } from '@nestjs/common';
+
 import { RecurrenceFrequency } from '@finance/domain/enum';
 
 import { mocks, setup } from './index.mocks';
@@ -303,4 +305,13 @@ it('SHOULD invalidate the gate of the series owner after the split (spec 081)', 
   await setup.execute({ ...base, value: 220000 });
 
   expect(mocks.gate.invalidate).toHaveBeenCalledWith([mocks.series.ownerId]);
+});
+
+it('SHOULD answer NotFound for a transfer series (spec 098): it changes only through the transfer', async () => {
+  mocks.recurrenceRepository.findById.mockResolvedValueOnce({
+    ...mocks.series,
+    toAccountId: 'acc-to',
+  });
+
+  await expect(setup.execute(base as never)).rejects.toThrow(NotFoundException);
 });

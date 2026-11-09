@@ -1,5 +1,6 @@
 import { InstallmentEditScope } from '@finance/domain/enum';
 
+import { toProjectedOutput } from './recurrence.service';
 import { mocks, setup } from './recurrence.service.mocks';
 
 describe('create', () => {
@@ -231,5 +232,35 @@ describe('deletes', () => {
       confirmPaid: true,
       id: mocks.series.id,
     });
+  });
+});
+
+describe('toProjectedOutput (spec 098)', () => {
+  it('SHOULD carry the transfer side AND the pending amount of a projected transfer occurrence', () => {
+    const output = toProjectedOutput({
+      account: null,
+      amountPending: true,
+      category: mocks.series.category,
+      creditCard: null,
+      currency: 'USD',
+      date: '2026-12-04',
+      description: 'Monthly',
+      frequency: 'MONTHLY',
+      invoiceListDate: null,
+      invoiceMonth: null,
+      notes: null,
+      occurrenceCount: null,
+      occurrenceNumber: 3,
+      owner: 'USER',
+      ownerId: 'user-1',
+      projected: false,
+      recurrenceId: 'series-1',
+      tags: [],
+      transferSide: 'IN',
+      type: 'INCOME',
+      value: 0,
+    } as never);
+
+    expect(output).toMatchObject({ amountPending: true, transferSide: 'IN', value: 0 });
   });
 });

@@ -23,6 +23,7 @@ export class FinanceRecurrenceMapper {
         ? { icon: raw.account.icon, id: raw.account.id, name: raw.account.name }
         : null,
       accountId: raw.account_id,
+      amountIn: raw.amount_in,
       category: {
         excludeFromTotals: raw.category.exclude_from_totals,
         icon: raw.category.icon,
@@ -61,6 +62,11 @@ export class FinanceRecurrenceMapper {
       startDate,
       status: RecurrenceStatus[raw.status],
       tags: toTagRefs(raw.tags),
+      toAccount: raw.to_account
+        ? { icon: raw.to_account.icon, id: raw.to_account.id, name: raw.to_account.name }
+        : null,
+      toAccountId: raw.to_account_id,
+      toCurrency: (raw.to_account?.currency as CurrencyCode | undefined) ?? null,
       type: TransactionType[raw.type],
       updatedAt: raw.updated_at,
       value: raw.value,

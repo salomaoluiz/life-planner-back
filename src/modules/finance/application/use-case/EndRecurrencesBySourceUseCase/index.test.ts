@@ -10,6 +10,7 @@ describe('EndRecurrencesBySourceUseCase', () => {
       accountId: 'account-1',
       creditCardId: undefined,
       status: 'ACTIVE',
+      transfers: 'ALL',
     });
     expect(mocks.recurrenceRepository.applyChange).toHaveBeenCalledWith({
       fromNumber: 4,
