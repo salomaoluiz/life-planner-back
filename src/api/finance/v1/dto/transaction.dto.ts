@@ -208,6 +208,8 @@ export const TransactionPageApiSchema = z.object({
 });
 
 export const TransactionWithLookupsApiSchema = z.object({
+  // Spec 102: present on rows of the two investment categories.
+  investment: z.object({ assetId: z.uuid(), operationId: z.uuid() }).optional(),
   item: TransactionItemApiSchema,
   lookups: TransactionLookupsApiSchema,
 });

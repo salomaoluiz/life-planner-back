@@ -44,6 +44,13 @@ const httpUnprocessableMock = new HttpException(
   },
   422,
 );
+const httpUnprocessableDetailsMock = new HttpException(
+  {
+    details: { date: '2026-09-15', operationId: 'op-1' },
+    message: 'This change would make the position negative on 2026-09-15',
+  },
+  422,
+);
 const httpUnprocessablePlainMock = new HttpException('Account is archived', 422);
 const httpBadRequestMock = new HttpException('Bad Request', 400);
 const httpInternalServerErrorMock = new HttpException('Internal Server Error', 500);
@@ -92,6 +99,7 @@ const mocks = {
     generic: genericExceptionMock,
     internalServerError: httpInternalServerErrorMock,
     unprocessable: httpUnprocessableMock,
+    unprocessableDetails: httpUnprocessableDetailsMock,
     unprocessablePlain: httpUnprocessablePlainMock,
     validationError: validationErrorMock,
   },

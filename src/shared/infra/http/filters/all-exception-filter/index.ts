@@ -78,11 +78,15 @@ export class AllExceptionsFilter implements ExceptionFilter {
       return {};
     }
 
-    // A 422 only carries the per-row `errors` of an import (spec 047), nothing else.
+    // A 422 only carries the per-row `errors` of an import (spec 047) and the `details` of a never-negative
+    // position (spec 102: the date and operation where it breaks), nothing else.
     if (httpStatus === HttpStatus.UNPROCESSABLE_ENTITY) {
-      const { errors } = response as Record<string, unknown>;
+      const { details, errors } = response as Record<string, unknown>;
 
-      return errors === undefined ? {} : { errors };
+      return {
+        ...(errors === undefined ? {} : { errors }),
+        ...(details === undefined ? {} : { details }),
+      };
     }
 
     const details: Record<string, unknown> = { ...(response as Record<string, unknown>) };

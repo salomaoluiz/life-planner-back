@@ -35,6 +35,7 @@ import { UpcomingController } from '@api/finance/v1/upcoming.controller';
 import { UpcomingService } from '@api/finance/v1/upcoming.service';
 import { FamilyModule } from '@family/family.module';
 import { FinanceModule } from '@finance/finance.module';
+import { InvestmentModule } from '@investment/investment.module';
 
 @Module({
   // InvoiceController first: its static `credit-cards/invoices` route must win over CreditCardController's `:id`;
@@ -57,7 +58,7 @@ import { FinanceModule } from '@finance/finance.module';
     TransferController,
     UpcomingController,
   ],
-  imports: [FamilyModule, FinanceModule],
+  imports: [FamilyModule, FinanceModule, InvestmentModule],
   providers: [
     AccountService,
     CardCreditService,
