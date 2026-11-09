@@ -13,7 +13,7 @@ Rule: `.claude/CLAUDE.md` rule 17. Specs: 065 (query counts), 066 (timing, paylo
 ## Commands
 
 - `yarn perf --changed`: modules touched by the diff (against `origin/main`, plus uncommitted and untracked files). `src/shared/`, `prisma/`, `package.json` and `yarn.lock` select every module.
-- `yarn perf --all`, `yarn perf --module <family|finance|health|stock|user|version>`, `--dry-run` (shows the selection only).
+- `yarn perf --all`, `yarn perf --module <family|finance|health|investment|stock|user|version>`, `--dry-run` (shows the selection only).
 - `yarn perf --module <m> --update-baseline`: writes the measured numbers into the budgets (the ratchet, see below).
 - `yarn perf:check` runs only the timing, payload, concurrency and EXPLAIN part (`scripts/perf/check/*`).
 - `yarn perf:seed` fills the local perf data set (`perf/seed.config.json`); `yarn perf` seeds what is missing on its own; a changed config needs `--reset`.

@@ -3,6 +3,18 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.7.0] - 2026-11-09
+
+### Added
+
+- Investments core: assets (stock, FII, foreign stock, fixed income, private) with buy and sell operations, detailed fees, derived position (quantity, average price with fees, realized result), manual valuations and an optional linked finance entry per operation, under `/api/v1/investments/*` (spec 102).
+- System categories `INVESTMENT_CONTRIBUTION` and `INVESTMENT_REDEMPTION`: they move the account balance but stay out of income and expense; their rows change only through the operation. `GET /finance/transactions/:id` returns the `investment` link for them.
+
+### Changed
+
+- The dashboard totals SQL now skips every category flagged `exclude_from_totals` (also the stored sides of a transfer, spec 098).
+- A family with assets cannot be deleted, and account deletion purges the user's assets.
+
 ## [3.6.0] - 2026-11-09
 
 ### Added

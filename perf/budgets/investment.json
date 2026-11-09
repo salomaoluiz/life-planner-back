@@ -1,0 +1,91 @@
+{
+  "DELETE /api/v1/investments/assets/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "DELETE /api/v1/investments/operations/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "DELETE /api/v1/investments/valuations/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "GET /api/v1/investments/assets": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": 14,
+    "maxQueries": 3,
+    "p50Ms": 17,
+    "scenario": ""
+  },
+  "GET /api/v1/investments/assets/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs an asset in the pinned perf dataset (spec 093); the seed gets investments in a later spec.",
+    "scenario": ""
+  },
+  "PATCH /api/v1/investments/assets/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "PATCH /api/v1/investments/operations/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "POST /api/v1/investments/assets": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "POST /api/v1/investments/assets/:id/operations": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "PUT /api/v1/investments/assets/:id/valuations/:date": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  }
+}

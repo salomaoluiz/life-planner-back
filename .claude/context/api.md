@@ -220,3 +220,22 @@ A card EXPENSE can be projected ("Prevista"): not charged yet. `projected: boole
 ## Transfers (spec 098)
 
 `TransferController` (`/finance/transfers`, `@FinanceEtag()`), `TransferService` (rows read through `GetTransactionByIdUseCase`, `lookups` through `toTransactionLookups` + `TransferLookupsService`), DTOs in `dto/transfer.dto.ts`. `TransferLookupsService.attach` adds `lookups.transfers` (and the readable counterpart accounts) to the transaction list, by-id, month and transfer responses, with one extra read only when a row belongs to a transfer.
+
+## Investments (spec 102)
+
+`InvestmentController` (`/api/v1/investments`), `InvestmentService` (owners resolved through `GetUserFamilyAccessUseCase`, views mapped to the API shape), DTOs in `v1/dto/investment.dto.ts`. Quantities and unit prices are decimal STRINGS (up to 8 places; quantity/unit price outputs use the shortest form, `averagePrice` has 8 places); every other amount is integer cents in the asset currency.
+
+| Method | Path                                                   | Notes                                                                                                                                                  |
+| ------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/investments/assets?status=ACTIVE\|ARCHIVED&ownerId=` | `200 { items }`; each item carries the derived `position` and `operationCount`; sorted by class, ticker, name                                          |
+| POST   | `/investments/assets`                                  | `201` list item; `409 "You already have this ticker"`; `400` ticker required for stock/FII/foreign; `403`/`422` owner                                  |
+| GET    | `/investments/assets/:id`                              | `200 { item }` with `operations` (newest first, `realizedResult`/`costRemoved` on sells) and `valuations`                                              |
+| PATCH  | `/investments/assets/:id`                              | `422 "Class and currency can't change after the first operation"`; `status` archives/reactivates                                                       |
+| DELETE | `/investments/assets/:id`                              | `204`; deletes operations, fees, valuations and the linked finance rows                                                                                |
+| POST   | `/investments/assets/:id/operations`                   | `201 { item, position }`; `422` archived asset/account, other currency, fees above the sale, negative position (body `details: { date, operationId }`) |
+| PATCH  | `/investments/operations/:id`                          | any field but `type`/asset; `403 "This operation uses an account you can't change"`                                                                    |
+| DELETE | `/investments/operations/:id`                          | `204`; deletes its finance row; `422` negative position                                                                                                |
+| PUT    | `/investments/assets/:id/valuations/:date`             | upsert `{ unitPrice }`, `200 { item, position }`                                                                                                       |
+| DELETE | `/investments/valuations/:id`                          | `204`                                                                                                                                                  |
+
+Finance changes: `PATCH`/`DELETE /finance/transactions/:id` and `POST`/`PATCH` with an investment category answer `422 "Edit this transaction through its investment operation"`; `GET /finance/transactions/:id` adds `investment: { assetId, operationId }` for those rows; the 422 body of the exception filter forwards `details`.
