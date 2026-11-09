@@ -1,0 +1,208 @@
+import { Inject, Injectable } from '@nestjs/common';
+
+import { InvestmentMapper } from '@investment/data/datasource/mapper/InvestmentMapper';
+import { IInvestmentDatasource } from '@investment/data/repository/datasource/IInvestmentDatasource';
+import { AssetDetail, AssetEntity, AssetListRow } from '@investment/domain/entity/AssetEntity';
+import { OperationEntity } from '@investment/domain/entity/OperationEntity';
+import { OwnerAccess } from '@investment/domain/entity/OwnerAccess';
+import { ValuationEntity } from '@investment/domain/entity/ValuationEntity';
+import { InvestmentAssetStatus } from '@investment/domain/enum';
+import {
+  CreateAssetRepositoryParams,
+  IInvestmentRepository,
+  OperationAccount,
+  UpdateAssetRepositoryParams,
+  UpsertValuationRepositoryParams,
+  WriteOperationRepositoryParams,
+} from '@investment/domain/repository';
+import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
+
+@Injectable()
+export class InvestmentRepository implements IInvestmentRepository {
+  constructor(
+    @Inject('IInvestmentDatasource')
+    private readonly datasource: IInvestmentDatasource,
+  ) {}
+
+  async createAsset(params: CreateAssetRepositoryParams): Promise<AssetEntity> {
+    const row = await this.datasource.createAsset({
+      asset_class: params.assetClass,
+      currency: params.currency,
+      name: params.name,
+      owner: params.owner,
+      owner_id: params.ownerId,
+      ticker: params.ticker,
+      valuation: params.initialValuation
+        ? {
+            date: InvestmentMapper.fromCalendarDate(params.initialValuation.date),
+            unit_price: params.initialValuation.unitPrice.toFixed8(),
+          }
+        : undefined,
+    });
+
+    return InvestmentMapper.toAsset(row);
+  }
+
+  async deleteAsset(id: string): Promise<void> {
+    await this.datasource.deleteAsset(id);
+  }
+
+  async deleteAssetsByOwner(access: Pick<OwnerAccess, 'owner' | 'ownerId'>): Promise<number> {
+    return this.datasource.deleteAssetsByOwner(access.owner, access.ownerId);
+  }
+
+  async deleteOperation(id: string): Promise<void> {
+    await this.datasource.deleteOperation(id);
+  }
+
+  async deleteValuation(id: string): Promise<void> {
+    await this.datasource.deleteValuation(id);
+  }
+
+  async existsByOwner(access: Pick<OwnerAccess, 'owner' | 'ownerId'>): Promise<boolean> {
+    return this.datasource.existsByOwner(access.owner, access.ownerId);
+  }
+
+  async findAccountForOperation(id: string): Promise<OperationAccount | undefined> {
+    const row = await this.datasource.findAccountById(id);
+
+    return row
+      ? {
+          archived: row.status === 'ARCHIVED',
+          currency: row.currency,
+          id: row.id,
+          owner: OwnerType[row.owner],
+          ownerId: row.owner_id,
+        }
+      : undefined;
+  }
+
+  async findAssetById(id: string): Promise<AssetDetail | undefined> {
+    const asset = await this.datasource.findAssetById(id);
+
+    if (!asset) {
+      return undefined;
+    }
+
+    const [operations, valuations] = await Promise.all([
+      this.datasource.findOperationsByAssetIds([id]),
+      this.datasource.findValuationsByAssetId(id),
+    ]);
+
+    return {
+      ...InvestmentMapper.toAsset(asset),
+      operations: operations.map((row) => InvestmentMapper.toOperation(row)),
+      valuations: valuations.map((row) => InvestmentMapper.toValuation(row)),
+    };
+  }
+
+  async findAssetByTicker(
+    owner: OwnerType,
+    ownerId: string,
+    ticker: string,
+  ): Promise<AssetEntity | undefined> {
+    const row = await this.datasource.findAssetByTicker(owner, ownerId, ticker);
+
+    return row ? InvestmentMapper.toAsset(row) : undefined;
+  }
+
+  async findAssetsByOwners(
+    owners: OwnerAccess[],
+    status: InvestmentAssetStatus,
+  ): Promise<AssetListRow[]> {
+    if (owners.length === 0) {
+      return [];
+    }
+
+    const assets = await this.datasource.findAssets(owners, status);
+
+    if (assets.length === 0) {
+      return [];
+    }
+
+    const ids = assets.map((asset) => asset.id);
+    const [operations, valuations] = await Promise.all([
+      this.datasource.findOperationsByAssetIds(ids),
+      this.datasource.findLatestValuations(ids),
+    ]);
+
+    return assets.map((asset) => ({
+      ...InvestmentMapper.toAsset(asset),
+      latestValuation: toLatest(valuations.find((row) => row.asset_id === asset.id)),
+      operations: operations
+        .filter((row) => row.asset_id === asset.id)
+        .map((row) => InvestmentMapper.toOperation(row)),
+    }));
+  }
+
+  async findOperationById(id: string): Promise<OperationEntity | undefined> {
+    const row = await this.datasource.findOperationById(id);
+
+    return row ? InvestmentMapper.toOperation(row) : undefined;
+  }
+
+  async findOperationByTransactionId(
+    transactionId: string,
+  ): Promise<{ assetId: string; operationId: string } | undefined> {
+    const row = await this.datasource.findOperationByTransactionId(transactionId);
+
+    return row ? { assetId: row.asset_id, operationId: row.id } : undefined;
+  }
+
+  async findValuationById(id: string): Promise<undefined | ValuationEntity> {
+    const row = await this.datasource.findValuationById(id);
+
+    return row ? InvestmentMapper.toValuation(row) : undefined;
+  }
+
+  async updateAsset(params: UpdateAssetRepositoryParams): Promise<AssetEntity> {
+    const row = await this.datasource.updateAsset({
+      archived_at: params.archivedAt,
+      asset_class: params.assetClass,
+      currency: params.currency,
+      id: params.id,
+      name: params.name,
+      owner: params.owner,
+      owner_id: params.ownerId,
+      status: params.status,
+      ticker: params.ticker,
+    });
+
+    return InvestmentMapper.toAsset(row);
+  }
+
+  async upsertValuation(params: UpsertValuationRepositoryParams): Promise<ValuationEntity> {
+    const row = await this.datasource.upsertValuation(
+      params.assetId,
+      InvestmentMapper.fromCalendarDate(params.date),
+      params.unitPrice.toFixed8(),
+    );
+
+    return InvestmentMapper.toValuation(row);
+  }
+
+  async writeOperation(params: WriteOperationRepositoryParams): Promise<string> {
+    return this.datasource.writeOperation({
+      account_id: params.accountId,
+      asset_id: params.assetId,
+      asset_label: params.assetLabel,
+      currency: params.currency,
+      date: InvestmentMapper.fromCalendarDate(params.date),
+      fees: params.fees,
+      fees_total: params.feesTotal,
+      generate_transaction: params.generateTransaction,
+      gross: params.gross,
+      operation_id: params.operationId,
+      quantity: params.quantity.toFixed8(),
+      total: params.total,
+      type: params.type,
+      unit_price: params.unitPrice.toFixed8(),
+    });
+  }
+}
+
+function toLatest(
+  row: Parameters<typeof InvestmentMapper.toValuation>[0] | undefined,
+): null | ValuationEntity {
+  return row ? InvestmentMapper.toValuation(row) : null;
+}
