@@ -9,7 +9,8 @@ import { narrowOwners } from '@finance/domain/entity/OwnerAccess';
 import { ProjectedOccurrence } from '@finance/domain/entity/ProjectedOccurrence';
 import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
 import { TransactionFilter } from '@finance/domain/entity/TransactionFilter';
-import { RecurrenceStatus } from '@finance/domain/enum';
+import { TRANSFER_IN_SUMMARY } from '@finance/domain/entity/SystemCategory';
+import { RecurrenceStatus, TransactionType } from '@finance/domain/enum';
 import {
   IFinanceCreditCardRepository,
   IFinanceRecurrenceRepository,
@@ -187,6 +188,21 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
       : this.creditCardRepository.findCreditCardById(series.creditCardId);
   }
 
+  // Spec 098 FR 8: the in side of a transfer series occurrence. Its amount is the series' (same currency) or unknown,
+  // which projects as 0 so balances ignore it until the occurrence is paid with an amount in.
+  private projectIn(series: RecurrenceEntity, out: ProjectedOccurrence): ProjectedOccurrence {
+    return {
+      ...out,
+      account: series.toAccount,
+      amountPending: series.amountIn === null,
+      category: TRANSFER_IN_SUMMARY,
+      currency: series.toCurrency ?? out.currency,
+      transferSide: 'IN',
+      type: TransactionType.INCOME,
+      value: series.amountIn ?? 0,
+    };
+  }
+
   // Shared with `GetRecurrenceUseCase`: the card's CURRENT closing rule decides the invoice.
   async project(
     series: RecurrenceEntity,
@@ -196,10 +212,9 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
   ): Promise<ProjectedOccurrence[]> {
     const card = await this.cardOf(series, cards);
 
-    return scheduled.map((occurrence) => {
+    return scheduled.flatMap((occurrence) => {
       const invoiceMonth = card ? invoiceMonthOf(occurrence.date, card.closingDay) : null;
-
-      return {
+      const projection: ProjectedOccurrence = {
         account: series.account,
         category: series.category,
         creditCard: series.creditCard,
@@ -223,6 +238,13 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
         type: series.type,
         value: series.value,
       };
+
+      return series.toAccountId === null
+        ? [projection]
+        : [
+            { ...projection, amountPending: false, transferSide: 'OUT' as const },
+            this.projectIn(series, projection),
+          ];
     });
   }
 }

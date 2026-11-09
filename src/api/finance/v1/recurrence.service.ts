@@ -30,6 +30,7 @@ import { InstallmentEditScope, RecurrenceStatus } from '@finance/domain/enum';
 function toProjectedOutput(item: ProjectedOccurrence) {
   return {
     account: item.account,
+    amountPending: item.amountPending,
     category: item.category,
     creditCard: item.creditCard,
     currency: item.currency,
@@ -46,6 +47,7 @@ function toProjectedOutput(item: ProjectedOccurrence) {
     projected: item.projected,
     recurrenceId: item.recurrenceId,
     tags: item.tags,
+    transferSide: item.transferSide,
     type: item.type,
     value: item.value,
   };

@@ -64,6 +64,7 @@ class RecurrenceEntityFixture {
       amountIn: null,
       toAccount: null,
       toAccountId: null,
+      toCurrency: null,
       type: TransactionType.EXPENSE,
       updatedAt: faker.date.recent(),
       value: faker.number.int({ max: 100_000, min: 1 }),

@@ -40,6 +40,7 @@ const paramsMock: RecurrenceEntity = {
   amountIn: null,
   toAccount: null,
   toAccountId: null,
+  toCurrency: null,
   type: TransactionType.EXPENSE,
   updatedAt: new Date('2026-10-04T13:00:00.000Z'),
   value: 200000,

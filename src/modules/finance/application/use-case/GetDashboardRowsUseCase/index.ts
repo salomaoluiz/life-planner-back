@@ -196,6 +196,8 @@ export class GetDashboardRowsUseCase implements UseCaseWithParams<
 
       if (
         !date ||
+        // Spec 098: the sides of a transfer series are not income or expense.
+        item.category.excludeFromTotals ||
         date < input.from ||
         date > input.to ||
         item.currency !== input.currency ||

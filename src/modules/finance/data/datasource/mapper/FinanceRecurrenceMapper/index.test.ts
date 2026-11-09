@@ -38,6 +38,7 @@ describe('FinanceRecurrenceMapper.toDomain', () => {
       tags: [],
       toAccount: null,
       toAccountId: null,
+      toCurrency: null,
       type: 'EXPENSE',
       updatedAt: mocks.raw.updated_at,
       value: 200000,
@@ -88,7 +89,7 @@ it('SHOULD map the destination of a transfer series (spec 098)', () => {
   const entity = FinanceRecurrenceMapper.toDomain({
     ...mocks.raw,
     amount_in: 20000,
-    to_account: { icon: 'bank', id: 'acc-to', name: 'Savings' },
+    to_account: { currency: 'USD', icon: 'bank', id: 'acc-to', name: 'Savings' },
     to_account_id: 'acc-to',
   });
 
@@ -96,5 +97,6 @@ it('SHOULD map the destination of a transfer series (spec 098)', () => {
     amountIn: 20000,
     toAccount: { icon: 'bank', id: 'acc-to', name: 'Savings' },
     toAccountId: 'acc-to',
+    toCurrency: 'USD',
   });
 });

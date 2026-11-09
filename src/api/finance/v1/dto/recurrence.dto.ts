@@ -156,6 +156,8 @@ export const RecurrenceApiSchema = z.object({
 });
 export const ProjectedOccurrenceApiSchema = z.object({
   account: TransactionApiSchema.shape.account,
+  // Spec 098: only on the two sides of a transfer series occurrence.
+  amountPending: z.boolean().optional(),
   category: TransactionApiSchema.shape.category,
   creditCard: TransactionApiSchema.shape.creditCard,
   currency: CurrencyApiSchema,
@@ -172,6 +174,7 @@ export const ProjectedOccurrenceApiSchema = z.object({
   projected: z.boolean(),
   recurrenceId: z.uuid(),
   tags: z.array(TagRefApiSchema),
+  transferSide: z.enum(['IN', 'OUT']).optional(),
   type: TransactionTypeApiSchema,
   value: z.number().int(),
 });

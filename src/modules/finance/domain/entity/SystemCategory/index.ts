@@ -55,4 +55,14 @@ export const TRANSFER_KEYS: SystemCategoryKey[] = [
   SystemCategoryKey.TRANSFER_FEE,
 ];
 
+// The summary of the TRANSFER_IN category (seeded by the migration) for the projected in side of a series.
+export const TRANSFER_IN_SUMMARY = {
+  excludeFromTotals: true,
+  icon: 'bank-transfer-in',
+  iconColor: '#5A6273',
+  id: SYSTEM_CATEGORY_IDS[SystemCategoryKey.TRANSFER_IN],
+  name: 'Transfer in',
+  systemKey: SystemCategoryKey.TRANSFER_IN,
+};
+
 export const TRANSFER_ROW_USE_TRANSFER = 'TRANSFER_ROW_USE_TRANSFER';

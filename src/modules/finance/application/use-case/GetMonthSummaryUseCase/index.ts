@@ -81,6 +81,10 @@ export class GetMonthSummaryUseCase implements UseCaseWithParams<
     }
 
     for (const item of params.projections) {
+      if (item.category.excludeFromTotals) {
+        continue;
+      }
+
       if (item.creditCard) {
         if (item.invoiceListDate?.slice(0, 7) === params.month) {
           summary.projectedExpense += item.value;

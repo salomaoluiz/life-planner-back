@@ -65,7 +65,7 @@ export const RECURRENCE_RELATIONS = {
   },
   credit_card: { select: { color: true, id: true, last_digits: true, title: true } },
   tags: { ...TAG_INCLUDE.tags, select: { tag: { select: { id: true, name: true } } } },
-  to_account: { select: { icon: true, id: true, name: true } },
+  to_account: { select: { currency: true, icon: true, id: true, name: true } },
 };
 
 interface LockableRow {

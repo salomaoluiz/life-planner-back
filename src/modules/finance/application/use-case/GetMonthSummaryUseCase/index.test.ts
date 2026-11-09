@@ -91,6 +91,22 @@ it('SHOULD split the projections: account ones by date, card ones by the invoice
   expect(result.income).toBe(0);
 });
 
+it('SHOULD leave the projected transfer sides out of the totals (spec 098)', async () => {
+  const excluded = { ...mocks.projection({ value: 500 }).category, excludeFromTotals: true };
+  const result = await setup.execute({
+    accountRows: [],
+    invoices: [],
+    month: mocks.month,
+    projections: [
+      { ...mocks.projection({ value: 500 }), category: excluded },
+      { ...mocks.projection({ type: INCOME, value: 500 }), category: excluded },
+    ],
+  });
+
+  expect(result.projectedExpense).toBe(0);
+  expect(result.projectedIncome).toBe(0);
+});
+
 it('SHOULD count only the matching purchases of a filtered invoice', async () => {
   const result = await setup.execute({
     accountRows: [],

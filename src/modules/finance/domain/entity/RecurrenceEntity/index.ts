@@ -37,6 +37,7 @@ interface IRecurrenceEntity {
   tags?: TagRef[];
   toAccount?: null | TransactionAccountSummary;
   toAccountId?: null | string;
+  toCurrency?: CurrencyCode | null;
   type: TransactionType;
   updatedAt: Date;
   value: number;
@@ -81,6 +82,8 @@ class RecurrenceEntity {
   // Spec 098: set = transfer series from `accountId` to `toAccountId`.
   toAccount: null | TransactionAccountSummary;
   toAccountId: null | string;
+  // Currency of the destination account of a transfer series.
+  toCurrency: CurrencyCode | null;
   type: TransactionType;
   updatedAt: Date;
   // Integer cents, always > 0.
@@ -114,6 +117,7 @@ class RecurrenceEntity {
     this.tags = params.tags ?? [];
     this.toAccount = params.toAccount ?? null;
     this.toAccountId = params.toAccountId ?? null;
+    this.toCurrency = params.toCurrency ?? null;
     this.type = params.type;
     this.updatedAt = params.updatedAt;
     this.value = params.value;

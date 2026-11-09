@@ -66,6 +66,7 @@ export class FinanceRecurrenceMapper {
         ? { icon: raw.to_account.icon, id: raw.to_account.id, name: raw.to_account.name }
         : null,
       toAccountId: raw.to_account_id,
+      toCurrency: (raw.to_account?.currency as CurrencyCode | undefined) ?? null,
       type: TransactionType[raw.type],
       updatedAt: raw.updated_at,
       value: raw.value,
