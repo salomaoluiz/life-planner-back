@@ -9,6 +9,7 @@ import { loadRegistry, parseRegistryKey } from '../registry';
 import { loadConcurrency } from './concurrency';
 import { ExplainEntry } from './explain';
 import { checkSize, isPoolRegression, isRegression, p50 as median } from './stats';
+import { dbRoundTrip } from './probe';
 import { measureConcurrent, measureRoute } from './timing';
 import { RunningServer, startServer, waitHealthy } from './server';
 
@@ -26,6 +27,7 @@ export interface CheckDeps {
   build(): number;
   explain(entries: ExplainEntry[]): Promise<{ key: string; violations: string[] }[]>;
   log(line: string): void;
+  roundTrip(): Promise<number>;
   login(baseUrl: string): Promise<{ fixtures: Fixtures; token: string }>;
   startServer(port: number): RunningServer;
   waitHealthy(baseUrl: string, timeoutMs: number): Promise<void>;
@@ -93,10 +95,14 @@ export async function checkMain(
   const walls = new Map<PerfModule, number[]>();
   const pools = new Map<PerfModule, number[]>();
   let checked = 0;
+  let roundTrip = 0;
 
   try {
     await deps.waitHealthy(baseUrl, 60_000);
+    // login verifies the pinned dataset: a drift throws before any timing line is written (exit 2).
     const { fixtures, token } = await deps.login(baseUrl);
+    roundTrip = Math.round(await deps.roundTrip());
+    lines.push(`db round-trip ${roundTrip} ms`, 'dataset fingerprint: matches');
 
     const pathOf = (name: PerfModule, key: string) => {
       const entry = registry[name][key];
@@ -127,14 +133,17 @@ export async function checkMain(
             continue;
           }
           let { p50 } = measured;
+          let retried: number | undefined;
           const { bytes, wireBytes } = measured;
           // A noisy machine or a remote database can spike one round: a suspected regression is measured once
           // more and the better of the two counts (a real slowdown stays slow).
           if (round === 0 && !update && isRegression(p50, entry.p50Ms)) {
             try {
+              retried = p50;
               p50 = Math.min(p50, (await measureRoute({ baseUrl, key, path, token })).p50);
             } catch {
               // Keep the first measurement.
+              retried = undefined;
             }
           }
           const sample = samples.get(`${name} ${key}`) ?? { bytes: 0, module: name, p50s: [] };
@@ -152,10 +161,15 @@ export async function checkMain(
           });
           const slow = isRegression(p50, entry.p50Ms);
           lines.push(
-            `${name} | ${key} | p50 ${Math.round(p50)} ms (base ${entry.p50Ms ?? '-'}) | ${bytes} B (wire ${wireBytes} B)`,
+            `${name} | ${key} | p50 ${Math.round(p50)} ms (base ${entry.p50Ms ?? '-'}) | ${bytes} B (wire ${wireBytes} B)${
+              retried === undefined ? '' : ` | retried (first ${Math.round(retried)} ms)`
+            }`,
           );
-          if (slow)
-            failures.push(`${key}: p50 ${Math.round(p50)} ms over baseline ${entry.p50Ms} ms`);
+          if (slow) {
+            failures.push(
+              `${key}: p50 ${Math.round(p50)} ms over baseline ${entry.p50Ms} ms (db round-trip ${roundTrip} ms)`,
+            );
+          }
           if (sizeProblem) failures.push(`${key}: ${sizeProblem}`);
         }
 
@@ -287,6 +301,7 @@ function defaultDeps(): CheckDeps {
       return (await import('./explain-boot')).loginPerfUser(baseUrl);
     },
     // The counter makes the API expose its pool pressure (spec 069); recording is off until a request asks.
+    roundTrip: dbRoundTrip,
     startServer: (port) => startServer({ env: { ...process.env, PERF_COUNT_QUERIES: '1' }, port }),
     waitHealthy: (baseUrl, timeoutMs) => waitHealthy(baseUrl, timeoutMs),
     writeSummary: (text) => {

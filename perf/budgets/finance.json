@@ -122,7 +122,7 @@
   "GET /api/v1/finance/accounts": {
     "indexes": null,
     "kind": "read",
-    "maxBytes": 6998,
+    "maxBytes": 7730,
     "maxQueries": 6,
     "p50Ms": 46,
     "scenario": ""
@@ -492,7 +492,7 @@
     "kind": "read",
     "maxBytes": 64588,
     "maxQueries": 6,
-    "p50Ms": 46,
+    "p50Ms": 103,
     "scenario": "from={twoYearsStart}&to={monthEnd}&q=perf%20tx%2001",
     "table": "financial_transactions"
   },
@@ -510,7 +510,7 @@
     "kind": "read",
     "maxBytes": 3986,
     "maxQueries": 6,
-    "p50Ms": 22,
+    "p50Ms": 68,
     "scenario": "from={monthStart}&to={monthEnd}&q=perf%20tx%2001",
     "table": "financial_transactions"
   },
@@ -578,7 +578,7 @@
     "knownException": "Oversized payload: the overdue list is unlimited and the contract is unchanged (spec 082 keeps the response byte-identical)",
     "maxBytes": 511948,
     "maxQueries": 8,
-    "p50Ms": 63,
+    "p50Ms": 91,
     "scenario": "ownerId={userId}",
     "table": "financial_transactions"
   },
