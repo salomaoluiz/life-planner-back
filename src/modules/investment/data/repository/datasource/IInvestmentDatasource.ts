@@ -74,6 +74,8 @@ export interface WriteOperationDatasourceParams {
   date: Date;
   fees: { amount: number; description: null | string; kind: InvestmentOperationFee['kind'] }[];
   fees_total: number;
+  // BRL per USD (decimal string); null for BRL assets and operations without a rate.
+  fx_rate: null | string;
   generate_transaction: boolean;
   gross: number;
   // Set when editing.

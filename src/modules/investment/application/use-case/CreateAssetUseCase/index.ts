@@ -3,6 +3,8 @@ import { ConflictException, ForbiddenException, Inject } from '@nestjs/common';
 import { CreateAssetInput, CreateAssetSchema } from '@investment/application/dto/CreateAsset';
 import { AssetView, detailToListRow, toAssetView } from '@investment/application/service/AssetView';
 import { ensureOwnerWritable } from '@investment/application/service/OwnerWritable';
+import { QuoteContextLoader } from '@investment/application/service/QuoteContext';
+import { TickerValidator } from '@investment/application/service/TickerValidator';
 import { today } from '@investment/application/service/Today';
 import { hasOwnerAccess } from '@investment/domain/entity/OwnerAccess';
 import { IInvestmentRepository } from '@investment/domain/repository';
@@ -15,6 +17,8 @@ export class CreateAssetUseCase implements UseCaseWithParams<CreateAssetInput, A
   constructor(
     @Inject('IInvestmentRepository')
     private readonly repository: IInvestmentRepository,
+    private readonly quotes: QuoteContextLoader,
+    private readonly tickers: TickerValidator,
   ) {}
 
   async execute(params: CreateAssetInput): Promise<AssetView> {
@@ -33,6 +37,8 @@ export class CreateAssetUseCase implements UseCaseWithParams<CreateAssetInput, A
       throw new ConflictException(TICKER_EXISTS_MESSAGE);
     }
 
+    await this.tickers.validate(input.assetClass, ticker);
+
     const asset = await this.repository.createAsset({
       assetClass: input.assetClass,
       currency: input.currency,
@@ -46,6 +52,8 @@ export class CreateAssetUseCase implements UseCaseWithParams<CreateAssetInput, A
     });
     const detail = await this.repository.findAssetById(asset.id);
 
-    return toAssetView(detailToListRow(detail ?? { ...asset, operations: [], valuations: [] }));
+    const row = detailToListRow(detail ?? { ...asset, operations: [], valuations: [] });
+
+    return toAssetView(row, await this.quotes.load([row]));
   }
 }

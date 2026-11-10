@@ -1,4 +1,9 @@
-import { HttpStatus } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  ServiceUnavailableException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
 import { NotModifiedException } from '@shared/infra/http/not-modified';
 import { LogLevel } from '@shared/infra/logger/types';
@@ -235,5 +240,43 @@ describe('GIVEN a NotModifiedException (spec 092)', () => {
       undefined,
       HttpStatus.NOT_MODIFIED,
     );
+  });
+});
+
+describe('GIVEN a coded error (spec 104)', () => {
+  function replied(exception: HttpException) {
+    setup.catch(exception, mocks.argumentsHost);
+
+    return jest.mocked(mocks.httpAdapterHost.httpAdapter.reply).mock.lastCall?.[1];
+  }
+
+  it('SHOULD reply with the code of a 422', () => {
+    expect(
+      replied(new UnprocessableEntityException({ code: 'TICKER_NOT_FOUND', message: 'No asset' })),
+    ).toMatchObject({ code: 'TICKER_NOT_FOUND', message: 'No asset', statusCode: 422 });
+  });
+
+  it('SHOULD reply with the code AND the wait of a 429', () => {
+    expect(
+      replied(
+        new HttpException(
+          { code: 'REFRESH_TOO_SOON', message: 'Too soon', retryAfterSeconds: 42 },
+          429,
+        ),
+      ),
+    ).toMatchObject({ code: 'REFRESH_TOO_SOON', retryAfterSeconds: 42, statusCode: 429 });
+  });
+
+  it('SHOULD reply with the code of a 503 AND nothing else of the body', () => {
+    const body = replied(
+      new ServiceUnavailableException({ code: 'QUOTE_SOURCE_UNAVAILABLE', extra: 'x' }),
+    );
+
+    expect(body).toMatchObject({ code: 'QUOTE_SOURCE_UNAVAILABLE', statusCode: 503 });
+    expect(body).not.toHaveProperty('extra');
+  });
+
+  it('SHOULD keep the plain shape WHEN a 429 has a text body', () => {
+    expect(replied(new HttpException('Slow down', 429))).not.toHaveProperty('code');
   });
 });

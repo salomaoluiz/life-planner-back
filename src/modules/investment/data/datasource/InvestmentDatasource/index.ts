@@ -233,6 +233,7 @@ export class InvestmentDatasource implements IInvestmentDatasource {
         account_id: params.generate_transaction ? params.account_id : null,
         date: params.date,
         fees_total: params.fees_total,
+        fx_rate: params.fx_rate,
         generate_transaction: params.generate_transaction,
         gross: params.gross,
         quantity: params.quantity,

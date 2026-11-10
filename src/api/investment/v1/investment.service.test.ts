@@ -5,13 +5,24 @@ import { mocks, setup } from './investment.service.mocks';
 const assetItem = {
   archivedAt: null,
   assetClass: 'BR_STOCK',
+  averageFxRate: null,
+  costBrl: null,
   currency: 'BRL',
+  currentPriceSource: 'MANUAL',
+  fx: null,
   id: mocks.asset.id,
+  marketValueBrl: null,
   name: 'Itausa PN',
   operationCount: 1,
+  operationsWithoutFxRate: 0,
   owner: 'USER',
   ownerId: mocks.userId,
   position: mocks.positionApi,
+  quote: null,
+  resultBrl: null,
+  resultBrlFromAsset: null,
+  resultBrlFromFx: null,
+  resultBrlPercent: null,
   status: 'ACTIVE',
   ticker: 'ITSA4',
 };
@@ -156,5 +167,99 @@ describe('writes', () => {
         id,
       });
     }
+  });
+});
+
+describe('quotes (spec 104)', () => {
+  it('SHOULD map a USD asset with its quote, rate and BRL split', async () => {
+    const quotedAt = new Date('2026-11-04T16:00:00Z');
+    mocks.useCases.getAssets.execute.mockResolvedValue([
+      {
+        ...mocks.view,
+        market: {
+          fx: { quotedAt, rate: '5.5601' },
+          priceSource: 'QUOTE',
+          quote: {
+            changePercent: '1.24',
+            dayHigh: null,
+            dayLow: null,
+            market: 'US',
+            previousClose: '228.57',
+            price: '231.4',
+            quotedAt,
+            source: 'FINNHUB',
+            stale: false,
+            ticker: 'AAPL',
+            unavailable: false,
+          },
+          usd: {
+            averageFxRate: '5.2236',
+            operationsWithoutFxRate: 1,
+            result: {
+              costBrl: 1902435,
+              marketValueBrl: 2573214,
+              resultBrl: 670779,
+              resultBrlFromAsset: 515047,
+              resultBrlFromFx: 155732,
+              resultBrlPercent: 0.3526,
+            },
+          },
+        },
+      },
+    ]);
+
+    const { items } = await setup.findAssets(mocks.userId, {});
+
+    expect(items[0]).toMatchObject({
+      averageFxRate: '5.2236',
+      currentPriceSource: 'QUOTE',
+      fx: { quotedAt: quotedAt.toISOString(), rate: '5.5601' },
+      operationsWithoutFxRate: 1,
+      quote: { quotedAt: quotedAt.toISOString(), stale: false, ticker: 'AAPL' },
+      resultBrl: 670779,
+      resultBrlFromAsset: 515047,
+      resultBrlFromFx: 155732,
+      resultBrlPercent: 0.3526,
+    });
+  });
+
+  it('SHOULD read the price history, search tickers AND refresh with the resolved owners', async () => {
+    mocks.useCases.getPriceHistory.execute.mockResolvedValue({ points: [] });
+    mocks.useCases.searchTickers.execute.mockResolvedValue([{ ticker: 'ITSA4' }]);
+    mocks.useCases.refreshQuotesNow.execute.mockResolvedValue({
+      fx: { pair: 'USD-BRL', quotedAt: new Date('2026-11-04T16:00:00Z'), rate: '5.5601' },
+      nextRefreshAt: new Date('2026-11-04T16:01:00Z'),
+      quotes: [],
+    });
+
+    expect(await setup.priceHistory(mocks.userId, 'a1', '1Y')).toEqual({ points: [] });
+    expect(mocks.useCases.getPriceHistory.execute).toHaveBeenCalledWith({
+      accessibleOwners: mocks.accessibleOwners,
+      id: 'a1',
+      range: '1Y',
+    });
+    expect(await setup.searchTickers({ market: 'B3' as never, q: 'itsa' })).toEqual({
+      items: [{ ticker: 'ITSA4' }],
+    });
+    expect(await setup.refreshQuotes(mocks.userId, ['a1'])).toEqual({
+      fx: { pair: 'USD-BRL', quotedAt: '2026-11-04T16:00:00.000Z', rate: '5.5601' },
+      nextRefreshAt: '2026-11-04T16:01:00.000Z',
+      quotes: [],
+    });
+    expect(mocks.useCases.refreshQuotesNow.execute).toHaveBeenCalledWith({
+      accessibleOwners: mocks.accessibleOwners,
+      assetIds: ['a1'],
+      userId: mocks.userId,
+    });
+  });
+
+  it('SHOULD return a null rate WHEN the refresh had none', async () => {
+    mocks.useCases.refreshQuotesNow.execute.mockResolvedValue({
+      fx: null,
+      nextRefreshAt: new Date('2026-11-04T16:01:00Z'),
+      quotes: [],
+    });
+
+    expect((await setup.refreshQuotes(mocks.userId)).fx).toBeNull();
   });
 });

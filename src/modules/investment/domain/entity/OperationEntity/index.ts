@@ -21,6 +21,7 @@ export interface OperationEntity {
   date: string;
   fees: FeeEntity[];
   feesTotal: number;
+  fxRate: null | string;
   generateTransaction: boolean;
   gross: number;
   id: string;

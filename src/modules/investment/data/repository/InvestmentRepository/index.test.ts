@@ -211,6 +211,7 @@ describe('writes', () => {
       date: '2026-06-10',
       fees: [],
       feesTotal: 0,
+      fxRate: null,
       generateTransaction: true,
       gross: 100,
       quantity: Decimal8.parse('18.3572'),

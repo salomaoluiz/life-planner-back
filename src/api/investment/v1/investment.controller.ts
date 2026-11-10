@@ -26,6 +26,13 @@ import {
   CreateOperationBody,
   ListAssetsQuerySchema,
   OperationWriteOutput,
+  PriceHistoryOutput,
+  PriceHistoryQuerySchema,
+  RefreshQuotesApiSchema,
+  RefreshQuotesBody,
+  RefreshQuotesOutput,
+  TickerSearchOutput,
+  TickerSearchQuerySchema,
   UpdateAssetApiSchema,
   UpdateAssetBody,
   UpdateOperationApiSchema,
@@ -107,6 +114,36 @@ export class InvestmentController {
   @ZodResponse({ status: 200, type: AssetListOutput })
   async findAssets(@Request() req: JwtPayload & Request, @Query() query: Record<string, unknown>) {
     return this.investmentService.findAssets(req.user.id, validate(ListAssetsQuerySchema, query));
+  }
+
+  @Get('assets/:id/price-history')
+  @ZodResponse({ status: 200, type: PriceHistoryOutput })
+  async priceHistory(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: Record<string, unknown>,
+  ) {
+    return this.investmentService.priceHistory(
+      req.user.id,
+      id,
+      validate(PriceHistoryQuerySchema, query).range,
+    );
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('quotes/refresh')
+  @ZodResponse({ status: 200, type: RefreshQuotesOutput })
+  async refreshQuotes(@Request() req: JwtPayload & Request, @Body() body: RefreshQuotesBody) {
+    return this.investmentService.refreshQuotes(
+      req.user.id,
+      validate(RefreshQuotesApiSchema, body ?? {}).assetIds,
+    );
+  }
+
+  @Get('tickers/search')
+  @ZodResponse({ status: 200, type: TickerSearchOutput })
+  async searchTickers(@Query() query: Record<string, unknown>) {
+    return this.investmentService.searchTickers(validate(TickerSearchQuerySchema, query));
   }
 
   @Patch('assets/:id')

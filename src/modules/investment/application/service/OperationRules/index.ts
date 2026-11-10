@@ -12,6 +12,7 @@ import {
   toAssetView,
 } from '@investment/application/service/AssetView';
 import { ensureOwnerWritable } from '@investment/application/service/OwnerWritable';
+import { QuoteContext } from '@investment/application/service/QuoteContext';
 import { AssetDetail } from '@investment/domain/entity/AssetEntity';
 import { FeeInput } from '@investment/domain/entity/OperationEntity';
 import { hasOwnerAccess, OwnerAccess } from '@investment/domain/entity/OwnerAccess';
@@ -25,6 +26,7 @@ import {
 import { Decimal8 } from '@shared/infra/decimal';
 
 export const ARCHIVED_ASSET_MESSAGE = "Archived assets can't change. Reactivate it first.";
+export const FX_RATE_NOT_ALLOWED_CODE = 'FX_RATE_NOT_ALLOWED';
 export const ACCOUNT_NOT_CHANGEABLE_MESSAGE = "This operation uses an account you can't change";
 
 // 404 for an asset the caller cannot reach, 422 for an archived family or an archived asset (FR 7).
@@ -98,8 +100,10 @@ export async function resolveOperationAccount(
 export interface OperationDraft {
   accountId: null | string;
   asset: AssetDetail;
+  context?: QuoteContext;
   date: string;
   fees: FeeInput[];
+  fxRate?: null | string;
   generateTransaction: boolean;
   operationId?: string;
   owners: OwnerAccess[];
@@ -136,6 +140,14 @@ export async function persistOperation(
 ): Promise<OperationWriteResult> {
   const { asset } = draft;
   const totals = totalsOf(draft);
+  const fxRate = draft.fxRate ?? null;
+
+  if (fxRate !== null && asset.currency === 'BRL') {
+    throw new UnprocessableEntityException({
+      code: FX_RATE_NOT_ALLOWED_CODE,
+      message: 'Exchange rate only applies to assets in a foreign currency',
+    });
+  }
 
   if (draft.generateTransaction && draft.accountId) {
     await resolveOperationAccount(repository, draft.owners, draft.accountId, asset.currency);
@@ -152,6 +164,7 @@ export async function persistOperation(
       date: draft.date,
       fees: draft.fees,
       feesTotal: totals.feesTotal,
+      fxRate,
       generateTransaction: draft.generateTransaction,
       gross: totals.gross,
       operationId: draft.operationId,
@@ -170,7 +183,7 @@ export async function persistOperation(
     throw new NotFoundException();
   }
 
-  const operation = toAssetDetailView(detail).operations.find(
+  const operation = toAssetDetailView(detail, draft.context).operations.find(
     (view) => view.operation.id === operationId,
   );
 
@@ -178,7 +191,7 @@ export async function persistOperation(
     throw new NotFoundException();
   }
 
-  return { asset: toAssetView(detailToListRow(detail)), operation };
+  return { asset: toAssetView(detailToListRow(detail), draft.context), operation };
 }
 
 function totalsOf(draft: OperationDraft) {

@@ -9,6 +9,8 @@ import {
 import { UpdateAssetInput, UpdateAssetSchema } from '@investment/application/dto/UpdateAsset';
 import { AssetView, detailToListRow, toAssetView } from '@investment/application/service/AssetView';
 import { ensureOwnerWritable } from '@investment/application/service/OwnerWritable';
+import { QuoteContextLoader } from '@investment/application/service/QuoteContext';
+import { TickerValidator } from '@investment/application/service/TickerValidator';
 import { TICKER_EXISTS_MESSAGE } from '@investment/application/use-case/CreateAssetUseCase';
 import { hasOwnerAccess } from '@investment/domain/entity/OwnerAccess';
 import { InvestmentAssetStatus, TICKER_REQUIRED_CLASSES } from '@investment/domain/enum';
@@ -23,6 +25,8 @@ export class UpdateAssetUseCase implements UseCaseWithParams<UpdateAssetInput, A
   constructor(
     @Inject('IInvestmentRepository')
     private readonly repository: IInvestmentRepository,
+    private readonly quotes: QuoteContextLoader,
+    private readonly tickers: TickerValidator,
   ) {}
 
   async execute(params: UpdateAssetInput): Promise<AssetView> {
@@ -77,6 +81,10 @@ export class UpdateAssetUseCase implements UseCaseWithParams<UpdateAssetInput, A
       }
     }
 
+    if (ticker !== asset.ticker || assetClass !== asset.assetClass) {
+      await this.tickers.validate(assetClass, ticker);
+    }
+
     const updated = await this.repository.updateAsset({
       archivedAt: archivedAtFor(input.status, asset.status),
       assetClass: input.assetClass,
@@ -90,7 +98,9 @@ export class UpdateAssetUseCase implements UseCaseWithParams<UpdateAssetInput, A
     });
     const detail = await this.repository.findAssetById(asset.id);
 
-    return toAssetView(detailToListRow(detail ?? { ...updated, operations: [], valuations: [] }));
+    const row = detailToListRow(detail ?? { ...updated, operations: [], valuations: [] });
+
+    return toAssetView(row, await this.quotes.load([row]));
   }
 }
 

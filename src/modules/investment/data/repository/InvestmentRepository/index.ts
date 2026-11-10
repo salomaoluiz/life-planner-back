@@ -190,6 +190,7 @@ export class InvestmentRepository implements IInvestmentRepository {
       date: InvestmentMapper.fromCalendarDate(params.date),
       fees: params.fees,
       fees_total: params.feesTotal,
+      fx_rate: params.fxRate,
       generate_transaction: params.generateTransaction,
       gross: params.gross,
       operation_id: params.operationId,

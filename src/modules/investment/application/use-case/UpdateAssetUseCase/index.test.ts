@@ -5,6 +5,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 
+import { quoteSpies } from '@investment/application/service/QuoteContext/index.mocks';
 import { assetFixture } from '@investment/domain/entity/mocks/investment.fixture';
 import { InvestmentAssetClass, InvestmentAssetStatus } from '@investment/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -160,4 +161,27 @@ it('SHOULD fall back to the updated asset WHEN the re-read finds nothing', async
   spies.findAssetById.mockResolvedValueOnce(mocks.detail).mockResolvedValueOnce(undefined);
 
   await expect(setup.execute({ ...base, name: 'x' })).resolves.toMatchObject({ operationCount: 0 });
+});
+
+it('SHOULD validate the new ticker WHEN the ticker changes (spec 104 FR 25)', async () => {
+  await setup.execute({ ...base, ticker: 'HGLG11' });
+
+  expect(quoteSpies.validate).toHaveBeenCalledWith(mocks.detail.assetClass, 'HGLG11');
+});
+
+it('SHOULD NOT call the quote source WHEN only the name changes', async () => {
+  await setup.execute({ ...base, name: 'Renamed' });
+
+  expect(quoteSpies.validate).not.toHaveBeenCalled();
+});
+
+it('SHOULD NOT update WHEN the new ticker is rejected', async () => {
+  quoteSpies.validate.mockRejectedValue(
+    new UnprocessableEntityException({ code: 'TICKER_NOT_FOUND' }),
+  );
+
+  await expect(setup.execute({ ...base, ticker: 'XYZW9' })).rejects.toBeInstanceOf(
+    UnprocessableEntityException,
+  );
+  expect(spies.updateAsset).not.toHaveBeenCalled();
 });

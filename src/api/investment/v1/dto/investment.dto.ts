@@ -9,11 +9,14 @@ import {
   InvestmentValuationSource,
 } from '@investment/domain/enum';
 import { SUPPORTED_CURRENCIES } from '@investment/domain/enum/Currency';
+import { QuoteMarket } from '@investment/domain/enum/QuoteMarket';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 // Quantities and unit prices travel as decimal strings (up to 8 places), never as numbers.
 const DecimalApiSchema = z.string().regex(/^\d+(\.\d{1,8})?$/);
 const CalendarDateApiSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+// BRL per 1 unit of the foreign currency, a decimal string (spec 104).
+const FxRateApiSchema = z.string().regex(/^\d+(\.\d{1,6})?$/);
 const CurrencyApiSchema = z.enum(SUPPORTED_CURRENCIES);
 const OwnerTypeApiSchema = z.enum(OwnerType);
 
@@ -49,6 +52,7 @@ export const CreateOperationApiSchema = z.strictObject({
   accountId: z.uuid().nullish(),
   date: CalendarDateApiSchema,
   fees: z.array(FeeApiSchema).max(10).optional(),
+  fxRate: FxRateApiSchema.nullish(),
   generateTransaction: z.boolean().optional(),
   quantity: DecimalApiSchema,
   type: z.enum(InvestmentOperationType),
@@ -61,6 +65,7 @@ export const UpdateOperationApiSchema = z
     accountId: z.uuid().nullable(),
     date: CalendarDateApiSchema,
     fees: z.array(FeeApiSchema).max(10),
+    fxRate: FxRateApiSchema.nullable(),
     generateTransaction: z.boolean(),
     quantity: DecimalApiSchema,
     unitPrice: DecimalApiSchema,
@@ -83,16 +88,42 @@ export const PositionApiSchema = z.strictObject({
   realizedResult: z.number().int(),
 });
 
+export const QuoteApiSchema = z.strictObject({
+  changePercent: z.string().nullable(),
+  dayHigh: z.string().nullable(),
+  dayLow: z.string().nullable(),
+  market: z.enum(QuoteMarket),
+  previousClose: z.string().nullable(),
+  price: z.string(),
+  quotedAt: z.iso.datetime(),
+  source: z.string(),
+  stale: z.boolean(),
+  ticker: z.string(),
+  unavailable: z.boolean(),
+});
+const FxApiSchema = z.strictObject({ quotedAt: z.iso.datetime(), rate: z.string() });
+
 export const AssetItemApiSchema = z.strictObject({
   archivedAt: z.iso.datetime().nullable(),
   assetClass: z.enum(InvestmentAssetClass),
+  averageFxRate: z.string().nullable(),
+  costBrl: z.number().int().nullable(),
   currency: z.string(),
+  currentPriceSource: z.enum(['MANUAL', 'QUOTE']).nullable(),
+  fx: FxApiSchema.nullable(),
   id: z.uuid(),
+  marketValueBrl: z.number().int().nullable(),
   name: z.string(),
   operationCount: z.number().int(),
+  operationsWithoutFxRate: z.number().int(),
   owner: OwnerTypeApiSchema,
   ownerId: z.uuid(),
   position: PositionApiSchema,
+  quote: QuoteApiSchema.nullable(),
+  resultBrl: z.number().int().nullable(),
+  resultBrlFromAsset: z.number().int().nullable(),
+  resultBrlFromFx: z.number().int().nullable(),
+  resultBrlPercent: z.number().nullable(),
   status: z.enum(InvestmentAssetStatus),
   ticker: z.string().nullable(),
 });
@@ -110,6 +141,7 @@ export const OperationApiSchema = z.strictObject({
   date: z.string(),
   fees: z.array(OperationFeeApiSchema),
   feesTotal: z.number().int(),
+  fxRate: z.string().nullable(),
   generateTransaction: z.boolean(),
   gross: z.number().int(),
   id: z.uuid(),
@@ -149,11 +181,54 @@ export const ListAssetsQuerySchema = z.object({
   status: z.enum(InvestmentAssetStatus).optional(),
 });
 
+export const TickerSearchQuerySchema = z.object({
+  market: z.enum(QuoteMarket),
+  q: z.string().trim().min(2).max(20),
+});
+export const TickerSearchApiSchema = z.strictObject({
+  items: z.array(
+    z.strictObject({
+      changePercent: z.string().nullable(),
+      currency: z.string(),
+      exchange: z.string(),
+      logoUrl: z.string().nullable(),
+      market: z.enum(QuoteMarket),
+      name: z.string().nullable(),
+      price: z.string(),
+      ticker: z.string(),
+    }),
+  ),
+});
+export const RefreshQuotesApiSchema = z.strictObject({
+  assetIds: z.array(z.uuid()).max(200).optional(),
+});
+export const RefreshQuotesOutputApiSchema = z.strictObject({
+  fx: z.strictObject({ pair: z.string(), quotedAt: z.iso.datetime(), rate: z.string() }).nullable(),
+  nextRefreshAt: z.iso.datetime(),
+  quotes: z.array(QuoteApiSchema),
+});
+export const PriceHistoryQuerySchema = z.object({
+  range: z.enum(['1M', '1Y', '6M', 'ALL']).default('1Y'),
+});
+export const PriceHistoryApiSchema = z.strictObject({
+  currency: z.string(),
+  historyStartsAt: z.string().nullable(),
+  points: z.array(
+    z.strictObject({
+      date: z.string(),
+      fxRate: z.string().nullable(),
+      kind: z.enum(['CLOSE', 'OPERATION', 'VALUATION']),
+      price: z.string(),
+    }),
+  ),
+});
+
 export type AssetItemOutputType = z.infer<typeof AssetItemApiSchema>;
 export type CreateAssetApiInput = z.infer<typeof CreateAssetApiSchema>;
 export type CreateOperationApiInput = z.infer<typeof CreateOperationApiSchema>;
 export type OperationOutputType = z.infer<typeof OperationApiSchema>;
 export type PositionOutputType = z.infer<typeof PositionApiSchema>;
+export type QuoteOutputType = z.infer<typeof QuoteApiSchema>;
 export type UpdateAssetApiInput = z.infer<typeof UpdateAssetApiSchema>;
 export type UpdateOperationApiInput = z.infer<typeof UpdateOperationApiSchema>;
 export type UpsertValuationApiInput = z.infer<typeof UpsertValuationApiSchema>;
@@ -165,6 +240,10 @@ export class AssetListOutput extends createZodDto(AssetListApiSchema) {}
 export class CreateAssetBody extends createZodDto(CreateAssetApiSchema) {}
 export class CreateOperationBody extends createZodDto(CreateOperationApiSchema) {}
 export class OperationWriteOutput extends createZodDto(OperationWriteApiSchema) {}
+export class PriceHistoryOutput extends createZodDto(PriceHistoryApiSchema) {}
+export class RefreshQuotesBody extends createZodDto(RefreshQuotesApiSchema) {}
+export class RefreshQuotesOutput extends createZodDto(RefreshQuotesOutputApiSchema) {}
+export class TickerSearchOutput extends createZodDto(TickerSearchApiSchema) {}
 export class UpdateAssetBody extends createZodDto(UpdateAssetApiSchema) {}
 export class UpdateOperationBody extends createZodDto(UpdateOperationApiSchema) {}
 export class UpsertValuationBody extends createZodDto(UpsertValuationApiSchema) {}

@@ -10,6 +10,7 @@ import {
   OperationWriteResult,
   persistOperation,
 } from '@investment/application/service/OperationRules';
+import { QuoteContextLoader } from '@investment/application/service/QuoteContext';
 import { hasOwnerAccess } from '@investment/domain/entity/OwnerAccess';
 import { IInvestmentRepository } from '@investment/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -24,6 +25,7 @@ export class UpdateOperationUseCase implements UseCaseWithParams<
   constructor(
     @Inject('IInvestmentRepository')
     private readonly repository: IInvestmentRepository,
+    private readonly context: QuoteContextLoader,
   ) {}
 
   async execute(params: UpdateOperationInput): Promise<OperationWriteResult> {
@@ -59,6 +61,7 @@ export class UpdateOperationUseCase implements UseCaseWithParams<
     return persistOperation(this.repository, {
       accountId,
       asset,
+      context: await this.context.load([asset]),
       date: input.date ?? operation.date,
       fees:
         input.fees ??
@@ -67,6 +70,7 @@ export class UpdateOperationUseCase implements UseCaseWithParams<
           description: fee.description,
           kind: fee.kind,
         })),
+      fxRate: input.fxRate === undefined ? operation.fxRate : input.fxRate,
       generateTransaction,
       operationId: operation.id,
       owners: input.accessibleOwners,

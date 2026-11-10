@@ -34,6 +34,10 @@ Spec 056 adds `APP_ENVIRONMENT` (`production|staging|development`, default `deve
 
 Adding a variable: `envSchema` → `EnvService` getter (+ its test/fixtures) → `docker-compose.yml` `environment` → placeholder in `.env.example`. Values never go in source.
 
+## Quote sources and scheduler (spec 104)
+
+`@shared/infra/quotes/{brapi,finnhub,fx}` (tokens `IBrapiQuotes`, `IFinnhubQuotes`, `IFxRates`; types in `quotes/types.ts`): axios with a 5 s timeout, tokens from `EnvService` (`BRAPI_TOKEN`, `FINNHUB_TOKEN`, optional; a missing token throws `QuoteSourceUnavailableError`), ticker regex before any URL, 429/402/5xx/timeout mapped to `QuoteSourceLimitError`. brapi: the free plan takes ONE ticker per request, so `getQuotes` learns the limit from `QUOTES_PER_REQUEST_EXCEEDED` and chunks, a 404 (unknown ticker) is skipped, daily history on the free plan is 3 months (`3mo`); its currency endpoint needs a paid plan, so `FxRates` falls back to AwesomeAPI (no token). Finnhub: one call per symbol (`/quote`, `/search`). `@shared/infra/scheduler` (`IScheduler.cron(name, expression, timeZone, handler)`) wraps `@nestjs/schedule` (`ScheduleModule.forRoot()` in `SharedModule`) and logs handler failures. Env: `INVESTMENT_QUOTES_JOB_ENABLED`, `INVESTMENT_QUOTES_BRAPI_BATCH_SIZE` (20), `INVESTMENT_QUOTE_REFRESH_COOLDOWN_MS` (60000).
+
 ## Adding a wrapper
 
 1. `shared/infra/<name>/types.ts` interface (+ `index.ts` impl, `index.test.ts`, `index.mocks.ts`).

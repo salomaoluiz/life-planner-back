@@ -53,6 +53,7 @@ describe('InvestmentMapper', () => {
       date: new Date('2026-06-10T00:00:00Z'),
       fees: [{ amount: 490, description: null, id: 'f', kind: 'BROKERAGE', operation_id: 'op' }],
       fees_total: 490,
+      fx_rate: null,
       generate_transaction: true,
       gross: 510000,
       id: 'op',

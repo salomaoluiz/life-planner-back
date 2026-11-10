@@ -18,6 +18,7 @@ class EnvServiceFixture {
   withDefault() {
     this.value = {
       appEnvironment: 'development',
+      brapiToken: undefined,
       corsOrigins: '',
       dbHost: faker.internet.ipv4(),
       dbName: faker.string.alphanumeric(10),
@@ -30,7 +31,11 @@ class EnvServiceFixture {
       dbUser: faker.internet.username(),
       environment: faker.helpers.arrayElement(['development', 'production', 'test']),
       financeMaterializationGateTtlMs: 60000,
+      finnhubToken: undefined,
       githubToken: undefined,
+      investmentQuoteRefreshCooldownMs: 60000,
+      investmentQuotesBrapiBatchSize: 20,
+      investmentQuotesJobEnabled: true,
       jwtExpiresIn: faker.number.int({ max: 86400, min: 3600 }),
       jwtSecret: faker.string.alphanumeric(64),
       perfCountQueries: false,

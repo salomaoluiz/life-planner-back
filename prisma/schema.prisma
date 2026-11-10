@@ -662,6 +662,75 @@ enum InvestmentValuationSource {
 }
 
 // Spec 102: investments. Quantities and unit prices are exact decimals; every total is integer cents.
+enum QuoteMarket {
+  B3
+  US
+}
+
+enum QuoteSource {
+  BRAPI
+  FINNHUB
+}
+
+// Market data (spec 104): global, no owner.
+model InvestmentQuote {
+  id             String      @id @default(uuid())
+  market         QuoteMarket
+  ticker         String      @db.VarChar(20)
+  currency       String      @db.VarChar(3)
+  price          Decimal     @db.Decimal(20, 8)
+  previous_close Decimal?    @db.Decimal(20, 8)
+  change_percent Decimal?    @db.Decimal(9, 4)
+  day_high       Decimal?    @db.Decimal(20, 8)
+  day_low        Decimal?    @db.Decimal(20, 8)
+  quoted_at      DateTime    @db.Timestamptz(6)
+  fetched_at     DateTime    @db.Timestamptz(6)
+  source         QuoteSource
+  last_error_at  DateTime?   @db.Timestamptz(6)
+  missing_days   Int         @default(0)
+  unavailable    Boolean     @default(false)
+  name           String?
+  logo_url       String?
+
+  @@unique([market, ticker])
+  @@map("investment_quotes")
+}
+
+model InvestmentPriceHistory {
+  id         String      @id @default(uuid())
+  market     QuoteMarket
+  ticker     String      @db.VarChar(20)
+  date       DateTime    @db.Date
+  close      Decimal     @db.Decimal(20, 8)
+  source     QuoteSource
+  created_at DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at DateTime    @updatedAt @db.Timestamptz(6)
+
+  @@unique([market, ticker, date])
+  @@map("investment_price_history")
+}
+
+model FxRate {
+  id        String   @id @default(uuid())
+  pair      String   @unique
+  rate      Decimal  @db.Decimal(12, 6)
+  quoted_at DateTime @db.Timestamptz(6)
+  source    String
+
+  @@map("fx_rates")
+}
+
+model FxRateHistory {
+  id     String   @id @default(uuid())
+  pair   String
+  date   DateTime @db.Date
+  rate   Decimal  @db.Decimal(12, 6)
+  source String
+
+  @@unique([pair, date])
+  @@map("fx_rate_history")
+}
+
 model InvestmentAsset {
   id          String                @id @default(uuid())
   asset_class InvestmentAssetClass
@@ -695,6 +764,7 @@ model InvestmentOperation {
   generate_transaction Boolean
   account_id           String?
   transaction_id       String?                 @unique
+  fx_rate              Decimal?                @db.Decimal(12, 6)
   created_at           DateTime                @default(now()) @db.Timestamptz(6)
   updated_at           DateTime                @updatedAt @db.Timestamptz(6)
 
