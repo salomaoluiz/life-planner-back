@@ -389,6 +389,33 @@ describe('Method findByOwners projected filter (spec 096)', () => {
   });
 });
 
+describe('Method findByOwners currency filter (spec 103)', () => {
+  it.each([TransactionSource.ACCOUNT, TransactionSource.CARD])(
+    'SHOULD add the currency condition on %s rows',
+    async (source) => {
+      spies.findMany.mockResolvedValue([]);
+
+      await setup.findByOwners(mocks.owners, source, { currency: 'USD' });
+
+      expect(spies.findMany.mock.calls[0][0].where.AND).toContainEqual({ currency: 'USD' });
+    },
+  );
+
+  it('SHOULD keep an accountId of another currency in the same conditions, so it matches no row', async () => {
+    spies.findMany.mockResolvedValue([]);
+
+    await setup.findByOwners(mocks.owners, TransactionSource.ACCOUNT, {
+      accountIds: ['usd-account'],
+      currency: 'BRL',
+    });
+
+    const conditions = spies.findMany.mock.calls[0][0].where.AND;
+
+    expect(conditions).toContainEqual({ account_id: { in: ['usd-account'] } });
+    expect(conditions).toContainEqual({ currency: 'BRL' });
+  });
+});
+
 describe('Method findByOwners kind filter (spec 098)', () => {
   it('SHOULD keep only rows with a transfer on account rows', async () => {
     spies.findMany.mockResolvedValue([]);

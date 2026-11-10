@@ -208,3 +208,8 @@ describe('categories read once (spec 083)', () => {
     );
   });
 });
+
+it('SHOULD return no invoice for a currency the card is not in (spec 103)', async () => {
+  expect(await setup.execute({ ...mocks.input, filter: { currency: 'USD' } })).toEqual([]);
+  expect(await setup.execute({ ...mocks.input, filter: { currency: 'BRL' } })).toHaveLength(1);
+});

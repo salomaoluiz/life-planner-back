@@ -44,8 +44,25 @@ it('SHOULD forward the month, the owners, the filter AND today', async () => {
     [id],
     { paid: false, q: 'gym' },
     '2026-11-02',
+    undefined,
   );
   expect(result).toEqual({ month: '2026-11' });
+});
+
+it('SHOULD forward the currency AND refuse an unknown one', async () => {
+  const setup = await build();
+
+  await setup.find(request, { currency: 'USD', month: '2026-11' });
+
+  expect(serviceMock.find).toHaveBeenLastCalledWith(
+    'user-1',
+    '2026-11',
+    undefined,
+    undefined,
+    undefined,
+    'USD',
+  );
+  await expect(setup.find(request, { currency: 'XYZ', month: '2026-11' })).rejects.toThrow();
 });
 
 it('SHOULD reject a missing or invalid month AND a period (from/to)', async () => {

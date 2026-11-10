@@ -82,16 +82,24 @@ export class GetDailyBalancesUseCase implements UseCaseWithParams<
     const monthStart = `${input.month}-01`;
     const monthEnd = lastDayOfMonth(`${untilMonth}-01`);
     const preloaded = input.preloaded;
-    const [allAccounts, cards] =
+    const [allAccounts, allCards] =
       owners.length === 0
         ? [[], []]
         : await Promise.all([
             preloaded?.accounts ?? this.accountRepository.findAccounts(owners),
             preloaded?.cards ?? this.creditCardRepository.findCreditCards(owners),
           ]);
+    // Spec 103: a read in one currency only considers the accounts and cards in that currency.
     const accounts = allAccounts
-      .filter((account) => account.status === AccountStatus.ACTIVE)
+      .filter(
+        (account) =>
+          account.status === AccountStatus.ACTIVE &&
+          (!input.currency || account.currency === input.currency),
+      )
       .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+    const cards = input.currency
+      ? allCards.filter((card) => card.currency === input.currency)
+      : allCards;
     const accountIds = accounts.map((account) => account.id);
     const hasPending = monthEnd >= input.today;
     const [paidRows, unpaidRows, invoiceData, projections] = await Promise.all([
@@ -105,6 +113,7 @@ export class GetDailyBalancesUseCase implements UseCaseWithParams<
       hasPending && untilMonth > todayMonth
         ? this.getProjectionsUseCase.executeChunked({
             accessibleOwners: input.accessibleOwners,
+            filter: input.currency ? { currency: input.currency } : undefined,
             from: addInvoiceMonths(todayMonth, 1),
             ownerIds: input.ownerIds,
             to: untilMonth,

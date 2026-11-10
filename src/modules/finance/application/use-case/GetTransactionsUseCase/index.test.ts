@@ -306,3 +306,13 @@ describe('categories read once (spec 083)', () => {
     );
   });
 });
+
+it('SHOULD forward the currency to the repository (spec 103)', async () => {
+  await setup.execute({ accessibleOwners: mocks.accessibleOwners, filter: { currency: 'USD' } });
+
+  expect(mocks.transactionRepository.findTransactions).toHaveBeenCalledWith(
+    mocks.accessibleOwners,
+    'ACCOUNT',
+    expect.objectContaining({ currency: 'USD' }),
+  );
+});

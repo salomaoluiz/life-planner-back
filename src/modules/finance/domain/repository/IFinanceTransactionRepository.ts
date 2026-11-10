@@ -186,6 +186,8 @@ interface TransactionQuery {
   accountIds?: string[];
   categoryIds?: string[];
   creditCardIds?: string[];
+  // Spec 103: rows in this currency only.
+  currency?: CurrencyCode;
   // Spec 078: rows strictly after this position, at most `limit + 1` of them (the extra one tells a next page exists).
   cursor?: { createdAt: Date; date: Date; id: string };
   from?: string;

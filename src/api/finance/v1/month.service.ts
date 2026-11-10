@@ -20,6 +20,7 @@ import { LoadFilterCategoriesUseCase } from '@finance/application/use-case/LoadF
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { TransactionFilter } from '@finance/domain/entity/TransactionFilter';
+import { CurrencyCode, DEFAULT_CURRENCY } from '@finance/domain/enum/Currency';
 import { addInvoiceMonths } from '@finance/domain/service/InvoiceCalculator';
 import { lastDayOfMonth } from '@finance/domain/service/RecurrenceSchedule';
 
@@ -46,12 +47,15 @@ export class MonthService {
     ownerIds?: string[],
     filter?: TransactionFilter,
     today?: string,
+    currency: CurrencyCode = DEFAULT_CURRENCY,
   ): Promise<MonthOutputShape> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
     const resolvedToday = resolveToday(today);
     const currentMonth = resolvedToday.slice(0, 7);
+    // Spec 103: rows, invoices and projections follow the requested currency.
+    const currencyFilter: TransactionFilter = { ...filter, currency };
     const monthFilter: TransactionFilter = {
-      ...filter,
+      ...currencyFilter,
       from: `${month}-01`,
       to: lastDayOfMonth(`${month}-01`),
     };
@@ -78,7 +82,7 @@ export class MonthService {
       }),
       this.getInvoicesForListUseCase.execute({
         accessibleOwners,
-        filter,
+        filter: currencyFilter,
         month,
         ownerIds,
         preloaded,
@@ -89,6 +93,7 @@ export class MonthService {
         ? Promise.resolve({ accounts: [], days: [], month })
         : this.getDailyBalancesUseCase.execute({
             accessibleOwners,
+            currency,
             month,
             ownerIds,
             today: resolvedToday,
@@ -98,7 +103,7 @@ export class MonthService {
       month > currentMonth
         ? this.getProjectionsUseCase.execute({
             accessibleOwners,
-            filter,
+            filter: currencyFilter,
             from: laterMonth(addInvoiceMonths(month, -2), addInvoiceMonths(currentMonth, 1)),
             ownerIds,
             preloaded,
@@ -128,6 +133,7 @@ export class MonthService {
 
     const summary = await this.getMonthSummaryUseCase.execute({
       accountRows,
+      currency,
       invoices,
       month,
       projections,

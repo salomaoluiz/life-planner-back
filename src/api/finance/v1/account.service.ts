@@ -18,6 +18,7 @@ import {
 } from '@finance/application/use-case/GetDailyBalancesUseCase';
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { UpdateAccountUseCase } from '@finance/application/use-case/UpdateAccountUseCase';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { AccountWithBalances } from '@finance/domain/service/AccountBalance';
 
 // `ledgerBalance` is internal and never copied to the output.
@@ -136,6 +137,7 @@ export class AccountService {
     ownerIds: string[] | undefined,
     month: string,
     today: string,
+    currency?: CurrencyCode,
   ): Promise<DailyBalancesOutput> {
     const accessibleOwners = await this.financeAccessService.resolve(userId);
 
@@ -144,6 +146,7 @@ export class AccountService {
 
     const result = await this.getDailyBalancesUseCase.execute({
       accessibleOwners,
+      currency,
       month,
       ownerIds,
       today,

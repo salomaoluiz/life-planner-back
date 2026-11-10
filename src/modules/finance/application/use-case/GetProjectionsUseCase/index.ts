@@ -137,6 +137,15 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
       result.push(...(await this.project(item, scheduled, input.today, cards)));
     }
 
+    // Spec 103: each projected item (each leg of a transfer) carries its own currency.
+    if (filter.currency) {
+      return result
+        .filter((item) => item.currency === filter.currency)
+        .sort(
+          (a, b) => a.date.localeCompare(b.date) || a.recurrenceId.localeCompare(b.recurrenceId),
+        );
+    }
+
     return result.sort(
       (a, b) => a.date.localeCompare(b.date) || a.recurrenceId.localeCompare(b.recurrenceId),
     );

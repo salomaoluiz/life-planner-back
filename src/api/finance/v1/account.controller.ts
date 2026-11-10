@@ -34,6 +34,7 @@ import {
   TodayQuerySchema,
   toOwnerIds,
 } from '@api/finance/v1/finance-query';
+import { DEFAULT_CURRENCY } from '@finance/domain/enum/Currency';
 import { JwtPayload } from '@shared/infra/jwt/types';
 import { validate } from '@shared/infra/validation';
 
@@ -87,13 +88,14 @@ export class AccountController {
     @Request() req: JwtPayload & Request,
     @Query() query: Record<string, unknown>,
   ) {
-    const { month, ownerId, today } = validate(DailyBalancesRequestSchema, query);
+    const { currency, month, ownerId, today } = validate(DailyBalancesRequestSchema, query);
 
     return this.accountService.getDailyBalances(
       req.user.id,
       toOwnerIds(ownerId),
       month,
       resolveToday(today),
+      currency ?? DEFAULT_CURRENCY,
     );
   }
 

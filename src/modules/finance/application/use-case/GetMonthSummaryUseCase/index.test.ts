@@ -13,6 +13,7 @@ it('SHOULD sum income, expense, toPay and toReceive over the account rows', asyn
       mocks.row(EXPENSE, 300, true),
       mocks.row(EXPENSE, 200, false),
     ],
+    currency: 'BRL',
     invoices: [],
     month: mocks.month,
     projections: [],
@@ -41,6 +42,7 @@ it('SHOULD skip rows whose category is excluded from the totals AND card rows', 
 
   const result = await setup.execute({
     accountRows: [excluded, card],
+    currency: 'BRL',
     invoices: [],
     month: mocks.month,
     projections: [],
@@ -52,6 +54,7 @@ it('SHOULD skip rows whose category is excluded from the totals AND card rows', 
 it('SHOULD add the invoice amount and early payments to the expense AND the amount due to toPay unless it is paid', async () => {
   const result = await setup.execute({
     accountRows: [],
+    currency: 'BRL',
     invoices: [
       mocks.invoice(900, 900, 100, InvoiceStatus.CLOSED),
       mocks.invoice(400, 0, 0, InvoiceStatus.PAID),
@@ -67,6 +70,7 @@ it('SHOULD add the invoice amount and early payments to the expense AND the amou
 it('SHOULD split the projections: account ones by date, card ones by the invoice list date', async () => {
   const result = await setup.execute({
     accountRows: [],
+    currency: 'BRL',
     invoices: [],
     month: mocks.month,
     projections: [
@@ -95,6 +99,7 @@ it('SHOULD leave the projected transfer sides out of the totals (spec 098)', asy
   const excluded = { ...mocks.projection({ value: 500 }).category, excludeFromTotals: true };
   const result = await setup.execute({
     accountRows: [],
+    currency: 'BRL',
     invoices: [],
     month: mocks.month,
     projections: [
@@ -110,6 +115,7 @@ it('SHOULD leave the projected transfer sides out of the totals (spec 098)', asy
 it('SHOULD count only the matching purchases of a filtered invoice', async () => {
   const result = await setup.execute({
     accountRows: [],
+    currency: 'BRL',
     invoices: [
       { ...mocks.invoice(900, 900, 0, InvoiceStatus.CLOSED), filtered: { filteredTotal: 250 } },
       { ...mocks.invoice(400, 0, 0, InvoiceStatus.PAID), filtered: { filteredTotal: 100 } },
@@ -120,4 +126,16 @@ it('SHOULD count only the matching purchases of a filtered invoice', async () =>
 
   expect(result.expense).toBe(350);
   expect(result.toPay).toBe(250);
+});
+
+it('SHOULD return the currency it was given (spec 103)', async () => {
+  const result = await setup.execute({
+    accountRows: [],
+    currency: 'USD',
+    invoices: [],
+    month: mocks.month,
+    projections: [],
+  });
+
+  expect(result.currency).toBe('USD');
 });

@@ -11,6 +11,30 @@ function invoiceData(card = mocks.card, amount = 45000, payments: object[] = [])
 }
 
 describe('GetDailyBalancesUseCase', () => {
+  it('SHOULD consider only the accounts AND cards of the requested currency (spec 103)', async () => {
+    const usdAccount = { ...mocks.account, currency: 'USD', id: 'usd-account' } as never;
+
+    mocks.accountRepository.findAccounts.mockResolvedValue([mocks.account, usdAccount]);
+    mocks.creditCardRepository.findCreditCards.mockResolvedValue([mocks.card]);
+
+    const usd = await setup.execute({ ...mocks.input, currency: 'USD' });
+
+    expect(usd.accounts.map((item) => item.id)).toEqual(['usd-account']);
+    expect(mocks.accountRepository.findPaidSumsFrom).toHaveBeenCalledWith({
+      accountIds: ['usd-account'],
+      from: '2026-11-01',
+    });
+    // The BRL card is out of a USD view: its invoices are not even computed.
+    expect(mocks.compute.execute).not.toHaveBeenCalled();
+    expect(mocks.projections.executeChunked).toHaveBeenCalledWith(
+      expect.objectContaining({ filter: { currency: 'USD' } }),
+    );
+
+    const brl = await setup.execute({ ...mocks.input, currency: 'BRL' });
+
+    expect(brl.accounts.map((item) => item.id)).toEqual([mocks.account.id]);
+  });
+
   it('SHOULD take the paid rows of the month AND later ones back from the ledger for the opening', async () => {
     mocks.accountRepository.findPaidSumsFrom.mockResolvedValue([
       { accountId, amount: -5000, date: '2026-11-10' },

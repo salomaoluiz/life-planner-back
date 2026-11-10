@@ -1,6 +1,7 @@
 import { ProjectedOccurrence } from '@finance/domain/entity/ProjectedOccurrence';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { InvoiceStatus, TransactionType } from '@finance/domain/enum';
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { Invoice } from '@finance/domain/service/InvoiceCalculator';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 
@@ -12,6 +13,8 @@ export interface GetMonthSummaryInput {
     filtered?: { filteredTotal: number };
     invoice: Pick<Invoice, 'amount' | 'amountDue' | 'earlyPaid' | 'status'>;
   }[];
+  // Spec 103: the currency of everything passed in; it is the currency of the summary.
+  currency: CurrencyCode;
   // `YYYY-MM`
   month: string;
   projections: ProjectedOccurrence[];
@@ -20,7 +23,7 @@ export interface GetMonthSummaryInput {
 // Spec 080: `income/expense/toPay/toReceive` are the real figures (as the app computed them);
 // `projectedIncome/projectedExpense` are what the series will still add to a month after the current one.
 export interface MonthSummary {
-  currency: 'BRL';
+  currency: CurrencyCode;
   expense: number;
   income: number;
   projectedExpense: number;
@@ -37,7 +40,7 @@ export class GetMonthSummaryUseCase implements UseCaseWithParams<
 > {
   async execute(params: GetMonthSummaryInput): Promise<MonthSummary> {
     const summary: MonthSummary = {
-      currency: 'BRL',
+      currency: params.currency,
       expense: 0,
       income: 0,
       projectedExpense: 0,

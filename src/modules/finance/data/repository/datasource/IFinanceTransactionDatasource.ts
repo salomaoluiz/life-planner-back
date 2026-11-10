@@ -121,6 +121,8 @@ export interface FindTransactionsFilter {
   accountIds?: string[];
   categoryIds?: string[];
   creditCardIds?: string[];
+  // Spec 103: rows in this currency only.
+  currency?: CurrencyCode;
   // Spec 078: keyset position (rows strictly after it in the list order) and page size (`limit + 1` rows are read).
   cursor?: { createdAt: Date; date: Date; id: string };
   from?: string;

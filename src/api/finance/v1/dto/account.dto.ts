@@ -66,7 +66,9 @@ export const AccountApiSchema = z.object({
   updatedAt: z.iso.datetime(),
 });
 
+// Spec 103: only the accounts in this currency (default BRL).
 export const DailyBalancesQuerySchema = z.object({
+  currency: CurrencyApiSchema.optional(),
   month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
 });
 

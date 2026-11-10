@@ -25,16 +25,16 @@ it('SHOULD read the month window of the rows, the invoices AND the balances, wit
 
   expect(mocks.getTransactionsUseCase.execute).toHaveBeenCalledWith({
     accessibleOwners: mocks.accessibleOwners,
-    filter: { from: '2026-11-01', q: 'gym', to: '2026-11-30' },
+    filter: { currency: 'BRL', from: '2026-11-01', q: 'gym', to: '2026-11-30' },
     limit: 500,
     ownerIds: undefined,
     today,
   });
   expect(mocks.getInvoicesForListUseCase.execute).toHaveBeenCalledWith(
-    expect.objectContaining({ filter, month: '2026-11' }),
+    expect.objectContaining({ filter: { ...filter, currency: 'BRL' }, month: '2026-11' }),
   );
   expect(mocks.getDailyBalancesUseCase.execute).toHaveBeenCalledWith(
-    expect.objectContaining({ month: '2026-11' }),
+    expect.objectContaining({ currency: 'BRL', month: '2026-11' }),
   );
   expect(result.month).toBe('2026-11');
   expect(result.rows).toEqual({
@@ -43,6 +43,33 @@ it('SHOULD read the month window of the rows, the invoices AND the balances, wit
   });
   expect(result.lookups.categories[mocks.row.categoryId]).toBeDefined();
   expect(result.summary).toEqual(mocks.summary);
+});
+
+it('SHOULD read every part in the requested currency AND summarize in it (spec 103)', async () => {
+  await setup.find(mocks.userId, '2026-11', undefined, undefined, today, 'USD');
+
+  expect(mocks.getTransactionsUseCase.execute).toHaveBeenCalledWith(
+    expect.objectContaining({
+      filter: { currency: 'USD', from: '2026-11-01', to: '2026-11-30' },
+    }),
+  );
+  expect(mocks.getInvoicesForListUseCase.execute).toHaveBeenCalledWith(
+    expect.objectContaining({ filter: { currency: 'USD' } }),
+  );
+  expect(mocks.getDailyBalancesUseCase.execute).toHaveBeenCalledWith(
+    expect.objectContaining({ currency: 'USD' }),
+  );
+  expect(mocks.getMonthSummaryUseCase.execute).toHaveBeenCalledWith(
+    expect.objectContaining({ currency: 'USD' }),
+  );
+});
+
+it('SHOULD give the projections the requested currency (spec 103)', async () => {
+  await setup.find(mocks.userId, '2027-01', undefined, undefined, today, 'EUR');
+
+  expect(mocks.getProjectionsUseCase.execute).toHaveBeenCalledWith(
+    expect.objectContaining({ filter: { currency: 'EUR' } }),
+  );
 });
 
 it('SHOULD NOT project for the current or a past month', async () => {

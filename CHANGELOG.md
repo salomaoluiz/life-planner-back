@@ -3,6 +3,12 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.8.0] - 2026-11-10
+
+### Added
+
+- Account currency (spec 103): `GET /finance/month`, `GET /finance/transactions` and `GET /finance/accounts/daily-balances` accept an optional `currency` query (`BRL`, `USD`, `EUR`; default `BRL`; unknown value → 400). Rows, card invoices, projections, transfer legs and daily balances only hold data of that currency, and `summary.currency` is the requested one.
+
 ## [3.7.0] - 2026-11-09
 
 ### Added
