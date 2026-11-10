@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/nestjs';
 
-import { buildInitOptions, captureException, initMonitoring } from './index';
+import { buildInitOptions, captureException, initMonitoring, registerFatalHandlers } from './index';
 import { mocks } from './index.mocks';
 
 jest.mock('@sentry/nestjs', () => {
@@ -74,5 +74,52 @@ describe('GIVEN captureException', () => {
 
     expect(Sentry.captureException).toHaveBeenCalledWith('oops');
     expect(scope.setTags).not.toHaveBeenCalled();
+  });
+});
+
+describe('GIVEN registerFatalHandlers', () => {
+  function setup() {
+    const handlers: Record<string, (error: unknown) => void> = {};
+    const options = {
+      exit: jest.fn(),
+      log: jest.fn(),
+      target: {
+        on: jest.fn((event: string, handler: (error: unknown) => void) => {
+          handlers[event] = handler;
+          return process;
+        }),
+      } as never,
+    };
+
+    registerFatalHandlers(options);
+
+    return { handlers, options };
+  }
+
+  it.each(['uncaughtException', 'unhandledRejection'])(
+    'SHOULD capture, flush, log and exit WHEN %s fires',
+    async (phase) => {
+      const { handlers, options } = setup();
+      const error = new Error('boom');
+
+      handlers[phase](error);
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(scope.setTags).toHaveBeenCalledWith({ phase });
+      expect(Sentry.captureException).toHaveBeenCalledWith(error);
+      expect(Sentry.flush).toHaveBeenCalled();
+      expect(options.log).toHaveBeenCalledWith(error);
+      expect(options.exit).toHaveBeenCalledWith(1);
+    },
+  );
+
+  it('SHOULD still log and exit WHEN the flush fails', async () => {
+    const { handlers, options } = setup();
+    (Sentry.flush as jest.Mock).mockRejectedValueOnce(new Error('network'));
+
+    handlers.uncaughtException(new Error('boom'));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(options.exit).toHaveBeenCalledWith(1);
   });
 });
