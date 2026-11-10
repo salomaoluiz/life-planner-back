@@ -36,6 +36,22 @@ interface RawQuote {
 function asText(value: null | number | undefined): null | string {
   return typeof value === 'number' ? String(value) : null;
 }
+// `QUOTES_PER_REQUEST_EXCEEDED` ("... no máximo N ativo(s) por requisição ...") -> N; anything else -> null.
+function isNotFound(error: unknown): boolean {
+  return (error as { response?: { status?: number } })?.response?.status === 404;
+}
+function perRequestLimit(error: unknown): null | number {
+  const data = (error as { response?: { data?: { code?: string; message?: string } } })?.response
+    ?.data;
+
+  if (data?.code !== 'QUOTES_PER_REQUEST_EXCEEDED') {
+    return null;
+  }
+
+  const limit = Number(/(\d+)\s+ativo/.exec(data.message ?? '')?.[1]);
+
+  return Number.isInteger(limit) && limit > 0 ? limit : 1;
+}
 function toQuote(raw: RawQuote): null | QuoteResult {
   if (!raw.symbol || typeof raw.regularMarketPrice !== 'number' || raw.regularMarketPrice <= 0) {
     return null;
@@ -57,6 +73,8 @@ function toQuote(raw: RawQuote): null | QuoteResult {
 }
 @Injectable()
 export class BrapiQuotes implements IBrapiQuotes {
+  private maxPerRequest: null | number = null;
+
   constructor(private readonly env: EnvService) {}
 
   async getDailyHistory(symbol: string, range: string): Promise<DailyClose[]> {
@@ -73,16 +91,63 @@ export class BrapiQuotes implements IBrapiQuotes {
       }));
   }
 
+  // The free plan takes ONE ticker per request: the first `QUOTES_PER_REQUEST_EXCEEDED` answer teaches the limit and
+  // the rest of the symbols go in chunks of that size, one request after the other.
   async getQuotes(symbols: string[]): Promise<QuoteResult[]> {
-    if (symbols.length === 0) {
-      return [];
+    const tickers = symbols.map((symbol) => normalizeTicker(symbol));
+    const results: QuoteResult[] = [];
+    let index = 0;
+
+    while (index < tickers.length) {
+      const chunk = tickers.slice(index, index + (this.maxPerRequest ?? tickers.length));
+
+      try {
+        results.push(...(await this.quoteChunk(chunk)));
+        index += chunk.length;
+      } catch (error) {
+        if (isNotFound(error)) {
+          // brapi answers 404 for an unknown ticker: ask one by one, so the known ones still come back.
+          results.push(...(await this.quoteEach(chunk)));
+          index += chunk.length;
+          continue;
+        }
+
+        const limit = perRequestLimit(error);
+
+        if (limit === null || limit >= chunk.length) {
+          throw error;
+        }
+
+        this.maxPerRequest = limit;
+      }
     }
-    const list = symbols.map((symbol) => normalizeTicker(symbol)).join(',');
-    const data = await this.request<{ results?: RawQuote[] }>(`/quote/${list}`, {});
+
+    return results;
+  }
+
+  private async quoteChunk(tickers: string[]): Promise<QuoteResult[]> {
+    const data = await this.request<{ results?: RawQuote[] }>(`/quote/${tickers.join(',')}`, {});
+
     return (data.results ?? []).flatMap((raw) => {
       const quote = toQuote(raw);
       return quote ? [quote] : [];
     });
+  }
+
+  private async quoteEach(tickers: string[]): Promise<QuoteResult[]> {
+    const results: QuoteResult[] = [];
+
+    for (const ticker of tickers) {
+      try {
+        results.push(...(await this.quoteChunk([ticker])));
+      } catch (error) {
+        if (!isNotFound(error)) {
+          throw error;
+        }
+      }
+    }
+
+    return results;
   }
 
   private async request<T>(path: string, params: Record<string, string>): Promise<T> {

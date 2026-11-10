@@ -87,6 +87,107 @@ describe('BrapiQuotes.getQuotes', () => {
   });
 });
 
+describe('BrapiQuotes.getQuotes on the free plan (1 ticker per request)', () => {
+  const exceeded = Object.assign(new Error('400'), {
+    response: {
+      data: {
+        code: 'QUOTES_PER_REQUEST_EXCEEDED',
+        message: 'Seu plano permite no máximo 1 ativo(s) por requisição. Você enviou 2.',
+      },
+      status: 400,
+    },
+  });
+
+  it('SHOULD learn the limit from the 400 AND request the symbols one by one', async () => {
+    getSpy.mockRejectedValueOnce(exceeded);
+    getSpy.mockImplementation(async (url: string) => ({
+      data: { results: [{ ...mocks.rawQuote, symbol: url.split('/quote/')[1] }] },
+    }));
+    const brapi = new BrapiQuotes(envWith('your-token'));
+
+    const quotes = await brapi.getQuotes(['ITSA4', 'HGLG11']);
+
+    expect(quotes.map((quote) => quote.ticker)).toEqual(['ITSA4', 'HGLG11']);
+    expect(getSpy.mock.calls.map(([url]) => url)).toEqual([
+      'https://brapi.dev/api/quote/ITSA4,HGLG11',
+      'https://brapi.dev/api/quote/ITSA4',
+      'https://brapi.dev/api/quote/HGLG11',
+    ]);
+
+    getSpy.mockClear();
+    await brapi.getQuotes(['A1', 'B1', 'C1']);
+
+    expect(getSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it('SHOULD rethrow other 400 errors AND a limit that does not help', async () => {
+    getSpy.mockRejectedValueOnce(
+      Object.assign(new Error('400'), {
+        response: { data: { code: 'INVALID_RANGE' }, status: 400 },
+      }),
+    );
+    await expect(
+      new BrapiQuotes(envWith('your-token')).getQuotes(['A1', 'B1']),
+    ).rejects.toBeDefined();
+
+    getSpy.mockRejectedValueOnce(exceeded);
+    await expect(new BrapiQuotes(envWith('your-token')).getQuotes(['A1'])).rejects.toBeDefined();
+  });
+
+  it('SHOULD default to 1 WHEN the message has no number', async () => {
+    getSpy.mockRejectedValueOnce(
+      Object.assign(new Error('400'), {
+        response: { data: { code: 'QUOTES_PER_REQUEST_EXCEEDED', message: 'x' }, status: 400 },
+      }),
+    );
+    getSpy.mockResolvedValue({ data: { results: [mocks.rawQuote] } });
+
+    await new BrapiQuotes(envWith('your-token')).getQuotes(['A1', 'B1']);
+
+    expect(getSpy).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('BrapiQuotes.getQuotes with an unknown ticker (404)', () => {
+  function notFound() {
+    return Object.assign(new Error('404'), { response: { data: {}, status: 404 } });
+  }
+
+  it('SHOULD return [] for a single unknown ticker', async () => {
+    getSpy.mockRejectedValue(notFound());
+
+    expect(await new BrapiQuotes(envWith('your-token')).getQuotes(['XYZW9'])).toEqual([]);
+  });
+
+  it('SHOULD still return the known tickers WHEN one of a batch is unknown', async () => {
+    getSpy.mockRejectedValueOnce(notFound());
+    getSpy.mockImplementation(async (url: string) => {
+      if (url.endsWith('XYZW9')) {
+        throw notFound();
+      }
+
+      return { data: { results: [{ ...mocks.rawQuote, symbol: url.split('/quote/')[1] }] } };
+    });
+
+    const quotes = await new BrapiQuotes(envWith('your-token')).getQuotes([
+      'ITSA4',
+      'XYZW9',
+      'HGLG11',
+    ]);
+
+    expect(quotes.map((quote) => quote.ticker)).toEqual(['ITSA4', 'HGLG11']);
+  });
+
+  it('SHOULD rethrow a limit error raised while asking one by one', async () => {
+    getSpy.mockRejectedValueOnce(notFound());
+    getSpy.mockRejectedValueOnce({ response: { status: 429 } });
+
+    await expect(new BrapiQuotes(envWith('your-token')).getQuotes(['A1', 'B1'])).rejects.toThrow(
+      '429',
+    );
+  });
+});
+
 describe('BrapiQuotes.search', () => {
   it('SHOULD list the available symbols AND quote at most 10', async () => {
     const symbols = Array.from({ length: 12 }, (_, index) => `AAA${index}`);
