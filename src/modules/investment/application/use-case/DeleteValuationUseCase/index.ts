@@ -4,6 +4,7 @@ import {
   OperationAccessInput,
   OperationAccessSchema,
 } from '@investment/application/dto/OperationInput';
+import { assertNotCalculated } from '@investment/application/service/FixedIncomeRules';
 import { loadWritableAsset } from '@investment/application/service/OperationRules';
 import { hasOwnerAccess } from '@investment/domain/entity/OwnerAccess';
 import { IInvestmentRepository } from '@investment/domain/repository';
@@ -25,7 +26,9 @@ export class DeleteValuationUseCase implements UseCaseWithParams<OperationAccess
       throw new NotFoundException();
     }
 
-    await loadWritableAsset(this.repository, asset.id, input.accessibleOwners);
+    const writable = await loadWritableAsset(this.repository, asset.id, input.accessibleOwners);
+
+    await assertNotCalculated(this.repository, writable);
     await this.repository.deleteValuation(valuation.id);
   }
 }

@@ -51,7 +51,7 @@ const position = {
   realizedResult: 31790,
 };
 const market: AssetView['market'] = { fx: null, priceSource: 'MANUAL', quote: null, usd: null };
-const view: AssetView = { asset, market, operationCount: 1, position };
+const view: AssetView = { asset, fixedIncome: null, market, operationCount: 1, position };
 const valuation = valuationFixture({ assetId: asset.id });
 const detailView: AssetDetailView = {
   ...view,

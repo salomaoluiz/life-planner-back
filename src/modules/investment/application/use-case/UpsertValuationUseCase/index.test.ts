@@ -1,6 +1,10 @@
 import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 
-import { valuationFixture } from '@investment/domain/entity/mocks/investment.fixture';
+import {
+  fixedIncomeDataFixture,
+  fixedIncomeDetailFixture,
+  valuationFixture,
+} from '@investment/domain/entity/mocks/investment.fixture';
 import { InvestmentAssetStatus } from '@investment/domain/enum';
 import { ValidationError } from '@shared/domain/error/ValidationError';
 import { Decimal8 } from '@shared/infra/decimal';
@@ -58,4 +62,16 @@ it('SHOULD answer 404 WHEN the asset disappears before the re-read', async () =>
   spies.findAssetById.mockResolvedValueOnce(mocks.detail).mockResolvedValueOnce(undefined);
 
   await expect(setup.execute(input)).rejects.toBeInstanceOf(NotFoundException);
+});
+
+it('SHOULD refuse WHEN the asset is a calculated title (spec 105)', async () => {
+  spies.findAssetById.mockResolvedValue(fixedIncomeDetailFixture());
+  spies.findFixedIncomeByAssetIds.mockResolvedValue(
+    new Map([['asset-fi', fixedIncomeDataFixture()]]),
+  );
+
+  await expect(setup.execute({ ...input, assetId: 'asset-fi' })).rejects.toThrow(
+    UnprocessableEntityException,
+  );
+  expect(spies.upsertValuation).not.toHaveBeenCalled();
 });

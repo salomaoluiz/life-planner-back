@@ -1,4 +1,8 @@
-import { InvestmentFeeKind, InvestmentOperationType } from '@investment/domain/enum';
+import {
+  InvestmentFeeKind,
+  InvestmentFixedIncomeRedemptionKind,
+  InvestmentOperationType,
+} from '@investment/domain/enum';
 import { Decimal8 } from '@shared/infra/decimal';
 
 export interface FeeEntity {
@@ -25,7 +29,10 @@ export interface OperationEntity {
   generateTransaction: boolean;
   gross: number;
   id: string;
+  // Spec 105: the real net of a redemption of a calculated title.
+  netAmount: null | number;
   quantity: Decimal8;
+  redemptionKind: InvestmentFixedIncomeRedemptionKind | null;
   total: number;
   transactionId: null | string;
   type: InvestmentOperationType;

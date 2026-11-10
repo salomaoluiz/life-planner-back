@@ -3,6 +3,14 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.10.0] - 2026-11-10
+
+### Added
+
+- Fixed income calculated from the rate (spec 105): a `FIXED_INCOME` asset can carry terms (product, tax exemption, maturity, liquidity) and a rate history (prefixed, % of CDI, IPCA + x); every contribution is a lot and the API returns gross, estimated IR, IOF and net today and at maturity.
+- Redemptions record the real net received, consume lots oldest first and estimate the withheld IR/IOF; a matured title is returned as `maturityPending`.
+- Statement adjustments, `POST /investments/fixed-income/simulate` and `POST /investments/assets/:id/fixed-income/redemption-preview`; new routes under `/investments/fixed-income` and `/investments/assets/:id/fixed-income/*`.
+
 ## [3.9.0] - 2026-11-10
 
 ### Added

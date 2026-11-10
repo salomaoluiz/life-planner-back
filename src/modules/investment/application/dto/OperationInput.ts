@@ -11,6 +11,7 @@ import {
   QuantitySchema,
 } from '@investment/application/dto/InvestmentCommon';
 import { today } from '@investment/application/service/Today';
+import { InvestmentFixedIncomeRedemptionKind } from '@investment/domain/enum';
 
 const PastDateSchema = CalendarDateSchema.refine((value) => value <= today(), {
   message: 'Date cannot be in the future',
@@ -40,19 +41,32 @@ export const UpdateOperationSchema = z
   .object({
     accessibleOwners: AccessibleOwnersSchema,
     accountId: IdSchema.nullish(),
+    // Spec 105: the fixed income shape of a contribution (`amount`) or a redemption (`kind`, `netAmount`).
+    amount: z.number().int().positive().optional(),
     date: PastDateSchema.optional(),
     fees: FeesSchema.optional(),
     fxRate: FxRateSchema.nullish(),
     generateTransaction: z.boolean().optional(),
     id: IdSchema,
+    kind: z.enum(InvestmentFixedIncomeRedemptionKind).optional(),
+    netAmount: z.number().int().positive().optional(),
     quantity: QuantitySchema.optional(),
     unitPrice: PositiveDecimalSchema.optional(),
   })
   .refine(
     (input) =>
-      ['accountId', 'date', 'fees', 'fxRate', 'generateTransaction', 'quantity', 'unitPrice'].some(
-        (field) => input[field as keyof typeof input] !== undefined,
-      ),
+      [
+        'accountId',
+        'amount',
+        'date',
+        'fees',
+        'fxRate',
+        'generateTransaction',
+        'kind',
+        'netAmount',
+        'quantity',
+        'unitPrice',
+      ].some((field) => input[field as keyof typeof input] !== undefined),
     { message: 'At least one field is required' },
   );
 export type UpdateOperationInput = z.input<typeof UpdateOperationSchema>;

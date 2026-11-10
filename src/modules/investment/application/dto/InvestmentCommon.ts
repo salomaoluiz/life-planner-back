@@ -48,6 +48,9 @@ export const QuantitySchema = PositiveDecimalSchema.refine(
 
 export const CalendarDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date');
 
+// Spec 105 FR 20: the withheld taxes of a fixed income redemption are written by the calculation only.
+const SYSTEM_FEE_KINDS = [InvestmentFeeKind.INCOME_TAX, InvestmentFeeKind.IOF];
+
 export const FeeSchema = z
   .object({
     amount: z.number().int().positive(),
@@ -55,6 +58,9 @@ export const FeeSchema = z
     kind: z.enum(InvestmentFeeKind),
   })
   .superRefine((fee, ctx) => {
+    if (SYSTEM_FEE_KINDS.includes(fee.kind)) {
+      ctx.addIssue({ code: 'custom', message: 'This fee is set by the system', path: ['kind'] });
+    }
     if (fee.kind === InvestmentFeeKind.OTHER && !fee.description) {
       ctx.addIssue({ code: 'custom', message: 'Description is required', path: ['description'] });
     }

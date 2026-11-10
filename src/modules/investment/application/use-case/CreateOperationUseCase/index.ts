@@ -4,6 +4,7 @@ import {
   CreateOperationInput,
   CreateOperationSchema,
 } from '@investment/application/dto/OperationInput';
+import { assertNotCalculated } from '@investment/application/service/FixedIncomeRules';
 import {
   loadWritableAsset,
   OperationWriteResult,
@@ -30,6 +31,8 @@ export class CreateOperationUseCase implements UseCaseWithParams<
   async execute(params: CreateOperationInput): Promise<OperationWriteResult> {
     const input = validate(CreateOperationSchema, params);
     const asset = await loadWritableAsset(this.repository, input.assetId, input.accessibleOwners);
+
+    await assertNotCalculated(this.repository, asset);
 
     return persistOperation(this.repository, {
       accountId: input.accountId ?? null,

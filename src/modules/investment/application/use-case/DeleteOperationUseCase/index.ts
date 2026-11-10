@@ -4,13 +4,12 @@ import {
   OperationAccessInput,
   OperationAccessSchema,
 } from '@investment/application/dto/OperationInput';
+import { mapFixedIncomeErrors } from '@investment/application/service/FixedIncomeRules';
 import {
   assertLinkedAccountChangeable,
   loadWritableAsset,
-  toNegativePositionException,
 } from '@investment/application/service/OperationRules';
 import { hasOwnerAccess } from '@investment/domain/entity/OwnerAccess';
-import { NegativePositionError } from '@investment/domain/error/NegativePositionError';
 import { IInvestmentRepository } from '@investment/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
@@ -38,10 +37,6 @@ export class DeleteOperationUseCase implements UseCaseWithParams<OperationAccess
       operation.accountId,
     );
 
-    try {
-      await this.repository.deleteOperation(operation.id);
-    } catch (error) {
-      throw error instanceof NegativePositionError ? toNegativePositionException(error) : error;
-    }
+    await mapFixedIncomeErrors(async () => this.repository.deleteOperation(operation.id));
   }
 }
