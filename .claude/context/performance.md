@@ -45,6 +45,16 @@ A route without an entry fails `yarn test` (`scripts/perf/registry.coverage.test
 - A `knownException` or `seqScanException` always names the spec that removes it.
 - Lists have a period or pagination. Money data is never cached with `max-age`; use `private, no-cache` plus validation.
 
+## When the check fails on `main` (spec 104.1)
+
+`yarn perf:check` prints `db round-trip N ms` (p50 of `SELECT 1`) and `dataset fingerprint: matches` at the top of its report; every timing failure ends with `(db round-trip N ms)`, and a route that was measured twice shows `retried (first X ms)`. A failure is one of three causes:
+
+- **Data drift:** the fingerprint check exits 2 before any timing line (`perf dataset drifted (...)`). Fix: `yarn perf:seed --reset` (about 13 minutes; only for drift, never "to see"). Something wrote to the base user's data: the E2E suite or `DELETE /user/me` on the perf user.
+- **Stale baseline:** a payload failure (`response is N bytes, over maxBytes M`) or a timing failure with a constant offset after a merged spec added a field or a filter. Fix: `yarn perf --module <m> --update-baseline`, with before/after in the PR for the owner's review.
+- **Environment:** timing only, with a high or varying `db round-trip`. Run the check three times with nothing else running; a payload or EXPLAIN failure is never environment (it is never retried).
+
+Before calling a failure pre-existing (rule 19), run `yarn perf:check --module <m>` on `origin/main` and read the last merged PR's Verification section.
+
 ## PR block
 
 Copy into the PR description (template: `.github/pull_request_template.md`): modules checked, the final summary line, and before/after of any changed budget.

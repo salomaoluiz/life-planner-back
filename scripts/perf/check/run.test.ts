@@ -38,6 +38,7 @@ function makeDeps(overrides: Partial<CheckDeps> = {}) {
       fixtures: { referenceMonth: '2026-10', userId: 'u' },
       token: 't',
     })),
+    roundTrip: jest.fn(async () => 12),
     startServer: jest.fn(() => ({ child: {}, stop })),
     waitHealthy: jest.fn(async () => undefined),
     writeSummary: jest.fn(),
@@ -102,6 +103,41 @@ describe('checkMain', () => {
       .mockResolvedValueOnce({ bytes: 1000, p50: 105, wireBytes: 100 });
     expect(await checkMain(['--module', 'stock'], ENV, makeDeps().deps)).toBe(0);
     expect(measureRoute).toHaveBeenCalledTimes(2);
+  });
+
+  it('SHOULD report the retry and the database round-trip', async () => {
+    (measureRoute as jest.Mock)
+      .mockResolvedValueOnce({ bytes: 1000, p50: 300, wireBytes: 100 })
+      .mockResolvedValueOnce({ bytes: 1000, p50: 105, wireBytes: 100 });
+    const { deps } = makeDeps();
+    await checkMain(['--module', 'stock'], ENV, deps);
+    const summary = deps.writeSummary.mock.calls[0][0] as string;
+    expect(summary).toContain('db round-trip 12 ms');
+    expect(summary).toContain('dataset fingerprint: matches');
+    expect(summary).toContain('retried (first 300 ms)');
+  });
+
+  it('SHOULD name the round-trip in a timing failure', async () => {
+    (measureRoute as jest.Mock).mockResolvedValue({ bytes: 1000, p50: 300, wireBytes: 100 });
+    const { deps } = makeDeps();
+    await checkMain(['--module', 'stock'], ENV, deps);
+    expect(deps.log).toHaveBeenCalledWith(expect.stringContaining('(db round-trip 12 ms)'));
+  });
+
+  it('SHOULD exit 2 WHEN the round-trip probe fails', async () => {
+    const { deps } = makeDeps({
+      roundTrip: jest.fn(async () => {
+        throw new Error('connect ECONNREFUSED');
+      }),
+    });
+    expect(await checkMain(['--module', 'stock'], ENV, deps)).toBe(2);
+  });
+
+  it('SHOULD not retry a payload failure', async () => {
+    registryWith({ maxBytes: 500 });
+    (measureRoute as jest.Mock).mockResolvedValue({ bytes: 1000, p50: 100, wireBytes: 100 });
+    expect(await checkMain(['--module', 'stock'], ENV, makeDeps().deps)).toBe(1);
+    expect(measureRoute).toHaveBeenCalledTimes(1);
   });
 
   it('SHOULD still fail WHEN the slowdown repeats', async () => {
