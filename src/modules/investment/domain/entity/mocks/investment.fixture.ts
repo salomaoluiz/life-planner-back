@@ -2,6 +2,7 @@ import { faker } from '@faker-js/faker';
 
 import { AssetEntity, AssetListRow } from '@investment/domain/entity/AssetEntity';
 import { OperationEntity } from '@investment/domain/entity/OperationEntity';
+import { QuoteEntity } from '@investment/domain/entity/QuoteEntity';
 import { ValuationEntity } from '@investment/domain/entity/ValuationEntity';
 import {
   InvestmentAssetClass,
@@ -9,7 +10,8 @@ import {
   InvestmentOperationType,
   InvestmentValuationSource,
 } from '@investment/domain/enum';
-import { IInvestmentRepository } from '@investment/domain/repository';
+import { QuoteMarket, QuoteSource } from '@investment/domain/enum/QuoteMarket';
+import { IInvestmentRepository, IQuoteRepository } from '@investment/domain/repository';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { Decimal8 } from '@shared/infra/decimal';
 
@@ -53,6 +55,27 @@ export function operationFixture(overrides: Partial<OperationEntity> = {}): Oper
 }
 
 // Every repository method as a jest spy, for the use case tests.
+export function quoteFixture(overrides: Partial<QuoteEntity> = {}): QuoteEntity {
+  return {
+    changePercent: '0.4800',
+    currency: 'BRL',
+    dayHigh: Decimal8.parse('10.6'),
+    dayLow: Decimal8.parse('10.4'),
+    fetchedAt: new Date('2026-11-04T16:05:00Z'),
+    lastErrorAt: null,
+    logoUrl: null,
+    market: QuoteMarket.B3,
+    missingDays: 0,
+    name: 'Itausa PN',
+    previousClose: Decimal8.parse('10.48'),
+    price: Decimal8.parse('10.53'),
+    quotedAt: new Date('2026-11-04T16:00:00Z'),
+    source: QuoteSource.BRAPI,
+    ticker: 'ITSA4',
+    unavailable: false,
+    ...overrides,
+  };
+}
 export function repositorySpies(): Record<keyof IInvestmentRepository, jest.Mock> {
   return {
     createAsset: jest.fn(),
@@ -81,5 +104,24 @@ export function valuationFixture(overrides: Partial<ValuationEntity> = {}): Valu
     source: InvestmentValuationSource.MANUAL,
     unitPrice: Decimal8.parse('10.53'),
     ...overrides,
+  };
+}
+// Every quote repository method as a jest spy.
+export function quoteRepositorySpies(): Record<keyof IQuoteRepository, jest.Mock> {
+  return {
+    findFx: jest.fn(),
+    findFxHistory: jest.fn(),
+    findFxOnOrBefore: jest.fn(),
+    findHistory: jest.fn(),
+    findQuotes: jest.fn(),
+    findTrackedSymbols: jest.fn(),
+    hasHistory: jest.fn(),
+    markMissing: jest.fn(),
+    markQuoteErrors: jest.fn(),
+    runExclusive: jest.fn(),
+    saveFx: jest.fn(),
+    saveFxHistory: jest.fn(),
+    saveHistory: jest.fn(),
+    saveQuotes: jest.fn(),
   };
 }

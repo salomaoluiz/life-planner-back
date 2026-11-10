@@ -4,6 +4,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 
+import { quoteSpies } from '@investment/application/service/QuoteContext/index.mocks';
 import {
   InvestmentAssetStatus,
   InvestmentFeeKind,
@@ -222,4 +223,56 @@ it('SHOULD refuse an exchange rate on a BRL asset WITH code FX_RATE_NOT_ALLOWED'
     response: { code: 'FX_RATE_NOT_ALLOWED' },
   });
   expect(spies.writeOperation).not.toHaveBeenCalled();
+});
+
+describe('default exchange rate (spec 104 FR 27)', () => {
+  beforeEach(() => {
+    spies.findAssetById.mockResolvedValue({ ...mocks.detail, currency: 'USD' });
+    spies.findAccountForOperation.mockResolvedValue({ ...mocks.account, currency: 'USD' });
+  });
+
+  it('SHOULD use the rate of the operation date WHEN none is given', async () => {
+    quoteSpies.findFxOnOrBefore.mockResolvedValue('5.4000');
+
+    await setup.execute(input);
+
+    expect(quoteSpies.findFxOnOrBefore).toHaveBeenCalledWith('USD-BRL', '2026-06-10');
+    expect(spies.writeOperation).toHaveBeenCalledWith(
+      expect.objectContaining({ fxRate: '5.4000' }),
+    );
+  });
+
+  it('SHOULD fall back to the latest rate, then to null', async () => {
+    quoteSpies.findFxOnOrBefore.mockResolvedValue(undefined);
+    quoteSpies.findFx.mockResolvedValueOnce({ rate: '5.5601' });
+    await setup.execute(input);
+
+    quoteSpies.findFx.mockResolvedValueOnce(undefined);
+    await setup.execute(input);
+
+    expect(spies.writeOperation).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ fxRate: '5.5601' }),
+    );
+    expect(spies.writeOperation).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ fxRate: null }),
+    );
+  });
+
+  it('SHOULD keep an explicit null (no rate) AND not look the rate up', async () => {
+    await setup.execute({ ...input, fxRate: null });
+
+    expect(quoteSpies.findFxOnOrBefore).not.toHaveBeenCalled();
+    expect(spies.writeOperation).toHaveBeenCalledWith(expect.objectContaining({ fxRate: null }));
+  });
+
+  it('SHOULD not look any rate up for a BRL asset', async () => {
+    spies.findAssetById.mockResolvedValue(mocks.detail);
+    spies.findAccountForOperation.mockResolvedValue(mocks.account);
+
+    await setup.execute(input);
+
+    expect(quoteSpies.findFxOnOrBefore).not.toHaveBeenCalled();
+  });
 });

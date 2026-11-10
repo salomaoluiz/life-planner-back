@@ -11,6 +11,9 @@ import { DeleteOperationUseCase } from '@investment/application/use-case/DeleteO
 import { DeleteValuationUseCase } from '@investment/application/use-case/DeleteValuationUseCase';
 import { GetAssetByIdUseCase } from '@investment/application/use-case/GetAssetByIdUseCase';
 import { GetAssetsUseCase } from '@investment/application/use-case/GetAssetsUseCase';
+import { GetPriceHistoryUseCase } from '@investment/application/use-case/GetPriceHistoryUseCase';
+import { RefreshQuotesNowUseCase } from '@investment/application/use-case/RefreshQuotesNowUseCase';
+import { SearchTickersUseCase } from '@investment/application/use-case/SearchTickersUseCase';
 import { UpdateAssetUseCase } from '@investment/application/use-case/UpdateAssetUseCase';
 import { UpdateOperationUseCase } from '@investment/application/use-case/UpdateOperationUseCase';
 import { UpsertValuationUseCase } from '@investment/application/use-case/UpsertValuationUseCase';
@@ -75,7 +78,10 @@ const useCaseMocks = {
   deleteValuation: { execute: jest.fn() },
   getAssetById: { execute: jest.fn() },
   getAssets: { execute: jest.fn() },
+  getPriceHistory: { execute: jest.fn() },
   getUserFamilyAccess: { execute: jest.fn() },
+  refreshQuotesNow: { execute: jest.fn() },
+  searchTickers: { execute: jest.fn() },
   updateAsset: { execute: jest.fn() },
   updateOperation: { execute: jest.fn() },
   upsertValuation: { execute: jest.fn() },
@@ -99,7 +105,10 @@ beforeEach(async () => {
       { provide: DeleteValuationUseCase, useValue: useCaseMocks.deleteValuation },
       { provide: GetAssetByIdUseCase, useValue: useCaseMocks.getAssetById },
       { provide: GetAssetsUseCase, useValue: useCaseMocks.getAssets },
+      { provide: GetPriceHistoryUseCase, useValue: useCaseMocks.getPriceHistory },
       { provide: GetUserFamilyAccessUseCase, useValue: useCaseMocks.getUserFamilyAccess },
+      { provide: RefreshQuotesNowUseCase, useValue: useCaseMocks.refreshQuotesNow },
+      { provide: SearchTickersUseCase, useValue: useCaseMocks.searchTickers },
       { provide: UpdateAssetUseCase, useValue: useCaseMocks.updateAsset },
       { provide: UpdateOperationUseCase, useValue: useCaseMocks.updateOperation },
       { provide: UpsertValuationUseCase, useValue: useCaseMocks.upsertValuation },

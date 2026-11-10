@@ -4,6 +4,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 
+import { quoteSpies } from '@investment/application/service/QuoteContext/index.mocks';
 import { valuationFixture } from '@investment/domain/entity/mocks/investment.fixture';
 import { InvestmentAssetClass } from '@investment/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -106,4 +107,22 @@ it('SHOULD fall back to an empty detail WHEN the asset cannot be re-read', async
   spies.findAssetById.mockResolvedValue(undefined);
 
   await expect(setup.execute(input)).resolves.toMatchObject({ operationCount: 0 });
+});
+
+it('SHOULD validate the ticker for its class BEFORE saving (spec 104 FR 25)', async () => {
+  await setup.execute(input);
+
+  expect(quoteSpies.validate).toHaveBeenCalledWith(InvestmentAssetClass.BR_STOCK, 'ITSA4');
+  expect(quoteSpies.validate.mock.invocationCallOrder[0]).toBeLessThan(
+    spies.createAsset.mock.invocationCallOrder[0],
+  );
+});
+
+it('SHOULD NOT save the asset WHEN the ticker is not found', async () => {
+  quoteSpies.validate.mockRejectedValue(
+    new UnprocessableEntityException({ code: 'TICKER_NOT_FOUND' }),
+  );
+
+  await expect(setup.execute(input)).rejects.toBeInstanceOf(UnprocessableEntityException);
+  expect(spies.createAsset).not.toHaveBeenCalled();
 });

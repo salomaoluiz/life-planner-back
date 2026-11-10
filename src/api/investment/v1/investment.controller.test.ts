@@ -113,3 +113,35 @@ describe('valuations', () => {
     expect(mocks.service.deleteValuation).toHaveBeenCalledWith(userId, id);
   });
 });
+
+describe('quotes (spec 104)', () => {
+  it('SHOULD search tickers with a validated market and query', async () => {
+    await setup.searchTickers({ market: 'B3', q: 'itsa' });
+
+    expect(mocks.service.searchTickers).toHaveBeenCalledWith({ market: 'B3', q: 'itsa' });
+    await expect(setup.searchTickers({ market: 'XX', q: 'itsa' })).rejects.toThrow(ValidationError);
+    await expect(setup.searchTickers({ market: 'B3', q: 'i' })).rejects.toThrow(ValidationError);
+  });
+
+  it('SHOULD refresh with the optional asset ids AND an empty body', async () => {
+    await setup.refreshQuotes(mocks.request, { assetIds: [id] });
+    await setup.refreshQuotes(mocks.request, undefined as never);
+
+    expect(mocks.service.refreshQuotes).toHaveBeenNthCalledWith(1, userId, [id]);
+    expect(mocks.service.refreshQuotes).toHaveBeenNthCalledWith(2, userId, undefined);
+    await expect(setup.refreshQuotes(mocks.request, { assetIds: ['no'] } as never)).rejects.toThrow(
+      ValidationError,
+    );
+  });
+
+  it('SHOULD read the price history with the validated range (default 1Y)', async () => {
+    await setup.priceHistory(mocks.request, id, { range: '6M' });
+    await setup.priceHistory(mocks.request, id, {});
+
+    expect(mocks.service.priceHistory).toHaveBeenNthCalledWith(1, userId, id, '6M');
+    expect(mocks.service.priceHistory).toHaveBeenNthCalledWith(2, userId, id, '1Y');
+    await expect(setup.priceHistory(mocks.request, id, { range: '2Y' })).rejects.toThrow(
+      ValidationError,
+    );
+  });
+});
