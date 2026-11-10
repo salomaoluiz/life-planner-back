@@ -22,6 +22,7 @@ const buy = operationFixture({
 
 function context(overrides: Partial<QuoteContext> = {}): QuoteContext {
   return {
+    fixedIncome: new Map(),
     fx: null,
     now,
     quotes: new Map([[quoteKey('B3', 'ITSA4'), quoteFixture()]]),
@@ -160,5 +161,61 @@ describe('toAssetDetailView for a USD asset (spec 104 FR 28)', () => {
 
     expect(view.market.usd?.averageFxRate).toBe('5.2236');
     expect(view.operations).toHaveLength(2);
+  });
+});
+
+describe('toAssetView with a calculated title (spec 105)', () => {
+  it('SHOULD value the position with the gross on the curve AND carry the fixed income view', () => {
+    const fixed = assetFixture({ assetClass: 'FIXED_INCOME' as never, ticker: null });
+    const lot = operationFixture({
+      assetId: fixed.id,
+      date: '2026-01-02',
+      quantity: Decimal8.parse('10000'),
+      total: 1_000_000,
+      unitPrice: Decimal8.parse('1'),
+    });
+    const fixedIncome = new Map([
+      [
+        fixed.id,
+        {
+          adjustments: [],
+          rates: [
+            {
+              annualRate: '12.0000',
+              assetId: fixed.id,
+              cdiPercent: null,
+              effectiveRate: '12.000000',
+              id: 'r1',
+              indexRate: null,
+              mode: 'PREFIXED' as never,
+              spread: null,
+              startDate: '2026-01-02',
+            },
+          ],
+          terms: {
+            assetId: fixed.id,
+            liquidity: 'DAILY' as never,
+            liquidityDate: null,
+            maturityDate: '2030-01-02',
+            product: 'CDB' as never,
+            taxExempt: false,
+          },
+        },
+      ],
+    ]);
+
+    const view = toAssetView(
+      listRowFixture({ ...fixed, operations: [lot] }),
+      context({ fixedIncome }),
+    );
+
+    expect(view.fixedIncome?.today.gross).toBeGreaterThan(1_000_000);
+    expect(view.position.currentValue).toBe(view.fixedIncome?.today.gross);
+    expect(view.position.currentUnitPrice).toBeNull();
+    expect(view.position.openResult).toBe((view.position.currentValue ?? 0) - 1_000_000);
+  });
+
+  it('SHOULD leave fixedIncome null for a manual asset', () => {
+    expect(toAssetView(listRowFixture(), context()).fixedIncome).toBeNull();
   });
 });

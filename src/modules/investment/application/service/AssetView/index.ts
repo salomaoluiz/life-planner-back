@@ -6,8 +6,10 @@ import { calculatePosition, PositionResult } from '@investment/domain/service/Po
 import { marketOfClass, PriceSource, resolvePrice } from '@investment/domain/service/QuoteResolver';
 import { Decimal8 } from '@shared/infra/decimal';
 
+import { FixedIncomeView, toFixedIncomeView } from '../FixedIncomeView';
 import { emptyContext, QuoteContext, quoteKey } from '../QuoteContext';
 import { QuoteView, toQuoteView } from '../QuoteView';
+import { todayInSaoPaulo } from '../Today';
 
 export interface AssetDetailView extends AssetView {
   operations: OperationView[];
@@ -35,6 +37,8 @@ export interface AssetPosition {
 }
 export interface AssetView {
   asset: AssetEntity;
+  // Spec 105: the computed numbers of a calculated title, null for any other asset.
+  fixedIncome: FixedIncomeView | null;
   market: AssetMarket;
   operationCount: number;
   position: AssetPosition;
@@ -65,9 +69,15 @@ export function toAssetDetailView(
   const result = positionOf(detail.operations);
   const { operations, valuations, ...asset } = detail;
   const latest = latestOf(valuations);
+  const fixedIncome = toFixedIncomeView(
+    context.fixedIncome.get(asset.id),
+    operations,
+    todayInSaoPaulo(context.now),
+  );
 
   return {
     asset,
+    fixedIncome,
     market: marketOf(asset, operations, result, latest, context),
     operationCount: operations.length,
     operations: operations.map((operation) => {
@@ -79,19 +89,25 @@ export function toAssetDetailView(
         realizedResult: sell?.realizedResult ?? null,
       };
     }),
-    position: toPosition(result, latest, quoteOf(asset, context)),
+    position: toPosition(result, latest, quoteOf(asset, context), fixedIncome),
     valuations,
   };
 }
 export function toAssetView(row: AssetListRow, context: QuoteContext = emptyContext()): AssetView {
   const { latestValuation, operations, ...asset } = row;
   const result = positionOf(operations);
+  const fixedIncome = toFixedIncomeView(
+    context.fixedIncome.get(asset.id),
+    operations,
+    todayInSaoPaulo(context.now),
+  );
 
   return {
     asset,
+    fixedIncome,
     market: marketOf(asset, operations, result, latestValuation, context),
     operationCount: operations.length,
-    position: toPosition(result, latestValuation, quoteOf(asset, context)),
+    position: toPosition(result, latestValuation, quoteOf(asset, context), fixedIncome),
   };
 }
 
@@ -143,17 +159,20 @@ function toPosition(
   result: PositionResult,
   valuation: null | ValuationEntity,
   quote: ReturnType<typeof quoteOf>,
+  fixedIncome: FixedIncomeView | null,
 ): AssetPosition {
   const price = resolvePrice({ quote, valuation });
-  const currentValue = price ? result.quantity.mulToCents(price.unitPrice) : null;
+  // Spec 105 FR 27: a calculated title is worth its gross on the curve; the net stays in `fixedIncome`.
+  const priced = price ? result.quantity.mulToCents(price.unitPrice) : null;
+  const currentValue = fixedIncome ? fixedIncome.today.gross : priced;
   const openResult = currentValue === null ? null : currentValue - result.cost;
 
   return {
     averagePrice: result.averagePrice,
     cost: result.cost,
-    currentUnitPrice: price?.unitPrice ?? null,
+    currentUnitPrice: fixedIncome ? null : (price?.unitPrice ?? null),
     currentValue,
-    currentValueDate: price?.date ?? null,
+    currentValueDate: fixedIncome ? todayInSaoPaulo() : (price?.date ?? null),
     openResult,
     openResultPercent:
       openResult === null || result.cost === 0
