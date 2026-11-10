@@ -125,6 +125,11 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer <staging-jwt>
 - Monitoring: add `https://life-planner-api.example.com/api/health` to the targets of the existing Blackbox HTTP probe job in Prometheus (`<job name>` is whichever job probes the other services), reload Prometheus, check Grafana. Logs already reach Loki through the Docker log driver.
 - Backups: handled by your own automation; confirm it includes `life_planner_prod` before go-live.
 
+### Quotes (spec 104)
+
+- Set `BRAPI_TOKEN` and `FINNHUB_TOKEN` in the stack environment (both optional: a missing token turns that market into manual values). `INVESTMENT_QUOTES_JOB_ENABLED=false` stops the hourly job.
+- One-off historical load (run on demand only, never scheduled): inside the API container, `yarn quotes:backfill --from YYYY-MM-DD --fx` (add `--dry-run` first; `--tickers ITSA4,HGLG11` resumes failed ones; `--delay-ms` throttles). It reads `BRAPI_TOKEN` from the environment, is idempotent and ends with a summary. The free brapi plan returns 3 months; a paid token returns more. Production needs `QUOTES_BACKFILL_ALLOW_PRODUCTION=true`.
+
 ## 7. Release and rollback
 
 - **Release:** merge to `main` → wait for the `release` workflow (it tags `vX.Y.Z` and publishes the GitHub release; the API reports it as the latest version) → Portainer "Pull and redeploy" of the affected stack (API and web together when the API contract changes) → new APK only when the app changed. `main` must stay deployable: PRs merge green and migrations are additive.

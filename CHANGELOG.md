@@ -3,6 +3,14 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.9.0] - 2026-11-10
+
+### Added
+
+- Automatic quotes (spec 104): B3 quotes from brapi and foreign quotes from Finnhub refreshed hourly during trading by a backend job, with one stored close per business day and the USD-BRL rate (brapi, AwesomeAPI fallback).
+- `GET /investments/tickers/search`, `POST /investments/quotes/refresh` (1 per user per minute) and `GET /investments/assets/:id/price-history`; assets carry `quote`, `currentPriceSource` and, in USD, the result in BRL split into the asset's move and the dollar's move.
+- Ticker validation on asset create/update (`422 TICKER_NOT_FOUND`, `503 QUOTE_SOURCE_UNAVAILABLE`), `fxRate` on operations and `yarn quotes:backfill`.
+
 ## [3.8.0] - 2026-11-10
 
 ### Added

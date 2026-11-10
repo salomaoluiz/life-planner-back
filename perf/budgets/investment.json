@@ -43,6 +43,24 @@
     "reason": "Needs an asset in the pinned perf dataset (spec 093); the seed gets investments in a later spec.",
     "scenario": ""
   },
+  "GET /api/v1/investments/assets/:id/price-history": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs an asset with a ticker in the pinned perf dataset (spec 093); the seed gets investments in a later spec. Reads stored closes only (3 queries: asset, history range, rate).",
+    "scenario": ""
+  },
+  "GET /api/v1/investments/tickers/search": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Calls an external quote API (brapi or Finnhub); results are cached 10 minutes in memory and no query reaches the database (spec 104).",
+    "scenario": ""
+  },
   "PATCH /api/v1/investments/assets/:id": {
     "indexes": null,
     "kind": "unmeasured",
@@ -77,6 +95,15 @@
     "maxQueries": 0,
     "p50Ms": null,
     "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "POST /api/v1/investments/quotes/refresh": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes: calls the external quote APIs and stores quotes; perf tests only read (spec 093).",
     "scenario": ""
   },
   "PUT /api/v1/investments/assets/:id/valuations/:date": {
