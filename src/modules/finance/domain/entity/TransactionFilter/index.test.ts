@@ -24,6 +24,11 @@ describe('hasFilter', () => {
     expect(hasFilter({ categoryIds: [] })).toBe(false);
   });
 
+  it('SHOULD ignore the currency, which is not a user filter', () => {
+    expect(hasFilter({ currency: 'USD' })).toBe(false);
+    expect(hasFilter({ currency: 'USD', q: 'a' })).toBe(true);
+  });
+
   it('SHOULD be true when any field is set', () => {
     expect(hasFilter({ paid: false })).toBe(true);
     expect(hasFilter({ tagIds: ['t1'] })).toBe(true);

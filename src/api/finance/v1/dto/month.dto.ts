@@ -2,6 +2,7 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
 import { DailyBalancesApiSchema } from '@api/finance/v1/dto/account.dto';
+import { CurrencyApiSchema } from '@api/finance/v1/dto/finance-fields';
 import { InvoiceDetailApiSchema } from '@api/finance/v1/dto/invoice.dto';
 import { ProjectedOccurrenceApiSchema } from '@api/finance/v1/dto/recurrence.dto';
 import {
@@ -22,6 +23,7 @@ export const MonthQuerySchema = z
     accountId: IdListQuerySchema,
     categoryId: IdListQuerySchema,
     creditCardId: IdListQuerySchema,
+    currency: CurrencyApiSchema.optional(),
     month: InvoiceMonthSchema,
     ownerId: OwnerIdQuerySchema,
     paid: z.enum(['true', 'false']).optional(),
@@ -32,7 +34,7 @@ export const MonthQuerySchema = z
   .strict();
 
 export const MonthSummaryApiSchema = z.object({
-  currency: z.literal('BRL'),
+  currency: CurrencyApiSchema,
   expense: z.number().int(),
   income: z.number().int(),
   projectedExpense: z.number().int(),

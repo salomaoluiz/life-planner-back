@@ -22,7 +22,7 @@ export class MonthController {
   @Get()
   @ZodResponse({ status: 200, type: MonthOutput })
   async find(@Request() req: JwtPayload & Request, @Query() query: Record<string, unknown>) {
-    const { month, ownerId, today, ...filterQuery } = validate(MonthQuerySchema, query);
+    const { currency, month, ownerId, today, ...filterQuery } = validate(MonthQuerySchema, query);
 
     return this.monthService.find(
       req.user.id,
@@ -30,6 +30,7 @@ export class MonthController {
       toOwnerIds(ownerId),
       toTransactionFilter(filterQuery),
       today,
+      currency,
     );
   }
 }

@@ -763,6 +763,11 @@ function filterWhere(source: TransactionSource, filter: FindTransactionsFilter) 
     where.push({ projected: filter.projected });
   }
 
+  // Spec 103: the currency of the row, for account and card rows alike.
+  if (filter.currency) {
+    where.push({ currency: filter.currency });
+  }
+
   if (source === TransactionSource.CARD) {
     if (filter.invoiceRefs) {
       where.push({

@@ -53,9 +53,11 @@ export class GetInvoicesForListUseCase implements UseCaseWithParams<
       today: input.today,
     });
     // `paid` applies to the invoice; its rows follow.
+    // Spec 103: only the cards in the requested currency have invoices in that view.
     const matches = found.filter(
-      ({ invoice }) =>
-        filter.paid === undefined || (invoice.status === InvoiceStatus.PAID) === filter.paid,
+      ({ card, invoice }) =>
+        (filter.paid === undefined || (invoice.status === InvoiceStatus.PAID) === filter.paid) &&
+        (!filter.currency || card.currency === filter.currency),
     );
 
     if (matches.length === 0) {

@@ -109,6 +109,7 @@ export class GetTransactionsUseCase implements UseCaseWithParams<
       accountIds: filter.accountIds,
       categoryIds,
       creditCardIds: creditCardIds.length > 0 ? creditCardIds : undefined,
+      currency: filter.currency,
       cursor,
       from: filter.from,
       invoiceMonth: input.invoiceMonth,

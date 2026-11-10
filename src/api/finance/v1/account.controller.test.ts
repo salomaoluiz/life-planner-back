@@ -200,6 +200,19 @@ describe('dailyBalances (spec 035)', () => {
       [ownerA],
       '2026-11',
       '2026-10-20',
+      'BRL',
+    );
+  });
+
+  it('SHOULD forward the requested currency', async () => {
+    await setup.dailyBalances(mocks.request, { currency: 'USD', month: '2026-11' });
+
+    expect(mocks.accountService.getDailyBalances).toHaveBeenLastCalledWith(
+      mocks.request.user.id,
+      undefined,
+      '2026-11',
+      expect.any(String),
+      'USD',
     );
   });
 

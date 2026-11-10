@@ -35,14 +35,14 @@ describe('findAll', () => {
       1,
       mocks.request.user.id,
       undefined,
-      { filter: month, limit: 200 },
+      { filter: { ...month, currency: 'BRL' }, limit: 200 },
       undefined,
     );
     expect(mocks.transactionService.findAll).toHaveBeenNthCalledWith(
       2,
       mocks.request.user.id,
       [validBody.ownerId, validBody.accountId],
-      { filter: month, limit: 200 },
+      { filter: { ...month, currency: 'BRL' }, limit: 200 },
       undefined,
     );
   });
@@ -53,7 +53,7 @@ describe('findAll', () => {
     expect(mocks.transactionService.findAll).toHaveBeenCalledWith(
       mocks.request.user.id,
       undefined,
-      { filter: month, limit: 200 },
+      { filter: { ...month, currency: 'BRL' }, limit: 200 },
       '2026-10-15',
     );
   });
@@ -82,7 +82,7 @@ describe('findAll', () => {
     expect(mocks.transactionService.findAll).toHaveBeenCalledWith(
       mocks.request.user.id,
       undefined,
-      { filter: undefined, invoiceMonth: '2026-11', limit: 200, source: 'CARD' },
+      { filter: { currency: 'BRL' }, invoiceMonth: '2026-11', limit: 200, source: 'CARD' },
       undefined,
     );
   });
@@ -97,8 +97,24 @@ describe('findAll', () => {
     expect(mocks.transactionService.findAll).toHaveBeenCalledWith(
       mocks.request.user.id,
       undefined,
-      { cursor, filter: month, limit: 50 },
+      { cursor, filter: { ...month, currency: 'BRL' }, limit: 50 },
       undefined,
+    );
+  });
+});
+
+describe('findAll currency (spec 103)', () => {
+  it('SHOULD forward the requested currency AND refuse an unknown one', async () => {
+    await setup.findAll(mocks.request, { ...month, currency: 'USD' });
+
+    expect(mocks.transactionService.findAll).toHaveBeenCalledWith(
+      mocks.request.user.id,
+      undefined,
+      { filter: { ...month, currency: 'USD' }, limit: 200 },
+      undefined,
+    );
+    await expect(setup.findAll(mocks.request, { ...month, currency: 'XYZ' })).rejects.toThrow(
+      ValidationError,
     );
   });
 });
@@ -123,6 +139,7 @@ describe('findAll filters (spec 045)', () => {
       {
         filter: {
           categoryIds: [categoryId, tagId],
+          currency: 'BRL',
           from: '2025-01-01',
           paid: false,
           q: 'mercado',
@@ -141,7 +158,7 @@ describe('findAll filters (spec 045)', () => {
     expect(mocks.transactionService.findAll).toHaveBeenCalledWith(
       mocks.request.user.id,
       undefined,
-      { filter: month, limit: 200 },
+      { filter: { ...month, currency: 'BRL' }, limit: 200 },
       undefined,
     );
   });
@@ -333,7 +350,7 @@ describe('card purchases (spec 029)', () => {
       mocks.request.user.id,
       undefined,
       {
-        filter: { creditCardIds: [cardId] },
+        filter: { creditCardIds: [cardId], currency: 'BRL' },
         invoiceMonth: '2026-10',
         limit: 200,
         source: 'CARD',

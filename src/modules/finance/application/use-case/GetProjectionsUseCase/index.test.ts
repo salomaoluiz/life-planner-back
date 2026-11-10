@@ -340,6 +340,18 @@ describe('transfer series (spec 098)', () => {
     });
   });
 
+  it('SHOULD show one leg per currency of a transfer between currencies (spec 103)', async () => {
+    mocks.recurrenceRepository.findByOwners.mockResolvedValue([transferSeries()]);
+
+    const brl = await setup.execute({ ...base, filter: { currency: 'BRL' }, to: '2026-11' });
+    const usd = await setup.execute({ ...base, filter: { currency: 'USD' }, to: '2026-11' });
+    const eur = await setup.execute({ ...base, filter: { currency: 'EUR' }, to: '2026-11' });
+
+    expect(brl.map((item) => item.transferSide)).toEqual(['OUT']);
+    expect(usd.map((item) => item.transferSide)).toEqual(['IN']);
+    expect(eur).toEqual([]);
+  });
+
   it('SHOULD leave ordinary series without a transfer side', async () => {
     const result = await setup.execute(base);
 

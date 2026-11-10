@@ -16,7 +16,7 @@ import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 import { z } from 'zod';
 
-import { CalendarDateApiSchema } from '@api/finance/v1/dto/finance-fields';
+import { CalendarDateApiSchema, CurrencyApiSchema } from '@api/finance/v1/dto/finance-fields';
 import {
   ConfirmTransactionApiSchema,
   ConfirmTransactionBody,
@@ -39,6 +39,7 @@ import {
 import { TransactionService } from '@api/finance/v1/transaction.service';
 import { InvoiceMonthSchema } from '@finance/application/dto/FinanceCommon';
 import { InstallmentEditScope, TransactionSource } from '@finance/domain/enum';
+import { DEFAULT_CURRENCY } from '@finance/domain/enum/Currency';
 import {
   decodeTransactionCursor,
   TRANSACTION_PAGE_DEFAULT_LIMIT,
@@ -51,6 +52,8 @@ import { validate } from '@shared/infra/validation';
 const ListTransactionsQuerySchema = withPeriodRules(
   z.object({
     ...TransactionFilterQueryFields,
+    // Spec 103: rows of this currency only (default BRL).
+    currency: CurrencyApiSchema.optional(),
     cursor: z
       .string()
       .refine((value) => decodeTransactionCursor(value) !== undefined, {
@@ -131,15 +134,19 @@ export class TransactionController {
   @Get()
   @ZodResponse({ status: 200, type: TransactionPageOutput })
   async findAll(@Request() req: JwtPayload & Request, @Query() query: Record<string, unknown>) {
-    const { cursor, invoiceMonth, limit, ownerId, source, today, ...filterQuery } = validate(
-      ListTransactionsQuerySchema,
-      query,
-    );
+    const { currency, cursor, invoiceMonth, limit, ownerId, source, today, ...filterQuery } =
+      validate(ListTransactionsQuerySchema, query);
 
     return this.transactionService.findAll(
       req.user.id,
       toOwnerIds(ownerId),
-      { cursor, filter: toTransactionFilter(filterQuery), invoiceMonth, limit, source },
+      {
+        cursor,
+        filter: { ...toTransactionFilter(filterQuery), currency: currency ?? DEFAULT_CURRENCY },
+        invoiceMonth,
+        limit,
+        source,
+      },
       today,
     );
   }

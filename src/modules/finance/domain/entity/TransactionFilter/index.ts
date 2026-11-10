@@ -1,3 +1,4 @@
+import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { addDays } from '@finance/domain/service/RecurrenceSchedule';
 
 // Spec 045: the optional filters of the transactions, invoices and projections lists.
@@ -6,6 +7,8 @@ export interface TransactionFilter {
   accountIds?: string[];
   categoryIds?: string[];
   creditCardIds?: string[];
+  // Spec 103: only the sources and rows in this currency. It is not a user filter: `hasFilter` ignores it.
+  currency?: CurrencyCode;
   // `YYYY-MM-DD`, both inclusive and always together.
   from?: string;
   // Spec 098: `TRANSFER` keeps only the rows of a transfer (the transactions list).
@@ -23,8 +26,9 @@ export function hasFilter(filter?: TransactionFilter): boolean {
     return false;
   }
 
-  return Object.values(filter).some((value) =>
-    Array.isArray(value) ? value.length > 0 : value !== undefined,
+  return Object.entries(filter).some(
+    ([key, value]) =>
+      key !== 'currency' && (Array.isArray(value) ? value.length > 0 : value !== undefined),
   );
 }
 
