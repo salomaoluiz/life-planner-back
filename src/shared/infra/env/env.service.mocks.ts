@@ -7,6 +7,7 @@ import { EnvService } from './env.service';
 
 const envVarsMock = {
   APP_ENVIRONMENT: 'staging',
+  BRAPI_TOKEN: 'your-brapi-token',
   CORS_ORIGINS: 'http://localhost:8081',
   DB_HOST: 'localhost',
   DB_NAME: 'test_db',
@@ -18,7 +19,11 @@ const envVarsMock = {
   DB_STATEMENT_TIMEOUT_MS: 10000,
   DB_USER: 'user',
   FINANCE_MATERIALIZATION_GATE_TTL_MS: 60000,
+  FINNHUB_TOKEN: 'your-finnhub-token',
   GITHUB_TOKEN: 'your-token',
+  INVESTMENT_QUOTE_REFRESH_COOLDOWN_MS: 60000,
+  INVESTMENT_QUOTES_BRAPI_BATCH_SIZE: 20,
+  INVESTMENT_QUOTES_JOB_ENABLED: true,
   JWT_EXPIRES_IN: '1d',
   JWT_SECRET: 'secret',
   NODE_ENV: 'test',

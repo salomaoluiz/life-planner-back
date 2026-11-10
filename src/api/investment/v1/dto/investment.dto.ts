@@ -14,6 +14,8 @@ import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 // Quantities and unit prices travel as decimal strings (up to 8 places), never as numbers.
 const DecimalApiSchema = z.string().regex(/^\d+(\.\d{1,8})?$/);
 const CalendarDateApiSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+// BRL per 1 unit of the foreign currency, a decimal string (spec 104).
+const FxRateApiSchema = z.string().regex(/^\d+(\.\d{1,6})?$/);
 const CurrencyApiSchema = z.enum(SUPPORTED_CURRENCIES);
 const OwnerTypeApiSchema = z.enum(OwnerType);
 
@@ -49,6 +51,7 @@ export const CreateOperationApiSchema = z.strictObject({
   accountId: z.uuid().nullish(),
   date: CalendarDateApiSchema,
   fees: z.array(FeeApiSchema).max(10).optional(),
+  fxRate: FxRateApiSchema.nullish(),
   generateTransaction: z.boolean().optional(),
   quantity: DecimalApiSchema,
   type: z.enum(InvestmentOperationType),
@@ -61,6 +64,7 @@ export const UpdateOperationApiSchema = z
     accountId: z.uuid().nullable(),
     date: CalendarDateApiSchema,
     fees: z.array(FeeApiSchema).max(10),
+    fxRate: FxRateApiSchema.nullable(),
     generateTransaction: z.boolean(),
     quantity: DecimalApiSchema,
     unitPrice: DecimalApiSchema,
@@ -110,6 +114,7 @@ export const OperationApiSchema = z.strictObject({
   date: z.string(),
   fees: z.array(OperationFeeApiSchema),
   feesTotal: z.number().int(),
+  fxRate: z.string().nullable(),
   generateTransaction: z.boolean(),
   gross: z.number().int(),
   id: z.uuid(),

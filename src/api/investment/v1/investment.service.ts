@@ -64,6 +64,7 @@ export function toOperation(view: OperationView): OperationOutputType {
       kind: fee.kind,
     })),
     feesTotal: operation.feesTotal,
+    fxRate: operation.fxRate,
     generateTransaction: operation.generateTransaction,
     gross: operation.gross,
     id: operation.id,

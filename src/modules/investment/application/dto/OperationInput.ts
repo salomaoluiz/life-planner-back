@@ -4,6 +4,7 @@ import {
   AccessibleOwnersSchema,
   CalendarDateSchema,
   FeesSchema,
+  FxRateSchema,
   IdSchema,
   OperationTypeSchema,
   PositiveDecimalSchema,
@@ -22,6 +23,7 @@ export const CreateOperationSchema = z
     assetId: IdSchema,
     date: PastDateSchema,
     fees: FeesSchema.default([]),
+    fxRate: FxRateSchema.nullish(),
     generateTransaction: z.boolean().default(true),
     quantity: QuantitySchema,
     type: OperationTypeSchema,
@@ -40,6 +42,7 @@ export const UpdateOperationSchema = z
     accountId: IdSchema.nullish(),
     date: PastDateSchema.optional(),
     fees: FeesSchema.optional(),
+    fxRate: FxRateSchema.nullish(),
     generateTransaction: z.boolean().optional(),
     id: IdSchema,
     quantity: QuantitySchema.optional(),
@@ -47,7 +50,7 @@ export const UpdateOperationSchema = z
   })
   .refine(
     (input) =>
-      ['accountId', 'date', 'fees', 'generateTransaction', 'quantity', 'unitPrice'].some(
+      ['accountId', 'date', 'fees', 'fxRate', 'generateTransaction', 'quantity', 'unitPrice'].some(
         (field) => input[field as keyof typeof input] !== undefined,
       ),
     { message: 'At least one field is required' },

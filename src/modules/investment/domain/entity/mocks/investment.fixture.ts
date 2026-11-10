@@ -39,6 +39,7 @@ export function operationFixture(overrides: Partial<OperationEntity> = {}): Oper
     date: '2026-06-10',
     fees: [],
     feesTotal: 0,
+    fxRate: null,
     generateTransaction: false,
     gross: 510000,
     id: faker.string.uuid(),

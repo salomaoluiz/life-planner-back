@@ -42,6 +42,16 @@ export const envSchema = z.object({
   // Finance (spec 081): seconds-scale cache of the recurrence materialization check, 0 disables it
   FINANCE_MATERIALIZATION_GATE_TTL_MS: optionalInt(0, 60000),
 
+  // Investment quotes (spec 104): tokens are optional, a missing one disables that source
+  BRAPI_TOKEN: emptyToUndefined,
+  FINNHUB_TOKEN: emptyToUndefined,
+  INVESTMENT_QUOTE_REFRESH_COOLDOWN_MS: optionalInt(0, 60000),
+  INVESTMENT_QUOTES_BRAPI_BATCH_SIZE: optionalInt(1, 20),
+  INVESTMENT_QUOTES_JOB_ENABLED: z
+    .enum(['true', 'false', ''])
+    .optional()
+    .transform((value) => value !== 'false'),
+
   // JWT
   JWT_EXPIRES_IN: z.coerce.number().default(3600),
   JWT_SECRET: z.string().min(10),

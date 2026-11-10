@@ -24,6 +24,27 @@ export class EnvService {
     return this.nestConfigService.get('PORT');
   }
 
+  // Investment quotes (spec 104)
+  get brapiToken(): Env['BRAPI_TOKEN'] {
+    return this.nestConfigService.get('BRAPI_TOKEN');
+  }
+
+  get finnhubToken(): Env['FINNHUB_TOKEN'] {
+    return this.nestConfigService.get('FINNHUB_TOKEN');
+  }
+
+  get investmentQuoteRefreshCooldownMs(): Env['INVESTMENT_QUOTE_REFRESH_COOLDOWN_MS'] {
+    return this.nestConfigService.get('INVESTMENT_QUOTE_REFRESH_COOLDOWN_MS');
+  }
+
+  get investmentQuotesBrapiBatchSize(): Env['INVESTMENT_QUOTES_BRAPI_BATCH_SIZE'] {
+    return this.nestConfigService.get('INVESTMENT_QUOTES_BRAPI_BATCH_SIZE');
+  }
+
+  get investmentQuotesJobEnabled(): Env['INVESTMENT_QUOTES_JOB_ENABLED'] {
+    return this.nestConfigService.get('INVESTMENT_QUOTES_JOB_ENABLED');
+  }
+
   // Database
 
   get dbHost(): Env['DB_HOST'] {

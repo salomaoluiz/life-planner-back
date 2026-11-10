@@ -25,6 +25,7 @@ import {
 import { Decimal8 } from '@shared/infra/decimal';
 
 export const ARCHIVED_ASSET_MESSAGE = "Archived assets can't change. Reactivate it first.";
+export const FX_RATE_NOT_ALLOWED_CODE = 'FX_RATE_NOT_ALLOWED';
 export const ACCOUNT_NOT_CHANGEABLE_MESSAGE = "This operation uses an account you can't change";
 
 // 404 for an asset the caller cannot reach, 422 for an archived family or an archived asset (FR 7).
@@ -100,6 +101,7 @@ export interface OperationDraft {
   asset: AssetDetail;
   date: string;
   fees: FeeInput[];
+  fxRate?: null | string;
   generateTransaction: boolean;
   operationId?: string;
   owners: OwnerAccess[];
@@ -136,6 +138,14 @@ export async function persistOperation(
 ): Promise<OperationWriteResult> {
   const { asset } = draft;
   const totals = totalsOf(draft);
+  const fxRate = draft.fxRate ?? null;
+
+  if (fxRate !== null && asset.currency === 'BRL') {
+    throw new UnprocessableEntityException({
+      code: FX_RATE_NOT_ALLOWED_CODE,
+      message: 'Exchange rate only applies to assets in a foreign currency',
+    });
+  }
 
   if (draft.generateTransaction && draft.accountId) {
     await resolveOperationAccount(repository, draft.owners, draft.accountId, asset.currency);
@@ -152,6 +162,7 @@ export async function persistOperation(
       date: draft.date,
       fees: draft.fees,
       feesTotal: totals.feesTotal,
+      fxRate,
       generateTransaction: draft.generateTransaction,
       gross: totals.gross,
       operationId: draft.operationId,

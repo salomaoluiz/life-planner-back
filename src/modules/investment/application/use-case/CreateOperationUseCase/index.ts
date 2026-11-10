@@ -32,6 +32,7 @@ export class CreateOperationUseCase implements UseCaseWithParams<
       asset,
       date: input.date,
       fees: input.fees,
+      fxRate: input.fxRate ?? null,
       generateTransaction: input.generateTransaction,
       owners: input.accessibleOwners,
       quantity: input.quantity,

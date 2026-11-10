@@ -56,6 +56,7 @@ export class InvestmentMapper {
         kind: InvestmentFeeKind[fee.kind],
       })),
       feesTotal: row.fees_total,
+      fxRate: row.fx_rate ? row.fx_rate.toFixed(6) : null,
       generateTransaction: row.generate_transaction,
       gross: row.gross,
       id: row.id,

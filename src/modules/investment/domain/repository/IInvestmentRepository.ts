@@ -81,6 +81,8 @@ export interface WriteOperationRepositoryParams {
   date: string;
   fees: FeeInput[];
   feesTotal: number;
+  // BRL per USD as a decimal string; null when the asset is in BRL or the rate is unknown.
+  fxRate: null | string;
   generateTransaction: boolean;
   gross: number;
   // Set when editing.

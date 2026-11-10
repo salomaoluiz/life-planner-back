@@ -13,12 +13,32 @@ describe('validateEnvironment', () => {
       DB_POOL_MAX: 20,
       DB_STATEMENT_TIMEOUT_MS: 0,
       FINANCE_MATERIALIZATION_GATE_TTL_MS: 60000,
+      INVESTMENT_QUOTE_REFRESH_COOLDOWN_MS: 60000,
+      INVESTMENT_QUOTES_BRAPI_BATCH_SIZE: 20,
+      INVESTMENT_QUOTES_JOB_ENABLED: true,
       JWT_EXPIRES_IN: 7200, // Coerced
       PERF_COUNT_QUERIES: false,
       PORT: 4000, // Coerced
       SESSION_IDLE_TTL_SECONDS: 172800,
       SWAGGER_ENABLED: true,
       VERSION_CHECK_TTL_SECONDS: 600,
+    });
+  });
+
+  it('SHOULD validate the investment quote variables (spec 104)', () => {
+    const result = setup({
+      ...mocks.validConfig,
+      BRAPI_TOKEN: '',
+      FINNHUB_TOKEN: 'your-finnhub-token',
+      INVESTMENT_QUOTES_BRAPI_BATCH_SIZE: '10',
+      INVESTMENT_QUOTES_JOB_ENABLED: 'false',
+    });
+
+    expect(result).toMatchObject({
+      BRAPI_TOKEN: undefined,
+      FINNHUB_TOKEN: 'your-finnhub-token',
+      INVESTMENT_QUOTES_BRAPI_BATCH_SIZE: 10,
+      INVESTMENT_QUOTES_JOB_ENABLED: false,
     });
   });
 

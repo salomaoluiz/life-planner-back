@@ -68,3 +68,9 @@ export const FeeSchema = z
     kind: fee.kind,
   }));
 export const FeesSchema = z.array(FeeSchema).max(10);
+
+// BRL per 1 unit of the foreign currency (spec 104): up to 6 places, positive.
+export const FxRateSchema = z
+  .string()
+  .regex(/^\d{1,6}(\.\d{1,6})?$/, 'Invalid exchange rate')
+  .refine((value) => Number(value) > 0, { message: 'Must be greater than zero' });

@@ -12,6 +12,7 @@ const baseParams = {
   date: new Date('2026-06-10T00:00:00Z'),
   fees: [{ amount: 490, description: null, kind: 'BROKERAGE' as const }],
   fees_total: 490,
+  fx_rate: null,
   generate_transaction: true,
   gross: 510000,
   quantity: '500.00000000',

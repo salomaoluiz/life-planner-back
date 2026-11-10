@@ -207,3 +207,19 @@ it('SHOULD rethrow an unknown write error AND fail WHEN the written operation ca
   spies.writeOperation.mockResolvedValueOnce('another-id');
   await expect(setup.execute(input)).rejects.toBeInstanceOf(NotFoundException);
 });
+
+it('SHOULD store the exchange rate of an operation on a foreign currency asset', async () => {
+  spies.findAssetById.mockResolvedValue({ ...mocks.detail, currency: 'USD' });
+  spies.findAccountForOperation.mockResolvedValue({ ...mocks.account, currency: 'USD' });
+
+  await setup.execute({ ...input, fxRate: '5.2236' });
+
+  expect(spies.writeOperation).toHaveBeenCalledWith(expect.objectContaining({ fxRate: '5.2236' }));
+});
+
+it('SHOULD refuse an exchange rate on a BRL asset WITH code FX_RATE_NOT_ALLOWED', async () => {
+  await expect(setup.execute({ ...input, fxRate: '5.2236' })).rejects.toMatchObject({
+    response: { code: 'FX_RATE_NOT_ALLOWED' },
+  });
+  expect(spies.writeOperation).not.toHaveBeenCalled();
+});

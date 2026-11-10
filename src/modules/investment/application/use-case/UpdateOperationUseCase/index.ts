@@ -67,6 +67,7 @@ export class UpdateOperationUseCase implements UseCaseWithParams<
           description: fee.description,
           kind: fee.kind,
         })),
+      fxRate: input.fxRate === undefined ? operation.fxRate : input.fxRate,
       generateTransaction,
       operationId: operation.id,
       owners: input.accessibleOwners,
