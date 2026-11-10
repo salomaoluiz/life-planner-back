@@ -1,10 +1,18 @@
 import { AssetDetail, AssetEntity, AssetListRow } from '@investment/domain/entity/AssetEntity';
+import {
+  FixedIncomeAdjustmentEntity,
+  FixedIncomeData,
+  FixedIncomeRateEntity,
+  FixedIncomeRateWrite,
+  FixedIncomeTermsWrite,
+} from '@investment/domain/entity/FixedIncomeEntity';
 import { FeeInput, OperationEntity } from '@investment/domain/entity/OperationEntity';
 import { OwnerAccess } from '@investment/domain/entity/OwnerAccess';
 import { ValuationEntity } from '@investment/domain/entity/ValuationEntity';
 import {
   InvestmentAssetClass,
   InvestmentAssetStatus,
+  InvestmentFixedIncomeRedemptionKind,
   InvestmentOperationType,
 } from '@investment/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -19,8 +27,35 @@ export interface CreateAssetRepositoryParams {
   ownerId: string;
   ticker: null | string;
 }
+// Spec 105: the contribution of a new calculated title (the asset id exists only after the insert).
+export interface CreateFixedIncomeTitleRepositoryParams {
+  asset: CreateAssetRepositoryParams;
+  contribution: Omit<WriteOperationRepositoryParams, 'assetId'>;
+  rate: FixedIncomeRateWrite;
+  terms: FixedIncomeTermsWrite;
+}
+export interface SaveFixedIncomeTermsRepositoryParams {
+  assetId: string;
+  convert: boolean;
+  rate?: FixedIncomeRateWrite;
+  terms: FixedIncomeTermsWrite;
+}
+// Every fixed income write recalculates the redemptions in its own transaction and throws
+// `FixedIncomeRedemptionTooLargeError` (writing nothing) when one no longer fits.
 export type IInvestmentRepository = {
   createAsset(params: CreateAssetRepositoryParams): Promise<AssetEntity>;
+  createFixedIncomeRate(assetId: string, rate: FixedIncomeRateWrite): Promise<void>;
+  createFixedIncomeTitle(
+    params: CreateFixedIncomeTitleRepositoryParams,
+  ): Promise<{ assetId: string; operationId: string }>;
+  deleteFixedIncomeAdjustment(assetId: string, id: string): Promise<void>;
+  deleteFixedIncomeRate(assetId: string, id: string): Promise<void>;
+  findFixedIncomeAdjustmentById(id: string): Promise<FixedIncomeAdjustmentEntity | undefined>;
+  findFixedIncomeByAssetIds(assetIds: string[]): Promise<Map<string, FixedIncomeData>>;
+  findFixedIncomeRateById(id: string): Promise<FixedIncomeRateEntity | undefined>;
+  saveFixedIncomeTerms(params: SaveFixedIncomeTermsRepositoryParams): Promise<void>;
+  updateFixedIncomeRate(assetId: string, id: string, rate: FixedIncomeRateWrite): Promise<void>;
+  upsertFixedIncomeAdjustment(assetId: string, date: string, grossAmount: number): Promise<void>;
   // Deletes the asset, its operations, fees, valuations and the linked finance rows in one transaction.
   deleteAsset(id: string): Promise<void>;
   // Same for every asset of the owner; idempotent, returns the assets deleted.
@@ -85,9 +120,12 @@ export interface WriteOperationRepositoryParams {
   fxRate: null | string;
   generateTransaction: boolean;
   gross: number;
+  // Spec 105: set on the SELL rows of calculated titles.
+  netAmount?: null | number;
   // Set when editing.
   operationId?: string;
   quantity: Decimal8;
+  redemptionKind?: InvestmentFixedIncomeRedemptionKind | null;
   total: number;
   type: InvestmentOperationType;
   unitPrice: Decimal8;

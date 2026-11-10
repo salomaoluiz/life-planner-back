@@ -3,12 +3,20 @@ import {
   InvestmentAsset,
   InvestmentAssetClass,
   InvestmentAssetStatus,
+  InvestmentFixedIncomeAdjustment,
+  InvestmentFixedIncomeRate,
+  InvestmentFixedIncomeRedemptionKind,
+  InvestmentFixedIncomeTerms,
   InvestmentOperation,
   InvestmentOperationFee,
   InvestmentOperationType,
   InvestmentValuation,
   OwnerType,
 } from '@db/client';
+import {
+  FixedIncomeRateWrite,
+  FixedIncomeTermsWrite,
+} from '@investment/domain/entity/FixedIncomeEntity';
 import { OwnerAccess } from '@investment/domain/entity/OwnerAccess';
 
 export interface CreateAssetDatasourceParams {
@@ -21,10 +29,27 @@ export interface CreateAssetDatasourceParams {
   // First valuation, dated by the caller; `unit_price` is a decimal string.
   valuation?: { date: Date; unit_price: string };
 }
+export interface CreateFixedIncomeTitleDatasourceParams {
+  asset: CreateAssetDatasourceParams;
+  contribution: Omit<WriteOperationDatasourceParams, 'asset_id'>;
+  rate: FixedIncomeRateWrite;
+  terms: FixedIncomeTermsWrite;
+}
+export interface FixedIncomeRows {
+  adjustments: InvestmentFixedIncomeAdjustment[];
+  rates: InvestmentFixedIncomeRate[];
+  terms: InvestmentFixedIncomeTerms[];
+}
 export interface IInvestmentDatasource {
   createAsset(params: CreateAssetDatasourceParams): Promise<InvestmentAsset>;
+  createFixedIncomeRate(assetId: string, rate: FixedIncomeRateWrite): Promise<void>;
+  createFixedIncomeTitle(
+    params: CreateFixedIncomeTitleDatasourceParams,
+  ): Promise<{ assetId: string; operationId: string }>;
   deleteAsset(id: string): Promise<void>;
   deleteAssetsByOwner(owner: OwnerType, ownerId: string): Promise<number>;
+  deleteFixedIncomeAdjustment(assetId: string, id: string): Promise<void>;
+  deleteFixedIncomeRate(assetId: string, id: string): Promise<void>;
   deleteOperation(id: string): Promise<void>;
   deleteValuation(id: string): Promise<void>;
   existsByOwner(owner: OwnerType, ownerId: string): Promise<boolean>;
@@ -38,6 +63,12 @@ export interface IInvestmentDatasource {
     ticker: string,
   ): Promise<InvestmentAsset | null>;
   findAssets(owners: OwnerAccess[], status: InvestmentAssetStatus): Promise<InvestmentAsset[]>;
+  findFixedIncomeAdjustmentById(id: string): Promise<InvestmentFixedIncomeAdjustment | null>;
+  findFixedIncomeByAssetIds(assetIds: string[]): Promise<FixedIncomeRows>;
+  findFixedIncomeRateById(id: string): Promise<InvestmentFixedIncomeRate | null>;
+  saveFixedIncomeTerms(params: SaveFixedIncomeTermsDatasourceParams): Promise<void>;
+  updateFixedIncomeRate(assetId: string, id: string, rate: FixedIncomeRateWrite): Promise<void>;
+  upsertFixedIncomeAdjustment(assetId: string, date: string, grossAmount: number): Promise<void>;
   // Newest first (date, created_at, id), fees included.
   findOperationById(id: string): Promise<null | OperationRow>;
   findOperationByTransactionId(
@@ -53,6 +84,13 @@ export interface IInvestmentDatasource {
   writeOperation(params: WriteOperationDatasourceParams): Promise<string>;
 }
 export type OperationRow = { fees: InvestmentOperationFee[] } & InvestmentOperation;
+export interface SaveFixedIncomeTermsDatasourceParams {
+  assetId: string;
+  // Converting a manual asset also turns its operations into lots and redemptions (FR 4).
+  convert: boolean;
+  rate?: FixedIncomeRateWrite;
+  terms: FixedIncomeTermsWrite;
+}
 
 // `undefined` = unchanged (Prisma no-op), `null` = set NULL.
 export interface UpdateAssetDatasourceParams {
@@ -84,4 +122,7 @@ export interface WriteOperationDatasourceParams {
   total: number;
   type: InvestmentOperationType;
   unit_price: string;
+  // Spec 105: set on SELL rows of calculated titles.
+  net_amount?: null | number;
+  redemption_kind?: InvestmentFixedIncomeRedemptionKind | null;
 }

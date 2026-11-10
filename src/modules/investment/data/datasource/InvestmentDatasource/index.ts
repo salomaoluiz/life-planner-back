@@ -4,6 +4,8 @@ import {
   FinancialAccount,
   InvestmentAsset,
   InvestmentAssetStatus,
+  InvestmentFixedIncomeAdjustment,
+  InvestmentFixedIncomeRate,
   InvestmentOperation,
   InvestmentValuation,
   OwnerType,
@@ -17,14 +19,28 @@ import {
   lockAsset,
   reversalDeltas,
 } from '@investment/data/datasource/financeLink';
+import {
+  convertManualOperations,
+  deleteAdjustment,
+  deleteRate,
+  insertRate,
+  recalculateFixedIncome,
+  replaceRate,
+  saveAdjustment,
+  saveTerms,
+} from '@investment/data/datasource/fixedIncome';
 import { toOwnerWhere } from '@investment/data/datasource/mapper/OwnerWhere';
 import {
   CreateAssetDatasourceParams,
+  CreateFixedIncomeTitleDatasourceParams,
+  FixedIncomeRows,
   IInvestmentDatasource,
   OperationRow,
+  SaveFixedIncomeTermsDatasourceParams,
   UpdateAssetDatasourceParams,
   WriteOperationDatasourceParams,
 } from '@investment/data/repository/datasource/IInvestmentDatasource';
+import { FixedIncomeRateWrite } from '@investment/domain/entity/FixedIncomeEntity';
 import { OwnerAccess } from '@investment/domain/entity/OwnerAccess';
 import { categoryIdOf } from '@investment/domain/entity/SystemCategories';
 import { InvestmentOperationType } from '@investment/domain/enum';
@@ -53,6 +69,41 @@ export class InvestmentDatasource implements IInvestmentDatasource {
     });
   }
 
+  async createFixedIncomeRate(assetId: string, rate: FixedIncomeRateWrite): Promise<void> {
+    await this.db.client.$transaction(async (tx) => {
+      await lockAsset(tx, assetId);
+      await insertRate(tx, assetId, rate);
+      await recalculateFixedIncome(tx, assetId);
+    });
+  }
+
+  async createFixedIncomeTitle(
+    params: CreateFixedIncomeTitleDatasourceParams,
+  ): Promise<{ assetId: string; operationId: string }> {
+    return this.db.client.$transaction(async (tx) => {
+      const created = await tx.investmentAsset.create({
+        data: {
+          asset_class: params.asset.asset_class,
+          currency: params.asset.currency,
+          name: params.asset.name,
+          owner: params.asset.owner,
+          owner_id: params.asset.owner_id,
+          ticker: params.asset.ticker,
+        },
+      });
+
+      await saveTerms(tx, created.id, params.terms);
+      await insertRate(tx, created.id, params.rate);
+
+      const operationId = await writeOperationIn(tx, {
+        ...params.contribution,
+        asset_id: created.id,
+      });
+
+      return { assetId: created.id, operationId };
+    });
+  }
+
   async deleteAsset(id: string): Promise<void> {
     await this.db.client.$transaction(async (tx) => {
       await removeAssets(tx, [id]);
@@ -72,6 +123,22 @@ export class InvestmentDatasource implements IInvestmentDatasource {
       );
 
       return assets.length;
+    });
+  }
+
+  async deleteFixedIncomeAdjustment(assetId: string, id: string): Promise<void> {
+    await this.db.client.$transaction(async (tx) => {
+      await lockAsset(tx, assetId);
+      await deleteAdjustment(tx, id);
+      await recalculateFixedIncome(tx, assetId);
+    });
+  }
+
+  async deleteFixedIncomeRate(assetId: string, id: string): Promise<void> {
+    await this.db.client.$transaction(async (tx) => {
+      await lockAsset(tx, assetId);
+      await deleteRate(tx, id);
+      await recalculateFixedIncome(tx, assetId);
     });
   }
 
@@ -98,6 +165,7 @@ export class InvestmentDatasource implements IInvestmentDatasource {
       }
 
       await applyDeltas(tx, ledgerDeltasFor(toLinkedRow(existing.transaction), undefined));
+      await recalculateFixedIncome(tx, existing.asset_id);
       await assertPositionNotNegative(tx, existing.asset_id);
     });
   }
@@ -148,6 +216,29 @@ export class InvestmentDatasource implements IInvestmentDatasource {
     });
   }
 
+  async findFixedIncomeAdjustmentById(id: string): Promise<InvestmentFixedIncomeAdjustment | null> {
+    return this.db.client.investmentFixedIncomeAdjustment.findUnique({ where: { id } });
+  }
+
+  async findFixedIncomeByAssetIds(assetIds: string[]): Promise<FixedIncomeRows> {
+    const where = { asset_id: { in: assetIds } };
+    const terms = await this.db.client.investmentFixedIncomeTerms.findMany({ where });
+    const rates = await this.db.client.investmentFixedIncomeRate.findMany({
+      orderBy: [{ start_date: 'asc' }],
+      where,
+    });
+    const adjustments = await this.db.client.investmentFixedIncomeAdjustment.findMany({
+      orderBy: [{ date: 'asc' }],
+      where,
+    });
+
+    return { adjustments, rates, terms };
+  }
+
+  async findFixedIncomeRateById(id: string): Promise<InvestmentFixedIncomeRate | null> {
+    return this.db.client.investmentFixedIncomeRate.findUnique({ where: { id } });
+  }
+
   async findLatestValuations(assetIds: string[]): Promise<InvestmentValuation[]> {
     return this.db.client.investmentValuation.findMany({
       distinct: ['asset_id'],
@@ -191,10 +282,52 @@ export class InvestmentDatasource implements IInvestmentDatasource {
     });
   }
 
+  async saveFixedIncomeTerms(params: SaveFixedIncomeTermsDatasourceParams): Promise<void> {
+    await this.db.client.$transaction(async (tx) => {
+      await lockAsset(tx, params.assetId);
+
+      if (params.convert) {
+        await convertManualOperations(tx, params.assetId);
+      }
+
+      await saveTerms(tx, params.assetId, params.terms);
+
+      if (params.rate) {
+        await insertRate(tx, params.assetId, params.rate);
+      }
+
+      await recalculateFixedIncome(tx, params.assetId);
+    });
+  }
+
   async updateAsset(params: UpdateAssetDatasourceParams): Promise<InvestmentAsset> {
     const { id, ...data } = params;
 
     return this.db.client.investmentAsset.update({ data, where: { id } });
+  }
+
+  async updateFixedIncomeRate(
+    assetId: string,
+    id: string,
+    rate: FixedIncomeRateWrite,
+  ): Promise<void> {
+    await this.db.client.$transaction(async (tx) => {
+      await lockAsset(tx, assetId);
+      await replaceRate(tx, id, rate);
+      await recalculateFixedIncome(tx, assetId);
+    });
+  }
+
+  async upsertFixedIncomeAdjustment(
+    assetId: string,
+    date: string,
+    grossAmount: number,
+  ): Promise<void> {
+    await this.db.client.$transaction(async (tx) => {
+      await lockAsset(tx, assetId);
+      await saveAdjustment(tx, assetId, date, grossAmount);
+      await recalculateFixedIncome(tx, assetId);
+    });
   }
 
   async upsertValuation(
@@ -210,108 +343,7 @@ export class InvestmentDatasource implements IInvestmentDatasource {
   }
 
   async writeOperation(params: WriteOperationDatasourceParams): Promise<string> {
-    return this.db.client.$transaction(async (tx) => {
-      await lockAsset(tx, params.asset_id);
-
-      const existing = params.operation_id
-        ? await tx.investmentOperation.findUnique({
-            include: { transaction: { select: LINKED_SELECT } },
-            where: { id: params.operation_id },
-          })
-        : null;
-
-      if (params.operation_id && !existing) {
-        throw new NotFoundException('Operation not found');
-      }
-
-      await lockAccounts(
-        tx,
-        [existing?.account_id, params.account_id].filter((id): id is string => !!id),
-      );
-
-      const fields = {
-        account_id: params.generate_transaction ? params.account_id : null,
-        date: params.date,
-        fees_total: params.fees_total,
-        fx_rate: params.fx_rate,
-        generate_transaction: params.generate_transaction,
-        gross: params.gross,
-        quantity: params.quantity,
-        total: params.total,
-        unit_price: params.unit_price,
-      };
-      const fees = params.fees.map((fee) => ({
-        amount: fee.amount,
-        description: fee.description,
-        kind: fee.kind,
-      }));
-      const operation = existing
-        ? await tx.investmentOperation.update({
-            data: { ...fields, fees: { create: fees, deleteMany: {} } },
-            where: { id: existing.id },
-          })
-        : await tx.investmentOperation.create({
-            data: {
-              ...fields,
-              asset_id: params.asset_id,
-              fees: { create: fees },
-              type: params.type,
-            },
-          });
-
-      const before = toLinkedRow(existing?.transaction ?? null);
-      let transactionId = existing?.transaction_id ?? null;
-      let after: LinkedRow | undefined;
-
-      if (params.generate_transaction && params.account_id) {
-        const account = await tx.financialAccount.findUnique({
-          select: { owner: true, owner_id: true },
-          where: { id: params.account_id },
-        });
-
-        if (!account) {
-          throw new NotFoundException('Account not found');
-        }
-
-        const operationType = params.type as InvestmentOperationType;
-        const type = operationType === InvestmentOperationType.BUY ? 'EXPENSE' : 'INCOME';
-        const row = {
-          account_id: params.account_id,
-          category_id: categoryIdOf(operationType),
-          currency: params.currency,
-          date: params.date,
-          description: params.asset_label,
-          owner: account.owner,
-          owner_id: account.owner_id,
-          paid: true,
-          type,
-          value: params.total,
-        } as const;
-
-        if (transactionId) {
-          await tx.financialTransaction.update({ data: row, where: { id: transactionId } });
-        } else {
-          transactionId = (await tx.financialTransaction.create({ data: row })).id;
-        }
-
-        after = { accountId: params.account_id, type, value: params.total };
-      } else if (transactionId) {
-        await tx.financialTransaction.delete({ where: { id: transactionId } });
-        transactionId = null;
-      }
-
-      if (transactionId !== operation.transaction_id) {
-        await tx.investmentOperation.update({
-          data: { transaction_id: transactionId },
-          where: { id: operation.id },
-        });
-      }
-
-      await applyDeltas(tx, ledgerDeltasFor(before, after));
-      await assertPositionNotNegative(tx, params.asset_id);
-
-      return operation.id;
-    });
+    return this.db.client.$transaction(async (tx) => writeOperationIn(tx, params));
   }
 }
 
@@ -337,6 +369,114 @@ async function assertPositionNotNegative(
   if (position.negativeAt) {
     throw new NegativePositionError(position.negativeAt.date, position.negativeAt.operationId);
   }
+}
+async function writeOperationIn(
+  tx: Prisma.TransactionClient,
+  params: WriteOperationDatasourceParams,
+): Promise<string> {
+  await lockAsset(tx, params.asset_id);
+
+  const existing = params.operation_id
+    ? await tx.investmentOperation.findUnique({
+        include: { transaction: { select: LINKED_SELECT } },
+        where: { id: params.operation_id },
+      })
+    : null;
+
+  if (params.operation_id && !existing) {
+    throw new NotFoundException('Operation not found');
+  }
+
+  await lockAccounts(
+    tx,
+    [existing?.account_id, params.account_id].filter((id): id is string => !!id),
+  );
+
+  const fields = {
+    account_id: params.generate_transaction ? params.account_id : null,
+    date: params.date,
+    fees_total: params.fees_total,
+    fx_rate: params.fx_rate,
+    generate_transaction: params.generate_transaction,
+    gross: params.gross,
+    net_amount: params.net_amount ?? null,
+    quantity: params.quantity,
+    redemption_kind: params.redemption_kind ?? null,
+    total: params.total,
+    unit_price: params.unit_price,
+  };
+  const fees = params.fees.map((fee) => ({
+    amount: fee.amount,
+    description: fee.description,
+    kind: fee.kind,
+  }));
+  const operation = existing
+    ? await tx.investmentOperation.update({
+        data: { ...fields, fees: { create: fees, deleteMany: {} } },
+        where: { id: existing.id },
+      })
+    : await tx.investmentOperation.create({
+        data: {
+          ...fields,
+          asset_id: params.asset_id,
+          fees: { create: fees },
+          type: params.type,
+        },
+      });
+
+  const before = toLinkedRow(existing?.transaction ?? null);
+  let transactionId = existing?.transaction_id ?? null;
+  let after: LinkedRow | undefined;
+
+  if (params.generate_transaction && params.account_id) {
+    const account = await tx.financialAccount.findUnique({
+      select: { owner: true, owner_id: true },
+      where: { id: params.account_id },
+    });
+
+    if (!account) {
+      throw new NotFoundException('Account not found');
+    }
+
+    const operationType = params.type as InvestmentOperationType;
+    const type = operationType === InvestmentOperationType.BUY ? 'EXPENSE' : 'INCOME';
+    const row = {
+      account_id: params.account_id,
+      category_id: categoryIdOf(operationType),
+      currency: params.currency,
+      date: params.date,
+      description: params.asset_label,
+      owner: account.owner,
+      owner_id: account.owner_id,
+      paid: true,
+      type,
+      value: params.total,
+    } as const;
+
+    if (transactionId) {
+      await tx.financialTransaction.update({ data: row, where: { id: transactionId } });
+    } else {
+      transactionId = (await tx.financialTransaction.create({ data: row })).id;
+    }
+
+    after = { accountId: params.account_id, type, value: params.total };
+  } else if (transactionId) {
+    await tx.financialTransaction.delete({ where: { id: transactionId } });
+    transactionId = null;
+  }
+
+  if (transactionId !== operation.transaction_id) {
+    await tx.investmentOperation.update({
+      data: { transaction_id: transactionId },
+      where: { id: operation.id },
+    });
+  }
+
+  await applyDeltas(tx, ledgerDeltasFor(before, after));
+  await recalculateFixedIncome(tx, params.asset_id);
+  await assertPositionNotNegative(tx, params.asset_id);
+
+  return operation.id;
 }
 
 // Asset delete / owner purge: the linked rows go with the assets and the accounts get their balance back.

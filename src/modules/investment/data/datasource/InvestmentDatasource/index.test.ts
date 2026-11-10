@@ -378,3 +378,119 @@ describe('deleteOperation', () => {
     await expect(setup.deleteOperation('op-1')).rejects.toBeInstanceOf(NegativePositionError);
   });
 });
+
+describe('fixed income', () => {
+  const rate = {
+    annualRate: '12',
+    cdiPercent: null,
+    effectiveRate: '12.000000',
+    indexRate: null,
+    mode: 'PREFIXED' as never,
+    spread: null,
+    startDate: '2026-01-02',
+  };
+  const terms = {
+    liquidity: 'DAILY' as never,
+    liquidityDate: null,
+    maturityDate: '2030-01-02',
+    product: 'CDB' as never,
+    taxExempt: false,
+  };
+
+  it('SHOULD lock the asset, write the rate AND recalculate', async () => {
+    spies.termsFindUnique.mockResolvedValue(null);
+
+    await setup.createFixedIncomeRate('asset-1', rate);
+    await setup.updateFixedIncomeRate('asset-1', 'rate-1', rate);
+    await setup.deleteFixedIncomeRate('asset-1', 'rate-1');
+    await setup.upsertFixedIncomeAdjustment('asset-1', '2026-07-01', 1_100_000);
+    await setup.deleteFixedIncomeAdjustment('asset-1', 'adj-1');
+
+    expect(spies.rateCreate).toHaveBeenCalledTimes(1);
+    expect(spies.rateUpdate).toHaveBeenCalledTimes(1);
+    expect(spies.rateDeleteMany).toHaveBeenCalledTimes(1);
+    expect(spies.adjustmentUpsert).toHaveBeenCalledTimes(1);
+    expect(spies.adjustmentDeleteMany).toHaveBeenCalledTimes(1);
+    expect(spies.queryRaw).toHaveBeenCalledTimes(5);
+    expect(spies.termsFindUnique).toHaveBeenCalledTimes(5);
+  });
+
+  it('SHOULD save the terms with the first rate AND convert a manual asset', async () => {
+    spies.termsFindUnique.mockResolvedValue(null);
+    spies.operationFindMany.mockResolvedValue([]);
+
+    await setup.saveFixedIncomeTerms({ assetId: 'asset-1', convert: true, rate, terms });
+
+    expect(spies.valuationDeleteMany).toHaveBeenCalledWith({ where: { asset_id: 'asset-1' } });
+    expect(spies.termsUpsert).toHaveBeenCalledTimes(1);
+    expect(spies.rateCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it('SHOULD save only the terms WHEN editing', async () => {
+    spies.termsFindUnique.mockResolvedValue(null);
+
+    await setup.saveFixedIncomeTerms({ assetId: 'asset-1', convert: false, terms });
+
+    expect(spies.valuationDeleteMany).not.toHaveBeenCalled();
+    expect(spies.rateCreate).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD create the asset, its terms, its first rate AND its contribution together', async () => {
+    spies.assetCreate.mockResolvedValue({ id: 'asset-9' });
+    spies.operationCreate.mockResolvedValue({ id: 'op-1', transaction_id: null });
+    spies.operationFindMany.mockResolvedValue([]);
+    spies.termsFindUnique.mockResolvedValue(null);
+
+    const result = await setup.createFixedIncomeTitle({
+      asset: {
+        asset_class: 'FIXED_INCOME',
+        currency: 'BRL',
+        name: 'CDB',
+        owner: 'USER',
+        owner_id: 'u',
+        ticker: null,
+        valuation: { date: new Date(), unit_price: '1' },
+      },
+      contribution: {
+        account_id: null,
+        asset_label: 'CDB',
+        currency: 'BRL',
+        date: baseParams.date,
+        fees: [],
+        fees_total: 0,
+        fx_rate: null,
+        generate_transaction: false,
+        gross: 100,
+        quantity: '1.00000000',
+        total: 100,
+        type: 'BUY',
+        unit_price: '1.00000000',
+      },
+      rate,
+      terms,
+    });
+
+    expect(result).toEqual({ assetId: 'asset-9', operationId: 'op-1' });
+    expect(spies.assetCreate).toHaveBeenCalledWith({
+      data: expect.not.objectContaining({ valuation: expect.anything() }),
+    });
+    expect(spies.termsUpsert).toHaveBeenCalledTimes(1);
+    expect(spies.rateCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it('SHOULD read the rows of the titles in three queries', async () => {
+    spies.termsFindMany.mockResolvedValue([{ asset_id: 'a' }]);
+    spies.rateFindMany.mockResolvedValue([]);
+    spies.adjustmentFindMany.mockResolvedValue([]);
+    spies.rateFindUnique.mockResolvedValue({ id: 'r' });
+    spies.adjustmentFindUnique.mockResolvedValue({ id: 'adj' });
+
+    expect(await setup.findFixedIncomeByAssetIds(['a'])).toEqual({
+      adjustments: [],
+      rates: [],
+      terms: [{ asset_id: 'a' }],
+    });
+    expect(await setup.findFixedIncomeRateById('r')).toEqual({ id: 'r' });
+    expect(await setup.findFixedIncomeAdjustmentById('adj')).toEqual({ id: 'adj' });
+  });
+});

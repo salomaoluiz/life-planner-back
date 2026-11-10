@@ -5,6 +5,16 @@ import { Prisma } from '@db/client';
 import { InvestmentRepository } from './index';
 
 const names = [
+  'createFixedIncomeRate',
+  'createFixedIncomeTitle',
+  'deleteFixedIncomeAdjustment',
+  'deleteFixedIncomeRate',
+  'findFixedIncomeAdjustmentById',
+  'findFixedIncomeByAssetIds',
+  'findFixedIncomeRateById',
+  'saveFixedIncomeTerms',
+  'updateFixedIncomeRate',
+  'upsertFixedIncomeAdjustment',
   'createAsset',
   'deleteAsset',
   'deleteAssetsByOwner',
@@ -55,7 +65,9 @@ export const mocks = {
     generate_transaction: false,
     gross: 100,
     id: 'op-1',
+    net_amount: null,
     quantity: new Prisma.Decimal('10'),
+    redemption_kind: null,
     total: 100,
     transaction_id: null,
     type: 'BUY',

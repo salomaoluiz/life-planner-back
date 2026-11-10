@@ -1,16 +1,27 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import { InvestmentMapper } from '@investment/data/datasource/mapper/InvestmentMapper';
-import { IInvestmentDatasource } from '@investment/data/repository/datasource/IInvestmentDatasource';
+import {
+  IInvestmentDatasource,
+  WriteOperationDatasourceParams,
+} from '@investment/data/repository/datasource/IInvestmentDatasource';
 import { AssetDetail, AssetEntity, AssetListRow } from '@investment/domain/entity/AssetEntity';
+import {
+  FixedIncomeAdjustmentEntity,
+  FixedIncomeData,
+  FixedIncomeRateEntity,
+  FixedIncomeRateWrite,
+} from '@investment/domain/entity/FixedIncomeEntity';
 import { OperationEntity } from '@investment/domain/entity/OperationEntity';
 import { OwnerAccess } from '@investment/domain/entity/OwnerAccess';
 import { ValuationEntity } from '@investment/domain/entity/ValuationEntity';
 import { InvestmentAssetStatus } from '@investment/domain/enum';
 import {
   CreateAssetRepositoryParams,
+  CreateFixedIncomeTitleRepositoryParams,
   IInvestmentRepository,
   OperationAccount,
+  SaveFixedIncomeTermsRepositoryParams,
   UpdateAssetRepositoryParams,
   UpsertValuationRepositoryParams,
   WriteOperationRepositoryParams,
@@ -43,12 +54,42 @@ export class InvestmentRepository implements IInvestmentRepository {
     return InvestmentMapper.toAsset(row);
   }
 
+  async createFixedIncomeRate(assetId: string, rate: FixedIncomeRateWrite): Promise<void> {
+    await this.datasource.createFixedIncomeRate(assetId, rate);
+  }
+
+  async createFixedIncomeTitle(
+    params: CreateFixedIncomeTitleRepositoryParams,
+  ): Promise<{ assetId: string; operationId: string }> {
+    return this.datasource.createFixedIncomeTitle({
+      asset: {
+        asset_class: params.asset.assetClass,
+        currency: params.asset.currency,
+        name: params.asset.name,
+        owner: params.asset.owner,
+        owner_id: params.asset.ownerId,
+        ticker: params.asset.ticker,
+      },
+      contribution: toWriteParams(params.contribution),
+      rate: params.rate,
+      terms: params.terms,
+    });
+  }
+
   async deleteAsset(id: string): Promise<void> {
     await this.datasource.deleteAsset(id);
   }
 
   async deleteAssetsByOwner(access: Pick<OwnerAccess, 'owner' | 'ownerId'>): Promise<number> {
     return this.datasource.deleteAssetsByOwner(access.owner, access.ownerId);
+  }
+
+  async deleteFixedIncomeAdjustment(assetId: string, id: string): Promise<void> {
+    await this.datasource.deleteFixedIncomeAdjustment(assetId, id);
+  }
+
+  async deleteFixedIncomeRate(assetId: string, id: string): Promise<void> {
+    await this.datasource.deleteFixedIncomeRate(assetId, id);
   }
 
   async deleteOperation(id: string): Promise<void> {
@@ -135,6 +176,44 @@ export class InvestmentRepository implements IInvestmentRepository {
     }));
   }
 
+  async findFixedIncomeAdjustmentById(
+    id: string,
+  ): Promise<FixedIncomeAdjustmentEntity | undefined> {
+    const row = await this.datasource.findFixedIncomeAdjustmentById(id);
+
+    return row ? InvestmentMapper.toAdjustment(row) : undefined;
+  }
+
+  async findFixedIncomeByAssetIds(assetIds: string[]): Promise<Map<string, FixedIncomeData>> {
+    const result = new Map<string, FixedIncomeData>();
+
+    if (assetIds.length === 0) {
+      return result;
+    }
+
+    const rows = await this.datasource.findFixedIncomeByAssetIds(assetIds);
+
+    for (const terms of rows.terms) {
+      result.set(terms.asset_id, {
+        adjustments: rows.adjustments
+          .filter((row) => row.asset_id === terms.asset_id)
+          .map((row) => InvestmentMapper.toAdjustment(row)),
+        rates: rows.rates
+          .filter((row) => row.asset_id === terms.asset_id)
+          .map((row) => InvestmentMapper.toRate(row)),
+        terms: InvestmentMapper.toTerms(terms),
+      });
+    }
+
+    return result;
+  }
+
+  async findFixedIncomeRateById(id: string): Promise<FixedIncomeRateEntity | undefined> {
+    const row = await this.datasource.findFixedIncomeRateById(id);
+
+    return row ? InvestmentMapper.toRate(row) : undefined;
+  }
+
   async findOperationById(id: string): Promise<OperationEntity | undefined> {
     const row = await this.datasource.findOperationById(id);
 
@@ -155,6 +234,10 @@ export class InvestmentRepository implements IInvestmentRepository {
     return row ? InvestmentMapper.toValuation(row) : undefined;
   }
 
+  async saveFixedIncomeTerms(params: SaveFixedIncomeTermsRepositoryParams): Promise<void> {
+    await this.datasource.saveFixedIncomeTerms(params);
+  }
+
   async updateAsset(params: UpdateAssetRepositoryParams): Promise<AssetEntity> {
     const row = await this.datasource.updateAsset({
       archived_at: params.archivedAt,
@@ -171,6 +254,22 @@ export class InvestmentRepository implements IInvestmentRepository {
     return InvestmentMapper.toAsset(row);
   }
 
+  async updateFixedIncomeRate(
+    assetId: string,
+    id: string,
+    rate: FixedIncomeRateWrite,
+  ): Promise<void> {
+    await this.datasource.updateFixedIncomeRate(assetId, id, rate);
+  }
+
+  async upsertFixedIncomeAdjustment(
+    assetId: string,
+    date: string,
+    grossAmount: number,
+  ): Promise<void> {
+    await this.datasource.upsertFixedIncomeAdjustment(assetId, date, grossAmount);
+  }
+
   async upsertValuation(params: UpsertValuationRepositoryParams): Promise<ValuationEntity> {
     const row = await this.datasource.upsertValuation(
       params.assetId,
@@ -182,23 +281,7 @@ export class InvestmentRepository implements IInvestmentRepository {
   }
 
   async writeOperation(params: WriteOperationRepositoryParams): Promise<string> {
-    return this.datasource.writeOperation({
-      account_id: params.accountId,
-      asset_id: params.assetId,
-      asset_label: params.assetLabel,
-      currency: params.currency,
-      date: InvestmentMapper.fromCalendarDate(params.date),
-      fees: params.fees,
-      fees_total: params.feesTotal,
-      fx_rate: params.fxRate,
-      generate_transaction: params.generateTransaction,
-      gross: params.gross,
-      operation_id: params.operationId,
-      quantity: params.quantity.toFixed8(),
-      total: params.total,
-      type: params.type,
-      unit_price: params.unitPrice.toFixed8(),
-    });
+    return this.datasource.writeOperation(toWriteParams(params));
   }
 }
 
@@ -206,4 +289,27 @@ function toLatest(
   row: Parameters<typeof InvestmentMapper.toValuation>[0] | undefined,
 ): null | ValuationEntity {
   return row ? InvestmentMapper.toValuation(row) : null;
+}
+function toWriteParams(
+  params: { assetId?: string } & Omit<WriteOperationRepositoryParams, 'assetId'>,
+): WriteOperationDatasourceParams {
+  return {
+    account_id: params.accountId,
+    asset_id: params.assetId ?? '',
+    asset_label: params.assetLabel,
+    currency: params.currency,
+    date: InvestmentMapper.fromCalendarDate(params.date),
+    fees: params.fees,
+    fees_total: params.feesTotal,
+    fx_rate: params.fxRate,
+    generate_transaction: params.generateTransaction,
+    gross: params.gross,
+    net_amount: params.netAmount,
+    operation_id: params.operationId,
+    quantity: params.quantity.toFixed8(),
+    redemption_kind: params.redemptionKind,
+    total: params.total,
+    type: params.type,
+    unit_price: params.unitPrice.toFixed8(),
+  };
 }

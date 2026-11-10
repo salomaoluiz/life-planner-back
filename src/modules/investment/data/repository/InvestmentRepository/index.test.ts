@@ -1,3 +1,4 @@
+import { Prisma } from '@db/client';
 import {
   InvestmentAssetClass,
   InvestmentAssetStatus,
@@ -226,6 +227,130 @@ describe('writes', () => {
         date: new Date('2026-06-10T00:00:00.000Z'),
         quantity: '18.35720000',
         unit_price: '10.20000000',
+      }),
+    );
+  });
+});
+
+describe('fixed income', () => {
+  const rate = {
+    annualRate: '12',
+    cdiPercent: null,
+    effectiveRate: '12.000000',
+    indexRate: null,
+    mode: 'PREFIXED' as never,
+    spread: null,
+    startDate: '2026-01-02',
+  };
+  const terms = {
+    liquidity: 'DAILY' as never,
+    liquidityDate: null,
+    maturityDate: '2030-01-02',
+    product: 'CDB' as never,
+    taxExempt: false,
+  };
+
+  it('SHOULD group terms, rates and adjustments by asset AND skip assets without terms', async () => {
+    spies.findFixedIncomeByAssetIds.mockResolvedValue({
+      adjustments: [
+        { asset_id: 'a', date: new Date('2026-07-01T00:00:00Z'), gross_amount: 100, id: 'adj' },
+      ],
+      rates: [
+        {
+          annual_rate: new Prisma.Decimal('12'),
+          asset_id: 'a',
+          cdi_percent: null,
+          effective_rate: new Prisma.Decimal('12'),
+          id: 'r',
+          index_rate: null,
+          mode: 'PREFIXED',
+          spread: null,
+          start_date: new Date('2026-01-02T00:00:00Z'),
+        },
+      ],
+      terms: [
+        {
+          asset_id: 'a',
+          liquidity: 'GRACE_PERIOD',
+          liquidity_date: new Date('2027-01-02T00:00:00Z'),
+          maturity_date: new Date('2030-01-02T00:00:00Z'),
+          product: 'CDB',
+          tax_exempt: false,
+        },
+      ],
+    });
+
+    const result = await setup.findFixedIncomeByAssetIds(['a', 'b']);
+
+    expect([...result.keys()]).toEqual(['a']);
+    expect(result.get('a')?.terms?.liquidityDate).toBe('2027-01-02');
+    expect(result.get('a')?.rates[0]).toMatchObject({
+      annualRate: '12.0000',
+      effectiveRate: '12.000000',
+    });
+    expect(result.get('a')?.adjustments[0].grossAmount).toBe(100);
+    expect(await setup.findFixedIncomeByAssetIds([])).toEqual(new Map());
+  });
+
+  it('SHOULD map a rate AND an adjustment by id, undefined WHEN missing', async () => {
+    spies.findFixedIncomeRateById.mockResolvedValue(undefined);
+    spies.findFixedIncomeAdjustmentById.mockResolvedValue(null);
+
+    expect(await setup.findFixedIncomeRateById('x')).toBeUndefined();
+    expect(await setup.findFixedIncomeAdjustmentById('x')).toBeUndefined();
+  });
+
+  it('SHOULD delegate the fixed income writes', async () => {
+    await setup.createFixedIncomeRate('a', rate);
+    await setup.updateFixedIncomeRate('a', 'r', rate);
+    await setup.deleteFixedIncomeRate('a', 'r');
+    await setup.upsertFixedIncomeAdjustment('a', '2026-07-01', 100);
+    await setup.deleteFixedIncomeAdjustment('a', 'adj');
+    await setup.saveFixedIncomeTerms({ assetId: 'a', convert: false, terms });
+
+    expect(spies.createFixedIncomeRate).toHaveBeenCalledWith('a', rate);
+    expect(spies.updateFixedIncomeRate).toHaveBeenCalledWith('a', 'r', rate);
+    expect(spies.deleteFixedIncomeRate).toHaveBeenCalledWith('a', 'r');
+    expect(spies.upsertFixedIncomeAdjustment).toHaveBeenCalledWith('a', '2026-07-01', 100);
+    expect(spies.deleteFixedIncomeAdjustment).toHaveBeenCalledWith('a', 'adj');
+    expect(spies.saveFixedIncomeTerms).toHaveBeenCalled();
+  });
+
+  it('SHOULD create a title with the contribution mapped to columns', async () => {
+    spies.createFixedIncomeTitle.mockResolvedValue({ assetId: 'a', operationId: 'o' });
+
+    const result = await setup.createFixedIncomeTitle({
+      asset: {
+        assetClass: InvestmentAssetClass.FIXED_INCOME,
+        currency: 'BRL',
+        name: 'CDB',
+        owner: OwnerType.USER,
+        ownerId: 'owner-1',
+        ticker: null,
+      },
+      contribution: {
+        accountId: null,
+        assetLabel: 'CDB',
+        currency: 'BRL',
+        date: '2026-01-02',
+        fees: [],
+        feesTotal: 0,
+        fxRate: null,
+        generateTransaction: false,
+        gross: 100,
+        quantity: Decimal8.parse('1'),
+        total: 100,
+        type: InvestmentOperationType.BUY,
+        unitPrice: Decimal8.parse('1'),
+      },
+      rate,
+      terms,
+    });
+
+    expect(result).toEqual({ assetId: 'a', operationId: 'o' });
+    expect(spies.createFixedIncomeTitle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contribution: expect.objectContaining({ quantity: '1.00000000', type: 'BUY' }),
       }),
     );
   });
