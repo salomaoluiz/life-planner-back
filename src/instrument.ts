@@ -3,6 +3,14 @@
 import { BuildInfoReader } from '@shared/infra/build-info';
 import { initMonitoring } from '@shared/infra/monitoring';
 
+// In dev the .env is only read by Nest's ConfigModule, after this file: load it first. It never overrides variables
+// already set, and production has no .env (the compose file injects them).
+try {
+  process.loadEnvFile();
+} catch {
+  // no .env file
+}
+
 function emptyToUndefined(value?: string): string | undefined {
   return value === '' ? undefined : value;
 }

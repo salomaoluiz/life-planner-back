@@ -306,4 +306,40 @@ describe('GIVEN the Sentry capture (spec 106)', () => {
 
     expect(captureException).not.toHaveBeenCalled();
   });
+
+  it('SHOULD capture an error raised outside a controller (no handler class) AND still reply', () => {
+    const host = {
+      getClass: () => null,
+      switchToHttp: mocks.argumentsHost.switchToHttp,
+    } as unknown as typeof mocks.argumentsHost;
+
+    expect(() => setup.catch(mocks.exceptions.generic, host)).not.toThrow();
+    expect(captureException).toHaveBeenCalledTimes(1);
+    expect(mocks.httpAdapterHost.httpAdapter.reply).toHaveBeenCalledTimes(1);
+  });
+
+  it('SHOULD still capture the exception WHEN the tags cannot be built', () => {
+    const host = {
+      getClass: () => {
+        throw new Error('no class');
+      },
+      switchToHttp: mocks.argumentsHost.switchToHttp,
+    } as unknown as typeof mocks.argumentsHost;
+
+    setup.catch(mocks.exceptions.generic, host);
+
+    expect(captureException).toHaveBeenCalledWith(mocks.exceptions.generic);
+    expect(mocks.httpAdapterHost.httpAdapter.reply).toHaveBeenCalledTimes(1);
+  });
+
+  it('SHOULD still reply WHEN the SDK throws', () => {
+    jest.mocked(captureException).mockImplementation(() => {
+      throw new Error('sdk down');
+    });
+
+    expect(() => setup.catch(mocks.exceptions.generic, mocks.argumentsHost)).not.toThrow();
+    expect(mocks.httpAdapterHost.httpAdapter.reply).toHaveBeenCalledTimes(1);
+
+    jest.mocked(captureException).mockReset();
+  });
 });

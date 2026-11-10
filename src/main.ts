@@ -5,9 +5,15 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 
 import { configureApp } from '@shared/infra/http/configure-app';
-import { captureException, flushMonitoring } from '@shared/infra/monitoring';
+import { captureException, flushMonitoring, registerFatalHandlers } from '@shared/infra/monitoring';
 
 import { AppModule } from './modules/app.module';
+
+registerFatalHandlers({
+  exit: (code) => process.exit(code),
+  log: (error) => new Logger('Process').error(error),
+  target: process,
+});
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);

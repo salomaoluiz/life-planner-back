@@ -42,14 +42,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     // Spec 106: only unexpected errors reach Sentry; 4xx and 304 never do.
     if (httpStatus >= 500 || !(exception instanceof HttpException)) {
-      captureException(
-        exception,
-        buildCaptureContext(
-          ctx.getRequest<RequestLike | undefined>() ?? {},
-          httpStatus,
-          (host as Partial<ExecutionContext>).getClass?.().name,
-        ),
-      );
+      this.report(exception, host, httpStatus);
     }
 
     if (httpStatus >= 500) {
@@ -80,6 +73,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
     httpAdapter.reply(ctx.getResponse(), responseBody, httpStatus);
   }
 
+  // Monitoring must never break the reply or hide the original error: a failure while building the tags still sends
+  // the exception (without them) and a failing SDK is ignored. `getClass()` is null outside a controller.
   private getConflictDetails(exception: unknown, httpStatus: number): Record<string, unknown> {
     if (
       (httpStatus !== HttpStatus.CONFLICT &&
@@ -137,6 +132,21 @@ export class AllExceptionsFilter implements ExceptionFilter {
         return exception.message;
       default:
         return 'Internal Server Error';
+    }
+  }
+
+  private report(exception: unknown, host: ArgumentsHost, httpStatus: number): void {
+    try {
+      const request = host.switchToHttp().getRequest<RequestLike | undefined>() ?? {};
+      const controller = (host as Partial<ExecutionContext>).getClass?.()?.name;
+
+      captureException(exception, buildCaptureContext(request, httpStatus, controller));
+    } catch {
+      try {
+        captureException(exception);
+      } catch {
+        // the SDK itself failed: nothing else to do
+      }
     }
   }
 }
