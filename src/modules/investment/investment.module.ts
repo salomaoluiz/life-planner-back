@@ -21,9 +21,11 @@ import { GetAssetByIdUseCase } from '@investment/application/use-case/GetAssetBy
 import { GetAssetsUseCase } from '@investment/application/use-case/GetAssetsUseCase';
 import { GetPriceHistoryUseCase } from '@investment/application/use-case/GetPriceHistoryUseCase';
 import { HasInvestmentsByOwnerUseCase } from '@investment/application/use-case/HasInvestmentsByOwnerUseCase';
+import { PreviewFixedIncomeRedemptionUseCase } from '@investment/application/use-case/PreviewFixedIncomeRedemptionUseCase';
 import { RefreshQuotesNowUseCase } from '@investment/application/use-case/RefreshQuotesNowUseCase';
 import { RefreshTrackedQuotesUseCase } from '@investment/application/use-case/RefreshTrackedQuotesUseCase';
 import { SearchTickersUseCase } from '@investment/application/use-case/SearchTickersUseCase';
+import { SimulateFixedIncomeUseCase } from '@investment/application/use-case/SimulateFixedIncomeUseCase';
 import { UpdateAssetUseCase } from '@investment/application/use-case/UpdateAssetUseCase';
 import { UpdateFixedIncomeRateUseCase } from '@investment/application/use-case/UpdateFixedIncomeRateUseCase';
 import { UpdateOperationUseCase } from '@investment/application/use-case/UpdateOperationUseCase';
@@ -37,6 +39,8 @@ import { QuoteRepository } from '@investment/data/repository/QuoteRepository';
 
 const services = [HistoryBackfill, QuoteContextLoader, QuoteFetcher, TickerValidator];
 const useCases = [
+  PreviewFixedIncomeRedemptionUseCase,
+  SimulateFixedIncomeUseCase,
   CreateFixedIncomeRedemptionUseCase,
   CreateFixedIncomeContributionUseCase,
   CreateFixedIncomeTitleUseCase,
