@@ -19,9 +19,11 @@ import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransac
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
 import { ResolveCardRowsPaidUseCase } from '@finance/application/use-case/ResolveCardRowsPaidUseCase';
 import { UpdateTransactionUseCase } from '@finance/application/use-case/UpdateTransactionUseCase';
+import { INVESTMENT_KEYS } from '@finance/domain/entity/SystemCategory';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { TransactionFilter } from '@finance/domain/entity/TransactionFilter';
 import { InstallmentEditScope, TransactionSource } from '@finance/domain/enum';
+import { FindOperationByTransactionIdUseCase } from '@investment/application/use-case/FindOperationByTransactionIdUseCase';
 
 function toTransactionOutput(
   transaction: TransactionEntity,
@@ -116,6 +118,8 @@ function toTransactionItem(transaction: TransactionEntity, overLimit?: boolean):
 
 // Exactly the entities the given rows reference, each once.
 interface TransactionWithLookups {
+  // Spec 102 FR 22: the operation behind an investment row, so the app can open it.
+  investment?: { assetId: string; operationId: string };
   item: TransactionItem;
   lookups: TransactionLookups;
 }
@@ -170,6 +174,7 @@ export class TransactionService {
     private readonly createTransactionUseCase: CreateTransactionUseCase,
     private readonly deleteTransactionUseCase: DeleteTransactionUseCase,
     private readonly financeAccessService: FinanceAccessService,
+    private readonly findOperationByTransactionIdUseCase: FindOperationByTransactionIdUseCase,
     private readonly getTransactionByIdUseCase: GetTransactionByIdUseCase,
     private readonly getTransactionsUseCase: GetTransactionsUseCase,
     private readonly materializeRecurrencesUseCase: MaterializeRecurrencesUseCase,
@@ -290,9 +295,15 @@ export class TransactionService {
     });
 
     const withLookups = toWithLookups(resolved);
+    const systemKey = resolved.category.systemKey;
+    const investment =
+      systemKey !== null && INVESTMENT_KEYS.includes(systemKey)
+        ? await this.findOperationByTransactionIdUseCase.execute({ transactionId: resolved.id })
+        : undefined;
 
     return {
       ...withLookups,
+      ...(investment ? { investment } : {}),
       lookups: await this.transferLookupsService.attach(
         accessibleOwners,
         [resolved],

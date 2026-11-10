@@ -191,6 +191,22 @@ describe('GIVEN an Unprocessable Entity (422)', () => {
     );
   });
 
+  it('SHOULD reply with the details of a negative position (spec 102)', () => {
+    setup.catch(mocks.exceptions.unprocessableDetails, mocks.argumentsHost);
+
+    expect(mocks.httpAdapterHost.httpAdapter.reply).toHaveBeenLastCalledWith(
+      mocks.getResponse,
+      {
+        details: { date: '2026-09-15', operationId: 'op-1' },
+        message: 'This change would make the position negative on 2026-09-15',
+        path: '/test-url',
+        statusCode: 422,
+        timestamp: '2025-11-30T12:00:00.000Z',
+      },
+      422,
+    );
+  });
+
   it('SHOULD keep the plain shape WHEN there are no row errors', () => {
     setup.catch(mocks.exceptions.unprocessablePlain, mocks.argumentsHost);
 

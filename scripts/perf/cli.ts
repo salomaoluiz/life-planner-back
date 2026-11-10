@@ -13,7 +13,7 @@ import { loadConfig } from './seed';
 import { hashConfig, SeedManifest } from './seed/manifest';
 
 const USAGE =
-  'usage: yarn perf (--changed | --all | --module <family|finance|health|stock|user|version>) [--dry-run] [--update-baseline]';
+  'usage: yarn perf (--changed | --all | --module <family|finance|health|investment|stock|user|version>) [--dry-run] [--update-baseline]';
 const ROOT = resolve(__dirname, '../..');
 
 export interface CliArgs {

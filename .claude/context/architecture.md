@@ -12,7 +12,7 @@ src/
 │   └── user/                # user.module.ts + v1/ (controller, service, dto/)
 ├── modules/                 # bounded contexts
 │   ├── app.module.ts        # imports ApiModule + SharedModule
-│   └── {user|family|finance|stock}/
+│   └── {user|family|finance|investment|stock}/
 └── shared/                  # cross-cutting
     ├── shared.module.ts     # @Global: ILogger, IJwtProvider, IPasswordHasher, Database, APP_FILTER, APP_GUARD
     ├── application/use-case/types.ts   # UseCase<Output>, UseCaseWithParams<Input, Output>
@@ -58,7 +58,7 @@ Request flow: `Controller` (validate, extract `req.user.id`) → `Service` (api 
 
 ## Path aliases (tsconfig.json AND jest.config.js `moduleNameMapper` AND `eslint/rules/constants.mjs`)
 
-`@/*`→`src/*` · `@shared/*` · `@api/*` · `@user/*`, `@family/*`, `@finance/*`, `@stock/*` → `src/modules/<x>/*` · `@auth/*`→`src/modules/auth/*` (reserved, folder doesn't exist) · `@db/*`→`generated/prisma/*` (Prisma client; generated, gitignored — run `yarn prisma generate`).
+`@/*`→`src/*` · `@shared/*` · `@api/*` · `@user/*`, `@family/*`, `@finance/*`, `@investment/*`, `@stock/*` → `src/modules/<x>/*` · `@auth/*`→`src/modules/auth/*` (reserved, folder doesn't exist) · `@db/*`→`generated/prisma/*` (Prisma client; generated, gitignored — run `yarn prisma generate`).
 
 Adding a new module alias = update **all three** places (tsconfig `paths`, jest `moduleNameMapper`, `internalModules` in `eslint/rules/constants.mjs`), otherwise lint, tests or build break.
 
@@ -73,3 +73,7 @@ Adding a new module alias = update **all three** places (tsconfig `paths`, jest 
 | HTTP route, request/response schema | `api/<name>/v<N>/`                                   |
 | Wrapper around an npm lib           | `shared/infra/<name>/` (+ interface in `types.ts`)   |
 | Used by 2+ modules, domain-level    | `shared/domain` / `shared/application`               |
+
+## Investment module and the cross-module write (spec 102)
+
+`src/modules/investment` (`@investment/*`; `InvestmentModule` exports its use cases) owns assets, operations, fees and valuations. A buy or sell optionally creates ONE paid finance row (category `INVESTMENT_CONTRIBUTION`/`INVESTMENT_REDEMPTION`), which must change in the same database transaction as the operation. Modules still do not import each other, so there is no shared unit of work: `InvestmentDatasource.writeOperation` runs one Prisma `$transaction` that locks the asset, locks the accounts in ascending id, writes `investment_*`, writes the `financial_transactions` row and applies the `ledger_balance` increments through `data/datasource/financeLink` (the same rule as finance's `ledgerDeltas` for a PAID row: INCOME adds, EXPENSE subtracts, one increment per account). The category ids are mirrored in `domain/entity/SystemCategories` and in `domain/enum/Currency` (tests pin both against finance). The api layer aggregates: `TransactionService.findById` calls `FindOperationByTransactionIdUseCase` to add `investment: { assetId, operationId }`. Position math is the pure `PositionCalculator` over `Decimal8` (`@shared/infra/decimal`, scaled `bigint`, `tsconfig` target ES2020); the never-negative rule runs inside the write transaction. The next specs that write finance rows (dividends) reuse this pattern.

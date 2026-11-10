@@ -125,6 +125,17 @@ describe('archived accounts and system categories (spec 028)', () => {
     );
   });
 
+  it.each([SystemCategoryKey.INVESTMENT_CONTRIBUTION, SystemCategoryKey.INVESTMENT_REDEMPTION])(
+    'SHOULD point to the investment operation WHEN the category is %s (spec 102)',
+    async (key) => {
+      await expect(
+        setup.execute({ ...mocks.input, categoryId: SYSTEM_CATEGORY_IDS[key] }),
+      ).rejects.toThrow(
+        new UnprocessableEntityException('Edit this transaction through its investment operation'),
+      );
+    },
+  );
+
   it('SHOULD throw Unprocessable (422) BEFORE any lookup WHEN the category is a system category', async () => {
     await expect(
       setup.execute({

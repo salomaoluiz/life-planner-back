@@ -93,6 +93,8 @@ enum SystemCategoryKey {
   TRANSFER_OUT
   TRANSFER_IN
   TRANSFER_FEE
+  INVESTMENT_CONTRIBUTION
+  INVESTMENT_REDEMPTION
 }
 
 enum InvoicePaymentMethod {
@@ -117,14 +119,15 @@ model FinancialAccount {
   created_at      DateTime      @default(now()) @db.Timestamptz(6)
   updated_at      DateTime      @updatedAt @db.Timestamptz(6)
 
-  transactions     FinancialTransaction[]
-  recurrences      FinancialRecurrence[]
-  incoming_series  FinancialRecurrence[]     @relation("TransferSeriesDestination")
-  transfers_out    FinancialTransfer[]        @relation("TransferFrom")
-  transfers_in     FinancialTransfer[]        @relation("TransferTo")
-  invoice_payments FinancialInvoicePayment[]
-  payment_cards    FinancialCreditCard[]      @relation("CardPaymentAccount")
-  favorites        FinancialAccountFavorite[]
+  transactions          FinancialTransaction[]
+  recurrences           FinancialRecurrence[]
+  incoming_series       FinancialRecurrence[]      @relation("TransferSeriesDestination")
+  transfers_out         FinancialTransfer[]        @relation("TransferFrom")
+  transfers_in          FinancialTransfer[]        @relation("TransferTo")
+  invoice_payments      FinancialInvoicePayment[]
+  payment_cards         FinancialCreditCard[]      @relation("CardPaymentAccount")
+  favorites             FinancialAccountFavorite[]
+  investment_operations InvestmentOperation[]
 
   @@index([owner, owner_id])
   @@map("financial_accounts")
@@ -275,13 +278,14 @@ model FinancialTransaction {
   created_at               DateTime              @default(now()) @db.Timestamptz(3)
   updated_at               DateTime              @updatedAt @db.Timestamptz(6)
 
-  account          FinancialAccount?         @relation(fields: [account_id], references: [id], onDelete: Restrict)
-  credit_card      FinancialCreditCard?      @relation(fields: [credit_card_id], references: [id], onDelete: Restrict)
-  category         FinancialCategory         @relation(fields: [category_id], references: [id], onDelete: Restrict)
-  invoice_payment  FinancialInvoicePayment?
-  installment_plan FinancialInstallmentPlan? @relation(fields: [installment_plan_id], references: [id], onDelete: Restrict)
-  recurrence       FinancialRecurrence?      @relation(fields: [recurrence_id], references: [id], onDelete: Restrict)
-  transfer         FinancialTransfer?        @relation(fields: [transfer_id], references: [id], onDelete: Restrict)
+  account              FinancialAccount?         @relation(fields: [account_id], references: [id], onDelete: Restrict)
+  credit_card          FinancialCreditCard?      @relation(fields: [credit_card_id], references: [id], onDelete: Restrict)
+  category             FinancialCategory         @relation(fields: [category_id], references: [id], onDelete: Restrict)
+  invoice_payment      FinancialInvoicePayment?
+  installment_plan     FinancialInstallmentPlan? @relation(fields: [installment_plan_id], references: [id], onDelete: Restrict)
+  recurrence           FinancialRecurrence?      @relation(fields: [recurrence_id], references: [id], onDelete: Restrict)
+  transfer             FinancialTransfer?        @relation(fields: [transfer_id], references: [id], onDelete: Restrict)
+  investment_operation InvestmentOperation?
 
   refunded_transaction  FinancialTransaction?           @relation("RefundedPurchase", fields: [refunded_transaction_id], references: [id], onDelete: Restrict)
   refunds               FinancialTransaction[]          @relation("RefundedPurchase")
@@ -332,16 +336,16 @@ model FinancialInvoicePayment {
 // Spec 090: stored totals of the card rows of each (card, invoice month), kept by the write transactions and read by every
 // card invoice computation (spec 091). Aggregation: every card row, no exclusions.
 model FinancialCardInvoiceTotal {
-  credit_card_id String
-  invoice_month  String   @db.Char(7)
-  income         Int      @default(0)
-  expense        Int      @default(0)
-  early_paid     Int      @default(0)
-  purchase_count Int      @default(0)
+  credit_card_id   String
+  invoice_month    String   @db.Char(7)
+  income           Int      @default(0)
+  expense          Int      @default(0)
+  early_paid       Int      @default(0)
+  purchase_count   Int      @default(0)
   // Spec 096: `income/expense/early_paid/purchase_count` count effective rows only.
-  projected_amount Int    @default(0)
-  projected_count  Int    @default(0)
-  updated_at     DateTime @default(now()) @db.Timestamptz(6)
+  projected_amount Int      @default(0)
+  projected_count  Int      @default(0)
+  updated_at       DateTime @default(now()) @db.Timestamptz(6)
 
   credit_card FinancialCreditCard @relation(fields: [credit_card_id], references: [id], onDelete: Cascade)
 
@@ -598,32 +602,136 @@ model CategoryIcon {
 // unpaid occurrence of a different-currency series. The account FKs are SetNull so deleting a user keeps the family side.
 // CHECKs in the migration: from <> to, date_in >= date_out, amount_out > 0, amount_in > 0 or NULL, fee > 0 or NULL.
 model FinancialTransfer {
-  id                String    @id @default(uuid())
+  id                String   @id @default(uuid())
   description       String
   notes             String?
   from_account_id   String?
   to_account_id     String?
   amount_out        Int
   amount_in         Int?
-  currency_out      String    @db.VarChar(3)
-  currency_in       String    @db.VarChar(3)
-  date_out          DateTime  @db.Date
-  date_in           DateTime  @db.Date
-  paid              Boolean   @default(false)
+  currency_out      String   @db.VarChar(3)
+  currency_in       String   @db.VarChar(3)
+  date_out          DateTime @db.Date
+  date_in           DateTime @db.Date
+  paid              Boolean  @default(false)
   fee               Int?
   recurrence_id     String?
   occurrence_number Int?
   created_by        String
-  created_at        DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at        DateTime  @updatedAt @db.Timestamptz(6)
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime @updatedAt @db.Timestamptz(6)
 
-  from_account FinancialAccount?       @relation("TransferFrom", fields: [from_account_id], references: [id], onDelete: SetNull)
-  to_account   FinancialAccount?       @relation("TransferTo", fields: [to_account_id], references: [id], onDelete: SetNull)
-  recurrence   FinancialRecurrence?    @relation(fields: [recurrence_id], references: [id], onDelete: Restrict)
+  from_account FinancialAccount?      @relation("TransferFrom", fields: [from_account_id], references: [id], onDelete: SetNull)
+  to_account   FinancialAccount?      @relation("TransferTo", fields: [to_account_id], references: [id], onDelete: SetNull)
+  recurrence   FinancialRecurrence?   @relation(fields: [recurrence_id], references: [id], onDelete: Restrict)
   transactions FinancialTransaction[]
 
   @@unique([recurrence_id, occurrence_number])
   @@index([from_account_id])
   @@index([to_account_id])
   @@map("financial_transfers")
+}
+
+enum InvestmentAssetClass {
+  BR_STOCK
+  BR_REIT
+  FOREIGN_STOCK
+  FIXED_INCOME
+  PRIVATE
+}
+
+enum InvestmentAssetStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum InvestmentOperationType {
+  BUY
+  SELL
+}
+
+enum InvestmentFeeKind {
+  BROKERAGE
+  EXCHANGE_FEES
+  FX_IOF
+  OTHER
+}
+
+enum InvestmentValuationSource {
+  MANUAL
+}
+
+// Spec 102: investments. Quantities and unit prices are exact decimals; every total is integer cents.
+model InvestmentAsset {
+  id          String                @id @default(uuid())
+  asset_class InvestmentAssetClass
+  ticker      String?               @db.VarChar(20)
+  name        String                @db.VarChar(100)
+  currency    String                @db.VarChar(3)
+  status      InvestmentAssetStatus @default(ACTIVE)
+  archived_at DateTime?             @db.Timestamptz(6)
+  owner       OwnerType
+  owner_id    String
+  created_at  DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime              @updatedAt @db.Timestamptz(6)
+
+  operations InvestmentOperation[]
+  valuations InvestmentValuation[]
+
+  @@index([owner, owner_id])
+  @@map("investment_assets")
+}
+
+model InvestmentOperation {
+  id                   String                  @id @default(uuid())
+  asset_id             String
+  type                 InvestmentOperationType
+  date                 DateTime                @db.Date
+  quantity             Decimal                 @db.Decimal(18, 8)
+  unit_price           Decimal                 @db.Decimal(20, 8)
+  gross                Int
+  fees_total           Int
+  total                Int
+  generate_transaction Boolean
+  account_id           String?
+  transaction_id       String?                 @unique
+  created_at           DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime                @updatedAt @db.Timestamptz(6)
+
+  asset       InvestmentAsset          @relation(fields: [asset_id], references: [id], onDelete: Cascade)
+  account     FinancialAccount?        @relation(fields: [account_id], references: [id], onDelete: SetNull)
+  transaction FinancialTransaction?    @relation(fields: [transaction_id], references: [id], onDelete: SetNull)
+  fees        InvestmentOperationFee[]
+
+  @@index([asset_id, date, created_at, id])
+  @@index([account_id])
+  @@map("investment_operations")
+}
+
+model InvestmentOperationFee {
+  id           String            @id @default(uuid())
+  operation_id String
+  kind         InvestmentFeeKind
+  amount       Int
+  description  String?           @db.VarChar(60)
+
+  operation InvestmentOperation @relation(fields: [operation_id], references: [id], onDelete: Cascade)
+
+  @@index([operation_id])
+  @@map("investment_operation_fees")
+}
+
+model InvestmentValuation {
+  id         String                    @id @default(uuid())
+  asset_id   String
+  date       DateTime                  @db.Date
+  unit_price Decimal                   @db.Decimal(20, 8)
+  source     InvestmentValuationSource @default(MANUAL)
+  created_at DateTime                  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime                  @updatedAt @db.Timestamptz(6)
+
+  asset InvestmentAsset @relation(fields: [asset_id], references: [id], onDelete: Cascade)
+
+  @@unique([asset_id, date])
+  @@map("investment_valuations")
 }

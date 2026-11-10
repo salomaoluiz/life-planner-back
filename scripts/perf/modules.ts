@@ -1,9 +1,17 @@
-export type PerfModule = 'family' | 'finance' | 'health' | 'stock' | 'user' | 'version';
+export type PerfModule =
+  | 'family'
+  | 'finance'
+  | 'health'
+  | 'investment'
+  | 'stock'
+  | 'user'
+  | 'version';
 
 export const PERF_MODULES: PerfModule[] = [
   'family',
   'finance',
   'health',
+  'investment',
   'stock',
   'user',
   'version',
@@ -16,6 +24,7 @@ const FOLDER_TO_MODULE: Record<string, PerfModule> = {
   'family-member': 'family',
   finance: 'finance',
   health: 'health',
+  investment: 'investment',
   stock: 'stock',
   user: 'user',
   version: 'version',

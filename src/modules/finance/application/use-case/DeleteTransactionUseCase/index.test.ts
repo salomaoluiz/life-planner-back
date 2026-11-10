@@ -77,6 +77,21 @@ it.each(['TRANSFER_OUT', 'TRANSFER_IN', 'TRANSFER_FEE'])(
   },
 );
 
+it.each(['INVESTMENT_CONTRIBUTION', 'INVESTMENT_REDEMPTION'])(
+  'SHOULD refuse to delete a %s row (422): only its investment operation removes it',
+  async (systemKey) => {
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce({
+      ...mocks.transaction,
+      category: { ...mocks.transaction.category, systemKey },
+    });
+
+    await expect(
+      setup.execute({ accessibleOwners: mocks.accessibleOwners, id: mocks.transaction.id }),
+    ).rejects.toThrow('Edit this transaction through its investment operation');
+    expect(mocks.transactionRepository.deleteTransaction).not.toHaveBeenCalled();
+  },
+);
+
 it('SHOULD refuse to delete a purchase that has refunds (422)', async () => {
   mocks.cardCreditRepository.countRefundsByTransactionId.mockResolvedValueOnce(1);
 

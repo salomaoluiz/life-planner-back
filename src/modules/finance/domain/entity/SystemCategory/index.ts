@@ -7,6 +7,8 @@ export const SYSTEM_CATEGORY_IDS: Record<SystemCategoryKey, string> = {
   [SystemCategoryKey.CARD_EARLY_PAYMENT]: '00000000-0000-4000-8000-000000000005',
   [SystemCategoryKey.CARD_REFUND]: '00000000-0000-4000-8000-000000000004',
   [SystemCategoryKey.INSTALLMENT_PREPAYMENT_DISCOUNT]: '00000000-0000-4000-8000-000000000003',
+  [SystemCategoryKey.INVESTMENT_CONTRIBUTION]: '00000000-0000-4000-8000-000000000009',
+  [SystemCategoryKey.INVESTMENT_REDEMPTION]: '00000000-0000-4000-8000-00000000000a',
   [SystemCategoryKey.INVOICE_PAYMENT]: '00000000-0000-4000-8000-000000000002',
   [SystemCategoryKey.TRANSFER_FEE]: '00000000-0000-4000-8000-000000000008',
   [SystemCategoryKey.TRANSFER_IN]: '00000000-0000-4000-8000-000000000007',
@@ -65,3 +67,16 @@ export const TRANSFER_IN_SUMMARY = {
 };
 
 export const TRANSFER_ROW_USE_TRANSFER = 'TRANSFER_ROW_USE_TRANSFER';
+
+// Spec 102: the rows of an investment operation change only through the operation (PATCH/DELETE answers 422).
+export const INVESTMENT_KEYS: SystemCategoryKey[] = [
+  SystemCategoryKey.INVESTMENT_CONTRIBUTION,
+  SystemCategoryKey.INVESTMENT_REDEMPTION,
+];
+
+export function isInvestmentCategoryId(id: string): boolean {
+  return INVESTMENT_KEYS.some((key) => SYSTEM_CATEGORY_IDS[key] === id);
+}
+
+export const INVESTMENT_ROW_USE_OPERATION =
+  'Edit this transaction through its investment operation';

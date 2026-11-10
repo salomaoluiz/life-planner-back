@@ -131,6 +131,49 @@ describe('findById (spec 077)', () => {
     expect(result.item.paid).toBe(false);
   });
 
+  it.each(['INVESTMENT_CONTRIBUTION', 'INVESTMENT_REDEMPTION'])(
+    'SHOULD add the operation link WHEN the row is a %s row (spec 102)',
+    async (systemKey) => {
+      mocks.resolveCardRowsPaidUseCase.execute.mockResolvedValueOnce([
+        {
+          ...mocks.transactionResult,
+          category: { ...mocks.transactionResult.category, systemKey },
+        },
+      ]);
+      mocks.findOperationByTransactionIdUseCase.execute.mockResolvedValueOnce({
+        assetId: 'asset-1',
+        operationId: 'op-1',
+      });
+
+      const result = await setup.findById(mocks.userId, mocks.transactionResult.id);
+
+      expect(mocks.findOperationByTransactionIdUseCase.execute).toHaveBeenCalledWith({
+        transactionId: mocks.transactionResult.id,
+      });
+      expect(result.investment).toEqual({ assetId: 'asset-1', operationId: 'op-1' });
+    },
+  );
+
+  it('SHOULD NOT look for an operation on a normal row', async () => {
+    const result = await setup.findById(mocks.userId, mocks.transactionResult.id);
+
+    expect(mocks.findOperationByTransactionIdUseCase.execute).not.toHaveBeenCalled();
+    expect(result).not.toHaveProperty('investment');
+  });
+
+  it('SHOULD leave the link out WHEN the investment row has no operation any more', async () => {
+    mocks.resolveCardRowsPaidUseCase.execute.mockResolvedValueOnce([
+      {
+        ...mocks.transactionResult,
+        category: { ...mocks.transactionResult.category, systemKey: 'INVESTMENT_CONTRIBUTION' },
+      },
+    ]);
+
+    const result = await setup.findById(mocks.userId, mocks.transactionResult.id);
+
+    expect(result).not.toHaveProperty('investment');
+  });
+
   it('SHOULD propagate the not found of the use case', async () => {
     mocks.getTransactionByIdUseCase.execute.mockRejectedValueOnce(new Error('404'));
 

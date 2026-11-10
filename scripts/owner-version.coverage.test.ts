@@ -19,6 +19,7 @@ const EXEMPT = new Set([
   'category_icons', // global static catalog
   'finance_owner_versions', // the version table itself
   'stock_items', // not finance
+  'investment_assets', // not finance: investment reads carry no ETag; the finance rows an operation writes are bumped
 ]);
 
 function ownedFinanceTables(): string[] {
