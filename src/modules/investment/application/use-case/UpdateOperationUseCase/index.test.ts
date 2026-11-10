@@ -4,8 +4,13 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 
-import { operationFixture } from '@investment/domain/entity/mocks/investment.fixture';
+import {
+  fixedIncomeDataFixture,
+  fixedIncomeDetailFixture,
+  operationFixture,
+} from '@investment/domain/entity/mocks/investment.fixture';
 import { InvestmentFeeKind } from '@investment/domain/enum';
+import { FixedIncomeRedemptionTooLargeError } from '@investment/domain/error/FixedIncomeRedemptionTooLargeError';
 import { NegativePositionError } from '@investment/domain/error/NegativePositionError';
 import { ValidationError } from '@shared/domain/error/ValidationError';
 
@@ -119,4 +124,97 @@ it('SHOULD answer 422 WHEN the edit would make the position negative', async () 
 
 it('SHOULD reject an empty update', async () => {
   await expect(setup.execute(base)).rejects.toBeInstanceOf(ValidationError);
+});
+
+describe('on a calculated title (spec 105)', () => {
+  const fixedDetail = fixedIncomeDetailFixture();
+  const lot = fixedDetail.operations[0];
+
+  beforeEach(() => {
+    spies.findOperationById.mockResolvedValue(lot);
+    spies.findAssetById.mockResolvedValue(fixedDetail);
+    spies.findFixedIncomeByAssetIds.mockResolvedValue(
+      new Map([['asset-fi', fixedIncomeDataFixture()]]),
+    );
+    spies.writeOperation.mockResolvedValue(lot.id);
+  });
+
+  const owners = [{ owner: 'USER' as never, ownerId: 'user-1' }];
+
+  it('SHOULD rewrite a contribution from its amount AND date', async () => {
+    const result = await setup.execute({ accessibleOwners: owners, amount: 700_000, id: lot.id });
+
+    expect(spies.writeOperation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        gross: 700_000,
+        operationId: lot.id,
+        total: 700_000,
+        type: 'BUY',
+      }),
+    );
+    expect(spies.writeOperation.mock.calls[0][0].quantity.toString()).toBe('7000');
+    expect(result.operation.operation.id).toBe(lot.id);
+  });
+
+  it('SHOULD rewrite a redemption from its kind AND net', async () => {
+    const sell = operationFixture({
+      assetId: 'asset-fi',
+      date: '2026-11-04',
+      id: 'sell-1',
+      netAmount: 600_000,
+      redemptionKind: 'PARTIAL' as never,
+      total: 600_000,
+      type: 'SELL' as never,
+    });
+
+    spies.findOperationById.mockResolvedValue(sell);
+    spies.findAssetById.mockResolvedValue({
+      ...fixedDetail,
+      operations: [sell, ...fixedDetail.operations],
+    });
+    spies.writeOperation.mockResolvedValue('sell-1');
+
+    await setup.execute({
+      accessibleOwners: owners,
+      id: 'sell-1',
+      kind: 'TOTAL' as never,
+      netAmount: 650_000,
+    });
+
+    expect(spies.writeOperation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        netAmount: 650_000,
+        redemptionKind: 'TOTAL',
+        total: 650_000,
+        type: 'SELL',
+      }),
+    );
+  });
+
+  it('SHOULD refuse the generic fields with 400', async () => {
+    await expect(
+      setup.execute({ accessibleOwners: owners, id: lot.id, unitPrice: '2' }),
+    ).rejects.toThrow(ValidationError);
+    expect(spies.writeOperation).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD refuse a contribution moved before the first rate AND after the maturity', async () => {
+    await expect(
+      setup.execute({ accessibleOwners: owners, date: '2025-12-01', id: lot.id }),
+    ).rejects.toThrow(UnprocessableEntityException);
+  });
+
+  it('SHOULD answer 422 with the redemption WHEN the edit makes it larger than the title', async () => {
+    spies.writeOperation.mockRejectedValue(
+      new FixedIncomeRedemptionTooLargeError('2026-11-04', 'sell-1'),
+    );
+
+    await expect(
+      setup.execute({ accessibleOwners: owners, amount: 1_000, id: lot.id }),
+    ).rejects.toMatchObject({ response: { details: { operationId: 'sell-1' } } });
+  });
+});
+
+it('SHOULD refuse the fixed income fields on a regular asset', async () => {
+  await expect(setup.execute({ ...base, netAmount: 500 })).rejects.toThrow(ValidationError);
 });

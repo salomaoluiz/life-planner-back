@@ -6,6 +6,7 @@ import {
 
 import { operationFixture } from '@investment/domain/entity/mocks/investment.fixture';
 import { InvestmentAssetStatus } from '@investment/domain/enum';
+import { FixedIncomeRedemptionTooLargeError } from '@investment/domain/error/FixedIncomeRedemptionTooLargeError';
 import { NegativePositionError } from '@investment/domain/error/NegativePositionError';
 
 import { mocks, setup, spies } from './index.mocks';
@@ -56,4 +57,14 @@ it('SHOULD answer 422 WHEN a later sell depended on the operation, and pass othe
 
   spies.deleteOperation.mockRejectedValueOnce(new Error('db down'));
   await expect(setup.execute(base)).rejects.toThrow('db down');
+});
+
+it('SHOULD answer 422 with the redemption WHEN deleting a lot makes it larger than the title (spec 105)', async () => {
+  spies.deleteOperation.mockRejectedValue(
+    new FixedIncomeRedemptionTooLargeError('2026-11-04', 'sell-1'),
+  );
+
+  await expect(setup.execute(base)).rejects.toMatchObject({
+    response: { details: { date: '2026-11-04', operationId: 'sell-1' } },
+  });
 });

@@ -5,7 +5,9 @@ import { QuoteContextLoader } from '@investment/application/service/QuoteContext
 import { QuoteFetcher } from '@investment/application/service/QuoteFetcher';
 import { TickerValidator } from '@investment/application/service/TickerValidator';
 import { CreateAssetUseCase } from '@investment/application/use-case/CreateAssetUseCase';
+import { CreateFixedIncomeContributionUseCase } from '@investment/application/use-case/CreateFixedIncomeContributionUseCase';
 import { CreateFixedIncomeRateUseCase } from '@investment/application/use-case/CreateFixedIncomeRateUseCase';
+import { CreateFixedIncomeRedemptionUseCase } from '@investment/application/use-case/CreateFixedIncomeRedemptionUseCase';
 import { CreateFixedIncomeTitleUseCase } from '@investment/application/use-case/CreateFixedIncomeTitleUseCase';
 import { CreateOperationUseCase } from '@investment/application/use-case/CreateOperationUseCase';
 import { DeleteAssetUseCase } from '@investment/application/use-case/DeleteAssetUseCase';
@@ -35,6 +37,8 @@ import { QuoteRepository } from '@investment/data/repository/QuoteRepository';
 
 const services = [HistoryBackfill, QuoteContextLoader, QuoteFetcher, TickerValidator];
 const useCases = [
+  CreateFixedIncomeRedemptionUseCase,
+  CreateFixedIncomeContributionUseCase,
   CreateFixedIncomeTitleUseCase,
   UpsertFixedIncomeTermsUseCase,
   CreateFixedIncomeRateUseCase,

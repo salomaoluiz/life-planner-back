@@ -5,6 +5,7 @@ import {
   UpsertValuationSchema,
 } from '@investment/application/dto/OperationInput';
 import { AssetView, detailToListRow, toAssetView } from '@investment/application/service/AssetView';
+import { assertNotCalculated } from '@investment/application/service/FixedIncomeRules';
 import { loadWritableAsset } from '@investment/application/service/OperationRules';
 import { QuoteContextLoader } from '@investment/application/service/QuoteContext';
 import { ValuationEntity } from '@investment/domain/entity/ValuationEntity';
@@ -31,7 +32,9 @@ export class UpsertValuationUseCase implements UseCaseWithParams<
   async execute(params: UpsertValuationInput): Promise<UpsertValuationResult> {
     const input = validate(UpsertValuationSchema, params);
 
-    await loadWritableAsset(this.repository, input.assetId, input.accessibleOwners);
+    const asset = await loadWritableAsset(this.repository, input.assetId, input.accessibleOwners);
+
+    await assertNotCalculated(this.repository, asset);
 
     const valuation = await this.repository.upsertValuation({
       assetId: input.assetId,

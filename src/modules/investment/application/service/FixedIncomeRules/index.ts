@@ -5,7 +5,11 @@ import {
 } from '@nestjs/common';
 
 import { RateInput } from '@investment/application/dto/FixedIncome';
-import { AssetDetailView, toAssetDetailView } from '@investment/application/service/AssetView';
+import {
+  AssetDetailView,
+  OperationView,
+  toAssetDetailView,
+} from '@investment/application/service/AssetView';
 import {
   loadWritableAsset,
   toNegativePositionException,
@@ -30,6 +34,13 @@ import { IInvestmentRepository } from '@investment/domain/repository';
 import { effectiveRateOf } from '@investment/domain/service/FixedIncomeRate';
 import { Decimal8 } from '@shared/infra/decimal';
 
+// A contribution or redemption: the refreshed detail, the operation as written and the liquidity warning (FR 23).
+export interface FixedIncomeWriteResult {
+  detail: AssetDetailView;
+  liquidityWarning: InvestmentFixedIncomeLiquidity | null;
+  operation: OperationView;
+}
+
 export const FIXED_INCOME_ACTIONS_MESSAGE = 'Use the fixed income actions for this title';
 export const FIRST_RATE_MESSAGE = 'The first rate must start on or before the first contribution';
 export const NOT_CALCULATED_MESSAGE = 'This asset is not a calculated title';
@@ -41,6 +52,19 @@ export interface CalculatedTitle {
   data: { terms: FixedIncomeTermsEntity } & FixedIncomeData;
 }
 
+// The calculated data of an asset, undefined for any other asset (one read, only for FIXED_INCOME).
+export async function findCalculatedData(
+  repository: IInvestmentRepository,
+  asset: { assetClass: string; id: string },
+): Promise<({ terms: FixedIncomeTermsEntity } & FixedIncomeData) | undefined> {
+  if (asset.assetClass !== InvestmentAssetClass.FIXED_INCOME) {
+    return undefined;
+  }
+
+  const data = (await repository.findFixedIncomeByAssetIds([asset.id])).get(asset.id);
+
+  return data?.terms ? { ...data, terms: data.terms } : undefined;
+}
 // FR 15: 102's generic operation and valuation writes are refused on a calculated title.
 export async function assertNotCalculated(
   repository: IInvestmentRepository,
@@ -50,9 +74,7 @@ export async function assertNotCalculated(
     return;
   }
 
-  const data = (await repository.findFixedIncomeByAssetIds([asset.id])).get(asset.id);
-
-  if (data?.terms) {
+  if (await findCalculatedData(repository, asset)) {
     throw new UnprocessableEntityException(FIXED_INCOME_ACTIONS_MESSAGE);
   }
 }
@@ -172,4 +194,20 @@ export function liquidityWarningOf(
   }
 
   return null;
+}
+export async function resultOf(
+  repository: IInvestmentRepository,
+  quotes: QuoteContextLoader,
+  assetId: string,
+  operationId: string,
+  liquidityWarning: InvestmentFixedIncomeLiquidity | null,
+): Promise<FixedIncomeWriteResult> {
+  const detail = await detailViewOf(repository, quotes, assetId);
+  const operation = detail.operations.find((view) => view.operation.id === operationId);
+
+  if (!operation) {
+    throw new NotFoundException();
+  }
+
+  return { detail, liquidityWarning, operation };
 }

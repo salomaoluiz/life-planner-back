@@ -6,6 +6,10 @@ import {
 
 import { quoteSpies } from '@investment/application/service/QuoteContext/index.mocks';
 import {
+  fixedIncomeDataFixture,
+  fixedIncomeDetailFixture,
+} from '@investment/domain/entity/mocks/investment.fixture';
+import {
   InvestmentAssetStatus,
   InvestmentFeeKind,
   InvestmentOperationType,
@@ -275,4 +279,18 @@ describe('default exchange rate (spec 104 FR 27)', () => {
 
     expect(quoteSpies.findFxOnOrBefore).not.toHaveBeenCalled();
   });
+});
+
+it('SHOULD refuse WHEN the asset is a calculated title (spec 105)', async () => {
+  const fixed = fixedIncomeDetailFixture();
+
+  spies.findAssetById.mockResolvedValue(fixed);
+  spies.findFixedIncomeByAssetIds.mockResolvedValue(
+    new Map([['asset-fi', fixedIncomeDataFixture()]]),
+  );
+
+  await expect(setup.execute({ ...input, assetId: 'asset-fi' })).rejects.toThrow(
+    UnprocessableEntityException,
+  );
+  expect(spies.writeOperation).not.toHaveBeenCalled();
 });
