@@ -128,7 +128,6 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer <staging-jwt>
 ### Quotes (spec 104)
 
 - Set `BRAPI_TOKEN` and `FINNHUB_TOKEN` in the stack environment (both optional: a missing token turns that market into manual values). `INVESTMENT_QUOTES_JOB_ENABLED=false` stops the hourly job.
-- One-off historical load (run on demand only, never scheduled): inside the API container, `yarn quotes:backfill --from YYYY-MM-DD --fx` (add `--dry-run` first; `--tickers ITSA4,HGLG11` resumes failed ones; `--delay-ms` throttles). It reads `BRAPI_TOKEN` from the environment, is idempotent and ends with a summary. The free brapi plan returns 3 months; a paid token returns more. Production needs `QUOTES_BACKFILL_ALLOW_PRODUCTION=true`.
 
 ## 7. Release and rollback
 

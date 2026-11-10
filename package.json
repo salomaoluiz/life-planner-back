@@ -26,7 +26,6 @@
     "perf": "ts-node -r tsconfig-paths/register scripts/perf/cli.ts",
     "perf:invoice-totals:check": "ts-node -r tsconfig-paths/register scripts/perf/invoice-totals/check.ts",
     "perf:seed": "ts-node -r tsconfig-paths/register scripts/perf/seed.ts",
-    "quotes:backfill": "ts-node -r tsconfig-paths/register scripts/quotes/backfill.ts",
     "version:check": "node scripts/check-version.mjs",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prepare": "husky"
