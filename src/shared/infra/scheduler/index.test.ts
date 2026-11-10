@@ -1,8 +1,11 @@
 import { CronJob } from 'cron';
 
+import { captureException } from '@shared/infra/monitoring';
+
 import { Scheduler } from './index';
 import { logger, registry, stop } from './index.mocks';
 
+jest.mock('@shared/infra/monitoring', () => ({ captureException: jest.fn() }));
 jest.mock('cron', () => ({ CronJob: { from: jest.fn(() => ({ job: true })) } }));
 
 const fromSpy = jest.mocked(CronJob.from);
@@ -36,6 +39,7 @@ describe('Scheduler', () => {
     onTick();
     await new Promise((resolve) => setImmediate(resolve));
 
+    expect(captureException).toHaveBeenCalledWith(expect.any(Error), { tags: { job: 'x' } });
     expect(logger.log).toHaveBeenCalledWith(
       'error',
       'Scheduled job x failed',

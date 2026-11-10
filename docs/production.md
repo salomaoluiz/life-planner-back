@@ -71,6 +71,8 @@ Optional `FINANCE_MATERIALIZATION_GATE_TTL_MS` (spec 081, default 60000): how lo
 
 Deploy. Expected: `life-planner-back-prod` running and `healthy`; the API log shows `prisma migrate deploy` applying every migration (the first start also creates the seeded system categories). A failed migration makes the container exit and restart in a loop: read the log, fix, redeploy. The API never serves on a half-migrated schema.
 
+Sentry (spec 106): add `SENTRY_DSN`, `SENTRY_ENABLED=true`, `SENTRY_ENVIRONMENT=production` and optionally `SENTRY_TRACES_SAMPLE_RATE` (`0.1`) to the stack environment. For readable stack traces add the build variables `SENTRY_AUTH_TOKEN` (scopes: release and source map upload only), `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_URL`; they are used only while building the image. Without the token the build still succeeds and prints a warning. Rollback: unset `SENTRY_ENABLED`. Deploy the API before the web (CORS must accept the trace headers first). Details: `.claude/context/monitoring.md`.
+
 Version check (spec 056): add `VERSION_REPO_API` and `VERSION_REPO_APP` (`owner/name` on GitHub) to the stack environment so the API can report the latest releases; optionally `GITHUB_TOKEN` (read-only, only raises the rate limit) and `VERSION_CHECK_TTL_SECONDS`. `APP_ENVIRONMENT` is fixed in the compose file (`production`).
 
 ## 4. Nginx and DNS

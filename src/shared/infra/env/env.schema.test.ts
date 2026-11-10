@@ -19,6 +19,8 @@ describe('validateEnvironment', () => {
       JWT_EXPIRES_IN: 7200, // Coerced
       PERF_COUNT_QUERIES: false,
       PORT: 4000, // Coerced
+      SENTRY_ENABLED: false,
+      SENTRY_TRACES_SAMPLE_RATE: 0,
       SESSION_IDLE_TTL_SECONDS: 172800,
       SWAGGER_ENABLED: true,
       VERSION_CHECK_TTL_SECONDS: 600,
@@ -192,6 +194,40 @@ describe('validateEnvironment', () => {
 
   it('SHOULD reject PERF_COUNT_QUERIES=banana', () => {
     expect(throwableSetup({ ...mocks.validConfig, PERF_COUNT_QUERIES: 'banana' })).toBeInstanceOf(
+      Error,
+    );
+  });
+});
+
+describe('GIVEN the monitoring variables (spec 106)', () => {
+  it('SHOULD default to disabled with no traces AND treat empty strings as unset', () => {
+    const result = setup({
+      ...mocks.validConfig,
+      SENTRY_DSN: '',
+      SENTRY_ENABLED: '',
+      SENTRY_TRACES_SAMPLE_RATE: '',
+    });
+
+    expect(result).toMatchObject({
+      SENTRY_DSN: undefined,
+      SENTRY_ENABLED: false,
+      SENTRY_TRACES_SAMPLE_RATE: 0,
+    });
+  });
+
+  it('SHOULD accept a DSN, enabled and a rate between 0 and 1', () => {
+    const result = setup({
+      ...mocks.validConfig,
+      SENTRY_DSN: 'https://public@example.com/1',
+      SENTRY_ENABLED: 'true',
+      SENTRY_TRACES_SAMPLE_RATE: '0.1',
+    });
+
+    expect(result).toMatchObject({ SENTRY_ENABLED: true, SENTRY_TRACES_SAMPLE_RATE: 0.1 });
+  });
+
+  it('SHOULD reject a sample rate above 1', () => {
+    expect(throwableSetup({ ...mocks.validConfig, SENTRY_TRACES_SAMPLE_RATE: '2' })).toBeInstanceOf(
       Error,
     );
   });

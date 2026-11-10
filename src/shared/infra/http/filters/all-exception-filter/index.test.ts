@@ -7,8 +7,11 @@ import {
 
 import { NotModifiedException } from '@shared/infra/http/not-modified';
 import { LogLevel } from '@shared/infra/logger/types';
+import { captureException } from '@shared/infra/monitoring';
 
 import { mocks, setup } from './index.mocks';
+
+jest.mock('@shared/infra/monitoring', () => ({ captureException: jest.fn() }));
 
 jest.useFakeTimers({ now: new Date('2025-11-30T12:00:00Z') });
 
@@ -278,5 +281,29 @@ describe('GIVEN a coded error (spec 104)', () => {
 
   it('SHOULD keep the plain shape WHEN a 429 has a text body', () => {
     expect(replied(new HttpException('Slow down', 429))).not.toHaveProperty('code');
+  });
+});
+
+describe('GIVEN the Sentry capture (spec 106)', () => {
+  it('SHOULD capture a generic error AND an HttpException 500', () => {
+    setup.catch(mocks.exceptions.generic, mocks.argumentsHost);
+    setup.catch(mocks.exceptions.internalServerError, mocks.argumentsHost);
+
+    expect(captureException).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(['badRequest', 'conflict', 'unprocessable', 'validationError'] as const)(
+    'SHOULD NOT capture %s',
+    (key) => {
+      setup.catch(mocks.exceptions[key], mocks.argumentsHost);
+
+      expect(captureException).not.toHaveBeenCalled();
+    },
+  );
+
+  it('SHOULD NOT capture a NotModifiedException', () => {
+    setup.catch(new NotModifiedException(), mocks.argumentsHost);
+
+    expect(captureException).not.toHaveBeenCalled();
   });
 });

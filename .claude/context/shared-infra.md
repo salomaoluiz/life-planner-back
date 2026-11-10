@@ -19,6 +19,7 @@ The only place allowed to import third-party libs directly (ESLint `no-restricte
 | `http/compression/` | `buildCompression()` — the `compression` middleware (gzip level 5 / brotli, from 1 KB), registered in `configureApp` (spec 072) | `app.use(buildCompression())` |
 | `http/cache-control/` | `CacheControlInterceptor` — `Cache-Control: private, no-cache` on successful non-public `GET`s (spec 072) | `APP_INTERCEPTOR` in `SharedModule` |
 | `build-info/` | `IBuildInfo.read()` → `{ version, releasedAt, builtAt }` from `package.json`, the first `CHANGELOG.md` entry and the `build-time` file | `'IBuildInfo'` |
+| `monitoring/` | Sentry wrapper (spec 106): `initMonitoring`, `captureException(error, { tags, userId })`, `flushMonitoring`, `scrubEvent`; the only importer of `@sentry/nestjs`; see `monitoring.md` | plain functions (no DI token) |
 
 ## Environment variables (`env/env.schema.ts`)
 
@@ -31,6 +32,8 @@ Pool of the pg driver behind Prisma (`Database`, spec 069): `DB_POOL_MAX` (defau
 Spec 056 adds `APP_ENVIRONMENT` (`production|staging|development`, default `development`), `VERSION_REPO_API`, `VERSION_REPO_APP` (`owner/name`, optional; empty disables the check), `GITHUB_TOKEN` (optional, read-only, never logged) and `VERSION_CHECK_TTL_SECONDS` (default 600).
 
 `PERF_COUNT_QUERIES` (`'1'` enables, default off; spec 065): `Database` then calls `QueryCounter.enable()` (`db/QueryCounter.ts`, patches `pg.Client.prototype.query`, `begin()`/`end()` return the statements counted in between). Only the perf runner sets it. `http/configure-app` holds the app setup (CORS, body limit, URI versioning, `api` prefix, swagger) shared by `main.ts` and the perf runner.
+
+Spec 106 adds `SENTRY_DSN` (optional), `SENTRY_ENABLED` (`'true'|'false'`, default off), `SENTRY_ENVIRONMENT` (default `NODE_ENV`) and `SENTRY_TRACES_SAMPLE_RATE` (0–1, default 0). `src/instrument.ts` reads them from `process.env` before Nest starts; `EnvService` exposes the same values.
 
 Adding a variable: `envSchema` → `EnvService` getter (+ its test/fixtures) → `docker-compose.yml` `environment` → placeholder in `.env.example`. Values never go in source.
 

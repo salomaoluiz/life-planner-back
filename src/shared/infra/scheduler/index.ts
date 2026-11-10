@@ -3,6 +3,7 @@ import { SchedulerRegistry } from '@nestjs/schedule';
 import { CronJob } from 'cron';
 
 import { ILogger, LogLevel } from '@shared/infra/logger/types';
+import { captureException } from '@shared/infra/monitoring';
 
 import { IScheduler } from './types';
 
@@ -18,6 +19,8 @@ export class Scheduler implements IScheduler, OnModuleDestroy {
       cronTime: expression,
       onTick: () => {
         handler().catch((error: unknown) => {
+          // Spec 106: tagged with the job, no request data.
+          captureException(error, { tags: { job: name } });
           this.logger.log(LogLevel.ERROR, `Scheduled job ${name} failed`, {
             error: error instanceof Error ? error.message : 'unknown',
             module: 'scheduler',

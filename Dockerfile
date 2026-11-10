@@ -18,6 +18,20 @@ RUN yarn prisma generate
 RUN yarn build
 RUN date -u +%Y-%m-%dT%H:%M:%SZ > build-time
 
+# Spec 106: upload the source maps with debug ids for this release. The token exists only in this builder
+# stage (never in the runtime image); without it the build still succeeds.
+ARG SENTRY_AUTH_TOKEN
+ARG SENTRY_ORG
+ARG SENTRY_PROJECT
+ARG SENTRY_URL=https://sentry.io/
+RUN if [ -n "$SENTRY_AUTH_TOKEN" ] && [ -n "$SENTRY_ORG" ] && [ -n "$SENTRY_PROJECT" ]; then \
+      VERSION=$(node -p "require('./package.json').version") && \
+      npx --yes @sentry/cli@2 sourcemaps inject dist && \
+      npx @sentry/cli@2 sourcemaps upload --release "life-planner-back@$VERSION" dist; \
+    else \
+      echo "WARNING: SENTRY_AUTH_TOKEN, SENTRY_ORG or SENTRY_PROJECT not set: source maps were not uploaded"; \
+    fi
+
 FROM node:24-alpine AS runtime
 
 ENV NODE_ENV=production

@@ -68,6 +68,18 @@ export const envSchema = z.object({
     .optional()
     .transform((value) => value === '1'),
 
+  // Monitoring (spec 106): absent DSN or SENTRY_ENABLED != 'true' disables Sentry
+  SENTRY_DSN: emptyToUndefined,
+  SENTRY_ENABLED: z
+    .enum(['true', 'false', ''])
+    .optional()
+    .transform((value) => value === 'true'),
+  SENTRY_ENVIRONMENT: emptyToUndefined,
+  SENTRY_TRACES_SAMPLE_RATE: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.coerce.number().min(0).max(1).default(0),
+  ),
+
   // Sessions
   SESSION_IDLE_TTL_SECONDS: z.coerce.number().int().positive().default(172800),
 });

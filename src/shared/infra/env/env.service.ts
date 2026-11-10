@@ -99,6 +99,23 @@ export class EnvService {
     return this.nestConfigService.get('PERF_COUNT_QUERIES');
   }
 
+  // Monitoring (spec 106)
+  get sentryDsn(): Env['SENTRY_DSN'] {
+    return this.nestConfigService.get('SENTRY_DSN');
+  }
+
+  get sentryEnabled(): Env['SENTRY_ENABLED'] {
+    return this.nestConfigService.get('SENTRY_ENABLED');
+  }
+
+  get sentryEnvironment(): Env['SENTRY_ENVIRONMENT'] {
+    return this.nestConfigService.get('SENTRY_ENVIRONMENT');
+  }
+
+  get sentryTracesSampleRate(): Env['SENTRY_TRACES_SAMPLE_RATE'] {
+    return this.nestConfigService.get('SENTRY_TRACES_SAMPLE_RATE');
+  }
+
   // Sessions
 
   get sessionIdleTtlSeconds(): Env['SESSION_IDLE_TTL_SECONDS'] {
