@@ -14,7 +14,9 @@ import { UpdateAssetUseCase } from '@investment/application/use-case/UpdateAsset
 import { UpdateOperationUseCase } from '@investment/application/use-case/UpdateOperationUseCase';
 import { UpsertValuationUseCase } from '@investment/application/use-case/UpsertValuationUseCase';
 import { InvestmentDatasource } from '@investment/data/datasource/InvestmentDatasource';
+import { QuoteDatasource } from '@investment/data/datasource/QuoteDatasource';
 import { InvestmentRepository } from '@investment/data/repository/InvestmentRepository';
+import { QuoteRepository } from '@investment/data/repository/QuoteRepository';
 
 const useCases = [
   CreateAssetUseCase,
@@ -38,6 +40,8 @@ const useCases = [
     ...useCases,
     { provide: 'IInvestmentRepository', useClass: InvestmentRepository },
     { provide: 'IInvestmentDatasource', useClass: InvestmentDatasource },
+    { provide: 'IQuoteRepository', useClass: QuoteRepository },
+    { provide: 'IQuoteDatasource', useClass: QuoteDatasource },
   ],
 })
 export class InvestmentModule {}
