@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import {
+  AssetDetailOutputType,
   AssetItemOutputType,
   CreateAssetApiInput,
   CreateOperationApiInput,
@@ -18,6 +19,7 @@ import {
   AssetView,
   OperationView,
 } from '@investment/application/service/AssetView';
+import { FixedIncomeView } from '@investment/application/service/FixedIncomeView';
 import { OperationWriteResult } from '@investment/application/service/OperationRules';
 import { QuoteView } from '@investment/application/service/QuoteView';
 import { CreateAssetUseCase } from '@investment/application/use-case/CreateAssetUseCase';
@@ -50,6 +52,7 @@ export function toAssetItem(view: AssetView): AssetItemOutputType {
     costBrl: usd?.costBrl ?? null,
     currency: asset.currency,
     currentPriceSource: market.priceSource,
+    fixedIncome: view.fixedIncome ? toFixedIncomeSummary(view.fixedIncome) : null,
     fx: market.fx ? { quotedAt: market.fx.quotedAt.toISOString(), rate: market.fx.rate } : null,
     id: asset.id,
     marketValueBrl: usd?.marketValueBrl ?? null,
@@ -66,6 +69,51 @@ export function toAssetItem(view: AssetView): AssetItemOutputType {
     resultBrlPercent: usd?.resultBrlPercent ?? null,
     status: asset.status,
     ticker: asset.ticker,
+  };
+}
+// Spec 105 FR 26: the list item carries the summary; the detail adds the history, the lots and the projection.
+export function toAssetDetail(view: AssetDetailView): AssetDetailOutputType {
+  return {
+    item: {
+      ...toAssetItem(view),
+      fixedIncome: view.fixedIncome ? toFixedIncomeDetail(view.fixedIncome) : null,
+      operations: view.operations.map((operation) => toOperation(operation)),
+      valuations: view.valuations.map((valuation) => toValuation(valuation)),
+    },
+  };
+}
+export function toFixedIncomeDetail(
+  view: FixedIncomeView,
+): NonNullable<AssetDetailOutputType['item']['fixedIncome']> {
+  return {
+    ...toFixedIncomeSummary(view),
+    adjustments: view.adjustments.map(({ date, grossAmount, id }) => ({ date, grossAmount, id })),
+    atMaturity: view.atMaturity,
+    lots: view.lots,
+    rates: view.rates.map(
+      ({ annualRate, cdiPercent, effectiveRate, id, indexRate, mode, spread, startDate }) => ({
+        annualRate,
+        cdiPercent,
+        effectiveRate,
+        id,
+        indexRate,
+        mode,
+        spread,
+        startDate,
+      }),
+    ),
+  };
+}
+export function toFixedIncomeSummary(view: FixedIncomeView) {
+  return {
+    currentEffectiveRate: view.currentEffectiveRate,
+    liquidity: view.liquidity,
+    liquidityDate: view.liquidityDate,
+    maturityDate: view.maturityDate,
+    maturityPending: view.maturityPending,
+    product: view.product,
+    taxExempt: view.taxExempt,
+    today: view.today,
   };
 }
 export function toOperation(view: OperationView): OperationOutputType {
@@ -86,8 +134,10 @@ export function toOperation(view: OperationView): OperationOutputType {
     generateTransaction: operation.generateTransaction,
     gross: operation.gross,
     id: operation.id,
+    netAmount: operation.netAmount,
     quantity: operation.quantity.toString(),
     realizedResult: view.realizedResult,
+    redemptionKind: operation.redemptionKind,
     total: operation.total,
     transactionId: operation.transactionId,
     type: operation.type,
@@ -119,15 +169,6 @@ export function toValuation(valuation: ValuationEntity): ValuationOutputType {
   };
 }
 
-function toAssetDetail(view: AssetDetailView) {
-  return {
-    item: {
-      ...toAssetItem(view),
-      operations: view.operations.map((operation) => toOperation(operation)),
-      valuations: view.valuations.map((valuation) => toValuation(valuation)),
-    },
-  };
-}
 function toOperationWrite(result: OperationWriteResult) {
   return { item: toOperation(result.operation), position: toPosition(result.asset.position) };
 }

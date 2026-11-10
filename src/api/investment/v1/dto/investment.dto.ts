@@ -5,6 +5,10 @@ import {
   InvestmentAssetClass,
   InvestmentAssetStatus,
   InvestmentFeeKind,
+  InvestmentFixedIncomeLiquidity,
+  InvestmentFixedIncomeProduct,
+  InvestmentFixedIncomeRateMode,
+  InvestmentFixedIncomeRedemptionKind,
   InvestmentOperationType,
   InvestmentValuationSource,
 } from '@investment/domain/enum';
@@ -60,13 +64,17 @@ export const CreateOperationApiSchema = z.strictObject({
 });
 
 // The asset and the type cannot change (FR 18): `.strict()` rejects them.
+// Spec 105: on a calculated title the body is `{ date, amount, ... }` (contribution) or `{ date, kind, netAmount, ... }`.
 export const UpdateOperationApiSchema = z
   .strictObject({
     accountId: z.uuid().nullable(),
+    amount: z.number().int().positive(),
     date: CalendarDateApiSchema,
     fees: z.array(FeeApiSchema).max(10),
     fxRate: FxRateApiSchema.nullable(),
     generateTransaction: z.boolean(),
+    kind: z.enum(InvestmentFixedIncomeRedemptionKind),
+    netAmount: z.number().int().positive(),
     quantity: DecimalApiSchema,
     unitPrice: DecimalApiSchema,
   })
@@ -103,6 +111,58 @@ export const QuoteApiSchema = z.strictObject({
 });
 const FxApiSchema = z.strictObject({ quotedAt: z.iso.datetime(), rate: z.string() });
 
+const TotalsApiSchema = z.strictObject({
+  gross: z.number().int(),
+  iof: z.number().int(),
+  ir: z.number().int(),
+  net: z.number().int(),
+});
+const FixedIncomeLotApiSchema = z.strictObject({
+  date: z.string(),
+  days: z.number().int(),
+  gross: z.number().int(),
+  iof: z.number().int(),
+  iofRate: z.string(),
+  ir: z.number().int(),
+  irRate: z.string(),
+  net: z.number().int(),
+  operationId: z.uuid(),
+  principal: z.number().int(),
+  remainingPrincipal: z.number().int(),
+});
+export const FixedIncomeRateApiSchema = z.strictObject({
+  annualRate: z.string().nullable(),
+  cdiPercent: z.string().nullable(),
+  effectiveRate: z.string(),
+  id: z.uuid(),
+  indexRate: z.string().nullable(),
+  mode: z.enum(InvestmentFixedIncomeRateMode),
+  spread: z.string().nullable(),
+  startDate: z.string(),
+});
+export const FixedIncomeAdjustmentApiSchema = z.strictObject({
+  date: z.string(),
+  grossAmount: z.number().int(),
+  id: z.uuid(),
+});
+// Spec 105 FR 26: the list carries the summary, the detail adds the history, the lots and the projection.
+const FixedIncomeListApiSchema = z.strictObject({
+  currentEffectiveRate: z.string().nullable(),
+  liquidity: z.enum(InvestmentFixedIncomeLiquidity),
+  liquidityDate: z.string().nullable(),
+  maturityDate: z.string(),
+  maturityPending: z.boolean(),
+  product: z.enum(InvestmentFixedIncomeProduct),
+  taxExempt: z.boolean(),
+  today: TotalsApiSchema,
+});
+const FixedIncomeDetailApiSchema = FixedIncomeListApiSchema.extend({
+  adjustments: z.array(FixedIncomeAdjustmentApiSchema),
+  atMaturity: TotalsApiSchema,
+  lots: z.array(FixedIncomeLotApiSchema),
+  rates: z.array(FixedIncomeRateApiSchema),
+});
+
 export const AssetItemApiSchema = z.strictObject({
   archivedAt: z.iso.datetime().nullable(),
   assetClass: z.enum(InvestmentAssetClass),
@@ -110,6 +170,7 @@ export const AssetItemApiSchema = z.strictObject({
   costBrl: z.number().int().nullable(),
   currency: z.string(),
   currentPriceSource: z.enum(['MANUAL', 'QUOTE']).nullable(),
+  fixedIncome: FixedIncomeListApiSchema.nullable(),
   fx: FxApiSchema.nullable(),
   id: z.uuid(),
   marketValueBrl: z.number().int().nullable(),
@@ -145,8 +206,10 @@ export const OperationApiSchema = z.strictObject({
   generateTransaction: z.boolean(),
   gross: z.number().int(),
   id: z.uuid(),
+  netAmount: z.number().int().nullable(),
   quantity: z.string(),
   realizedResult: z.number().int().nullable(),
+  redemptionKind: z.enum(InvestmentFixedIncomeRedemptionKind).nullable(),
   total: z.number().int(),
   transactionId: z.uuid().nullable(),
   type: z.enum(InvestmentOperationType),
@@ -163,6 +226,7 @@ export const ValuationApiSchema = z.strictObject({
 export const AssetListApiSchema = z.strictObject({ items: z.array(AssetItemApiSchema) });
 export const AssetDetailApiSchema = z.strictObject({
   item: AssetItemApiSchema.extend({
+    fixedIncome: FixedIncomeDetailApiSchema.nullable(),
     operations: z.array(OperationApiSchema),
     valuations: z.array(ValuationApiSchema),
   }),
@@ -223,6 +287,7 @@ export const PriceHistoryApiSchema = z.strictObject({
   ),
 });
 
+export type AssetDetailOutputType = z.infer<typeof AssetDetailApiSchema>;
 export type AssetItemOutputType = z.infer<typeof AssetItemApiSchema>;
 export type CreateAssetApiInput = z.infer<typeof CreateAssetApiSchema>;
 export type CreateOperationApiInput = z.infer<typeof CreateOperationApiSchema>;

@@ -159,7 +159,7 @@ export class UpdateOperationUseCase implements UseCaseWithParams<
         gross: isBuy ? amount : 0,
         netAmount: isBuy ? null : netAmount,
         operationId: operation.id,
-        quantity: isBuy ? principalOf(amount) : Decimal8.zero(),
+        quantity: isBuy ? principalOf(amount) : PLACEHOLDER_QUANTITY,
         redemptionKind: isBuy ? null : (input.kind ?? operation.redemptionKind),
         total: isBuy ? amount : netAmount,
         type: operation.type,
@@ -177,6 +177,9 @@ export class UpdateOperationUseCase implements UseCaseWithParams<
     return { asset: detail, operation: view };
   }
 }
+
+// The `quantity > 0` CHECK needs a value before the recalculation writes the principal consumed.
+const PLACEHOLDER_QUANTITY = Decimal8.parse('0.01');
 
 function fieldsNotAllowed(fields: string[]): ValidationError {
   return new ValidationError(

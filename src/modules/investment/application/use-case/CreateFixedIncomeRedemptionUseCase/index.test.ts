@@ -59,6 +59,7 @@ it('SHOULD write a SELL with the typed net AND placeholders for the derived colu
       type: 'SELL',
     }),
   );
+  expect(spies.writeOperation.mock.calls[0][0].quantity.toString()).toBe('0.01');
   expect(result.liquidityWarning).toBeNull();
 });
 

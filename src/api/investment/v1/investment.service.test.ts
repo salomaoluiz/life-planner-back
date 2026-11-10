@@ -9,6 +9,7 @@ const assetItem = {
   costBrl: null,
   currency: 'BRL',
   currentPriceSource: 'MANUAL',
+  fixedIncome: null,
   fx: null,
   id: mocks.asset.id,
   marketValueBrl: null,

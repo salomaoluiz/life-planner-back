@@ -24,6 +24,9 @@ export const BEFORE_FIRST_MESSAGE = 'A redemption cannot be dated before the fir
 
 // Spec 105 FR 19-23: the owner types the real net; the quantity, gross and withheld taxes are derived inside the
 // write transaction (placeholders here), and the liquidity only warns.
+// The `quantity > 0` CHECK needs a value before the recalculation writes the principal consumed.
+const PLACEHOLDER_QUANTITY = Decimal8.parse('0.01');
+
 export class CreateFixedIncomeRedemptionUseCase implements UseCaseWithParams<
   CreateFixedIncomeRedemptionInput,
   FixedIncomeWriteResult
@@ -68,7 +71,7 @@ export class CreateFixedIncomeRedemptionUseCase implements UseCaseWithParams<
         generateTransaction: input.generateTransaction,
         gross: 0,
         netAmount: input.netAmount,
-        quantity: Decimal8.zero(),
+        quantity: PLACEHOLDER_QUANTITY,
         redemptionKind: input.kind,
         total: input.netAmount,
         type: InvestmentOperationType.SELL,
