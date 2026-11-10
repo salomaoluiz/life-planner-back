@@ -2,6 +2,7 @@ import { Inject, NotFoundException } from '@nestjs/common';
 
 import { AssetAccessInput, AssetAccessSchema } from '@investment/application/dto/AssetAccess';
 import { AssetDetailView, toAssetDetailView } from '@investment/application/service/AssetView';
+import { QuoteContextLoader } from '@investment/application/service/QuoteContext';
 import { hasOwnerAccess } from '@investment/domain/entity/OwnerAccess';
 import { IInvestmentRepository } from '@investment/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -12,6 +13,7 @@ export class GetAssetByIdUseCase implements UseCaseWithParams<AssetAccessInput, 
   constructor(
     @Inject('IInvestmentRepository')
     private readonly repository: IInvestmentRepository,
+    private readonly quotes: QuoteContextLoader,
   ) {}
 
   async execute(params: AssetAccessInput): Promise<AssetDetailView> {
@@ -22,6 +24,6 @@ export class GetAssetByIdUseCase implements UseCaseWithParams<AssetAccessInput, 
       throw new NotFoundException();
     }
 
-    return toAssetDetailView(asset);
+    return toAssetDetailView(asset, await this.quotes.load([asset]));
   }
 }

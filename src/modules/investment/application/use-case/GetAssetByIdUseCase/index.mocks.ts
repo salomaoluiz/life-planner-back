@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 
+import { quoteProviders } from '@investment/application/service/QuoteContext/index.mocks';
 import {
   assetFixture,
   operationFixture,
@@ -31,7 +32,11 @@ beforeEach(async () => {
   jest.resetAllMocks();
 
   const module = await Test.createTestingModule({
-    providers: [GetAssetByIdUseCase, { provide: 'IInvestmentRepository', useValue: spies }],
+    providers: [
+      GetAssetByIdUseCase,
+      { provide: 'IInvestmentRepository', useValue: spies },
+      ...quoteProviders,
+    ],
   }).compile();
 
   setup = module.get(GetAssetByIdUseCase);

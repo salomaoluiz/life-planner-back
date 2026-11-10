@@ -6,6 +6,7 @@ import {
 } from '@investment/application/dto/OperationInput';
 import { AssetView, detailToListRow, toAssetView } from '@investment/application/service/AssetView';
 import { loadWritableAsset } from '@investment/application/service/OperationRules';
+import { QuoteContextLoader } from '@investment/application/service/QuoteContext';
 import { ValuationEntity } from '@investment/domain/entity/ValuationEntity';
 import { IInvestmentRepository } from '@investment/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -24,6 +25,7 @@ export class UpsertValuationUseCase implements UseCaseWithParams<
   constructor(
     @Inject('IInvestmentRepository')
     private readonly repository: IInvestmentRepository,
+    private readonly quotes: QuoteContextLoader,
   ) {}
 
   async execute(params: UpsertValuationInput): Promise<UpsertValuationResult> {
@@ -42,6 +44,8 @@ export class UpsertValuationUseCase implements UseCaseWithParams<
       throw new NotFoundException();
     }
 
-    return { asset: toAssetView(detailToListRow(detail)), valuation };
+    const row = detailToListRow(detail);
+
+    return { asset: toAssetView(row, await this.quotes.load([row])), valuation };
   }
 }

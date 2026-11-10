@@ -6,6 +6,7 @@ import {
   CreateOperationApiInput,
   OperationOutputType,
   PositionOutputType,
+  QuoteOutputType,
   UpdateAssetApiInput,
   UpdateOperationApiInput,
   UpsertValuationApiInput,
@@ -18,6 +19,7 @@ import {
   OperationView,
 } from '@investment/application/service/AssetView';
 import { OperationWriteResult } from '@investment/application/service/OperationRules';
+import { QuoteView } from '@investment/application/service/QuoteView';
 import { CreateAssetUseCase } from '@investment/application/use-case/CreateAssetUseCase';
 import { CreateOperationUseCase } from '@investment/application/use-case/CreateOperationUseCase';
 import { DeleteAssetUseCase } from '@investment/application/use-case/DeleteAssetUseCase';
@@ -34,18 +36,30 @@ import { InvestmentAssetStatus } from '@investment/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export function toAssetItem(view: AssetView): AssetItemOutputType {
-  const { asset, operationCount, position } = view;
+  const { asset, market, operationCount, position } = view;
+  const usd = market.usd?.result ?? null;
 
   return {
     archivedAt: asset.archivedAt?.toISOString() ?? null,
     assetClass: asset.assetClass,
+    averageFxRate: market.usd?.averageFxRate ?? null,
+    costBrl: usd?.costBrl ?? null,
     currency: asset.currency,
+    currentPriceSource: market.priceSource,
+    fx: market.fx ? { quotedAt: market.fx.quotedAt.toISOString(), rate: market.fx.rate } : null,
     id: asset.id,
+    marketValueBrl: usd?.marketValueBrl ?? null,
     name: asset.name,
     operationCount,
+    operationsWithoutFxRate: market.usd?.operationsWithoutFxRate ?? 0,
     owner: asset.owner,
     ownerId: asset.ownerId,
     position: toPosition(position),
+    quote: market.quote ? toQuoteOutput(market.quote) : null,
+    resultBrl: usd?.resultBrl ?? null,
+    resultBrlFromAsset: usd?.resultBrlFromAsset ?? null,
+    resultBrlFromFx: usd?.resultBrlFromFx ?? null,
+    resultBrlPercent: usd?.resultBrlPercent ?? null,
     status: asset.status,
     ticker: asset.ticker,
   };
@@ -88,6 +102,9 @@ export function toPosition(position: AssetView['position']): PositionOutputType 
     quantity: position.quantity.toString(),
     realizedResult: position.realizedResult,
   };
+}
+export function toQuoteOutput(quote: QuoteView): QuoteOutputType {
+  return { ...quote, quotedAt: quote.quotedAt.toISOString() };
 }
 export function toValuation(valuation: ValuationEntity): ValuationOutputType {
   return {

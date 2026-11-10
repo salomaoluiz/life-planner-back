@@ -47,7 +47,8 @@ const position = {
   quantity: Decimal8.parse('1200'),
   realizedResult: 31790,
 };
-const view: AssetView = { asset, operationCount: 1, position };
+const market: AssetView['market'] = { fx: null, priceSource: 'MANUAL', quote: null, usd: null };
+const view: AssetView = { asset, market, operationCount: 1, position };
 const valuation = valuationFixture({ assetId: asset.id });
 const detailView: AssetDetailView = {
   ...view,

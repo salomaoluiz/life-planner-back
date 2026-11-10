@@ -66,7 +66,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
   private getConflictDetails(exception: unknown, httpStatus: number): Record<string, unknown> {
     if (
-      (httpStatus !== HttpStatus.CONFLICT && httpStatus !== HttpStatus.UNPROCESSABLE_ENTITY) ||
+      (httpStatus !== HttpStatus.CONFLICT &&
+        httpStatus !== HttpStatus.UNPROCESSABLE_ENTITY &&
+        httpStatus !== HttpStatus.TOO_MANY_REQUESTS &&
+        httpStatus !== HttpStatus.SERVICE_UNAVAILABLE) ||
       !(exception instanceof HttpException)
     ) {
       return {};
@@ -78,12 +81,26 @@ export class AllExceptionsFilter implements ExceptionFilter {
       return {};
     }
 
+    // Spec 104: a machine-readable `code` (and the wait of a 429) travels with these statuses.
+    if (
+      httpStatus === HttpStatus.TOO_MANY_REQUESTS ||
+      httpStatus === HttpStatus.SERVICE_UNAVAILABLE
+    ) {
+      const { code, retryAfterSeconds } = response as Record<string, unknown>;
+
+      return {
+        ...(code === undefined ? {} : { code }),
+        ...(retryAfterSeconds === undefined ? {} : { retryAfterSeconds }),
+      };
+    }
+
     // A 422 only carries the per-row `errors` of an import (spec 047) and the `details` of a never-negative
     // position (spec 102: the date and operation where it breaks), nothing else.
     if (httpStatus === HttpStatus.UNPROCESSABLE_ENTITY) {
-      const { details, errors } = response as Record<string, unknown>;
+      const { code, details, errors } = response as Record<string, unknown>;
 
       return {
+        ...(code === undefined ? {} : { code }),
         ...(errors === undefined ? {} : { errors }),
         ...(details === undefined ? {} : { details }),
       };

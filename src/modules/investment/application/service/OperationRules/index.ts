@@ -12,6 +12,7 @@ import {
   toAssetView,
 } from '@investment/application/service/AssetView';
 import { ensureOwnerWritable } from '@investment/application/service/OwnerWritable';
+import { QuoteContext } from '@investment/application/service/QuoteContext';
 import { AssetDetail } from '@investment/domain/entity/AssetEntity';
 import { FeeInput } from '@investment/domain/entity/OperationEntity';
 import { hasOwnerAccess, OwnerAccess } from '@investment/domain/entity/OwnerAccess';
@@ -99,6 +100,7 @@ export async function resolveOperationAccount(
 export interface OperationDraft {
   accountId: null | string;
   asset: AssetDetail;
+  context?: QuoteContext;
   date: string;
   fees: FeeInput[];
   fxRate?: null | string;
@@ -181,7 +183,7 @@ export async function persistOperation(
     throw new NotFoundException();
   }
 
-  const operation = toAssetDetailView(detail).operations.find(
+  const operation = toAssetDetailView(detail, draft.context).operations.find(
     (view) => view.operation.id === operationId,
   );
 
@@ -189,7 +191,7 @@ export async function persistOperation(
     throw new NotFoundException();
   }
 
-  return { asset: toAssetView(detailToListRow(detail)), operation };
+  return { asset: toAssetView(detailToListRow(detail), draft.context), operation };
 }
 
 function totalsOf(draft: OperationDraft) {
