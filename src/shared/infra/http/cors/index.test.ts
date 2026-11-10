@@ -34,7 +34,12 @@ describe('GIVEN buildCorsOptions', () => {
     const options = buildCorsOptions('http://localhost:8081')!;
 
     expect(options.methods).toEqual(['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS']);
-    expect(options.allowedHeaders).toEqual(['Authorization', 'Content-Type']);
+    expect(options.allowedHeaders).toEqual([
+      'Authorization',
+      'Content-Type',
+      'sentry-trace',
+      'baggage',
+    ]);
     expect(options.credentials).toBe(false);
   });
 

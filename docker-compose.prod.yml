@@ -3,7 +3,14 @@
 services:
   api:
     container_name: life-planner-back-prod
-    build: .
+    build:
+      context: .
+      args:
+        # Build time only (source maps upload); never set as a runtime variable.
+        SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN:-}
+        SENTRY_ORG: ${SENTRY_ORG:-}
+        SENTRY_PROJECT: ${SENTRY_PROJECT:-}
+        SENTRY_URL: ${SENTRY_URL:-https://sentry.io/}
     dns:
       - 8.8.8.8
       - 8.8.4.4
@@ -37,6 +44,10 @@ services:
       FINANCE_MATERIALIZATION_GATE_TTL_MS: ${FINANCE_MATERIALIZATION_GATE_TTL_MS:-60000}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-3600}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENABLED: ${SENTRY_ENABLED:-false}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0}
       SESSION_IDLE_TTL_SECONDS: ${SESSION_IDLE_TTL_SECONDS:-172800}
     healthcheck:
       test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3000/api/health']

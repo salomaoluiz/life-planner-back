@@ -25,6 +25,10 @@ Module folders: `user`, `family`, `finance`, `stock`. API: `src/api/<name>/v<N>`
 - TS strict, target ES6, CommonJS, decorators on. No `any`.
 - Default export for entities/fixtures; named exports for use cases, controllers, services, modules, datasources, repositories.
 
+## Monitoring env (spec 106)
+
+`SENTRY_DSN`, `SENTRY_ENABLED`, `SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE` are runtime variables; `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_URL` are Docker build args used only to upload source maps (never in the runtime image). Placeholders only in `.env.example`.
+
 ## Workflow
 
 - Commands: `yarn start:dev`, `yarn build`, `yarn test`, `yarn test:cov`, `yarn lint`, `yarn prettier(:fix)`, `yarn type-check`. Yarn 1.22 (`packageManager`), Node from `.nvmrc` (24.x).

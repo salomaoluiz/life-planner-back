@@ -2,6 +2,7 @@ import {
   ArgumentsHost,
   Catch,
   ExceptionFilter,
+  ExecutionContext,
   HttpException,
   HttpStatus,
   Inject,
@@ -12,6 +13,9 @@ import { ValidationError } from '@shared/domain/error/ValidationError';
 import { NotModifiedException } from '@shared/infra/http/not-modified';
 import { redactSensitivePath } from '@shared/infra/http/redact-path';
 import { ILogger, LogLevel } from '@shared/infra/logger/types';
+import { captureException } from '@shared/infra/monitoring';
+
+import { buildCaptureContext, RequestLike } from './capture-context';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -35,6 +39,18 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     const message = this.getMessageFromException(exception);
+
+    // Spec 106: only unexpected errors reach Sentry; 4xx and 304 never do.
+    if (httpStatus >= 500 || !(exception instanceof HttpException)) {
+      captureException(
+        exception,
+        buildCaptureContext(
+          ctx.getRequest<RequestLike | undefined>() ?? {},
+          httpStatus,
+          (host as Partial<ExecutionContext>).getClass?.().name,
+        ),
+      );
+    }
 
     if (httpStatus >= 500) {
       this.logger.log(

@@ -9,6 +9,7 @@ module.exports = {
     '!**/*.mocks.ts',
     '!**/*.module.ts',
     '!src/main.ts',
+    '!src/instrument.ts',
   ],
   coverageDirectory: './coverage',
   coverageThreshold: {

@@ -32,6 +32,10 @@ const testCases: { key: EnvVarKey; method: EnvServiceKey }[] = [
   { key: 'FINANCE_MATERIALIZATION_GATE_TTL_MS', method: 'financeMaterializationGateTtlMs' },
   { key: 'JWT_EXPIRES_IN', method: 'jwtExpiresIn' },
   { key: 'JWT_SECRET', method: 'jwtSecret' },
+  { key: 'SENTRY_DSN', method: 'sentryDsn' },
+  { key: 'SENTRY_ENABLED', method: 'sentryEnabled' },
+  { key: 'SENTRY_ENVIRONMENT', method: 'sentryEnvironment' },
+  { key: 'SENTRY_TRACES_SAMPLE_RATE', method: 'sentryTracesSampleRate' },
   { key: 'SESSION_IDLE_TTL_SECONDS', method: 'sessionIdleTtlSeconds' },
   { key: 'SWAGGER_ENABLED', method: 'swaggerEnabled' },
 ];

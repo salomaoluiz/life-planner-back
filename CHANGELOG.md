@@ -3,6 +3,14 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.11.0] - 2026-11-10
+
+### Added
+
+- Readable Sentry errors (spec 106): unexpected API errors (5xx, background jobs, startup failures) are sent to Sentry with release, route, user id and the web trace; 4xx never are, and no request body, headers or personal data leave the server.
+- New optional variables `SENTRY_DSN`, `SENTRY_ENABLED`, `SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE`; the image build uploads source maps when `SENTRY_AUTH_TOKEN` is provided.
+- CORS accepts the `sentry-trace` and `baggage` headers.
+
 ## [3.10.0] - 2026-11-10
 
 ### Added
