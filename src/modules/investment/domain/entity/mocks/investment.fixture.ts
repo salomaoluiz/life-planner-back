@@ -1,12 +1,20 @@
 import { faker } from '@faker-js/faker';
 
-import { AssetEntity, AssetListRow } from '@investment/domain/entity/AssetEntity';
+import { AssetDetail, AssetEntity, AssetListRow } from '@investment/domain/entity/AssetEntity';
+import {
+  FixedIncomeData,
+  FixedIncomeRateEntity,
+  FixedIncomeTermsEntity,
+} from '@investment/domain/entity/FixedIncomeEntity';
 import { OperationEntity } from '@investment/domain/entity/OperationEntity';
 import { QuoteEntity } from '@investment/domain/entity/QuoteEntity';
 import { ValuationEntity } from '@investment/domain/entity/ValuationEntity';
 import {
   InvestmentAssetClass,
   InvestmentAssetStatus,
+  InvestmentFixedIncomeLiquidity,
+  InvestmentFixedIncomeProduct,
+  InvestmentFixedIncomeRateMode,
   InvestmentOperationType,
   InvestmentValuationSource,
 } from '@investment/domain/enum';
@@ -135,5 +143,65 @@ export function quoteRepositorySpies(): Record<keyof IQuoteRepository, jest.Mock
     saveFxHistory: jest.fn(),
     saveHistory: jest.fn(),
     saveQuotes: jest.fn(),
+  };
+}
+
+// Spec 105: a calculated CDB of R$ 10.000 applied on 2026-01-02 at 12% a.a. prefixed, maturing in 2030.
+export function fixedIncomeDataFixture(
+  overrides: Partial<FixedIncomeData> = {},
+): { terms: FixedIncomeTermsEntity } & FixedIncomeData {
+  return {
+    adjustments: [],
+    rates: [fixedIncomeRateFixture()],
+    terms: fixedIncomeTermsFixture(),
+    ...overrides,
+  } as { terms: FixedIncomeTermsEntity } & FixedIncomeData;
+}
+export function fixedIncomeDetailFixture(overrides: Partial<AssetDetail> = {}): AssetDetail {
+  const asset = assetFixture({
+    assetClass: InvestmentAssetClass.FIXED_INCOME,
+    id: 'asset-fi',
+    ownerId: 'user-1',
+    ticker: null,
+  });
+  const lot = operationFixture({
+    assetId: asset.id,
+    date: '2026-01-02',
+    gross: 1_000_000,
+    id: 'lot-1',
+    quantity: Decimal8.parse('10000'),
+    total: 1_000_000,
+    unitPrice: Decimal8.parse('1'),
+  });
+
+  return { ...asset, operations: [lot], valuations: [], ...overrides };
+}
+export function fixedIncomeRateFixture(
+  overrides: Partial<FixedIncomeRateEntity> = {},
+): FixedIncomeRateEntity {
+  return {
+    annualRate: '12.0000',
+    assetId: 'asset-fi',
+    cdiPercent: null,
+    effectiveRate: '12.000000',
+    id: faker.string.uuid(),
+    indexRate: null,
+    mode: InvestmentFixedIncomeRateMode.PREFIXED,
+    spread: null,
+    startDate: '2026-01-02',
+    ...overrides,
+  };
+}
+export function fixedIncomeTermsFixture(
+  overrides: Partial<FixedIncomeTermsEntity> = {},
+): FixedIncomeTermsEntity {
+  return {
+    assetId: 'asset-fi',
+    liquidity: InvestmentFixedIncomeLiquidity.DAILY,
+    liquidityDate: null,
+    maturityDate: '2030-01-02',
+    product: InvestmentFixedIncomeProduct.CDB,
+    taxExempt: false,
+    ...overrides,
   };
 }

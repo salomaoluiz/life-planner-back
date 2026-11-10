@@ -5,8 +5,12 @@ import { QuoteContextLoader } from '@investment/application/service/QuoteContext
 import { QuoteFetcher } from '@investment/application/service/QuoteFetcher';
 import { TickerValidator } from '@investment/application/service/TickerValidator';
 import { CreateAssetUseCase } from '@investment/application/use-case/CreateAssetUseCase';
+import { CreateFixedIncomeRateUseCase } from '@investment/application/use-case/CreateFixedIncomeRateUseCase';
+import { CreateFixedIncomeTitleUseCase } from '@investment/application/use-case/CreateFixedIncomeTitleUseCase';
 import { CreateOperationUseCase } from '@investment/application/use-case/CreateOperationUseCase';
 import { DeleteAssetUseCase } from '@investment/application/use-case/DeleteAssetUseCase';
+import { DeleteFixedIncomeAdjustmentUseCase } from '@investment/application/use-case/DeleteFixedIncomeAdjustmentUseCase';
+import { DeleteFixedIncomeRateUseCase } from '@investment/application/use-case/DeleteFixedIncomeRateUseCase';
 import { DeleteInvestmentsByOwnerUseCase } from '@investment/application/use-case/DeleteInvestmentsByOwnerUseCase';
 import { DeleteOperationUseCase } from '@investment/application/use-case/DeleteOperationUseCase';
 import { DeleteValuationUseCase } from '@investment/application/use-case/DeleteValuationUseCase';
@@ -19,7 +23,10 @@ import { RefreshQuotesNowUseCase } from '@investment/application/use-case/Refres
 import { RefreshTrackedQuotesUseCase } from '@investment/application/use-case/RefreshTrackedQuotesUseCase';
 import { SearchTickersUseCase } from '@investment/application/use-case/SearchTickersUseCase';
 import { UpdateAssetUseCase } from '@investment/application/use-case/UpdateAssetUseCase';
+import { UpdateFixedIncomeRateUseCase } from '@investment/application/use-case/UpdateFixedIncomeRateUseCase';
 import { UpdateOperationUseCase } from '@investment/application/use-case/UpdateOperationUseCase';
+import { UpsertFixedIncomeAdjustmentUseCase } from '@investment/application/use-case/UpsertFixedIncomeAdjustmentUseCase';
+import { UpsertFixedIncomeTermsUseCase } from '@investment/application/use-case/UpsertFixedIncomeTermsUseCase';
 import { UpsertValuationUseCase } from '@investment/application/use-case/UpsertValuationUseCase';
 import { InvestmentDatasource } from '@investment/data/datasource/InvestmentDatasource';
 import { QuoteDatasource } from '@investment/data/datasource/QuoteDatasource';
@@ -28,6 +35,13 @@ import { QuoteRepository } from '@investment/data/repository/QuoteRepository';
 
 const services = [HistoryBackfill, QuoteContextLoader, QuoteFetcher, TickerValidator];
 const useCases = [
+  CreateFixedIncomeTitleUseCase,
+  UpsertFixedIncomeTermsUseCase,
+  CreateFixedIncomeRateUseCase,
+  UpdateFixedIncomeRateUseCase,
+  DeleteFixedIncomeRateUseCase,
+  UpsertFixedIncomeAdjustmentUseCase,
+  DeleteFixedIncomeAdjustmentUseCase,
   CreateAssetUseCase,
   CreateOperationUseCase,
   DeleteAssetUseCase,
