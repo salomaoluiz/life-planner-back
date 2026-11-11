@@ -8,18 +8,32 @@ export interface FxQuote {
   rate: string;
   source: 'AWESOMEAPI' | 'BRAPI';
 }
+export type IncomeEventType = 'DIVIDEND' | 'INTEREST' | 'JCP' | 'OTHER' | 'YIELD';
+// Spec 107: an announced income; `amountPerUnit` is gross, a decimal string; dates are `YYYY-MM-DD`.
 export interface IBrapiQuotes {
   // Daily closes of one B3 symbol; `range` is a brapi range such as `3mo`.
   getDailyHistory(symbol: string, range: string): Promise<DailyClose[]>;
+  // Announced dividends, JCP and yields of one B3 symbol (spec 107).
+  getIncomeEvents(symbol: string): Promise<IncomeEventResult[]>;
   getQuotes(symbols: string[]): Promise<QuoteResult[]>;
   search(query: string): Promise<QuoteResult[]>;
 }
 export interface IFinnhubQuotes {
+  // Announced dividends of one US symbol; `[]` when the plan has no dividends endpoint (spec 107).
+  getIncomeEvents(symbol: string): Promise<IncomeEventResult[]>;
   getQuotes(symbols: string[]): Promise<QuoteResult[]>;
   search(query: string): Promise<QuoteResult[]>;
 }
 export interface IFxRates {
   getUsdBrl(): Promise<FxQuote>;
+}
+export interface IncomeEventResult {
+  amountPerUnit: string;
+  currency: string;
+  exDate: string;
+  paymentDate: null | string;
+  ticker: string;
+  type: IncomeEventType;
 }
 export interface QuoteResult {
   changePercent: null | string;
