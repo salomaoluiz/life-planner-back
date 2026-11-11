@@ -82,3 +82,7 @@ Stored invoice totals read (spec 091): `IFinanceTransactionRepository.findInvoic
 ## Transfers (spec 098)
 
 `FinanceTransferDatasource`: every write is ONE `$transaction`; accounts locked with `lockAccounts` (ascending id) and the transfer row with `FOR UPDATE`; rows are planned by `planRows` (out on the origin, in on the destination only once `amount_in` is known, fee on the destination dated with the in side) and reconciled by category on edit; ledger deltas are summed per account (`sumLedgerDeltas`) and applied once. `createSeries`, `materializeSeries` (locks the series row and checks `expected_last`), `deleteSeriesFrom`, `createMany` (CSV) and `updateSeriesTemplate` share `insertTransfer`. `findByOwners` on recurrences takes `transfers: 'EXCLUDE' | 'ALL' | 'ONLY'` (default `EXCLUDE`) and its `account_id` filter matches the origin OR the destination of a transfer series.
+
+## External lock and linked income rows (spec 107)
+
+`financial_transactions.external_lock` (`TransactionExternalLock`) is set only by the investment datasource when it writes the finance row of an income (`IncomeDatasource.writeIncome`); finance reads it as a scalar (`TransactionEntity.externalLock`, `TransactionScalars.externalLock`) and `UpdateTransactionUseCase`/`DeleteTransactionUseCase` answer `422 { code: EXTERNALLY_LOCKED }` before any other check on such a row. CSV import never sets it. Unlike the 102 operation rows (guarded by their system category), income rows use a normal user INCOME category.

@@ -22,7 +22,12 @@ import { UpdateTransactionUseCase } from '@finance/application/use-case/UpdateTr
 import { INVESTMENT_KEYS } from '@finance/domain/entity/SystemCategory';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import { TransactionFilter } from '@finance/domain/entity/TransactionFilter';
-import { InstallmentEditScope, TransactionSource } from '@finance/domain/enum';
+import {
+  InstallmentEditScope,
+  TransactionExternalLock,
+  TransactionSource,
+} from '@finance/domain/enum';
+import { FindIncomeByTransactionIdUseCase } from '@investment/application/use-case/FindIncomeByTransactionIdUseCase';
 import { FindOperationByTransactionIdUseCase } from '@investment/application/use-case/FindOperationByTransactionIdUseCase';
 
 function toTransactionOutput(
@@ -61,6 +66,7 @@ function toTransactionOutput(
     date: transaction.date,
     description: transaction.description,
     earlyPayment: transaction.earlyPayment,
+    externalLock: transaction.externalLock ?? undefined,
     id: transaction.id,
     installmentCount: transaction.installmentCount,
     installmentNumber: transaction.installmentNumber,
@@ -93,6 +99,7 @@ function toTransactionItem(transaction: TransactionEntity, overLimit?: boolean):
     date: transaction.date,
     description: transaction.description,
     earlyPayment: transaction.earlyPayment ?? undefined,
+    externalLock: transaction.externalLock ?? undefined,
     id: transaction.id,
     installmentCount: transaction.installmentCount ?? undefined,
     installmentNumber: transaction.installmentNumber ?? undefined,
@@ -118,8 +125,8 @@ function toTransactionItem(transaction: TransactionEntity, overLimit?: boolean):
 
 // Exactly the entities the given rows reference, each once.
 interface TransactionWithLookups {
-  // Spec 102 FR 22: the operation behind an investment row, so the app can open it.
-  investment?: { assetId: string; operationId: string };
+  // Spec 102 FR 22: the operation behind an investment row, and spec 107 FR 16: the income behind a locked row.
+  investment?: { assetId: string; incomeId: string } | { assetId: string; operationId: string };
   item: TransactionItem;
   lookups: TransactionLookups;
 }
@@ -174,6 +181,7 @@ export class TransactionService {
     private readonly createTransactionUseCase: CreateTransactionUseCase,
     private readonly deleteTransactionUseCase: DeleteTransactionUseCase,
     private readonly financeAccessService: FinanceAccessService,
+    private readonly findIncomeByTransactionIdUseCase: FindIncomeByTransactionIdUseCase,
     private readonly findOperationByTransactionIdUseCase: FindOperationByTransactionIdUseCase,
     private readonly getTransactionByIdUseCase: GetTransactionByIdUseCase,
     private readonly getTransactionsUseCase: GetTransactionsUseCase,
@@ -295,11 +303,7 @@ export class TransactionService {
     });
 
     const withLookups = toWithLookups(resolved);
-    const systemKey = resolved.category.systemKey;
-    const investment =
-      systemKey !== null && INVESTMENT_KEYS.includes(systemKey)
-        ? await this.findOperationByTransactionIdUseCase.execute({ transactionId: resolved.id })
-        : undefined;
+    const investment = await this.findInvestmentLink(resolved);
 
     return {
       ...withLookups,
@@ -310,6 +314,21 @@ export class TransactionService {
         withLookups.lookups,
       ),
     };
+  }
+
+  // Spec 102 FR 22 and spec 107 FR 16: the operation or income behind an investment row, so the app can open it.
+  private async findInvestmentLink(
+    row: TransactionEntity,
+  ): Promise<TransactionWithLookups['investment']> {
+    if (row.externalLock === TransactionExternalLock.INVESTMENT) {
+      return this.findIncomeByTransactionIdUseCase.execute({ transactionId: row.id });
+    }
+
+    const systemKey = row.category.systemKey;
+
+    return systemKey !== null && INVESTMENT_KEYS.includes(systemKey)
+      ? this.findOperationByTransactionIdUseCase.execute({ transactionId: row.id })
+      : undefined;
   }
 
   async update(

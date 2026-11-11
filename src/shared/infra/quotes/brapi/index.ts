@@ -6,6 +6,8 @@ import { EnvService } from '@shared/infra/env/env.service';
 import {
   DailyClose,
   IBrapiQuotes,
+  IncomeEventResult,
+  IncomeEventType,
   normalizeTicker,
   QuoteResult,
   QuoteSourceUnavailableError,
@@ -16,6 +18,12 @@ const BRAPI_API = 'https://brapi.dev/api';
 const TIMEOUT_MS = 5000;
 const MAX_SEARCH_RESULTS = 10;
 
+interface RawCashDividend {
+  label?: null | string;
+  lastDatePrior?: null | string;
+  paymentDate?: null | string;
+  rate?: null | number;
+}
 interface RawHistory {
   close?: null | number;
   date?: number;
@@ -33,8 +41,26 @@ interface RawQuote {
   symbol?: string;
 }
 
+function asDay(value: null | string | undefined): null | string {
+  const day = typeof value === 'string' ? value.slice(0, 10) : '';
+
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null;
+}
+// brapi labels (`DIVIDENDO`, `JRS CAP PROPRIO`, `RENDIMENTO`, ...) to the income types.
 function asText(value: null | number | undefined): null | string {
   return typeof value === 'number' ? String(value) : null;
+}
+function toIncomeType(label: null | string | undefined): IncomeEventType {
+  const text = (label ?? '').toUpperCase();
+
+  if (text.startsWith('JRS') || text.includes('JUROS SOBRE CAPITAL')) {
+    return 'JCP';
+  }
+  if (text.includes('RENDIMENTO')) {
+    return 'YIELD';
+  }
+
+  return text.includes('DIVIDENDO') ? 'DIVIDEND' : 'OTHER';
 }
 // `QUOTES_PER_REQUEST_EXCEEDED` ("... no máximo N ativo(s) por requisição ...") -> N; anything else -> null.
 function isNotFound(error: unknown): boolean {
@@ -89,6 +115,33 @@ export class BrapiQuotes implements IBrapiQuotes {
         close: String(row.close),
         date: new Date((row.date as number) * 1000).toISOString().slice(0, 10),
       }));
+  }
+
+  async getIncomeEvents(symbol: string): Promise<IncomeEventResult[]> {
+    const ticker = normalizeTicker(symbol);
+    const data = await this.request<{
+      results?: { dividendsData?: { cashDividends?: RawCashDividend[] } }[];
+    }>(`/quote/${ticker}`, { dividends: 'true' });
+    const rows = data.results?.[0]?.dividendsData?.cashDividends ?? [];
+
+    return rows.flatMap((row) => {
+      const exDate = asDay(row.lastDatePrior);
+
+      if (!exDate || typeof row.rate !== 'number' || !(row.rate > 0)) {
+        return [];
+      }
+
+      return [
+        {
+          amountPerUnit: String(row.rate),
+          currency: 'BRL',
+          exDate,
+          paymentDate: asDay(row.paymentDate),
+          ticker,
+          type: toIncomeType(row.label),
+        },
+      ];
+    });
   }
 
   // The free plan takes ONE ticker per request: the first `QUOTES_PER_REQUEST_EXCEEDED` answer teaches the limit and

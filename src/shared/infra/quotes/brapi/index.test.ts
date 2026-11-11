@@ -240,3 +240,103 @@ describe('BrapiQuotes.getDailyHistory', () => {
     );
   });
 });
+
+describe('BrapiQuotes.getIncomeEvents (spec 107)', () => {
+  it('SHOULD ask for the dividends of one ticker AND map label, dates and rate', async () => {
+    getSpy.mockResolvedValue({
+      data: {
+        results: [
+          {
+            dividendsData: {
+              cashDividends: [
+                {
+                  label: 'DIVIDENDO',
+                  lastDatePrior: '2026-11-21T00:00:00.000Z',
+                  paymentDate: '2026-12-19T00:00:00.000Z',
+                  rate: 0.47,
+                },
+                { label: 'JRS CAP PROPRIO', lastDatePrior: '2026-09-10T00:00:00.000Z', rate: 0.28 },
+                { label: 'RENDIMENTO', lastDatePrior: '2026-10-29T00:00:00.000Z', rate: 1.1 },
+                { label: 'BONIFICACAO', lastDatePrior: '2026-08-01T00:00:00.000Z', rate: 2 },
+              ],
+            },
+          },
+        ],
+      },
+    });
+
+    const events = await new BrapiQuotes(envWith('your-token')).getIncomeEvents('petr4');
+
+    expect(getSpy).toHaveBeenCalledWith('https://brapi.dev/api/quote/PETR4', {
+      params: { dividends: 'true', token: 'your-token' },
+      timeout: 5000,
+    });
+    expect(events).toEqual([
+      {
+        amountPerUnit: '0.47',
+        currency: 'BRL',
+        exDate: '2026-11-21',
+        paymentDate: '2026-12-19',
+        ticker: 'PETR4',
+        type: 'DIVIDEND',
+      },
+      {
+        amountPerUnit: '0.28',
+        currency: 'BRL',
+        exDate: '2026-09-10',
+        paymentDate: null,
+        ticker: 'PETR4',
+        type: 'JCP',
+      },
+      {
+        amountPerUnit: '1.1',
+        currency: 'BRL',
+        exDate: '2026-10-29',
+        paymentDate: null,
+        ticker: 'PETR4',
+        type: 'YIELD',
+      },
+      {
+        amountPerUnit: '2',
+        currency: 'BRL',
+        exDate: '2026-08-01',
+        paymentDate: null,
+        ticker: 'PETR4',
+        type: 'OTHER',
+      },
+    ]);
+  });
+
+  it('SHOULD skip rows without an ex-date or a positive rate AND return [] without data', async () => {
+    getSpy.mockResolvedValue({
+      data: {
+        results: [
+          {
+            dividendsData: {
+              cashDividends: [{ rate: 1 }, { lastDatePrior: '2026-11-21T00:00:00.000Z', rate: 0 }],
+            },
+          },
+        ],
+      },
+    });
+    const brapi = new BrapiQuotes(envWith('your-token'));
+
+    expect(await brapi.getIncomeEvents('PETR4')).toEqual([]);
+
+    getSpy.mockResolvedValue({ data: { results: [] } });
+
+    expect(await brapi.getIncomeEvents('PETR4')).toEqual([]);
+  });
+
+  it('SHOULD throw WHEN the token is missing OR the source answers 429', async () => {
+    await expect(new BrapiQuotes(envWith()).getIncomeEvents('PETR4')).rejects.toBeInstanceOf(
+      QuoteSourceUnavailableError,
+    );
+
+    getSpy.mockRejectedValue({ response: { status: 429 } });
+
+    await expect(
+      new BrapiQuotes(envWith('your-token')).getIncomeEvents('PETR4'),
+    ).rejects.toBeInstanceOf(QuoteSourceLimitError);
+  });
+});

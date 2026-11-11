@@ -5,7 +5,12 @@ import { FinanceTransactionMapper } from '@finance/data/datasource/mapper/Financ
 import { IFinanceTransactionDatasource } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
-import { SystemCategoryKey, TransactionSource, TransactionType } from '@finance/domain/enum';
+import {
+  SystemCategoryKey,
+  TransactionExternalLock,
+  TransactionSource,
+  TransactionType,
+} from '@finance/domain/enum';
 import { CurrencyCode } from '@finance/domain/enum/Currency';
 import {
   CardInvoicePurchaseCount,
@@ -181,6 +186,7 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
       creditCardId: row.credit_card_id,
       currency: row.currency as CurrencyCode,
       date: toCalendarDate(row.date),
+      externalLock: row.external_lock ? TransactionExternalLock[row.external_lock] : null,
       id: row.id,
       installmentNumber: row.installment_number,
       installmentPlanId: row.installment_plan_id,

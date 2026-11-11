@@ -24,6 +24,7 @@ describe('FinanceTransactionMapper.toDomain', () => {
       date: '2026-10-03',
       description: 'Weekly groceries',
       earlyPayment: null,
+      externalLock: null,
       id: mocks.raw.id,
       installmentCount: null,
       installmentNumber: null,

@@ -78,5 +78,9 @@ export function isInvestmentCategoryId(id: string): boolean {
   return INVESTMENT_KEYS.some((key) => SYSTEM_CATEGORY_IDS[key] === id);
 }
 
+// Spec 107 FR 16: a row with `external_lock` changes only through the module that owns it.
+export const EXTERNALLY_LOCKED_CODE = 'EXTERNALLY_LOCKED';
+export const EXTERNALLY_LOCKED_MESSAGE = 'Edit this transaction through its investment income';
+
 export const INVESTMENT_ROW_USE_OPERATION =
   'Edit this transaction through its investment operation';

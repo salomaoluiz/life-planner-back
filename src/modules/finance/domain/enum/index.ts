@@ -39,6 +39,7 @@ export enum RecurrenceStatus {
   ACTIVE = 'ACTIVE',
   ENDED = 'ENDED',
 }
+// Spec 107: the module that manages a row; finance never edits or deletes it directly.
 export enum SystemCategoryKey {
   BALANCE_ADJUSTMENT = 'BALANCE_ADJUSTMENT',
   CARD_EARLY_PAYMENT = 'CARD_EARLY_PAYMENT',
@@ -50,6 +51,9 @@ export enum SystemCategoryKey {
   TRANSFER_FEE = 'TRANSFER_FEE',
   TRANSFER_IN = 'TRANSFER_IN',
   TRANSFER_OUT = 'TRANSFER_OUT',
+}
+export enum TransactionExternalLock {
+  INVESTMENT = 'INVESTMENT',
 }
 export enum TransactionSource {
   ACCOUNT = 'ACCOUNT',

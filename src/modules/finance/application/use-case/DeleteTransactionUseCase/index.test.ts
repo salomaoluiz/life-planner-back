@@ -92,6 +92,20 @@ it.each(['INVESTMENT_CONTRIBUTION', 'INVESTMENT_REDEMPTION'])(
   },
 );
 
+it('SHOULD refuse to delete an externally locked row with EXTERNALLY_LOCKED (422)', async () => {
+  mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce({
+    ...mocks.transaction,
+    externalLock: 'INVESTMENT',
+  });
+
+  await expect(
+    setup.execute({ accessibleOwners: mocks.accessibleOwners, id: mocks.transaction.id }),
+  ).rejects.toMatchObject({
+    response: { code: 'EXTERNALLY_LOCKED', message: expect.stringContaining('investment income') },
+  });
+  expect(mocks.transactionRepository.deleteTransaction).not.toHaveBeenCalled();
+});
+
 it('SHOULD refuse to delete a purchase that has refunds (422)', async () => {
   mocks.cardCreditRepository.countRefundsByTransactionId.mockResolvedValueOnce(1);
 

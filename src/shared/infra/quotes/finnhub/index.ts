@@ -5,6 +5,7 @@ import { EnvService } from '@shared/infra/env/env.service';
 
 import {
   IFinnhubQuotes,
+  IncomeEventResult,
   normalizeTicker,
   QuoteResult,
   QuoteSourceUnavailableError,
@@ -15,6 +16,12 @@ const FINNHUB_API = 'https://finnhub.io/api/v1';
 const TIMEOUT_MS = 5000;
 const MAX_SEARCH_RESULTS = 10;
 
+interface RawDividend {
+  amount?: null | number;
+  currency?: null | string;
+  date?: null | string;
+  payDate?: null | string;
+}
 interface RawQuote {
   c?: number;
   dp?: null | number;
@@ -29,6 +36,11 @@ interface RawSearchItem {
   type?: string;
 }
 
+function asDay(value: null | string | undefined): null | string {
+  const day = typeof value === 'string' ? value.slice(0, 10) : '';
+
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null;
+}
 function asText(value: null | number | undefined): null | string {
   return typeof value === 'number' ? String(value) : null;
 }
@@ -36,6 +48,49 @@ function asText(value: null | number | undefined): null | string {
 @Injectable()
 export class FinnhubQuotes implements IFinnhubQuotes {
   constructor(private readonly env: EnvService) {}
+  // The dividends endpoint may be premium: a 403 answer means "no events" (manual incomes only, spec 107 FR 24a).
+  async getIncomeEvents(symbol: string): Promise<IncomeEventResult[]> {
+    const ticker = normalizeTicker(symbol);
+    const from = new Date(Date.now() - 400 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const to = new Date(Date.now() + 200 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    let data: { data?: RawDividend[] } | RawDividend[];
+
+    try {
+      data = await this.request<{ data?: RawDividend[] } | RawDividend[]>('/stock/dividend', {
+        from,
+        symbol: ticker,
+        to,
+      });
+    } catch (error) {
+      if ((error as { response?: { status?: number } })?.response?.status === 403) {
+        return [];
+      }
+
+      throw error;
+    }
+
+    const rows = Array.isArray(data) ? data : (data.data ?? []);
+
+    return rows.flatMap((row) => {
+      const exDate = asDay(row.date);
+
+      if (!exDate || typeof row.amount !== 'number' || !(row.amount > 0)) {
+        return [];
+      }
+
+      return [
+        {
+          amountPerUnit: String(row.amount),
+          currency: row.currency ?? 'USD',
+          exDate,
+          paymentDate: asDay(row.payDate),
+          ticker,
+          type: 'DIVIDEND' as const,
+        },
+      ];
+    });
+  }
+
   // One call per symbol (Finnhub has no batch quote). A symbol that fails alone is skipped, a limit error aborts.
   async getQuotes(symbols: string[]): Promise<QuoteResult[]> {
     const results: QuoteResult[] = [];

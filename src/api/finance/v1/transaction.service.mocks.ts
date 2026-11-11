@@ -13,6 +13,7 @@ import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/Mat
 import { ResolveCardRowsPaidUseCase } from '@finance/application/use-case/ResolveCardRowsPaidUseCase';
 import { UpdateTransactionUseCase } from '@finance/application/use-case/UpdateTransactionUseCase';
 import { TransactionType } from '@finance/domain/enum';
+import { FindIncomeByTransactionIdUseCase } from '@investment/application/use-case/FindIncomeByTransactionIdUseCase';
 import { FindOperationByTransactionIdUseCase } from '@investment/application/use-case/FindOperationByTransactionIdUseCase';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
@@ -91,6 +92,7 @@ const createTransactionUseCaseMock = {
 };
 const deleteTransactionUseCaseMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const financeAccessServiceMock = { resolve: jest.fn().mockResolvedValue(accessibleOwners) };
+const findIncomeByTransactionIdUseCaseMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const findOperationByTransactionIdUseCaseMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const getTransactionByIdUseCaseMock = {
   execute: jest.fn().mockResolvedValue(transactionResultMock),
@@ -128,6 +130,7 @@ beforeEach(async () => {
       { provide: CreateTransactionUseCase, useValue: createTransactionUseCaseMock },
       { provide: DeleteTransactionUseCase, useValue: deleteTransactionUseCaseMock },
       { provide: FinanceAccessService, useValue: financeAccessServiceMock },
+      { provide: FindIncomeByTransactionIdUseCase, useValue: findIncomeByTransactionIdUseCaseMock },
       {
         provide: FindOperationByTransactionIdUseCase,
         useValue: findOperationByTransactionIdUseCaseMock,
@@ -149,6 +152,7 @@ const mocks = {
   confirmProjectedTransactionUseCase: confirmProjectedTransactionUseCaseMock,
   createTransactionUseCase: createTransactionUseCaseMock,
   deleteTransactionUseCase: deleteTransactionUseCaseMock,
+  findIncomeByTransactionIdUseCase: findIncomeByTransactionIdUseCaseMock,
   findOperationByTransactionIdUseCase: findOperationByTransactionIdUseCaseMock,
   getTransactionByIdUseCase: getTransactionByIdUseCaseMock,
   getTransactionsUseCase: getTransactionsUseCaseMock,

@@ -77,3 +77,60 @@ describe('FinnhubQuotes.search', () => {
     expect(await new FinnhubQuotes(envWith('your-token')).search('zzz')).toEqual([]);
   });
 });
+
+describe('FinnhubQuotes.getIncomeEvents (spec 107)', () => {
+  it('SHOULD map the dividends of one symbol as gross per share in USD', async () => {
+    getSpy.mockResolvedValue({
+      data: [
+        { amount: 0.25, currency: 'USD', date: '2026-11-10', payDate: '2026-11-17' },
+        { amount: 0, date: '2026-08-10' },
+        { amount: 1 },
+      ],
+    });
+
+    const events = await new FinnhubQuotes(envWith('your-token')).getIncomeEvents('aapl');
+
+    expect(getSpy).toHaveBeenCalledWith(
+      'https://finnhub.io/api/v1/stock/dividend',
+      expect.objectContaining({
+        params: expect.objectContaining({ symbol: 'AAPL', token: 'your-token' }),
+      }),
+    );
+    expect(events).toEqual([
+      {
+        amountPerUnit: '0.25',
+        currency: 'USD',
+        exDate: '2026-11-10',
+        paymentDate: '2026-11-17',
+        ticker: 'AAPL',
+        type: 'DIVIDEND',
+      },
+    ]);
+  });
+
+  it('SHOULD accept the `{ data }` envelope', async () => {
+    getSpy.mockResolvedValue({ data: { data: [{ amount: 1, date: '2026-11-10' }] } });
+
+    const [event] = await new FinnhubQuotes(envWith('your-token')).getIncomeEvents('AAPL');
+
+    expect(event).toMatchObject({ currency: 'USD', paymentDate: null });
+  });
+
+  it('SHOULD return [] WHEN the plan has no dividends endpoint (403)', async () => {
+    getSpy.mockRejectedValue(Object.assign(new Error('Forbidden'), { response: { status: 403 } }));
+
+    expect(await new FinnhubQuotes(envWith('your-token')).getIncomeEvents('AAPL')).toEqual([]);
+  });
+
+  it('SHOULD throw WHEN the token is missing OR the source is rate limited', async () => {
+    await expect(new FinnhubQuotes(envWith()).getIncomeEvents('AAPL')).rejects.toBeInstanceOf(
+      QuoteSourceUnavailableError,
+    );
+
+    getSpy.mockRejectedValue({ response: { status: 429 } });
+
+    await expect(
+      new FinnhubQuotes(envWith('your-token')).getIncomeEvents('AAPL'),
+    ).rejects.toBeInstanceOf(QuoteSourceLimitError);
+  });
+});

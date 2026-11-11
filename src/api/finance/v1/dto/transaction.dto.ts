@@ -16,7 +16,12 @@ import {
 } from '@api/finance/v1/dto/finance-fields';
 import { TagRefApiSchema } from '@api/finance/v1/dto/tag.dto';
 import { InvoiceMonthSchema } from '@finance/application/dto/FinanceCommon';
-import { InstallmentEditScope, RecurrenceFrequency, SystemCategoryKey } from '@finance/domain/enum';
+import {
+  InstallmentEditScope,
+  RecurrenceFrequency,
+  SystemCategoryKey,
+  TransactionExternalLock,
+} from '@finance/domain/enum';
 
 const TransactionFieldsSchema = z.object({
   accountId: z.uuid(),
@@ -94,6 +99,7 @@ export const TransactionApiSchema = z.object({
   earlyPayment: z
     .object({ creditCardId: z.uuid(), id: z.uuid(), invoiceMonth: z.string() })
     .nullable(),
+  externalLock: z.enum(TransactionExternalLock).optional(),
   id: z.uuid(),
   installmentCount: z.number().int().nullable(),
   installmentNumber: z.number().int().nullable(),
@@ -135,6 +141,8 @@ export const TransactionItemApiSchema = z.strictObject({
   date: z.string(),
   description: z.string(),
   earlyPayment: TransactionApiSchema.shape.earlyPayment.unwrap().optional(),
+  // Spec 107: the module that manages the row; edit and delete go through it (422 `EXTERNALLY_LOCKED`).
+  externalLock: z.enum(TransactionExternalLock).optional(),
   id: z.uuid(),
   installmentCount: z.number().int().optional(),
   installmentNumber: z.number().int().optional(),
@@ -209,7 +217,13 @@ export const TransactionPageApiSchema = z.object({
 
 export const TransactionWithLookupsApiSchema = z.object({
   // Spec 102: present on rows of the two investment categories.
-  investment: z.object({ assetId: z.uuid(), operationId: z.uuid() }).optional(),
+  // Spec 107: `incomeId` instead of `operationId` on a row locked by an investment income.
+  investment: z
+    .union([
+      z.object({ assetId: z.uuid(), operationId: z.uuid() }),
+      z.object({ assetId: z.uuid(), incomeId: z.uuid() }),
+    ])
+    .optional(),
   item: TransactionItemApiSchema,
   lookups: TransactionLookupsApiSchema,
 });

@@ -187,6 +187,7 @@ export type TransactionScalarsRecord = { category: { system_key: null | string }
   | 'credit_card_id'
   | 'currency'
   | 'date'
+  | 'external_lock'
   | 'id'
   | 'installment_number'
   | 'installment_plan_id'

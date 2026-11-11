@@ -266,6 +266,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
         credit_card_id: true,
         currency: true,
         date: true,
+        external_lock: true,
         id: true,
         installment_number: true,
         installment_plan_id: true,
