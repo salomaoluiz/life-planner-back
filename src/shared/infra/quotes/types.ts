@@ -1,4 +1,5 @@
 // Market data sources (spec 104). Prices are decimal strings so nothing passes through floats.
+export type CorporateEventKind = 'BONUS' | 'REVERSE_SPLIT' | 'SPLIT';
 export interface DailyClose {
   close: string;
   date: string;
@@ -8,9 +9,23 @@ export interface FxQuote {
   rate: string;
   source: 'AWESOMEAPI' | 'BRAPI';
 }
+// Spec 108: an announced split, reverse split or bonus; ratios and percent are decimal strings, `recordDate` is
+// the data-com (`YYYY-MM-DD`).
+export interface CorporateEventResult {
+  bonusPercent?: string;
+  bonusUnitCost?: string;
+  currency: string;
+  ratioFrom?: string;
+  ratioTo?: string;
+  recordDate: string;
+  ticker: string;
+  type: CorporateEventKind;
+}
 export type IncomeEventType = 'DIVIDEND' | 'INTEREST' | 'JCP' | 'OTHER' | 'YIELD';
 // Spec 107: an announced income; `amountPerUnit` is gross, a decimal string; dates are `YYYY-MM-DD`.
 export interface IBrapiQuotes {
+  // Announced splits, reverse splits and bonus shares of one B3 symbol (spec 108).
+  getCorporateEvents(symbol: string): Promise<CorporateEventResult[]>;
   // Daily closes of one B3 symbol; `range` is a brapi range such as `3mo`.
   getDailyHistory(symbol: string, range: string): Promise<DailyClose[]>;
   // Announced dividends, JCP and yields of one B3 symbol (spec 107).
@@ -19,6 +34,8 @@ export interface IBrapiQuotes {
   search(query: string): Promise<QuoteResult[]>;
 }
 export interface IFinnhubQuotes {
+  // Announced splits of one US symbol; `[]` when the plan has no splits endpoint (spec 108).
+  getCorporateEvents(symbol: string): Promise<CorporateEventResult[]>;
   // Announced dividends of one US symbol; `[]` when the plan has no dividends endpoint (spec 107).
   getIncomeEvents(symbol: string): Promise<IncomeEventResult[]>;
   getQuotes(symbols: string[]): Promise<QuoteResult[]>;

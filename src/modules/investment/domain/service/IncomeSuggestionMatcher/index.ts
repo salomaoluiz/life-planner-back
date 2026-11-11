@@ -80,6 +80,13 @@ export function matchSuggestions(input: MatcherInput): NewSuggestion[] {
 
   return result;
 }
+export function monthsAgo(date: string, months: number): string {
+  const value = new Date(`${date}T00:00:00.000Z`);
+
+  value.setUTCMonth(value.getUTCMonth() - months);
+
+  return value.toISOString().slice(0, 10);
+}
 
 function alreadyEntered(incomes: MatcherIncome[], assetId: string, event: MatcherEvent): boolean {
   return incomes.some((income) => {
@@ -96,11 +103,4 @@ function alreadyEntered(incomes: MatcherIncome[], assetId: string, event: Matche
       income.paymentDate <= addDays(event.paymentDate, PAYMENT_WINDOW_DAYS)
     );
   });
-}
-function monthsAgo(date: string, months: number): string {
-  const value = new Date(`${date}T00:00:00.000Z`);
-
-  value.setUTCMonth(value.getUTCMonth() - months);
-
-  return value.toISOString().slice(0, 10);
 }
