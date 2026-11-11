@@ -6,7 +6,7 @@ import {
 import { InvestmentAssetStatus, InvestmentOperationType } from '@investment/domain/enum';
 import { Decimal8 } from '@shared/infra/decimal';
 
-import { mocks, setup, spies } from './index.mocks';
+import { eventSpies, mocks, setup, spies } from './index.mocks';
 
 it('SHOULD list the active assets of every accessible owner except archived families', async () => {
   spies.findAssetsByOwners.mockResolvedValue([]);
@@ -76,5 +76,52 @@ it('SHOULD leave the current value null WHEN there is no valuation', async () =>
     currentValue: null,
     openResult: null,
     openResultPercent: null,
+  });
+});
+
+describe('corporate events (spec 108 FR 32)', () => {
+  it('SHOULD count the pending event suggestions of each asset in one query', async () => {
+    const first = listRowFixture();
+    const second = listRowFixture();
+    spies.findAssetsByOwners.mockResolvedValue([first, second]);
+    eventSpies.countPendingByAsset.mockResolvedValue(new Map([[first.id, 2]]));
+
+    const views = await setup.execute({ accessibleOwners: mocks.owners });
+
+    expect(eventSpies.countPendingByAsset).toHaveBeenCalledTimes(1);
+    expect(eventSpies.countPendingByAsset).toHaveBeenCalledWith([first.id, second.id]);
+    expect(views.map((view) => view.pendingEventSuggestions)).toEqual([2, 0]);
+  });
+
+  it('SHOULD carry the count of pending fractions from the position', async () => {
+    const row = listRowFixture({
+      operations: [
+        operationFixture({
+          date: '2026-01-10',
+          quantity: Decimal8.parse('3155'),
+          total: 319100,
+        }),
+        operationFixture({
+          date: '2026-03-10',
+          event: { kind: 'SPLIT', ratioFrom: Decimal8.parse('10'), ratioTo: Decimal8.parse('1') },
+          quantity: Decimal8.zero(),
+          total: 0,
+          type: InvestmentOperationType.REVERSE_SPLIT,
+          unitPrice: Decimal8.zero(),
+        }),
+      ],
+    });
+    spies.findAssetsByOwners.mockResolvedValue([row]);
+
+    const [view] = await setup.execute({ accessibleOwners: mocks.owners });
+
+    expect(view.pendingFractionCount).toBe(1);
+  });
+
+  it('SHOULD not count anything WHEN there are no assets', async () => {
+    expect(await setup.execute({ accessibleOwners: mocks.owners, ownerId: 'stranger' })).toEqual(
+      [],
+    );
+    expect(eventSpies.countPendingByAsset).not.toHaveBeenCalled();
   });
 });
