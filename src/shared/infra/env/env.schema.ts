@@ -51,6 +51,7 @@ export const envSchema = z.object({
     .enum(['true', 'false', ''])
     .optional()
     .transform((value) => value !== 'false'),
+  INVESTMENT_QUOTES_MIN_INTERVAL_MS: optionalInt(0, 0),
 
   // JWT
   JWT_EXPIRES_IN: z.coerce.number().default(3600),

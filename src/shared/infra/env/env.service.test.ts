@@ -12,6 +12,7 @@ const testCases: { key: EnvVarKey; method: EnvServiceKey }[] = [
   { key: 'FINNHUB_TOKEN', method: 'finnhubToken' },
   { key: 'INVESTMENT_QUOTES_BRAPI_BATCH_SIZE', method: 'investmentQuotesBrapiBatchSize' },
   { key: 'INVESTMENT_QUOTES_JOB_ENABLED', method: 'investmentQuotesJobEnabled' },
+  { key: 'INVESTMENT_QUOTES_MIN_INTERVAL_MS', method: 'investmentQuotesMinIntervalMs' },
   { key: 'INVESTMENT_QUOTE_REFRESH_COOLDOWN_MS', method: 'investmentQuoteRefreshCooldownMs' },
   { key: 'GITHUB_TOKEN', method: 'githubToken' },
   { key: 'VERSION_CHECK_TTL_SECONDS', method: 'versionCheckTtlSeconds' },

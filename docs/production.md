@@ -129,7 +129,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer <staging-jwt>
 
 ### Quotes (spec 104)
 
-- Set `BRAPI_TOKEN` and `FINNHUB_TOKEN` in the stack environment (both optional: a missing token turns that market into manual values). `INVESTMENT_QUOTES_JOB_ENABLED=false` stops the hourly job.
+- Set `BRAPI_TOKEN` and `FINNHUB_TOKEN` in the stack environment (both optional: a missing token turns that market into manual values). `INVESTMENT_QUOTES_JOB_ENABLED=false` stops the hourly job; `INVESTMENT_QUOTES_MIN_INTERVAL_MS` (e.g. `14400000` for about 4 runs a day) skips ticks that come sooner than that after the last run of the same market (in memory, resets on restart).
 
 ## 7. Release and rollback
 

@@ -3,6 +3,12 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.15.0] - 2026-11-11
+
+### Added
+
+- `INVESTMENT_QUOTES_MIN_INTERVAL_MS`: minimum time between two automatic quote runs of the same market (B3, US, USD-BRL). A scheduled run that comes sooner is skipped and logged. Default `0` keeps every scheduled run; `14400000` gives about 4 runs a day. The check is in memory and resets on restart.
+
 ## [3.14.0] - 2026-11-11
 
 ### Added

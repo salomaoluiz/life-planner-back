@@ -36,6 +36,7 @@ class EnvServiceFixture {
       investmentQuoteRefreshCooldownMs: 60000,
       investmentQuotesBrapiBatchSize: 20,
       investmentQuotesJobEnabled: true,
+      investmentQuotesMinIntervalMs: 0,
       jwtExpiresIn: faker.number.int({ max: 86400, min: 3600 }),
       jwtSecret: faker.string.alphanumeric(64),
       perfCountQueries: false,

@@ -45,6 +45,10 @@ export class EnvService {
     return this.nestConfigService.get('INVESTMENT_QUOTES_JOB_ENABLED');
   }
 
+  get investmentQuotesMinIntervalMs(): Env['INVESTMENT_QUOTES_MIN_INTERVAL_MS'] {
+    return this.nestConfigService.get('INVESTMENT_QUOTES_MIN_INTERVAL_MS');
+  }
+
   // Database
 
   get dbHost(): Env['DB_HOST'] {
