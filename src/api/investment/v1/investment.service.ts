@@ -5,6 +5,7 @@ import {
   AssetItemOutputType,
   CreateAssetApiInput,
   CreateOperationApiInput,
+  InvestmentsSummaryOutputType,
   OperationOutputType,
   PositionOutputType,
   QuoteOutputType,
@@ -31,6 +32,7 @@ import { DeleteOperationUseCase } from '@investment/application/use-case/DeleteO
 import { DeleteValuationUseCase } from '@investment/application/use-case/DeleteValuationUseCase';
 import { GetAssetByIdUseCase } from '@investment/application/use-case/GetAssetByIdUseCase';
 import { GetAssetsUseCase } from '@investment/application/use-case/GetAssetsUseCase';
+import { GetInvestmentsHomeSummaryUseCase } from '@investment/application/use-case/GetInvestmentsHomeSummaryUseCase';
 import { GetPriceHistoryUseCase } from '@investment/application/use-case/GetPriceHistoryUseCase';
 import { RefreshQuotesNowUseCase } from '@investment/application/use-case/RefreshQuotesNowUseCase';
 import { SearchTickersUseCase } from '@investment/application/use-case/SearchTickersUseCase';
@@ -242,6 +244,7 @@ export class InvestmentService {
     private readonly deleteValuationUseCase: DeleteValuationUseCase,
     private readonly getAssetByIdUseCase: GetAssetByIdUseCase,
     private readonly getAssetsUseCase: GetAssetsUseCase,
+    private readonly getInvestmentsHomeSummaryUseCase: GetInvestmentsHomeSummaryUseCase,
     private readonly getPriceHistoryUseCase: GetPriceHistoryUseCase,
     private readonly getUserFamilyAccessUseCase: GetUserFamilyAccessUseCase,
     private readonly refreshQuotesNowUseCase: RefreshQuotesNowUseCase,
@@ -361,6 +364,24 @@ export class InvestmentService {
       unitPrice: input.unitPrice,
     });
     return { item: toValuation(result.valuation), position: toPosition(result.asset.position) };
+  }
+  // Spec 109: the home section, already consolidated in BRL.
+  async getSummary(
+    userId: string,
+    ownerIds: string[],
+    today: string,
+  ): Promise<InvestmentsSummaryOutputType> {
+    const accessibleOwners = await this.getAccessibleOwners(userId);
+    const summary = await this.getInvestmentsHomeSummaryUseCase.execute({
+      accessibleOwners,
+      ownerIds,
+      today,
+    });
+
+    return {
+      ...summary,
+      quotes: { ...summary.quotes, asOf: summary.quotes.asOf?.toISOString() ?? null },
+    };
   }
   // Resolved on every request: the caller plus every family they own or joined.
   private async getAccessibleOwners(userId: string): Promise<OwnerAccess[]> {

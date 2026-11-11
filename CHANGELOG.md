@@ -3,6 +3,14 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.14.0] - 2026-11-11
+
+### Added
+
+- Home investments summary (spec 109): `GET /investments/summary` returns the portfolio value, invested cost and unrealized result in BRL, the income received in the month, the pending suggestions and the next fixed income maturity in one call.
+- Listed positions count at the last stored quote (USD at the current rate), calculated fixed income at the estimated net and unlisted assets at their latest manual value; a quote that is old sets `quotes.stale`.
+- An owner id the caller cannot read answers `403`.
+
 ## [3.13.0] - 2026-11-11
 
 ### Added

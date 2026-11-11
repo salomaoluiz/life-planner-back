@@ -25,6 +25,7 @@ import {
   IncomeFilter,
   WriteIncomeParams,
 } from '@investment/domain/entity/IncomeEntity';
+import { OwnerAccess } from '@investment/domain/entity/OwnerAccess';
 import { Database } from '@shared/infra/db/Database';
 
 const ROW_SELECT = { account_id: true, category_id: true, paid: true } as const;
@@ -41,6 +42,16 @@ export class IncomeDatasource implements IIncomeDatasource {
   async countPendingSuggestions(assetId: string): Promise<number> {
     return this.db.client.investmentIncomeSuggestion.count({
       where: { asset_id: assetId, status: 'PENDING' },
+    });
+  }
+
+  async countPendingSuggestionsByAssets(assetIds: string[]): Promise<number> {
+    if (assetIds.length === 0) {
+      return 0;
+    }
+
+    return this.db.client.investmentIncomeSuggestion.count({
+      where: { asset_id: { in: assetIds }, status: 'PENDING' },
     });
   }
 
@@ -206,6 +217,17 @@ export class IncomeDatasource implements IIncomeDatasource {
       include: { event: true },
       orderBy: [{ event: { ex_date: 'desc' } }, { id: 'asc' }],
       where: { asset_id: { in: assetIds }, status: 'PENDING' },
+    });
+  }
+
+  async findReceivedByOwners(owners: OwnerAccess[], from: Date, to: Date) {
+    return this.db.client.investmentIncome.findMany({
+      select: { currency: true, net_amount: true },
+      where: {
+        asset: toOwnerWhere(owners),
+        payment_date: { gte: from, lte: to },
+        transaction: { paid: true },
+      },
     });
   }
 

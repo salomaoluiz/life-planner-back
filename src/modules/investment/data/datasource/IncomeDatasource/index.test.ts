@@ -1,5 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 
+import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
+
 import { mocks, setup, spies } from './index.mocks';
 
 describe('writeIncome', () => {
@@ -329,5 +331,36 @@ describe('runExclusive', () => {
     spies.queryRaw.mockResolvedValueOnce([{ locked: true }]);
     expect(await setup.runExclusive(107001, fn)).toBe(true);
     expect(fn).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('home summary reads (spec 109)', () => {
+  it('SHOULD read only the paid incomes of the owners in the period, selecting two scalars', async () => {
+    spies.incomeFindMany.mockResolvedValue([{ currency: 'BRL', net_amount: 7140 }]);
+    const from = new Date('2026-11-01T00:00:00Z');
+    const to = new Date('2026-11-30T00:00:00Z');
+
+    expect(
+      await setup.findReceivedByOwners([{ owner: OwnerType.USER, ownerId: 'owner-1' }], from, to),
+    ).toEqual([{ currency: 'BRL', net_amount: 7140 }]);
+    expect(spies.incomeFindMany).toHaveBeenCalledWith({
+      select: { currency: true, net_amount: true },
+      where: {
+        asset: { OR: [{ owner: 'USER', owner_id: 'owner-1' }] },
+        payment_date: { gte: from, lte: to },
+        transaction: { paid: true },
+      },
+    });
+  });
+
+  it('SHOULD count the pending suggestions of the assets in one query AND skip it for no assets', async () => {
+    spies.suggestionCount.mockResolvedValue(2);
+
+    expect(await setup.countPendingSuggestionsByAssets([])).toBe(0);
+    expect(spies.suggestionCount).not.toHaveBeenCalled();
+    expect(await setup.countPendingSuggestionsByAssets(['a', 'b'])).toBe(2);
+    expect(spies.suggestionCount).toHaveBeenCalledWith({
+      where: { asset_id: { in: ['a', 'b'] }, status: 'PENDING' },
+    });
   });
 });

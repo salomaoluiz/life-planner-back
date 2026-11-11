@@ -17,6 +17,8 @@ import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 // Spec 107. Every write runs in ONE database transaction with the finance row and the account ledger.
 export type IIncomeRepository = {
   countPendingSuggestions(assetId: string): Promise<number>;
+  // Spec 109: pending suggestions of several assets in one query.
+  countPendingSuggestionsByAssets(assetIds: string[]): Promise<number>;
   createSuggestions(rows: NewSuggestionRow[]): Promise<number>;
   // Removes the income and its finance row (ledger adjusted when it was paid); a suggestion becomes DISMISSED.
   deleteIncome(id: string): Promise<void>;
@@ -39,6 +41,12 @@ export type IIncomeRepository = {
     type: InvestmentIncomeType,
   ): Promise<string | undefined>;
   findPendingSuggestions(assetIds: string[]): Promise<IncomeSuggestionEntity[]>;
+  // Spec 109: the received (paid) incomes of the owners' assets paid in [from, to], one scalar pair each.
+  findReceivedByOwners(
+    owners: { owner: OwnerType; ownerId: string }[],
+    from: string,
+    to: string,
+  ): Promise<{ currency: string; netAmount: number }[]>;
   findSuggestionById(id: string): Promise<IncomeSuggestionEntity | undefined>;
   findSuggestionInputs(
     keys: { market: QuoteMarket; ticker: string }[],

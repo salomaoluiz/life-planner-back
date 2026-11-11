@@ -145,3 +145,35 @@ describe('quotes (spec 104)', () => {
     );
   });
 });
+
+describe('summary (spec 109)', () => {
+  it('SHOULD pass the owners as a list AND the local date to the service', async () => {
+    await setup.summary(mocks.request, { ownerId: [ownerId, ownerId], today: '2026-11-04' });
+    await setup.summary(mocks.request, { ownerId, today: '2026-11-04' });
+
+    expect(mocks.service.getSummary).toHaveBeenNthCalledWith(
+      1,
+      userId,
+      [ownerId, ownerId],
+      '2026-11-04',
+    );
+    expect(mocks.service.getSummary).toHaveBeenNthCalledWith(2, userId, [ownerId], '2026-11-04');
+  });
+
+  it('SHOULD default today to the server date WHEN it is missing', async () => {
+    await setup.summary(mocks.request, { ownerId });
+
+    expect(mocks.service.getSummary).toHaveBeenCalledWith(
+      userId,
+      [ownerId],
+      new Date().toISOString().slice(0, 10),
+    );
+  });
+
+  it.each([{}, { ownerId: 'abc' }, { ownerId, today: '04/11/2026' }, { ownerId: [] }])(
+    'SHOULD reject %j',
+    async (query) => {
+      await expect(setup.summary(mocks.request, query)).rejects.toThrow(ValidationError);
+    },
+  );
+});
