@@ -15,7 +15,7 @@ import {
   NewSuggestionRow,
   WriteIncomeParams,
 } from '@investment/domain/entity/IncomeEntity';
-import { InvestmentIncomeType } from '@investment/domain/enum';
+import { InvestmentAssetClass, InvestmentIncomeType } from '@investment/domain/enum';
 import { QuoteMarket } from '@investment/domain/enum/QuoteMarket';
 import { IIncomeRepository } from '@investment/domain/repository';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -118,16 +118,12 @@ export class IncomeRepository implements IIncomeRepository {
 
     return {
       assets: row.assets.map((asset) => ({
+        assetClass: InvestmentAssetClass[asset.asset_class],
         assetId: asset.asset_id,
         market: QuoteMarket[asset.market as keyof typeof QuoteMarket],
-        operations: asset.operations.map((operation) => ({
-          createdAt: operation.created_at,
-          date: InvestmentMapper.toCalendarDate(operation.date),
-          id: operation.id,
-          quantity: operation.quantity.toFixed(8),
-          total: operation.total,
-          type: operation.type,
-        })),
+        operations: asset.operations.map((operation) =>
+          InvestmentMapper.toPositionOperation(operation),
+        ),
         ticker: asset.ticker,
       })),
       existing: row.existing.map((item) => `${item.asset_id}:${item.event_id}`),

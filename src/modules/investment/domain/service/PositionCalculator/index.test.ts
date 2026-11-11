@@ -124,3 +124,142 @@ describe('computeTotals', () => {
     );
   });
 });
+
+describe('calculatePosition with corporate events (spec 108)', () => {
+  const WHOLE = { step: 'WHOLE' } as const;
+
+  function split(id: string, date: string, from: string, to: string, createdAt?: Date) {
+    const type = Number(to) > Number(from) ? 'SPLIT' : 'REVERSE_SPLIT';
+
+    return {
+      ...operation(id, type as InvestmentOperationType, date, '0', 0, createdAt),
+      event: {
+        kind: 'SPLIT' as const,
+        ratioFrom: Decimal8.parse(from),
+        ratioTo: Decimal8.parse(to),
+      },
+    };
+  }
+  function bonus(id: string, date: string, percent: string, unitCost: null | string) {
+    return {
+      ...operation(id, InvestmentOperationType.BONUS, date, '0', 0),
+      event: {
+        kind: 'BONUS' as const,
+        percent: Decimal8.parse(percent),
+        unitCost: unitCost ? Decimal8.parse(unitCost) : null,
+      },
+    };
+  }
+  const mglu = [operation('a', BUY, '2026-01-10', '3155', 319100)];
+
+  it('SHOULD reverse split, leave a pending fraction and recompute the average', () => {
+    const position = calculatePosition([...mglu, split('e', '2026-03-10', '10', '1')], WHOLE);
+
+    expect(position.quantity.toString()).toBe('315');
+    expect(position.cost).toBe(318594);
+    expect(position.averagePrice).toBe('10.11409524');
+    expect(position.pendingFractions).toEqual([
+      { cost: 506, date: '2026-03-10', eventId: 'e', quantity: Decimal8.parse('0.5') },
+    ]);
+    expect(position.perEvent.get('e')?.quantityBefore.toString()).toBe('3155');
+  });
+
+  it('SHOULD add the bonus cost when the unit cost is informed', () => {
+    const position = calculatePosition(
+      [operation('a', BUY, '2026-01-10', '315', 318594), bonus('e', '2026-11-18', '10', '4.5')],
+      WHOLE,
+    );
+
+    expect(position.quantity.toString()).toBe('346');
+    expect(position.cost).toBe(332544);
+  });
+
+  it('SHOULD give a BUY on the data-com the event even when it was created after it', () => {
+    const early = new Date('2026-01-01T00:00:00Z');
+    const late = new Date('2026-06-01T00:00:00Z');
+    const position = calculatePosition(
+      [
+        operation('a', BUY, '2026-01-10', '100', 10000, early),
+        split('e', '2026-03-10', '1', '2', early),
+        operation('b', BUY, '2026-03-10', '50', 5000, late),
+      ],
+      WHOLE,
+    );
+
+    expect(position.quantity.toString()).toBe('300');
+  });
+
+  it('SHOULD flag an event dated where no shares are held', () => {
+    const position = calculatePosition([split('e', '2026-03-10', '1', '2')], WHOLE);
+
+    expect(position.noPositionAt).toEqual({ date: '2026-03-10', operationId: 'e' });
+  });
+
+  it('SHOULD zero the cost when the whole position becomes a fraction', () => {
+    const position = calculatePosition(
+      [operation('a', BUY, '2026-01-10', '50', 10000), split('e', '2026-03-10', '100', '1')],
+      WHOLE,
+    );
+
+    expect(position.quantity.isZero()).toBe(true);
+    expect(position.cost).toBe(0);
+    expect(position.averagePrice).toBeNull();
+    expect(position.pendingFractions[0].cost).toBe(10000);
+  });
+
+  it('SHOULD realize the fraction sale without touching quantity or cost', () => {
+    const position = calculatePosition(
+      [
+        ...mglu,
+        split('e', '2026-03-10', '10', '1'),
+        {
+          ...operation('f', SELL, '2026-04-04', '0.5', 520),
+          fractionOfOperationId: 'e',
+        },
+      ],
+      WHOLE,
+    );
+
+    expect(position.quantity.toString()).toBe('315');
+    expect(position.cost).toBe(318594);
+    expect(position.perOperation.get('f')).toEqual({ costRemoved: 506, realizedResult: 14 });
+    expect(position.realizedResult).toBe(14);
+    expect(position.pendingFractions).toEqual([]);
+  });
+
+  it('SHOULD apply a fraction sale dated on the event day after the event', () => {
+    const position = calculatePosition(
+      [
+        ...mglu,
+        {
+          ...operation('f', SELL, '2026-03-10', '0.5', 520),
+          fractionOfOperationId: 'e',
+        },
+        split('e', '2026-03-10', '10', '1'),
+      ],
+      WHOLE,
+    );
+
+    expect(position.perOperation.get('f')?.costRemoved).toBe(506);
+  });
+
+  it('SHOULD refuse a later sell of the old quantity', () => {
+    const position = calculatePosition(
+      [...mglu, split('e', '2026-03-10', '10', '1'), operation('s', SELL, '2026-04-01', '3000', 1)],
+      WHOLE,
+    );
+
+    expect(position.negativeAt).toEqual({ date: '2026-04-01', operationId: 's' });
+  });
+
+  it('SHOULD keep decimals for classes with a decimal step', () => {
+    const position = calculatePosition(
+      [operation('a', BUY, '2026-01-10', '12.5', 230500), split('e', '2026-08-25', '1', '4')],
+      { step: 'DECIMAL' },
+    );
+
+    expect(position.quantity.toString()).toBe('50');
+    expect(position.averagePrice).toBe('46.10000000');
+    expect(position.pendingFractions).toEqual([]);
+  });
+});

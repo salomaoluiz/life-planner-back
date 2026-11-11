@@ -9,6 +9,11 @@ export enum InvestmentAssetStatus {
   ACTIVE = 'ACTIVE',
   ARCHIVED = 'ARCHIVED',
 }
+export enum InvestmentCorporateEventType {
+  BONUS = 'BONUS',
+  REVERSE_SPLIT = 'REVERSE_SPLIT',
+  SPLIT = 'SPLIT',
+}
 export enum InvestmentFeeKind {
   BROKERAGE = 'BROKERAGE',
   EXCHANGE_FEES = 'EXCHANGE_FEES',
@@ -25,8 +30,11 @@ export enum InvestmentIncomeType {
   YIELD = 'YIELD',
 }
 export enum InvestmentOperationType {
+  BONUS = 'BONUS',
   BUY = 'BUY',
+  REVERSE_SPLIT = 'REVERSE_SPLIT',
   SELL = 'SELL',
+  SPLIT = 'SPLIT',
 }
 export enum InvestmentSuggestionStatus {
   APPROVED = 'APPROVED',
@@ -68,4 +76,13 @@ export enum InvestmentFixedIncomeRateMode {
 export enum InvestmentFixedIncomeRedemptionKind {
   PARTIAL = 'PARTIAL',
   TOTAL = 'TOTAL',
+}
+
+// Spec 108 FR 1: operations that change the position without moving money.
+export function isEventType(type: InvestmentOperationType): boolean {
+  return (
+    type === InvestmentOperationType.SPLIT ||
+    type === InvestmentOperationType.REVERSE_SPLIT ||
+    type === InvestmentOperationType.BONUS
+  );
 }

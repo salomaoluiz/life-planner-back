@@ -6,7 +6,9 @@ const suggestionFindMany = jest.fn();
 const suggestionUpdate = jest.fn();
 const suggestionDelete = jest.fn();
 const operationFindMany = jest.fn();
+const assetFindUnique = jest.fn();
 const tx = {
+  investmentAsset: { findUnique: assetFindUnique },
   investmentIncomeSuggestion: {
     delete: suggestionDelete,
     findMany: suggestionFindMany,
@@ -17,10 +19,15 @@ const tx = {
 
 function op(id: string, date: string, quantity: string, type: 'BUY' | 'SELL') {
   return {
+    bonus_percent: null,
+    bonus_unit_cost: null,
     created_at: new Date('2026-01-01T00:00:00Z'),
     date: new Date(`${date}T00:00:00Z`),
+    fraction_of_operation_id: null,
     id,
     quantity: new Prisma.Decimal(quantity),
+    ratio_from: null,
+    ratio_to: null,
     total: 1000,
     type,
   };
@@ -33,7 +40,10 @@ function suggestion(quantity: string) {
   };
 }
 
-beforeEach(() => jest.resetAllMocks());
+beforeEach(() => {
+  jest.resetAllMocks();
+  assetFindUnique.mockResolvedValue({ asset_class: 'BR_STOCK' });
+});
 
 describe('recomputeSuggestions', () => {
   it('SHOULD read nothing else WHEN the asset has no pending suggestion', async () => {

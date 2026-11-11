@@ -85,7 +85,7 @@ export async function recalculateFixedIncome(
       .map((row) => ({
         date: day(row.date),
         operationId: row.id,
-        principal: centsOf(row.quantity),
+        principal: row.quantity ? centsOf(row.quantity) : 0,
       })),
     on: maturityDate,
     rates: rates.map((row) => ({

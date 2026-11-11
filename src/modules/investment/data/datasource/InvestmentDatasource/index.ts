@@ -12,6 +12,10 @@ import {
   Prisma,
 } from '@db/client';
 import {
+  assertPositionValid,
+  recomputeEventSuggestions,
+} from '@investment/data/datasource/corporateEvent';
+import {
   applyDeltas,
   ledgerDeltasFor,
   LinkedRow,
@@ -39,16 +43,14 @@ import {
   OperationRow,
   SaveFixedIncomeTermsDatasourceParams,
   UpdateAssetDatasourceParams,
+  WriteEventDatasourceParams,
   WriteOperationDatasourceParams,
 } from '@investment/data/repository/datasource/IInvestmentDatasource';
 import { FixedIncomeRateWrite } from '@investment/domain/entity/FixedIncomeEntity';
 import { OwnerAccess } from '@investment/domain/entity/OwnerAccess';
 import { categoryIdOf } from '@investment/domain/entity/SystemCategories';
 import { InvestmentOperationType } from '@investment/domain/enum';
-import { NegativePositionError } from '@investment/domain/error/NegativePositionError';
-import { calculatePosition } from '@investment/domain/service/PositionCalculator';
 import { Database } from '@shared/infra/db/Database';
-import { Decimal8 } from '@shared/infra/decimal';
 
 const OPERATION_ORDER = [{ date: 'desc' }, { created_at: 'desc' }, { id: 'desc' }] as const;
 const LINKED_SELECT = { account_id: true, paid: true, type: true, value: true } as const;
@@ -155,20 +157,42 @@ export class InvestmentDatasource implements IInvestmentDatasource {
       }
 
       await lockAsset(tx, existing.asset_id);
+
+      // Spec 108 FR 21: an event takes its fraction sale (and that sale's finance row) with it.
+      const sale = await tx.investmentOperation.findUnique({
+        include: { transaction: { select: LINKED_SELECT } },
+        where: { fraction_of_operation_id: id },
+      });
+      const removed = sale ? [existing, sale] : [existing];
+
       await lockAccounts(
         tx,
-        existing.transaction?.account_id ? [existing.transaction.account_id] : [],
+        removed
+          .map((operation) => operation.transaction?.account_id)
+          .filter((accountId): accountId is string => !!accountId),
       );
-      await tx.investmentOperation.delete({ where: { id } });
 
-      if (existing.transaction_id) {
-        await tx.financialTransaction.delete({ where: { id: existing.transaction_id } });
+      if (existing.event_suggestion_id) {
+        await tx.investmentEventSuggestion.update({
+          data: { status: 'DISMISSED' },
+          where: { id: existing.event_suggestion_id },
+        });
       }
 
-      await applyDeltas(tx, ledgerDeltasFor(toLinkedRow(existing.transaction), undefined));
+      for (const operation of removed.reverse()) {
+        await tx.investmentOperation.delete({ where: { id: operation.id } });
+
+        if (operation.transaction_id) {
+          await tx.financialTransaction.delete({ where: { id: operation.transaction_id } });
+        }
+
+        await applyDeltas(tx, ledgerDeltasFor(toLinkedRow(operation.transaction), undefined));
+      }
+
       await recalculateFixedIncome(tx, existing.asset_id);
-      await assertPositionNotNegative(tx, existing.asset_id);
+      await assertPositionValid(tx, existing.asset_id);
       await recomputeSuggestions(tx, existing.asset_id);
+      await recomputeEventSuggestions(tx, existing.asset_id);
     });
   }
 
@@ -344,34 +368,70 @@ export class InvestmentDatasource implements IInvestmentDatasource {
     });
   }
 
+  async writeEvent(params: WriteEventDatasourceParams): Promise<string> {
+    return this.db.client.$transaction(async (tx) => {
+      await lockAsset(tx, params.asset_id);
+
+      const fields = {
+        bonus_percent: params.bonus_percent,
+        bonus_unit_cost: params.bonus_unit_cost,
+        date: params.date,
+        ratio_from: params.ratio_from,
+        ratio_to: params.ratio_to,
+      };
+      let operationId: string;
+
+      if (params.operation_id) {
+        const existing = await tx.investmentOperation.findUnique({
+          select: { id: true },
+          where: { id: params.operation_id },
+        });
+
+        if (!existing) {
+          throw new NotFoundException('Operation not found');
+        }
+
+        operationId = (
+          await tx.investmentOperation.update({ data: fields, where: { id: existing.id } })
+        ).id;
+      } else {
+        operationId = (
+          await tx.investmentOperation.create({
+            data: {
+              ...fields,
+              asset_id: params.asset_id,
+              event_suggestion_id: params.event_suggestion_id ?? null,
+              generate_transaction: false,
+              type: params.type,
+            },
+          })
+        ).id;
+      }
+
+      if (params.event_suggestion_id) {
+        await tx.investmentEventSuggestion.update({
+          data: {
+            decided_at: new Date(),
+            decided_by: params.decided_by ?? null,
+            status: 'APPROVED',
+          },
+          where: { id: params.event_suggestion_id },
+        });
+      }
+
+      await assertPositionValid(tx, params.asset_id);
+      await recomputeSuggestions(tx, params.asset_id);
+      await recomputeEventSuggestions(tx, params.asset_id);
+
+      return operationId;
+    });
+  }
+
   async writeOperation(params: WriteOperationDatasourceParams): Promise<string> {
     return this.db.client.$transaction(async (tx) => writeOperationIn(tx, params));
   }
 }
 
-async function assertPositionNotNegative(
-  tx: Prisma.TransactionClient,
-  assetId: string,
-): Promise<void> {
-  const rows = await tx.investmentOperation.findMany({
-    select: { created_at: true, date: true, id: true, quantity: true, total: true, type: true },
-    where: { asset_id: assetId },
-  });
-  const position = calculatePosition(
-    rows.map((row) => ({
-      createdAt: row.created_at,
-      date: row.date.toISOString().slice(0, 10),
-      id: row.id,
-      quantity: Decimal8.parse(row.quantity.toFixed(8)),
-      total: row.total,
-      type: row.type as InvestmentOperationType,
-    })),
-  );
-
-  if (position.negativeAt) {
-    throw new NegativePositionError(position.negativeAt.date, position.negativeAt.operationId);
-  }
-}
 async function writeOperationIn(
   tx: Prisma.TransactionClient,
   params: WriteOperationDatasourceParams,
@@ -422,6 +482,7 @@ async function writeOperationIn(
           ...fields,
           asset_id: params.asset_id,
           fees: { create: fees },
+          fraction_of_operation_id: params.fraction_of_operation_id ?? null,
           type: params.type,
         },
       });
@@ -476,8 +537,9 @@ async function writeOperationIn(
 
   await applyDeltas(tx, ledgerDeltasFor(before, after));
   await recalculateFixedIncome(tx, params.asset_id);
-  await assertPositionNotNegative(tx, params.asset_id);
+  await assertPositionValid(tx, params.asset_id);
   await recomputeSuggestions(tx, params.asset_id);
+  await recomputeEventSuggestions(tx, params.asset_id);
 
   return operation.id;
 }

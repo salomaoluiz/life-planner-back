@@ -1,7 +1,11 @@
 import { Prisma } from '@db/client';
-import { InvestmentOperationType } from '@investment/domain/enum';
+import {
+  InvestmentMapper,
+  POSITION_SELECT,
+} from '@investment/data/datasource/mapper/InvestmentMapper';
+import { InvestmentAssetClass } from '@investment/domain/enum';
+import { unitStepOf } from '@investment/domain/service/CorporateEventMath';
 import { calculatePosition } from '@investment/domain/service/PositionCalculator';
-import { Decimal8 } from '@shared/infra/decimal';
 
 // Spec 107 FR 26: a pending suggestion follows the position at its ex-date. Runs in the transaction of every
 // operation write; a suggestion whose position fell to zero is dropped (the job may suggest it again later).
@@ -18,24 +22,23 @@ export async function recomputeSuggestions(
     return;
   }
 
+  const asset = await tx.investmentAsset.findUnique({
+    select: { asset_class: true },
+    where: { id: assetId },
+  });
   const operations = await tx.investmentOperation.findMany({
-    select: { created_at: true, date: true, id: true, quantity: true, total: true, type: true },
+    select: POSITION_SELECT,
     where: { asset_id: assetId },
   });
+  const step = unitStepOf(InvestmentAssetClass[asset?.asset_class ?? 'PRIVATE']);
 
   for (const suggestion of pending) {
     const exDate = suggestion.event.ex_date.toISOString().slice(0, 10);
     const position = calculatePosition(
       operations
         .filter((row) => row.date.toISOString().slice(0, 10) <= exDate)
-        .map((row) => ({
-          createdAt: row.created_at,
-          date: row.date.toISOString().slice(0, 10),
-          id: row.id,
-          quantity: Decimal8.parse(row.quantity.toFixed(8)),
-          total: row.total,
-          type: row.type as InvestmentOperationType,
-        })),
+        .map((row) => InvestmentMapper.toPositionOperation(row)),
+      { step },
     );
 
     if (!position.quantity.isPositive()) {

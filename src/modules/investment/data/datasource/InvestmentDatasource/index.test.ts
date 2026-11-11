@@ -1,6 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 
 import { NegativePositionError } from '@investment/domain/error/NegativePositionError';
+import { NoPositionError } from '@investment/domain/error/NoPositionError';
 
 import { mocks, setup, spies } from './index.mocks';
 
@@ -23,10 +24,15 @@ const baseParams = {
 
 function positionRows(rows: { date: string; id: string; qty: string; type: 'BUY' | 'SELL' }[]) {
   return rows.map((row) => ({
+    bonus_percent: null,
+    bonus_unit_cost: null,
     created_at: new Date('2026-01-01T00:00:00Z'),
     date: new Date(`${row.date}T00:00:00Z`),
+    fraction_of_operation_id: null,
     id: row.id,
     quantity: mocks.decimal(row.qty),
+    ratio_from: null,
+    ratio_to: null,
     total: 100,
     type: row.type,
   }));
@@ -401,6 +407,156 @@ describe('deleteOperation', () => {
     );
 
     await expect(setup.deleteOperation('op-1')).rejects.toBeInstanceOf(NegativePositionError);
+  });
+
+  it('SHOULD take the fraction sale, its row AND its ledger with a deleted event AND dismiss the suggestion', async () => {
+    spies.operationFindUnique
+      .mockResolvedValueOnce({
+        account_id: null,
+        asset_id: 'asset-1',
+        event_suggestion_id: 'sug-1',
+        id: 'event-1',
+        transaction: null,
+        transaction_id: null,
+      })
+      .mockResolvedValueOnce({
+        account_id: 'acc-1',
+        asset_id: 'asset-1',
+        id: 'sale-1',
+        transaction: { account_id: 'acc-1', type: 'INCOME', value: 520 },
+        transaction_id: 'tx-1',
+      });
+    spies.operationFindMany.mockResolvedValue([]);
+
+    await setup.deleteOperation('event-1');
+
+    expect(spies.eventSuggestionUpdate).toHaveBeenCalledWith({
+      data: { status: 'DISMISSED' },
+      where: { id: 'sug-1' },
+    });
+    expect(spies.operationDelete).toHaveBeenCalledWith({ where: { id: 'sale-1' } });
+    expect(spies.operationDelete).toHaveBeenCalledWith({ where: { id: 'event-1' } });
+    expect(spies.transactionDelete).toHaveBeenCalledWith({ where: { id: 'tx-1' } });
+    expect(spies.accountUpdate).toHaveBeenCalledWith({
+      data: { ledger_balance: { increment: -520 } },
+      where: { id: 'acc-1' },
+    });
+  });
+});
+
+describe('writeEvent', () => {
+  const event = {
+    asset_id: 'asset-1',
+    bonus_percent: null,
+    bonus_unit_cost: null,
+    date: new Date('2026-03-10T00:00:00Z'),
+    ratio_from: '10',
+    ratio_to: '1',
+    type: 'REVERSE_SPLIT' as const,
+  };
+
+  it('SHOULD create the event without any money field or finance row', async () => {
+    spies.operationCreate.mockResolvedValue({ id: 'event-1' });
+    spies.operationFindMany.mockResolvedValue(
+      positionRows([{ date: '2026-01-10', id: 'b', qty: '3155', type: 'BUY' }]),
+    );
+
+    await expect(setup.writeEvent(event)).resolves.toBe('event-1');
+
+    expect(spies.operationCreate).toHaveBeenCalledWith({
+      data: {
+        asset_id: 'asset-1',
+        bonus_percent: null,
+        bonus_unit_cost: null,
+        date: event.date,
+        event_suggestion_id: null,
+        generate_transaction: false,
+        ratio_from: '10',
+        ratio_to: '1',
+        type: 'REVERSE_SPLIT',
+      },
+    });
+    expect(spies.transactionCreate).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD mark the suggestion approved in the same transaction', async () => {
+    spies.operationCreate.mockResolvedValue({ id: 'event-1' });
+    spies.operationFindMany.mockResolvedValue(
+      positionRows([{ date: '2026-01-10', id: 'b', qty: '3155', type: 'BUY' }]),
+    );
+
+    await setup.writeEvent({ ...event, decided_by: 'user-1', event_suggestion_id: 'sug-1' });
+
+    expect(spies.eventSuggestionUpdate).toHaveBeenCalledWith({
+      data: { decided_at: expect.any(Date), decided_by: 'user-1', status: 'APPROVED' },
+      where: { id: 'sug-1' },
+    });
+  });
+
+  it('SHOULD update the fields of an existing event', async () => {
+    spies.operationFindUnique.mockResolvedValue({ id: 'event-1' });
+    spies.operationUpdate.mockResolvedValue({ id: 'event-1' });
+    spies.operationFindMany.mockResolvedValue(
+      positionRows([{ date: '2026-01-10', id: 'b', qty: '3155', type: 'BUY' }]),
+    );
+
+    await setup.writeEvent({ ...event, operation_id: 'event-1' });
+
+    expect(spies.operationUpdate).toHaveBeenCalledWith({
+      data: {
+        bonus_percent: null,
+        bonus_unit_cost: null,
+        date: event.date,
+        ratio_from: '10',
+        ratio_to: '1',
+      },
+      where: { id: 'event-1' },
+    });
+  });
+
+  it('SHOULD answer not found for an event that does not exist', async () => {
+    spies.operationFindUnique.mockResolvedValue(null);
+
+    await expect(setup.writeEvent({ ...event, operation_id: 'missing' })).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
+  it('SHOULD refuse an event dated where no shares are held', async () => {
+    spies.operationCreate.mockResolvedValue({ id: 'event-1' });
+    spies.operationFindMany.mockResolvedValue([
+      {
+        ...positionRows([{ date: '2026-03-10', id: 'event-1', qty: '0', type: 'BUY' }])[0],
+        quantity: null,
+        ratio_from: mocks.decimal('10'),
+        ratio_to: mocks.decimal('1'),
+        total: null,
+        type: 'REVERSE_SPLIT',
+      },
+    ]);
+
+    await expect(setup.writeEvent(event)).rejects.toBeInstanceOf(NoPositionError);
+  });
+});
+
+describe('fraction sale', () => {
+  it('SHOULD store the link to its event on a new SELL', async () => {
+    spies.operationCreate.mockResolvedValue({ id: 'sale-1', transaction_id: null });
+    spies.accountFindUnique.mockResolvedValue({ owner: 'USER', owner_id: 'u' });
+    spies.transactionCreate.mockResolvedValue({ id: 'tx-1' });
+    spies.operationFindMany.mockResolvedValue(
+      positionRows([{ date: '2026-01-10', id: 'b', qty: '3155', type: 'BUY' }]),
+    );
+
+    await setup.writeOperation({
+      ...baseParams,
+      fraction_of_operation_id: 'event-1',
+      type: 'SELL',
+    });
+
+    expect(spies.operationCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ fraction_of_operation_id: 'event-1', type: 'SELL' }),
+    });
   });
 });
 

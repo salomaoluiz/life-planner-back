@@ -81,6 +81,7 @@ export interface IInvestmentDatasource {
   findValuationsByAssetId(assetId: string): Promise<InvestmentValuation[]>;
   updateAsset(params: UpdateAssetDatasourceParams): Promise<InvestmentAsset>;
   upsertValuation(assetId: string, date: Date, unitPrice: string): Promise<InvestmentValuation>;
+  writeEvent(params: WriteEventDatasourceParams): Promise<string>;
   writeOperation(params: WriteOperationDatasourceParams): Promise<string>;
 }
 export type OperationRow = { fees: InvestmentOperationFee[] } & InvestmentOperation;
@@ -104,6 +105,21 @@ export interface UpdateAssetDatasourceParams {
   status?: InvestmentAssetStatus;
   ticker?: null | string;
 }
+// Spec 108: a split, reverse split or bonus. No finance row, no money fields.
+export interface WriteEventDatasourceParams {
+  asset_id: string;
+  bonus_percent: null | string;
+  bonus_unit_cost: null | string;
+  date: Date;
+  // Set when approving a suggestion.
+  decided_by?: string;
+  event_suggestion_id?: string;
+  // Set when editing.
+  operation_id?: string;
+  ratio_from: null | string;
+  ratio_to: null | string;
+  type: InvestmentOperationType;
+}
 export interface WriteOperationDatasourceParams {
   account_id: null | string;
   asset_id: string;
@@ -116,6 +132,8 @@ export interface WriteOperationDatasourceParams {
   fx_rate: null | string;
   generate_transaction: boolean;
   gross: number;
+  // Spec 108 FR 15: the event whose fraction this SELL sells.
+  fraction_of_operation_id?: null | string;
   // Set when editing.
   operation_id?: string;
   quantity: string;

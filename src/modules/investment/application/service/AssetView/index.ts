@@ -1,8 +1,14 @@
 import { AssetDetail, AssetEntity, AssetListRow } from '@investment/domain/entity/AssetEntity';
 import { OperationEntity } from '@investment/domain/entity/OperationEntity';
 import { ValuationEntity } from '@investment/domain/entity/ValuationEntity';
+import { InvestmentAssetClass } from '@investment/domain/enum';
+import { unitStepOf } from '@investment/domain/service/CorporateEventMath';
 import { averageFxCost, FxResult, splitFxResult } from '@investment/domain/service/FxResultSplit';
-import { calculatePosition, PositionResult } from '@investment/domain/service/PositionCalculator';
+import {
+  calculatePosition,
+  PositionResult,
+  toPositionOperation,
+} from '@investment/domain/service/PositionCalculator';
 import { marketOfClass, PriceSource, resolvePrice } from '@investment/domain/service/QuoteResolver';
 import { Decimal8 } from '@shared/infra/decimal';
 
@@ -66,7 +72,7 @@ export function toAssetDetailView(
   detail: AssetDetail,
   context: QuoteContext = emptyContext(),
 ): AssetDetailView {
-  const result = positionOf(detail.operations);
+  const result = positionOf(detail.operations, detail.assetClass);
   const { operations, valuations, ...asset } = detail;
   const latest = latestOf(valuations);
   const fixedIncome = toFixedIncomeView(
@@ -95,7 +101,7 @@ export function toAssetDetailView(
 }
 export function toAssetView(row: AssetListRow, context: QuoteContext = emptyContext()): AssetView {
   const { latestValuation, operations, ...asset } = row;
-  const result = positionOf(operations);
+  const result = positionOf(operations, row.assetClass);
   const fixedIncome = toFixedIncomeView(
     context.fixedIncome.get(asset.id),
     operations,
@@ -136,17 +142,11 @@ function marketOf(
     usd: asset.currency === 'USD' ? usdOf(operations, result, price?.unitPrice ?? null, fx) : null,
   };
 }
-function positionOf(operations: OperationEntity[]): PositionResult {
-  return calculatePosition(
-    operations.map((operation) => ({
-      createdAt: operation.createdAt,
-      date: operation.date,
-      id: operation.id,
-      quantity: operation.quantity,
-      total: operation.total,
-      type: operation.type,
-    })),
-  );
+function positionOf(
+  operations: OperationEntity[],
+  assetClass: InvestmentAssetClass,
+): PositionResult {
+  return calculatePosition(operations.map(toPositionOperation), { step: unitStepOf(assetClass) });
 }
 function quoteOf(asset: AssetEntity, context: QuoteContext) {
   const market = marketOfClass(asset.assetClass);
