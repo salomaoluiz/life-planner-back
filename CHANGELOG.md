@@ -3,6 +3,15 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.12.0] - 2026-11-10
+
+### Added
+
+- Investment income (spec 107): dividends, JCP, yields and interest per asset, each with a linked finance income (planned or received) written in one transaction with the account balance.
+- Announced income suggestions from brapi (and Finnhub when the plan allows), stored once per symbol by a weekday job and approved or rejected per asset.
+- `GET /investments/assets/:id/income-defaults` with the account, category, quantity and estimated withholding for the form.
+- Finance rows managed by an income refuse edit and delete (`422 EXTERNALLY_LOCKED`) and expose `externalLock` and the income link.
+
 ## [3.11.1] - 2026-11-10
 
 ### Fixed
