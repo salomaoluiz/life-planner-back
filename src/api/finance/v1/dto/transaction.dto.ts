@@ -217,7 +217,13 @@ export const TransactionPageApiSchema = z.object({
 
 export const TransactionWithLookupsApiSchema = z.object({
   // Spec 102: present on rows of the two investment categories.
-  investment: z.object({ assetId: z.uuid(), operationId: z.uuid() }).optional(),
+  // Spec 107: `incomeId` instead of `operationId` on a row locked by an investment income.
+  investment: z
+    .union([
+      z.object({ assetId: z.uuid(), operationId: z.uuid() }),
+      z.object({ assetId: z.uuid(), incomeId: z.uuid() }),
+    ])
+    .optional(),
   item: TransactionItemApiSchema,
   lookups: TransactionLookupsApiSchema,
 });

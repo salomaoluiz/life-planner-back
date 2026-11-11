@@ -154,6 +154,24 @@ describe('findById (spec 077)', () => {
     },
   );
 
+  it('SHOULD answer the income link of a row locked by an investment income', async () => {
+    mocks.resolveCardRowsPaidUseCase.execute.mockResolvedValueOnce([
+      { ...mocks.transactionResult, externalLock: 'INVESTMENT' },
+    ]);
+    mocks.findIncomeByTransactionIdUseCase.execute.mockResolvedValueOnce({
+      assetId: 'asset-1',
+      incomeId: 'inc-1',
+    });
+
+    const result = await setup.findById(mocks.userId, mocks.transactionResult.id);
+
+    expect(mocks.findIncomeByTransactionIdUseCase.execute).toHaveBeenCalledWith({
+      transactionId: mocks.transactionResult.id,
+    });
+    expect(mocks.findOperationByTransactionIdUseCase.execute).not.toHaveBeenCalled();
+    expect(result.investment).toEqual({ assetId: 'asset-1', incomeId: 'inc-1' });
+  });
+
   it('SHOULD NOT look for an operation on a normal row', async () => {
     const result = await setup.findById(mocks.userId, mocks.transactionResult.id);
 

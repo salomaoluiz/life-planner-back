@@ -26,6 +26,15 @@
     "reason": "Writes are not measured: perf tests only read (spec 093).",
     "scenario": ""
   },
+  "DELETE /api/v1/investments/incomes/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
   "DELETE /api/v1/investments/operations/:id": {
     "indexes": null,
     "kind": "unmeasured",
@@ -61,6 +70,15 @@
     "reason": "Needs an asset in the pinned perf dataset (spec 093); the seed gets investments in a later spec.",
     "scenario": ""
   },
+  "GET /api/v1/investments/assets/:id/income-defaults": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs incomes in the pinned perf dataset (spec 093); the seed gets investments in a later spec. Keyset pages and one asset per query (spec 107).",
+    "scenario": ""
+  },
   "GET /api/v1/investments/assets/:id/price-history": {
     "indexes": null,
     "kind": "unmeasured",
@@ -68,6 +86,33 @@
     "maxQueries": 0,
     "p50Ms": null,
     "reason": "Needs an asset with a ticker in the pinned perf dataset (spec 093); the seed gets investments in a later spec. Reads stored closes only (3 queries: asset, history range, rate).",
+    "scenario": ""
+  },
+  "GET /api/v1/investments/income-suggestions": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs suggestions in the pinned perf dataset (spec 093); reads stored rows only, never a provider (spec 107).",
+    "scenario": ""
+  },
+  "GET /api/v1/investments/incomes": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs incomes in the pinned perf dataset (spec 093); the seed gets investments in a later spec. Keyset pages and one asset per query (spec 107).",
+    "scenario": ""
+  },
+  "GET /api/v1/investments/incomes/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs incomes in the pinned perf dataset (spec 093); the seed gets investments in a later spec. Keyset pages and one asset per query (spec 107).",
     "scenario": ""
   },
   "GET /api/v1/investments/tickers/search": {
@@ -89,6 +134,15 @@
     "scenario": ""
   },
   "PATCH /api/v1/investments/fixed-income/rates/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "PATCH /api/v1/investments/incomes/:id": {
     "indexes": null,
     "kind": "unmeasured",
     "maxBytes": null,
@@ -176,6 +230,42 @@
     "maxQueries": 0,
     "p50Ms": null,
     "reason": "Spec 105 FR 34: a POST that only computes; perf tests only read (spec 093). Simulate reads nothing; the preview reads the asset, its operations and its fixed income rows (4 queries).",
+    "scenario": ""
+  },
+  "POST /api/v1/investments/income-suggestions/:id/approve": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "POST /api/v1/investments/income-suggestions/:id/reject": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "POST /api/v1/investments/incomes": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "POST /api/v1/investments/incomes/:id/receive": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
     "scenario": ""
   },
   "POST /api/v1/investments/quotes/refresh": {
