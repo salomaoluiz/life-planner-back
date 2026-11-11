@@ -116,6 +116,7 @@ export function repositorySpies(): Record<keyof IInvestmentRepository, jest.Mock
     updateFixedIncomeRate: jest.fn(),
     upsertFixedIncomeAdjustment: jest.fn(),
     upsertValuation: jest.fn(),
+    writeEvent: jest.fn(),
     writeOperation: jest.fn(),
   };
 }

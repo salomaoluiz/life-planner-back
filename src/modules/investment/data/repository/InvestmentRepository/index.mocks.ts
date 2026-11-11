@@ -33,6 +33,7 @@ const names = [
   'findValuationsByAssetId',
   'updateAsset',
   'upsertValuation',
+  'writeEvent',
   'writeOperation',
 ] as const;
 

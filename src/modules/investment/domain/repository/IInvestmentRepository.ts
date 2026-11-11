@@ -81,6 +81,9 @@ export type IInvestmentRepository = {
   // One database transaction: operation, fees, linked finance row, ledger balance and the never-negative check.
   // Throws `NegativePositionError` (and writes nothing) when the position would go below zero.
   writeOperation(params: WriteOperationRepositoryParams): Promise<string>;
+  // Spec 108: a split, reverse split or bonus in one database transaction (no finance row). Throws
+  // `NegativePositionError`, `NoPositionError` or `FractionSaleBreaksError` and writes nothing.
+  writeEvent(params: WriteEventRepositoryParams): Promise<string>;
 };
 export interface OperationAccount {
   archived: boolean;
@@ -107,6 +110,20 @@ export interface UpsertValuationRepositoryParams {
   date: string;
   unitPrice: Decimal8;
 }
+export interface WriteEventRepositoryParams {
+  assetId: string;
+  bonusPercent: Decimal8 | null;
+  bonusUnitCost: Decimal8 | null;
+  date: string;
+  // Set when approving a suggestion.
+  decidedBy?: string;
+  eventSuggestionId?: string;
+  // Set when editing.
+  operationId?: string;
+  ratioFrom: Decimal8 | null;
+  ratioTo: Decimal8 | null;
+  type: InvestmentOperationType;
+}
 export interface WriteOperationRepositoryParams {
   accountId: null | string;
   assetId: string;
@@ -119,6 +136,8 @@ export interface WriteOperationRepositoryParams {
   // BRL per USD as a decimal string; null when the asset is in BRL or the rate is unknown.
   fxRate: null | string;
   generateTransaction: boolean;
+  // Spec 108 FR 15: the event whose fraction this SELL sells.
+  fractionOfOperationId?: string;
   gross: number;
   // Spec 105: set on the SELL rows of calculated titles.
   netAmount?: null | number;

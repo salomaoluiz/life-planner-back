@@ -232,6 +232,88 @@ describe('writes', () => {
   });
 });
 
+describe('corporate events (spec 108)', () => {
+  it('SHOULD write an event with ratios as strings AND the suggestion it approves', async () => {
+    spies.writeEvent.mockResolvedValue('event-1');
+
+    const id = await setup.writeEvent({
+      assetId: 'asset-1',
+      bonusPercent: null,
+      bonusUnitCost: null,
+      date: '2026-03-10',
+      decidedBy: 'user-1',
+      eventSuggestionId: 'sug-1',
+      ratioFrom: Decimal8.parse('10'),
+      ratioTo: Decimal8.parse('1'),
+      type: InvestmentOperationType.REVERSE_SPLIT,
+    });
+
+    expect(id).toBe('event-1');
+    expect(spies.writeEvent).toHaveBeenCalledWith({
+      asset_id: 'asset-1',
+      bonus_percent: null,
+      bonus_unit_cost: null,
+      date: new Date('2026-03-10T00:00:00.000Z'),
+      decided_by: 'user-1',
+      event_suggestion_id: 'sug-1',
+      operation_id: undefined,
+      ratio_from: '10.00000000',
+      ratio_to: '1.00000000',
+      type: 'REVERSE_SPLIT',
+    });
+  });
+
+  it('SHOULD write a bonus with percent AND unit cost', async () => {
+    spies.writeEvent.mockResolvedValue('event-2');
+
+    await setup.writeEvent({
+      assetId: 'asset-1',
+      bonusPercent: Decimal8.parse('10'),
+      bonusUnitCost: Decimal8.parse('4.5'),
+      date: '2026-11-18',
+      operationId: 'event-2',
+      ratioFrom: null,
+      ratioTo: null,
+      type: InvestmentOperationType.BONUS,
+    });
+
+    expect(spies.writeEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bonus_percent: '10.00000000',
+        bonus_unit_cost: '4.50000000',
+        operation_id: 'event-2',
+        ratio_from: null,
+      }),
+    );
+  });
+
+  it('SHOULD pass the event a fraction sale belongs to', async () => {
+    spies.writeOperation.mockResolvedValue('sale-1');
+
+    await setup.writeOperation({
+      accountId: null,
+      assetId: 'asset-1',
+      assetLabel: 'MGLU3',
+      currency: 'BRL',
+      date: '2026-04-04',
+      fees: [],
+      feesTotal: 0,
+      fractionOfOperationId: 'event-1',
+      fxRate: null,
+      generateTransaction: false,
+      gross: 520,
+      quantity: Decimal8.parse('0.5'),
+      total: 520,
+      type: InvestmentOperationType.SELL,
+      unitPrice: Decimal8.parse('10.4'),
+    });
+
+    expect(spies.writeOperation).toHaveBeenCalledWith(
+      expect.objectContaining({ fraction_of_operation_id: 'event-1' }),
+    );
+  });
+});
+
 describe('fixed income', () => {
   const rate = {
     annualRate: '12',

@@ -24,6 +24,7 @@ import {
   SaveFixedIncomeTermsRepositoryParams,
   UpdateAssetRepositoryParams,
   UpsertValuationRepositoryParams,
+  WriteEventRepositoryParams,
   WriteOperationRepositoryParams,
 } from '@investment/domain/repository';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -280,6 +281,21 @@ export class InvestmentRepository implements IInvestmentRepository {
     return InvestmentMapper.toValuation(row);
   }
 
+  async writeEvent(params: WriteEventRepositoryParams): Promise<string> {
+    return this.datasource.writeEvent({
+      asset_id: params.assetId,
+      bonus_percent: params.bonusPercent?.toFixed8() ?? null,
+      bonus_unit_cost: params.bonusUnitCost?.toFixed8() ?? null,
+      date: InvestmentMapper.fromCalendarDate(params.date),
+      decided_by: params.decidedBy,
+      event_suggestion_id: params.eventSuggestionId,
+      operation_id: params.operationId,
+      ratio_from: params.ratioFrom?.toFixed8() ?? null,
+      ratio_to: params.ratioTo?.toFixed8() ?? null,
+      type: params.type,
+    });
+  }
+
   async writeOperation(params: WriteOperationRepositoryParams): Promise<string> {
     return this.datasource.writeOperation(toWriteParams(params));
   }
@@ -301,6 +317,7 @@ function toWriteParams(
     date: InvestmentMapper.fromCalendarDate(params.date),
     fees: params.fees,
     fees_total: params.feesTotal,
+    fraction_of_operation_id: params.fractionOfOperationId,
     fx_rate: params.fxRate,
     generate_transaction: params.generateTransaction,
     gross: params.gross,
