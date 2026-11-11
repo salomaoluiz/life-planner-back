@@ -3,6 +3,15 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.13.0] - 2026-11-11
+
+### Added
+
+- Corporate events (spec 108): splits, reverse splits and bonus shares on an asset, by hand or approved from the provider's announcements; quantity and average price are recomputed from the data-com.
+- Fractions left by an event leave the position with their share of the cost and wait in `pendingFractions` until the auction cash is recorded as a fraction sale with its realized result.
+- `GET /investments/event-suggestions` plus approve and reject, filled by the weekday events job right after the income step.
+- Editing or deleting an old operation re-checks every event after it (no position, negative position or a fraction sale that would lose its fraction answer 422).
+
 ## [3.12.0] - 2026-11-10
 
 ### Added

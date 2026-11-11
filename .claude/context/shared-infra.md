@@ -50,3 +50,5 @@ Spec 107 adds `getIncomeEvents(symbol)` to both wrappers (`IncomeEventResult`: g
 3. Consumers `@Inject('I<Name>')`; never import the lib itself.
 
 Logging: `logger.log(LogLevel.X, 'message', { module: 'ClassName', ...ctx })`. Never log passwords, hashes, tokens or full request bodies.
+
+Spec 108 adds `getCorporateEvents(symbol)` to both wrappers (`CorporateEventResult`: `type`, `recordDate` = data-com, `ratioFrom`/`ratioTo` or `bonusPercent`): brapi reads `stockDividends` of the same `GET /quote/:ticker?dividends=true` response (`DESDOBRAMENTO` factor > 1 = `1:factor`, `GRUPAMENTO` factor < 1 = `1/factor:1`, `BONIFICACAO` factor = percent; unknown labels, a wrong direction and rows without a date are ignored); Finnhub reads `/stock/split` (`fromFactor`/`toFactor`; the data-com is the day before its effective date) and answers `[]` on a 403. Only `RefreshCorporateEventsUseCase` calls them.
