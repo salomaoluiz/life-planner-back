@@ -29,6 +29,7 @@ import {
   saveAdjustment,
   saveTerms,
 } from '@investment/data/datasource/fixedIncome';
+import { recomputeSuggestions } from '@investment/data/datasource/income';
 import { toOwnerWhere } from '@investment/data/datasource/mapper/OwnerWhere';
 import {
   CreateAssetDatasourceParams,
@@ -50,7 +51,7 @@ import { Database } from '@shared/infra/db/Database';
 import { Decimal8 } from '@shared/infra/decimal';
 
 const OPERATION_ORDER = [{ date: 'desc' }, { created_at: 'desc' }, { id: 'desc' }] as const;
-const LINKED_SELECT = { account_id: true, type: true, value: true } as const;
+const LINKED_SELECT = { account_id: true, paid: true, type: true, value: true } as const;
 
 @Injectable()
 export class InvestmentDatasource implements IInvestmentDatasource {
@@ -167,6 +168,7 @@ export class InvestmentDatasource implements IInvestmentDatasource {
       await applyDeltas(tx, ledgerDeltasFor(toLinkedRow(existing.transaction), undefined));
       await recalculateFixedIncome(tx, existing.asset_id);
       await assertPositionNotNegative(tx, existing.asset_id);
+      await recomputeSuggestions(tx, existing.asset_id);
     });
   }
 
@@ -475,6 +477,7 @@ async function writeOperationIn(
   await applyDeltas(tx, ledgerDeltasFor(before, after));
   await recalculateFixedIncome(tx, params.asset_id);
   await assertPositionNotNegative(tx, params.asset_id);
+  await recomputeSuggestions(tx, params.asset_id);
 
   return operation.id;
 }
@@ -493,11 +496,19 @@ async function removeAssets(tx: Prisma.TransactionClient, assetIds: string[]): P
     select: { transaction: { select: LINKED_SELECT }, transaction_id: true },
     where: { asset_id: { in: assetIds }, transaction_id: { not: null } },
   });
-  const rows = operations
-    .map((operation) => toLinkedRow(operation.transaction))
-    .filter((row): row is LinkedRow => row !== undefined);
-  const transactionIds = operations
-    .map((operation) => operation.transaction_id)
+  // Spec 107 FR 22: the finance rows of the incomes go too; only the received ones moved the ledger.
+  const incomes = await tx.investmentIncome.findMany({
+    select: { transaction: { select: LINKED_SELECT }, transaction_id: true },
+    where: { asset_id: { in: assetIds }, transaction_id: { not: null } },
+  });
+  const rows = [
+    ...operations.map((operation) => toLinkedRow(operation.transaction)),
+    ...incomes.map((income) =>
+      income.transaction?.paid ? toLinkedRow(income.transaction) : undefined,
+    ),
+  ].filter((row): row is LinkedRow => row !== undefined);
+  const transactionIds = [...operations, ...incomes]
+    .map((item) => item.transaction_id)
     .filter((id): id is string => id !== null);
 
   await lockAccounts(

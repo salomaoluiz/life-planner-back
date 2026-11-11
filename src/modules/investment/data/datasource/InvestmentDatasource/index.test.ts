@@ -160,6 +160,31 @@ describe('deleteAsset', () => {
     expect(spies.assetDeleteMany).toHaveBeenCalledWith({ where: { id: { in: ['asset-1'] } } });
   });
 
+  it('SHOULD delete the rows of the incomes too AND give back only the received ones', async () => {
+    spies.operationFindMany.mockResolvedValue([]);
+    spies.incomeFindMany.mockResolvedValue([
+      {
+        transaction: { account_id: 'acc-1', paid: true, type: 'INCOME', value: 700 },
+        transaction_id: 't1',
+      },
+      {
+        transaction: { account_id: 'acc-1', paid: false, type: 'INCOME', value: 900 },
+        transaction_id: 't2',
+      },
+    ]);
+
+    await setup.deleteAsset('asset-1');
+
+    expect(spies.transactionDeleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ['t1', 't2'] } },
+    });
+    expect(spies.accountUpdate).toHaveBeenCalledWith({
+      data: { ledger_balance: { increment: -700 } },
+      where: { id: 'acc-1' },
+    });
+    expect(spies.accountUpdate).toHaveBeenCalledTimes(1);
+  });
+
   it('SHOULD only delete the asset WHEN no operation is linked', async () => {
     spies.operationFindMany.mockResolvedValue([]);
 
