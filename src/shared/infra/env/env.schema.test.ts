@@ -16,6 +16,7 @@ describe('validateEnvironment', () => {
       INVESTMENT_QUOTE_REFRESH_COOLDOWN_MS: 60000,
       INVESTMENT_QUOTES_BRAPI_BATCH_SIZE: 20,
       INVESTMENT_QUOTES_JOB_ENABLED: true,
+      INVESTMENT_QUOTES_MIN_INTERVAL_MS: 0,
       JWT_EXPIRES_IN: 7200, // Coerced
       PERF_COUNT_QUERIES: false,
       PORT: 4000, // Coerced
@@ -34,6 +35,7 @@ describe('validateEnvironment', () => {
       FINNHUB_TOKEN: 'your-finnhub-token',
       INVESTMENT_QUOTES_BRAPI_BATCH_SIZE: '10',
       INVESTMENT_QUOTES_JOB_ENABLED: 'false',
+      INVESTMENT_QUOTES_MIN_INTERVAL_MS: '14400000',
     });
 
     expect(result).toMatchObject({
@@ -41,6 +43,7 @@ describe('validateEnvironment', () => {
       FINNHUB_TOKEN: 'your-finnhub-token',
       INVESTMENT_QUOTES_BRAPI_BATCH_SIZE: 10,
       INVESTMENT_QUOTES_JOB_ENABLED: false,
+      INVESTMENT_QUOTES_MIN_INTERVAL_MS: 14400000,
     });
   });
 

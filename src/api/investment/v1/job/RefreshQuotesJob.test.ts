@@ -4,11 +4,11 @@ const scheduler = { cron: jest.fn() };
 const logger = { log: jest.fn() };
 const refresh = { execute: jest.fn() };
 
-function job(enabled: boolean) {
+function job(enabled: boolean, minIntervalMs = 0) {
   return new RefreshQuotesJob(
     scheduler,
     logger,
-    { investmentQuotesJobEnabled: enabled } as never,
+    { investmentQuotesJobEnabled: enabled, investmentQuotesMinIntervalMs: minIntervalMs } as never,
     refresh as never,
   );
 }
@@ -57,5 +57,54 @@ describe('RefreshQuotesJob', () => {
 
     expect(scheduler.cron).not.toHaveBeenCalled();
     expect(logger.log).toHaveBeenCalledWith('info', expect.any(String), expect.any(Object));
+  });
+
+  describe('minimum interval', () => {
+    function run(name: string) {
+      return scheduler.cron.mock.calls.find(([scheduleName]) => scheduleName === name)?.[3]();
+    }
+
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    it('SHOULD skip a tick of the same target WHEN it ran less than the minimum interval ago', async () => {
+      job(true, 4 * 3600_000).onModuleInit();
+
+      await run('quotes-b3-hourly');
+      jest.advanceTimersByTime(3600_000);
+      await run('quotes-b3-hourly');
+      await run('quotes-b3-close');
+
+      expect(refresh.execute).toHaveBeenCalledTimes(1);
+      expect(logger.log).toHaveBeenCalledWith('info', expect.any(String), expect.any(Object));
+    });
+
+    it('SHOULD run again WHEN the minimum interval has elapsed', async () => {
+      job(true, 4 * 3600_000).onModuleInit();
+
+      await run('quotes-b3-hourly');
+      jest.advanceTimersByTime(4 * 3600_000);
+      await run('quotes-b3-hourly');
+
+      expect(refresh.execute).toHaveBeenCalledTimes(2);
+    });
+
+    it('SHOULD track each target on its own', async () => {
+      job(true, 4 * 3600_000).onModuleInit();
+
+      await run('quotes-b3-hourly');
+      await run('quotes-us-hourly');
+
+      expect(refresh.execute).toHaveBeenCalledTimes(2);
+    });
+
+    it('SHOULD never skip WHEN the minimum interval is 0', async () => {
+      job(true).onModuleInit();
+
+      await run('quotes-b3-hourly');
+      await run('quotes-b3-hourly');
+
+      expect(refresh.execute).toHaveBeenCalledTimes(2);
+    });
   });
 });
