@@ -15,6 +15,8 @@ Goal: an unexpected API error reaches Sentry with the original `.ts` file and li
 - Env: `SENTRY_DSN` (absent = disabled), `SENTRY_ENABLED` (default `false`), `SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE` (0–1, default 0; production `0.1` recommended; errors are always captured whatever the rate).
 - `AllExceptionsFilter` calls `captureException` only when the status is ≥ 500 or the exception is not an `HttpException`. 4xx and `NotModifiedException` are never sent. The explicit capture is used instead of the SDK's global filter so 4xx can never leak.
 - `Scheduler.cron` captures failing jobs with the tag `job`. `main.ts` captures a bootstrap failure and flushes before exit.
+- Safety nets: the filter's capture is wrapped (a failure building the tags still sends the exception, a failing SDK never breaks the reply; `getClass()` is `null` outside a controller). `registerFatalHandlers` (called in `main.ts`) captures `uncaughtException`/`unhandledRejection` with the tag `phase`, flushes, logs and exits, so an error that escapes every filter is still reported.
+- `src/instrument.ts` calls `process.loadEnvFile()` first: in dev the `.env` is otherwise read only by Nest's `ConfigModule`, after the SDK started (it never overrides variables already set; production has no `.env`).
 - CORS allows the request headers `sentry-trace` and `baggage` (the web sends them to the API). Deploy order: API first, then the web.
 
 ## Tags

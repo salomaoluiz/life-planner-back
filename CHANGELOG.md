@@ -3,6 +3,14 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.11.1] - 2026-11-10
+
+### Fixed
+
+- Sentry capture (spec 106) no longer breaks the error response when an exception happens outside a controller, and a failing capture never hides the original error.
+- Errors that escape every filter (`uncaughtException`, `unhandledRejection`) are reported to Sentry before the process exits.
+- In local development the `.env` is loaded before Sentry starts, so `SENTRY_ENABLED` and `SENTRY_DSN` take effect.
+
 ## [3.11.0] - 2026-11-10
 
 ### Added
