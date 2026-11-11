@@ -31,6 +31,7 @@ import { GetIncomeByIdUseCase } from '@investment/application/use-case/GetIncome
 import { GetIncomeDefaultsUseCase } from '@investment/application/use-case/GetIncomeDefaultsUseCase';
 import { GetIncomeSuggestionsUseCase } from '@investment/application/use-case/GetIncomeSuggestionsUseCase';
 import { GetIncomesUseCase } from '@investment/application/use-case/GetIncomesUseCase';
+import { GetInvestmentsHomeSummaryUseCase } from '@investment/application/use-case/GetInvestmentsHomeSummaryUseCase';
 import { GetPriceHistoryUseCase } from '@investment/application/use-case/GetPriceHistoryUseCase';
 import { HasInvestmentsByOwnerUseCase } from '@investment/application/use-case/HasInvestmentsByOwnerUseCase';
 import { PreviewFixedIncomeRedemptionUseCase } from '@investment/application/use-case/PreviewFixedIncomeRedemptionUseCase';
@@ -73,6 +74,7 @@ const useCases = [
   GetIncomeDefaultsUseCase,
   GetIncomeSuggestionsUseCase,
   GetIncomesUseCase,
+  GetInvestmentsHomeSummaryUseCase,
   ReceiveIncomeUseCase,
   RefreshCorporateEventsUseCase,
   RefreshIncomeEventsUseCase,
