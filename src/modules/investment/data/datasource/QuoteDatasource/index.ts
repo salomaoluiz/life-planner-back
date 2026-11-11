@@ -68,9 +68,19 @@ export class QuoteDatasource implements IQuoteDatasource {
         AND a.asset_class IN ('BR_STOCK', 'BR_REIT', 'FOREIGN_STOCK')
         AND (
           COALESCE((
-            SELECT SUM(CASE WHEN o.type = 'BUY' THEN o.quantity ELSE -o.quantity END)
+            SELECT SUM(CASE
+              WHEN o.type IN ('SPLIT', 'REVERSE_SPLIT', 'BONUS') THEN 0
+              WHEN o.fraction_of_operation_id IS NOT NULL THEN 0
+              WHEN o.type = 'BUY' THEN o.quantity
+              ELSE -o.quantity
+            END)
             FROM investment_operations o WHERE o.asset_id = a.id
           ), 0) > 0
+          -- Spec 108: an event changes the quantity in a way this sum cannot see, so it keeps the symbol tracked.
+          OR EXISTS (
+            SELECT 1 FROM investment_operations o
+            WHERE o.asset_id = a.id AND o.type IN ('SPLIT', 'REVERSE_SPLIT', 'BONUS')
+          )
           OR EXISTS (
             SELECT 1 FROM investment_operations o WHERE o.asset_id = a.id AND o.date >= ${since}
           )

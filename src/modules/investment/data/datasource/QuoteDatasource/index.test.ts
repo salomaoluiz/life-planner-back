@@ -23,6 +23,18 @@ describe('QuoteDatasource reads', () => {
     expect(await setup.findTrackedSymbols(new Date('2026-10-10'))).toEqual([key]);
   });
 
+  it('SHOULD keep tracking an asset with corporate events AND leave fraction sales out of the held sum (spec 108)', async () => {
+    spies.queryRaw.mockResolvedValue([key]);
+
+    await setup.findTrackedSymbols(new Date('2026-10-10'));
+
+    // The BUY - SELL sum cannot know what an event did to the quantity, so any event keeps the symbol tracked.
+    const { sql } = spies.queryRaw.mock.calls[0][0] as { sql: string };
+
+    expect(sql).toContain("o.type IN ('SPLIT', 'REVERSE_SPLIT', 'BONUS')");
+    expect(sql).toContain('o.fraction_of_operation_id IS NOT NULL THEN 0');
+  });
+
   it('SHOULD read fx rate, fx history and price history', async () => {
     spies.fxFindUnique.mockResolvedValue({ pair: 'USD-BRL' });
     spies.fxHistoryFindMany.mockResolvedValue([]);
