@@ -127,10 +127,10 @@
   "GET /api/v1/investments/summary": {
     "indexes": null,
     "kind": "read",
-    "maxBytes": 600,
+    "maxBytes": 300,
     "maxQueries": 3,
     "p50Ms": 30,
-    "scenario": ""
+    "scenario": "ownerId={userId}"
   },
   "GET /api/v1/investments/tickers/search": {
     "indexes": null,
