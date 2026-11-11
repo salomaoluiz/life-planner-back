@@ -6,6 +6,7 @@ import { IncomeRepository } from './index';
 
 const names = [
   'countPendingSuggestions',
+  'countPendingSuggestionsByAssets',
   'createSuggestions',
   'deleteIncome',
   'findCategoryById',
@@ -16,6 +17,7 @@ const names = [
   'findIncomes',
   'findLastIncomeCategoryId',
   'findPendingSuggestions',
+  'findReceivedByOwners',
   'findSuggestionById',
   'findSuggestionInputs',
   'incomeTotals',

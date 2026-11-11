@@ -31,6 +31,10 @@ export class IncomeRepository implements IIncomeRepository {
     return this.datasource.countPendingSuggestions(assetId);
   }
 
+  async countPendingSuggestionsByAssets(assetIds: string[]): Promise<number> {
+    return this.datasource.countPendingSuggestionsByAssets(assetIds);
+  }
+
   async createSuggestions(rows: NewSuggestionRow[]): Promise<number> {
     return this.datasource.createSuggestions(
       rows.map((row) => ({
@@ -103,6 +107,20 @@ export class IncomeRepository implements IIncomeRepository {
     const rows = await this.datasource.findPendingSuggestions(assetIds);
 
     return rows.map((row) => IncomeMapper.toSuggestion(row));
+  }
+
+  async findReceivedByOwners(
+    owners: { owner: OwnerType; ownerId: string }[],
+    from: string,
+    to: string,
+  ): Promise<{ currency: string; netAmount: number }[]> {
+    const rows = await this.datasource.findReceivedByOwners(
+      owners,
+      InvestmentMapper.fromCalendarDate(from),
+      InvestmentMapper.fromCalendarDate(to),
+    );
+
+    return rows.map((row) => ({ currency: row.currency, netAmount: row.net_amount }));
   }
 
   async findSuggestionById(id: string): Promise<IncomeSuggestionEntity | undefined> {

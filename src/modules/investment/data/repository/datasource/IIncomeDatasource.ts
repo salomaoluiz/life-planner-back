@@ -12,11 +12,13 @@ import {
   IncomeFilter,
   WriteIncomeParams,
 } from '@investment/domain/entity/IncomeEntity';
+import { OwnerAccess } from '@investment/domain/entity/OwnerAccess';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export type CategoryRow = { scopes: FinancialCategoryScope[] } & FinancialCategory;
 export type IIncomeDatasource = {
   countPendingSuggestions(assetId: string): Promise<number>;
+  countPendingSuggestionsByAssets(assetIds: string[]): Promise<number>;
   createSuggestions(
     rows: { asset_id: string; event_id: string; quantity: string }[],
   ): Promise<number>;
@@ -34,6 +36,11 @@ export type IIncomeDatasource = {
   findIncomes(filter: IncomeFilter): Promise<IncomeRow[]>;
   findLastIncomeCategoryId(owner: OwnerType, ownerId: string, type: string): Promise<null | string>;
   findPendingSuggestions(assetIds: string[]): Promise<SuggestionRow[]>;
+  findReceivedByOwners(
+    owners: OwnerAccess[],
+    from: Date,
+    to: Date,
+  ): Promise<Pick<InvestmentIncome, 'currency' | 'net_amount'>[]>;
   findSuggestionById(id: string): Promise<null | SuggestionRow>;
   findSuggestionInputs(keys: { market: string; ticker: string }[]): Promise<SuggestionInputsRow>;
   incomeTotals(

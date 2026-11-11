@@ -68,6 +68,7 @@ export function incomeFixture(overrides: Partial<IncomeEntity> = {}): IncomeEnti
 export function incomeRepositorySpies(): Record<keyof IIncomeRepository, jest.Mock> {
   return {
     countPendingSuggestions: jest.fn(),
+    countPendingSuggestionsByAssets: jest.fn(),
     createSuggestions: jest.fn(),
     deleteIncome: jest.fn(),
     findCategoryById: jest.fn(),
@@ -78,6 +79,7 @@ export function incomeRepositorySpies(): Record<keyof IIncomeRepository, jest.Mo
     findIncomes: jest.fn(),
     findLastIncomeCategoryId: jest.fn(),
     findPendingSuggestions: jest.fn(),
+    findReceivedByOwners: jest.fn(),
     findSuggestionById: jest.fn(),
     findSuggestionInputs: jest.fn(),
     incomeTotals: jest.fn(),

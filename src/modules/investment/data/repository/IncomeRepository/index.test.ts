@@ -132,3 +132,26 @@ it('SHOULD translate suggestion rows AND delegate the writes', async () => {
   expect(spies.deleteIncome).toHaveBeenCalledWith('inc-1');
   expect(spies.rejectSuggestion).toHaveBeenCalledWith('sug-1', 'user-1');
 });
+
+describe('home summary reads (spec 109)', () => {
+  it('SHOULD send the month as dates AND map the received rows', async () => {
+    spies.findReceivedByOwners.mockResolvedValue([{ currency: 'USD', net_amount: 1000 }]);
+    const owners = [{ owner: 'USER' as never, ownerId: 'user-1' }];
+
+    expect(await setup.findReceivedByOwners(owners, '2026-11-01', '2026-11-30')).toEqual([
+      { currency: 'USD', netAmount: 1000 },
+    ]);
+    expect(spies.findReceivedByOwners).toHaveBeenCalledWith(
+      owners,
+      new Date('2026-11-01T00:00:00Z'),
+      new Date('2026-11-30T00:00:00Z'),
+    );
+  });
+
+  it('SHOULD delegate the pending count by assets', async () => {
+    spies.countPendingSuggestionsByAssets.mockResolvedValue(4);
+
+    expect(await setup.countPendingSuggestionsByAssets(['a', 'b'])).toBe(4);
+    expect(spies.countPendingSuggestionsByAssets).toHaveBeenCalledWith(['a', 'b']);
+  });
+});
