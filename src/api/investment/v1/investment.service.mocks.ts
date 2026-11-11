@@ -47,15 +47,23 @@ const position = {
   currentValueDate: '2026-11-01',
   openResult: 84960,
   openResultPercent: 0.0721,
+  pendingFractions: [],
   quantity: Decimal8.parse('1200'),
   realizedResult: 31790,
 };
 const market: AssetView['market'] = { fx: null, priceSource: 'MANUAL', quote: null, usd: null };
-const view: AssetView = { asset, fixedIncome: null, market, operationCount: 1, position };
+const view: AssetView = {
+  asset,
+  fixedIncome: null,
+  market,
+  operationCount: 1,
+  pendingFractionCount: 0,
+  position,
+};
 const valuation = valuationFixture({ assetId: asset.id });
 const detailView: AssetDetailView = {
   ...view,
-  operations: [{ costRemoved: 294660, operation, realizedResult: 31790 }],
+  operations: [{ costRemoved: 294660, event: null, operation, realizedResult: 31790 }],
   valuations: [valuation],
 };
 const positionApi = {

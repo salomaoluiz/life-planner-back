@@ -163,6 +163,18 @@ export function toPositionOperation(
   };
 }
 
+// Spec 108 FR 16: a fraction sale's gross is the auction amount, not quantity × price.
+export function computeFractionTotals(grossCents: number, feeAmounts: number[]): Totals {
+  const feesTotal = feeAmounts.reduce((sum, amount) => sum + amount, 0);
+  const total = grossCents - feesTotal;
+
+  if (total < 0) {
+    throw new FeesHigherThanSaleError();
+  }
+
+  return { feesTotal, gross: grossCents, total };
+}
+
 // Spec 102 FR 14. SELL with fees above the gross value is refused.
 export function computeTotals(
   type: InvestmentOperationType,
@@ -182,12 +194,7 @@ export function computeTotals(
 }
 
 // cost / quantity / 100 as an 8-place decimal string; null with no quantity.
-function applyEvent(event: EventData, quantity: Decimal8, cost: number, step: UnitStep) {
-  return event.kind === 'SPLIT'
-    ? applySplit({ cost, quantity, ratioFrom: event.ratioFrom, ratioTo: event.ratioTo, step })
-    : applyBonus({ cost, percent: event.percent, quantity, step, unitCost: event.unitCost });
-}
-function averagePriceOf(cost: number, quantity: Decimal8): null | string {
+export function averagePriceOf(cost: number, quantity: Decimal8): null | string {
   if (quantity.isZero()) {
     return null;
   }
@@ -195,6 +202,12 @@ function averagePriceOf(cost: number, quantity: Decimal8): null | string {
   const scaled = roundDiv(BigInt(cost) * 10n ** 16n, quantity.scaled * 100n);
 
   return Decimal8.fromScaled(scaled).toFixed8();
+}
+
+function applyEvent(event: EventData, quantity: Decimal8, cost: number, step: UnitStep) {
+  return event.kind === 'SPLIT'
+    ? applySplit({ cost, quantity, ratioFrom: event.ratioFrom, ratioTo: event.ratioTo, step })
+    : applyBonus({ cost, percent: event.percent, quantity, step, unitCost: event.unitCost });
 }
 // Same day: BUY/SELL first, then events, then fraction sales (they need the fraction cost of the event).
 function compareOperations(a: PositionOperation, b: PositionOperation): number {

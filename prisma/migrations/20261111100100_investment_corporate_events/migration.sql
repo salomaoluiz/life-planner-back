@@ -84,3 +84,7 @@ ALTER TABLE "investment_operations" ADD CONSTRAINT "investment_operations_bonus_
 ALTER TABLE "investment_operations" ADD CONSTRAINT "investment_operations_fraction_check" CHECK (
   "fraction_of_operation_id" IS NULL OR "type" = 'SELL'
 );
+
+-- Spec 108 section 13: a fraction the broker pays nothing for is written off with a zero unit price.
+ALTER TABLE "investment_operations" DROP CONSTRAINT "investment_operations_unit_price_check";
+ALTER TABLE "investment_operations" ADD CONSTRAINT "investment_operations_unit_price_check" CHECK ("unit_price" > 0 OR "fraction_of_operation_id" IS NOT NULL);

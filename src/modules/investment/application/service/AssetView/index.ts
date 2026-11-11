@@ -2,10 +2,11 @@ import { AssetDetail, AssetEntity, AssetListRow } from '@investment/domain/entit
 import { OperationEntity } from '@investment/domain/entity/OperationEntity';
 import { ValuationEntity } from '@investment/domain/entity/ValuationEntity';
 import { InvestmentAssetClass } from '@investment/domain/enum';
-import { unitStepOf } from '@investment/domain/service/CorporateEventMath';
+import { EventStep, unitStepOf } from '@investment/domain/service/CorporateEventMath';
 import { averageFxCost, FxResult, splitFxResult } from '@investment/domain/service/FxResultSplit';
 import {
   calculatePosition,
+  PendingFraction,
   PositionResult,
   toPositionOperation,
 } from '@investment/domain/service/PositionCalculator';
@@ -38,6 +39,8 @@ export interface AssetPosition {
   openResult: null | number;
   // Fraction of the cost (0.0721 = 7.21%), 4 places; null at zero cost.
   openResultPercent: null | number;
+  // Spec 108 FR 12: fractions that left the position and wait for their sale.
+  pendingFractions: PendingFraction[];
   quantity: Decimal8;
   realizedResult: number;
 }
@@ -47,10 +50,14 @@ export interface AssetView {
   fixedIncome: FixedIncomeView | null;
   market: AssetMarket;
   operationCount: number;
+  // Spec 108: events whose fraction is not sold yet.
+  pendingFractionCount: number;
   position: AssetPosition;
 }
 export interface OperationView {
   costRemoved: null | number;
+  // Spec 108 FR 12: the before/after numbers of an event, null for any other operation.
+  event: EventStep | null;
   operation: OperationEntity;
   realizedResult: null | number;
 }
@@ -91,10 +98,12 @@ export function toAssetDetailView(
 
       return {
         costRemoved: sell?.costRemoved ?? null,
+        event: result.perEvent.get(operation.id) ?? null,
         operation,
         realizedResult: sell?.realizedResult ?? null,
       };
     }),
+    pendingFractionCount: result.pendingFractions.length,
     position: toPosition(result, latest, quoteOf(asset, context), fixedIncome),
     valuations,
   };
@@ -113,6 +122,7 @@ export function toAssetView(row: AssetListRow, context: QuoteContext = emptyCont
     fixedIncome,
     market: marketOf(asset, operations, result, latestValuation, context),
     operationCount: operations.length,
+    pendingFractionCount: result.pendingFractions.length,
     position: toPosition(result, latestValuation, quoteOf(asset, context), fixedIncome),
   };
 }
@@ -178,6 +188,7 @@ function toPosition(
       openResult === null || result.cost === 0
         ? null
         : Math.round((openResult / result.cost) * 10000) / 10000,
+    pendingFractions: result.pendingFractions,
     quantity: result.quantity,
     realizedResult: result.realizedResult,
   };

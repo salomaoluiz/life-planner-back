@@ -219,3 +219,59 @@ describe('toAssetView with a calculated title (spec 105)', () => {
     expect(toAssetView(listRowFixture(), context()).fixedIncome).toBeNull();
   });
 });
+
+describe('corporate events (spec 108)', () => {
+  const mglu = assetFixture({ ticker: 'MGLU3' });
+  const bought = operationFixture({
+    assetId: mglu.id,
+    date: '2026-01-10',
+    id: 'buy-1',
+    quantity: Decimal8.parse('3155'),
+    total: 319100,
+  });
+  const reverse = operationFixture({
+    assetId: mglu.id,
+    date: '2026-03-10',
+    event: {
+      kind: 'SPLIT',
+      ratioFrom: Decimal8.parse('10'),
+      ratioTo: Decimal8.parse('1'),
+    },
+    gross: 0,
+    id: 'event-1',
+    quantity: Decimal8.zero(),
+    total: 0,
+    type: InvestmentOperationType.REVERSE_SPLIT,
+    unitPrice: Decimal8.zero(),
+  });
+
+  it('SHOULD apply the event to the position AND list the pending fraction', () => {
+    const view = toAssetDetailView({ ...mglu, operations: [bought, reverse], valuations: [] });
+
+    expect(view.position.quantity.toString()).toBe('315');
+    expect(view.position.cost).toBe(318594);
+    expect(view.position.pendingFractions).toEqual([
+      { cost: 506, date: '2026-03-10', eventId: 'event-1', quantity: Decimal8.parse('0.5') },
+    ]);
+  });
+
+  it('SHOULD give the event row its before and after numbers', () => {
+    const view = toAssetDetailView({ ...mglu, operations: [bought, reverse], valuations: [] });
+    const row = view.operations.find((item) => item.operation.id === 'event-1');
+
+    expect(row?.event).toMatchObject({
+      costAfter: 318594,
+      costBefore: 319100,
+      fractionCost: 506,
+      quantityAfter: Decimal8.parse('315'),
+      quantityBefore: Decimal8.parse('3155'),
+    });
+    expect(view.operations.find((item) => item.operation.id === 'buy-1')?.event).toBeNull();
+  });
+
+  it('SHOULD count the pending fractions on the list row', () => {
+    const view = toAssetView(listRowFixture({ ...mglu, operations: [bought, reverse] }));
+
+    expect(view.pendingFractionCount).toBe(1);
+  });
+});

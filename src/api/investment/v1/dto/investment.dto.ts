@@ -59,7 +59,7 @@ export const CreateOperationApiSchema = z.strictObject({
   fxRate: FxRateApiSchema.nullish(),
   generateTransaction: z.boolean().optional(),
   quantity: DecimalApiSchema,
-  type: z.enum(InvestmentOperationType),
+  type: z.enum([InvestmentOperationType.BUY, InvestmentOperationType.SELL]),
   unitPrice: DecimalApiSchema,
 });
 

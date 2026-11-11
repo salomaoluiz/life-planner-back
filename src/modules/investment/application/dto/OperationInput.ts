@@ -1,18 +1,23 @@
 import { z } from 'zod';
 
+import { eventFields } from '@investment/application/dto/EventInput';
 import {
   AccessibleOwnersSchema,
   CalendarDateSchema,
   FeesSchema,
   FxRateSchema,
   IdSchema,
-  OperationTypeSchema,
   PositiveDecimalSchema,
   QuantitySchema,
 } from '@investment/application/dto/InvestmentCommon';
 import { today } from '@investment/application/service/Today';
-import { InvestmentFixedIncomeRedemptionKind } from '@investment/domain/enum';
+import {
+  InvestmentFixedIncomeRedemptionKind,
+  InvestmentOperationType,
+} from '@investment/domain/enum';
 
+// Create takes buys and sells here; events have their own schema (spec 108).
+const TradeTypeSchema = z.enum([InvestmentOperationType.BUY, InvestmentOperationType.SELL]);
 const PastDateSchema = CalendarDateSchema.refine((value) => value <= today(), {
   message: 'Date cannot be in the future',
 });
@@ -27,7 +32,7 @@ export const CreateOperationSchema = z
     fxRate: FxRateSchema.nullish(),
     generateTransaction: z.boolean().default(true),
     quantity: QuantitySchema,
-    type: OperationTypeSchema,
+    type: TradeTypeSchema,
     unitPrice: PositiveDecimalSchema,
   })
   .refine((input) => input.generateTransaction === !!input.accountId, {
@@ -43,10 +48,14 @@ export const UpdateOperationSchema = z
     accountId: IdSchema.nullish(),
     // Spec 105: the fixed income shape of a contribution (`amount`) or a redemption (`kind`, `netAmount`).
     amount: z.number().int().positive().optional(),
+    // Spec 108: the fields of an event (ratio or bonus) and the auction amount of a fraction sale.
+    ...z.object(eventFields).partial().shape,
+    bonusUnitCost: eventFields.bonusUnitCost.nullish(),
     date: PastDateSchema.optional(),
     fees: FeesSchema.optional(),
     fxRate: FxRateSchema.nullish(),
     generateTransaction: z.boolean().optional(),
+    grossAmount: z.number().int().min(0).optional(),
     id: IdSchema,
     kind: z.enum(InvestmentFixedIncomeRedemptionKind).optional(),
     netAmount: z.number().int().positive().optional(),
@@ -58,13 +67,18 @@ export const UpdateOperationSchema = z
       [
         'accountId',
         'amount',
+        'bonusPercent',
+        'bonusUnitCost',
         'date',
         'fees',
         'fxRate',
         'generateTransaction',
+        'grossAmount',
         'kind',
         'netAmount',
         'quantity',
+        'ratioFrom',
+        'ratioTo',
         'unitPrice',
       ].some((field) => input[field as keyof typeof input] !== undefined),
     { message: 'At least one field is required' },

@@ -3,6 +3,7 @@ import { Decimal8 } from '@shared/infra/decimal';
 
 import {
   calculatePosition,
+  computeFractionTotals,
   computeTotals,
   FeesHigherThanSaleError,
   PositionOperation,
@@ -261,5 +262,16 @@ describe('calculatePosition with corporate events (spec 108)', () => {
     expect(position.quantity.toString()).toBe('50');
     expect(position.averagePrice).toBe('46.10000000');
     expect(position.pendingFractions).toEqual([]);
+  });
+});
+
+describe('computeFractionTotals (spec 108 FR 16)', () => {
+  it('SHOULD take the auction amount as the gross AND subtract the fees', () => {
+    expect(computeFractionTotals(520, [20])).toEqual({ feesTotal: 20, gross: 520, total: 500 });
+    expect(computeFractionTotals(0, [])).toEqual({ feesTotal: 0, gross: 0, total: 0 });
+  });
+
+  it('SHOULD refuse fees above the amount', () => {
+    expect(() => computeFractionTotals(10, [11])).toThrow(FeesHigherThanSaleError);
   });
 });
