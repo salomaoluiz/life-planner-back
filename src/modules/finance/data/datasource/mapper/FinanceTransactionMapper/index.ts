@@ -6,6 +6,7 @@ import {
   InvoicePaymentMethod,
   RecurrenceFrequency,
   SystemCategoryKey,
+  TransactionExternalLock,
   TransactionType,
 } from '@finance/domain/enum';
 import { CurrencyCode } from '@finance/domain/enum/Currency';
@@ -48,6 +49,7 @@ export class FinanceTransactionMapper {
             invoiceMonth: raw.early_payment.invoice_month as string,
           }
         : null,
+      externalLock: raw.external_lock ? TransactionExternalLock[raw.external_lock] : null,
       id: raw.id,
       installmentCount: raw.installment_plan?.installment_count ?? null,
       installmentNumber: raw.installment_number,

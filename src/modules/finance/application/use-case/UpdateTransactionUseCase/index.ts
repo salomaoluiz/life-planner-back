@@ -17,6 +17,8 @@ import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-ca
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import {
+  EXTERNALLY_LOCKED_CODE,
+  EXTERNALLY_LOCKED_MESSAGE,
   INVESTMENT_KEYS,
   INVESTMENT_ROW_USE_OPERATION,
   TRANSFER_KEYS,
@@ -68,6 +70,14 @@ export class UpdateTransactionUseCase implements UseCaseWithParams<
     }
 
     ensureOwnerWritable(input.accessibleOwners, transaction);
+
+    // Spec 107 FR 16: a row managed by another module changes only through it.
+    if (transaction.externalLock !== null) {
+      throw new UnprocessableEntityException({
+        code: EXTERNALLY_LOCKED_CODE,
+        message: EXTERNALLY_LOCKED_MESSAGE,
+      });
+    }
 
     // Spec 098 FR 6: the rows of a transfer, `paid` included, change through the transfer.
     if (

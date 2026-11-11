@@ -102,6 +102,7 @@ class TransactionEntityFixture {
       date: '2026-10-03',
       description: faker.commerce.productDescription().slice(0, 100),
       earlyPayment: null,
+      externalLock: null,
       id: faker.string.uuid(),
       installmentCount: null,
       installmentNumber: null,

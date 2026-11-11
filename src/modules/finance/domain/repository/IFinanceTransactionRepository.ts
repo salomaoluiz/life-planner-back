@@ -72,6 +72,7 @@ type TransactionScalars = { category: Pick<TransactionCategorySummary, 'systemKe
   | 'creditCardId'
   | 'currency'
   | 'date'
+  | 'externalLock'
   | 'id'
   | 'installmentNumber'
   | 'installmentPlanId'

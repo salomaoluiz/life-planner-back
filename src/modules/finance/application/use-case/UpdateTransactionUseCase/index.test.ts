@@ -209,6 +209,20 @@ describe('transfer rows (spec 098)', () => {
   );
 });
 
+describe('externally locked rows (spec 107)', () => {
+  it('SHOULD refuse to edit a locked row with EXTERNALLY_LOCKED (422) AND update nothing', async () => {
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce({
+      ...mocks.transaction,
+      externalLock: 'INVESTMENT',
+    });
+
+    await expect(run({ value: 1 })).rejects.toMatchObject({
+      response: { code: 'EXTERNALLY_LOCKED' },
+    });
+    expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
+  });
+});
+
 describe('investment rows (spec 102)', () => {
   it.each([SystemCategoryKey.INVESTMENT_CONTRIBUTION, SystemCategoryKey.INVESTMENT_REDEMPTION])(
     'SHOULD refuse to edit a %s row (422) AND update nothing',

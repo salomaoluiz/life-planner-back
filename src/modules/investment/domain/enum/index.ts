@@ -17,9 +17,22 @@ export enum InvestmentFeeKind {
   IOF = 'IOF',
   OTHER = 'OTHER',
 }
+export enum InvestmentIncomeType {
+  DIVIDEND = 'DIVIDEND',
+  INTEREST = 'INTEREST',
+  JCP = 'JCP',
+  OTHER = 'OTHER',
+  YIELD = 'YIELD',
+}
 export enum InvestmentOperationType {
   BUY = 'BUY',
   SELL = 'SELL',
+}
+export enum InvestmentSuggestionStatus {
+  APPROVED = 'APPROVED',
+  DISMISSED = 'DISMISSED',
+  PENDING = 'PENDING',
+  REJECTED = 'REJECTED',
 }
 export enum InvestmentValuationSource {
   MANUAL = 'MANUAL',

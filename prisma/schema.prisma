@@ -272,6 +272,8 @@ model FinancialTransaction {
   projected                Boolean               @default(false)
   // Spec 098: out, in and fee rows of a transfer; they change only through the transfer.
   transfer_id              String?
+  // Spec 107: a row managed by another module (investment income); finance never edits or deletes it directly.
+  external_lock            TransactionExternalLock?
   currency                 String                @default("BRL") @db.VarChar(3)
   owner                    OwnerType
   owner_id                 String
@@ -286,6 +288,7 @@ model FinancialTransaction {
   recurrence           FinancialRecurrence?      @relation(fields: [recurrence_id], references: [id], onDelete: Restrict)
   transfer             FinancialTransfer?        @relation(fields: [transfer_id], references: [id], onDelete: Restrict)
   investment_operation InvestmentOperation?
+  investment_income    InvestmentIncome?
 
   refunded_transaction  FinancialTransaction?           @relation("RefundedPurchase", fields: [refunded_transaction_id], references: [id], onDelete: Restrict)
   refunds               FinancialTransaction[]          @relation("RefundedPurchase")
@@ -762,6 +765,25 @@ model FxRateHistory {
   @@map("fx_rate_history")
 }
 
+enum TransactionExternalLock {
+  INVESTMENT
+}
+
+enum InvestmentIncomeType {
+  DIVIDEND
+  JCP
+  YIELD
+  INTEREST
+  OTHER
+}
+
+enum InvestmentSuggestionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  DISMISSED
+}
+
 model InvestmentAsset {
   id          String                @id @default(uuid())
   asset_class InvestmentAssetClass
@@ -780,6 +802,8 @@ model InvestmentAsset {
   fixed_income_terms       InvestmentFixedIncomeTerms?
   fixed_income_rates       InvestmentFixedIncomeRate[]
   fixed_income_adjustments InvestmentFixedIncomeAdjustment[]
+  incomes                  InvestmentIncome[]
+  income_suggestions       InvestmentIncomeSuggestion[]
 
   @@index([owner, owner_id])
   @@map("investment_assets")
@@ -890,4 +914,70 @@ model InvestmentFixedIncomeAdjustment {
 
   @@unique([asset_id, date])
   @@map("investment_fixed_income_adjustments")
+}
+
+// Spec 107: an income of an asset; its status is the `paid` flag of the linked finance row.
+model InvestmentIncome {
+  id              String               @id @default(uuid())
+  asset_id        String
+  type            InvestmentIncomeType
+  ex_date         DateTime?            @db.Date
+  payment_date    DateTime             @db.Date
+  quantity        Decimal?             @db.Decimal(20, 8)
+  amount_per_unit Decimal?             @db.Decimal(20, 8)
+  net_amount      Int
+  currency        String               @db.VarChar(3)
+  transaction_id  String?              @unique
+  suggestion_id   String?              @unique
+  notes           String?
+  created_by      String
+  created_at      DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime             @updatedAt @db.Timestamptz(6)
+
+  asset       InvestmentAsset             @relation(fields: [asset_id], references: [id], onDelete: Cascade)
+  transaction FinancialTransaction?       @relation(fields: [transaction_id], references: [id], onDelete: SetNull)
+  suggestion  InvestmentIncomeSuggestion? @relation(fields: [suggestion_id], references: [id], onDelete: SetNull)
+
+  @@index([asset_id, payment_date(sort: Desc), id(sort: Desc)])
+  @@index([asset_id, type, ex_date])
+  @@map("investment_incomes")
+}
+
+// Announced incomes: market data, no owner (like the quotes).
+model InvestmentIncomeEvent {
+  id              String               @id @default(uuid())
+  market          QuoteMarket
+  ticker          String               @db.VarChar(20)
+  event_key       String               @unique
+  source          String
+  type            InvestmentIncomeType
+  ex_date         DateTime             @db.Date
+  payment_date    DateTime?            @db.Date
+  amount_per_unit Decimal              @db.Decimal(20, 8)
+  currency        String               @db.VarChar(3)
+  fetched_at      DateTime             @db.Timestamptz(6)
+
+  suggestions InvestmentIncomeSuggestion[]
+
+  @@index([market, ticker, ex_date])
+  @@map("investment_income_events")
+}
+
+model InvestmentIncomeSuggestion {
+  id         String                     @id @default(uuid())
+  asset_id   String
+  event_id   String
+  quantity   Decimal                    @db.Decimal(20, 8)
+  status     InvestmentSuggestionStatus @default(PENDING)
+  decided_by String?
+  decided_at DateTime?                  @db.Timestamptz(6)
+  created_at DateTime                   @default(now()) @db.Timestamptz(6)
+
+  asset  InvestmentAsset       @relation(fields: [asset_id], references: [id], onDelete: Cascade)
+  event  InvestmentIncomeEvent @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  income InvestmentIncome?
+
+  @@unique([asset_id, event_id])
+  @@index([asset_id, status])
+  @@map("investment_income_suggestions")
 }

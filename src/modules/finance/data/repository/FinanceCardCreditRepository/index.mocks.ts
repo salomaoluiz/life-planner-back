@@ -25,6 +25,7 @@ const rawMock: FinancialTransactionWithRelations = {
   date: new Date('2026-10-16T00:00:00.000Z'),
   description: 'Refund',
   early_payment: null,
+  external_lock: null,
   id: 'refund-1',
   installment_number: null,
   installment_plan: null,

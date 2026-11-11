@@ -3,6 +3,7 @@ import {
   InvoicePaymentMethod,
   RecurrenceFrequency,
   SystemCategoryKey,
+  TransactionExternalLock,
   TransactionType,
 } from '@finance/domain/enum';
 import { CurrencyCode, DEFAULT_CURRENCY } from '@finance/domain/enum/Currency';
@@ -77,6 +78,8 @@ interface ITransactionEntity {
   refundedName?: null | string;
   refundedPlanId?: null | string;
   refundedTransactionId?: null | string;
+  // Spec 107: set on the rows managed by another module.
+  externalLock?: null | TransactionExternalLock;
   // Spec 043: the tags of the row, in the stored order.
   tags?: TagRef[];
   // Spec 098: set on the out, in and fee rows of a transfer.
@@ -126,6 +129,7 @@ class TransactionEntity {
   recurrenceFrequency: null | RecurrenceFrequency;
   recurrenceId: null | string;
   // Description of the refunded purchase or plan.
+  externalLock: null | TransactionExternalLock;
   refundedName: null | string;
   refundedPlanId: null | string;
   refundedTransactionId: null | string;
@@ -170,6 +174,7 @@ class TransactionEntity {
     this.refundedName = params.refundedName ?? null;
     this.refundedPlanId = params.refundedPlanId ?? null;
     this.refundedTransactionId = params.refundedTransactionId ?? null;
+    this.externalLock = params.externalLock ?? null;
     this.tags = params.tags ?? [];
     this.transferId = params.transferId ?? null;
     this.type = params.type;

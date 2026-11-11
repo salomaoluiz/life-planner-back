@@ -9,6 +9,8 @@ import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable'
 import { hasOwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import {
   CARD_CREDIT_KEYS,
+  EXTERNALLY_LOCKED_CODE,
+  EXTERNALLY_LOCKED_MESSAGE,
   INVESTMENT_KEYS,
   INVESTMENT_ROW_USE_OPERATION,
   TRANSFER_KEYS,
@@ -56,6 +58,14 @@ export class DeleteTransactionUseCase implements UseCaseWithParams<DeleteTransac
     }
     if (transaction.recurrenceId && input.scope !== InstallmentEditScope.ONLY_THIS) {
       throw new UnprocessableEntityException('Use the recurrence to delete more occurrences');
+    }
+
+    // Spec 107 FR 16: a row managed by another module changes only through it.
+    if (transaction.externalLock !== null) {
+      throw new UnprocessableEntityException({
+        code: EXTERNALLY_LOCKED_CODE,
+        message: EXTERNALLY_LOCKED_MESSAGE,
+      });
     }
 
     // Spec 098 FR 6: a transfer row goes away only with its transfer.
