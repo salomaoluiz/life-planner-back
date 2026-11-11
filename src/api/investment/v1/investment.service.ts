@@ -17,12 +17,14 @@ import { GetUserFamilyAccessUseCase } from '@family/application/use-case/GetUser
 import {
   AssetDetailView,
   AssetView,
+  EventResult,
   OperationView,
 } from '@investment/application/service/AssetView';
 import { FixedIncomeView } from '@investment/application/service/FixedIncomeView';
 import { OperationWriteResult } from '@investment/application/service/OperationRules';
 import { QuoteView } from '@investment/application/service/QuoteView';
 import { CreateAssetUseCase } from '@investment/application/use-case/CreateAssetUseCase';
+import { CreateEventUseCase } from '@investment/application/use-case/CreateEventUseCase';
 import { CreateOperationUseCase } from '@investment/application/use-case/CreateOperationUseCase';
 import { DeleteAssetUseCase } from '@investment/application/use-case/DeleteAssetUseCase';
 import { DeleteOperationUseCase } from '@investment/application/use-case/DeleteOperationUseCase';
@@ -35,13 +37,17 @@ import { SearchTickersUseCase } from '@investment/application/use-case/SearchTic
 import { UpdateAssetUseCase } from '@investment/application/use-case/UpdateAssetUseCase';
 import { UpdateOperationUseCase } from '@investment/application/use-case/UpdateOperationUseCase';
 import { UpsertValuationUseCase } from '@investment/application/use-case/UpsertValuationUseCase';
+import { EventData } from '@investment/domain/entity/OperationEntity';
 import { OwnerAccess } from '@investment/domain/entity/OwnerAccess';
 import { ValuationEntity } from '@investment/domain/entity/ValuationEntity';
-import { InvestmentAssetStatus } from '@investment/domain/enum';
+import { InvestmentAssetStatus, isEventType } from '@investment/domain/enum';
 import { QuoteMarket } from '@investment/domain/enum/QuoteMarket';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
-export function toAssetItem(view: AssetView): AssetItemOutputType {
+// `pendingEventSuggestions` comes with the list only (spec 108 FR 32).
+export function toAssetItem(
+  view: { pendingEventSuggestions?: number } & AssetView,
+): AssetItemOutputType {
   const { asset, market, operationCount, position } = view;
   const usd = market.usd?.result ?? null;
 
@@ -61,6 +67,10 @@ export function toAssetItem(view: AssetView): AssetItemOutputType {
     operationsWithoutFxRate: market.usd?.operationsWithoutFxRate ?? 0,
     owner: asset.owner,
     ownerId: asset.ownerId,
+    ...(view.pendingEventSuggestions === undefined
+      ? {}
+      : { pendingEventSuggestions: view.pendingEventSuggestions }),
+    pendingFractionCount: view.pendingFractionCount,
     position: toPosition(position),
     quote: market.quote ? toQuoteOutput(market.quote) : null,
     resultBrl: usd?.resultBrl ?? null,
@@ -119,6 +129,10 @@ export function toFixedIncomeSummary(view: FixedIncomeView) {
 export function toOperation(view: OperationView): OperationOutputType {
   const { operation } = view;
 
+  if (view.event && operation.event) {
+    return toEventOperation(view, view.event, operation.event);
+  }
+
   return {
     accountId: operation.accountId,
     costRemoved: view.costRemoved,
@@ -142,6 +156,9 @@ export function toOperation(view: OperationView): OperationOutputType {
     transactionId: operation.transactionId,
     type: operation.type,
     unitPrice: operation.unitPrice.toString(),
+    ...(operation.fractionOfOperationId
+      ? { fractionOfOperationId: operation.fractionOfOperationId }
+      : {}),
   };
 }
 export function toPosition(position: AssetView['position']): PositionOutputType {
@@ -153,6 +170,12 @@ export function toPosition(position: AssetView['position']): PositionOutputType 
     currentValueDate: position.currentValueDate,
     openResult: position.openResult,
     openResultPercent: position.openResultPercent,
+    pendingFractions: position.pendingFractions.map((fraction) => ({
+      cost: fraction.cost,
+      date: fraction.date,
+      eventId: fraction.eventId,
+      quantity: fraction.quantity.toString(),
+    })),
     quantity: position.quantity.toString(),
     realizedResult: position.realizedResult,
   };
@@ -169,14 +192,50 @@ export function toValuation(valuation: ValuationEntity): ValuationOutputType {
   };
 }
 
-function toOperationWrite(result: OperationWriteResult) {
+// Spec 108 FR 12: an event carries its own fields and the before/after numbers; money fields are left out.
+export function toOperationWrite(result: OperationWriteResult) {
   return { item: toOperation(result.operation), position: toPosition(result.asset.position) };
+}
+
+function isEventInput(
+  input: CreateOperationApiInput,
+): input is Extract<CreateOperationApiInput, { type: 'BONUS' | 'REVERSE_SPLIT' | 'SPLIT' }> {
+  return isEventType(input.type);
+}
+function toEventOperation(
+  view: OperationView,
+  result: EventResult,
+  event: EventData,
+): OperationOutputType {
+  const { operation } = view;
+
+  return {
+    averagePriceAfter: result.averagePriceAfter,
+    averagePriceBefore: result.averagePriceBefore,
+    costRemoved: null,
+    date: operation.date,
+    fees: [],
+    fractionCost: result.fractionCost,
+    fractionQuantity: result.fractionQuantity.toString(),
+    id: operation.id,
+    quantityAfter: result.quantityAfter.toString(),
+    quantityBefore: result.quantityBefore.toString(),
+    realizedResult: null,
+    type: operation.type,
+    ...(event.kind === 'BONUS'
+      ? {
+          bonusPercent: event.percent.toString(),
+          ...(event.unitCost ? { bonusUnitCost: event.unitCost.toString() } : {}),
+        }
+      : { ratioFrom: event.ratioFrom.toString(), ratioTo: event.ratioTo.toString() }),
+  };
 }
 
 @Injectable()
 export class InvestmentService {
   constructor(
     private readonly createAssetUseCase: CreateAssetUseCase,
+    private readonly createEventUseCase: CreateEventUseCase,
     private readonly createOperationUseCase: CreateOperationUseCase,
     private readonly deleteAssetUseCase: DeleteAssetUseCase,
     private readonly deleteOperationUseCase: DeleteOperationUseCase,
@@ -203,6 +262,13 @@ export class InvestmentService {
     input: CreateOperationApiInput,
   ): Promise<ReturnType<typeof toOperationWrite>> {
     const accessibleOwners = await this.getAccessibleOwners(userId);
+
+    if (isEventInput(input)) {
+      return toOperationWrite(
+        await this.createEventUseCase.execute({ ...input, accessibleOwners, assetId }),
+      );
+    }
+
     return toOperationWrite(
       await this.createOperationUseCase.execute({ ...input, accessibleOwners, assetId }),
     );

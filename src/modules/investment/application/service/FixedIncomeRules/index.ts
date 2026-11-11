@@ -12,7 +12,7 @@ import {
 } from '@investment/application/service/AssetView';
 import {
   loadWritableAsset,
-  toNegativePositionException,
+  toPositionException,
 } from '@investment/application/service/OperationRules';
 import { QuoteContextLoader } from '@investment/application/service/QuoteContext';
 import { AssetDetail } from '@investment/domain/entity/AssetEntity';
@@ -29,7 +29,6 @@ import {
   InvestmentOperationType,
 } from '@investment/domain/enum';
 import { FixedIncomeRedemptionTooLargeError } from '@investment/domain/error/FixedIncomeRedemptionTooLargeError';
-import { NegativePositionError } from '@investment/domain/error/NegativePositionError';
 import { IInvestmentRepository } from '@investment/domain/repository';
 import { effectiveRateOf } from '@investment/domain/service/FixedIncomeRate';
 import { Decimal8 } from '@shared/infra/decimal';
@@ -159,7 +158,7 @@ export async function mapFixedIncomeErrors<T>(work: () => Promise<T>): Promise<T
       });
     }
 
-    throw error instanceof NegativePositionError ? toNegativePositionException(error) : error;
+    throw toPositionException(error);
   }
 }
 // FR 7: the effective rate is derived and stored with the entry.

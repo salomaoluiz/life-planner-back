@@ -4,6 +4,7 @@ import axios from 'axios';
 import { EnvService } from '@shared/infra/env/env.service';
 
 import {
+  CorporateEventResult,
   IFinnhubQuotes,
   IncomeEventResult,
   normalizeTicker,
@@ -35,6 +36,11 @@ interface RawSearchItem {
   symbol?: string;
   type?: string;
 }
+interface RawSplit {
+  date?: null | string;
+  fromFactor?: null | number;
+  toFactor?: null | number;
+}
 
 function asDay(value: null | string | undefined): null | string {
   const day = typeof value === 'string' ? value.slice(0, 10) : '';
@@ -44,10 +50,63 @@ function asDay(value: null | string | undefined): null | string {
 function asText(value: null | number | undefined): null | string {
   return typeof value === 'number' ? String(value) : null;
 }
+function dayBefore(day: string): string {
+  const value = new Date(`${day}T00:00:00.000Z`);
+
+  value.setUTCDate(value.getUTCDate() - 1);
+
+  return value.toISOString().slice(0, 10);
+}
 
 @Injectable()
 export class FinnhubQuotes implements IFinnhubQuotes {
   constructor(private readonly env: EnvService) {}
+  // Spec 108: the splits endpoint may be premium (403 = "no events", manual only). Finnhub dates a split by its
+  // effective day, so the data-com (last day with rights) is the day before.
+  async getCorporateEvents(symbol: string): Promise<CorporateEventResult[]> {
+    const ticker = normalizeTicker(symbol);
+    const from = new Date(Date.now() - 400 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const to = new Date(Date.now() + 200 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    let data: RawSplit[];
+
+    try {
+      data = await this.request<RawSplit[]>('/stock/split', { from, symbol: ticker, to });
+    } catch (error) {
+      if ((error as { response?: { status?: number } })?.response?.status === 403) {
+        return [];
+      }
+
+      throw error;
+    }
+
+    return data.flatMap((row) => {
+      const effective = asDay(row.date);
+      const { fromFactor, toFactor } = row;
+
+      if (
+        !effective ||
+        typeof fromFactor !== 'number' ||
+        typeof toFactor !== 'number' ||
+        !(fromFactor > 0) ||
+        !(toFactor > 0) ||
+        fromFactor === toFactor
+      ) {
+        return [];
+      }
+
+      return [
+        {
+          currency: 'USD',
+          ratioFrom: String(fromFactor),
+          ratioTo: String(toFactor),
+          recordDate: dayBefore(effective),
+          ticker,
+          type: toFactor > fromFactor ? ('SPLIT' as const) : ('REVERSE_SPLIT' as const),
+        },
+      ];
+    });
+  }
+
   // The dividends endpoint may be premium: a 403 answer means "no events" (manual incomes only, spec 107 FR 24a).
   async getIncomeEvents(symbol: string): Promise<IncomeEventResult[]> {
     const ticker = normalizeTicker(symbol);

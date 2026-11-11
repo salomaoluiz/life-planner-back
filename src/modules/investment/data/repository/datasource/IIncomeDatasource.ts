@@ -6,6 +6,7 @@ import {
   InvestmentIncomeEvent,
   InvestmentIncomeSuggestion,
 } from '@db/client';
+import { PositionColumns } from '@investment/data/datasource/mapper/InvestmentMapper';
 import {
   IncomeEventUpsert,
   IncomeFilter,
@@ -51,16 +52,10 @@ export type IncomeRow = {
 } & InvestmentIncome;
 export interface SuggestionInputsRow {
   assets: {
+    asset_class: InvestmentAsset['asset_class'];
     asset_id: string;
     market: string;
-    operations: {
-      created_at: Date;
-      date: Date;
-      id: string;
-      quantity: { toFixed(places: number): string };
-      total: number;
-      type: string;
-    }[];
+    operations: PositionColumns[];
     ticker: string;
   }[];
   existing: { asset_id: string; event_id: string }[];

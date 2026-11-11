@@ -1,8 +1,16 @@
 import { AssetDetail, AssetEntity, AssetListRow } from '@investment/domain/entity/AssetEntity';
 import { OperationEntity } from '@investment/domain/entity/OperationEntity';
 import { ValuationEntity } from '@investment/domain/entity/ValuationEntity';
+import { InvestmentAssetClass } from '@investment/domain/enum';
+import { EventStep, unitStepOf } from '@investment/domain/service/CorporateEventMath';
 import { averageFxCost, FxResult, splitFxResult } from '@investment/domain/service/FxResultSplit';
-import { calculatePosition, PositionResult } from '@investment/domain/service/PositionCalculator';
+import {
+  averagePriceOf,
+  calculatePosition,
+  PendingFraction,
+  PositionResult,
+  toPositionOperation,
+} from '@investment/domain/service/PositionCalculator';
 import { marketOfClass, PriceSource, resolvePrice } from '@investment/domain/service/QuoteResolver';
 import { Decimal8 } from '@shared/infra/decimal';
 
@@ -32,6 +40,8 @@ export interface AssetPosition {
   openResult: null | number;
   // Fraction of the cost (0.0721 = 7.21%), 4 places; null at zero cost.
   openResultPercent: null | number;
+  // Spec 108 FR 12: fractions that left the position and wait for their sale.
+  pendingFractions: PendingFraction[];
   quantity: Decimal8;
   realizedResult: number;
 }
@@ -41,10 +51,18 @@ export interface AssetView {
   fixedIncome: FixedIncomeView | null;
   market: AssetMarket;
   operationCount: number;
+  // Spec 108: events whose fraction is not sold yet.
+  pendingFractionCount: number;
   position: AssetPosition;
 }
+export type EventResult = {
+  averagePriceAfter: null | string;
+  averagePriceBefore: null | string;
+} & EventStep;
 export interface OperationView {
   costRemoved: null | number;
+  // Spec 108 FR 12: the before/after numbers of an event, null for any other operation.
+  event: EventResult | null;
   operation: OperationEntity;
   realizedResult: null | number;
 }
@@ -66,7 +84,7 @@ export function toAssetDetailView(
   detail: AssetDetail,
   context: QuoteContext = emptyContext(),
 ): AssetDetailView {
-  const result = positionOf(detail.operations);
+  const result = positionOf(detail.operations, detail.assetClass);
   const { operations, valuations, ...asset } = detail;
   const latest = latestOf(valuations);
   const fixedIncome = toFixedIncomeView(
@@ -85,17 +103,19 @@ export function toAssetDetailView(
 
       return {
         costRemoved: sell?.costRemoved ?? null,
+        event: toEventResult(result.perEvent.get(operation.id)),
         operation,
         realizedResult: sell?.realizedResult ?? null,
       };
     }),
+    pendingFractionCount: result.pendingFractions.length,
     position: toPosition(result, latest, quoteOf(asset, context), fixedIncome),
     valuations,
   };
 }
 export function toAssetView(row: AssetListRow, context: QuoteContext = emptyContext()): AssetView {
   const { latestValuation, operations, ...asset } = row;
-  const result = positionOf(operations);
+  const result = positionOf(operations, row.assetClass);
   const fixedIncome = toFixedIncomeView(
     context.fixedIncome.get(asset.id),
     operations,
@@ -107,6 +127,7 @@ export function toAssetView(row: AssetListRow, context: QuoteContext = emptyCont
     fixedIncome,
     market: marketOf(asset, operations, result, latestValuation, context),
     operationCount: operations.length,
+    pendingFractionCount: result.pendingFractions.length,
     position: toPosition(result, latestValuation, quoteOf(asset, context), fixedIncome),
   };
 }
@@ -136,23 +157,26 @@ function marketOf(
     usd: asset.currency === 'USD' ? usdOf(operations, result, price?.unitPrice ?? null, fx) : null,
   };
 }
-function positionOf(operations: OperationEntity[]): PositionResult {
-  return calculatePosition(
-    operations.map((operation) => ({
-      createdAt: operation.createdAt,
-      date: operation.date,
-      id: operation.id,
-      quantity: operation.quantity,
-      total: operation.total,
-      type: operation.type,
-    })),
-  );
+function positionOf(
+  operations: OperationEntity[],
+  assetClass: InvestmentAssetClass,
+): PositionResult {
+  return calculatePosition(operations.map(toPositionOperation), { step: unitStepOf(assetClass) });
 }
 function quoteOf(asset: AssetEntity, context: QuoteContext) {
   const market = marketOfClass(asset.assetClass);
 
   return market && asset.ticker
     ? (context.quotes.get(quoteKey(market, asset.ticker)) ?? null)
+    : null;
+}
+function toEventResult(step: EventStep | undefined): EventResult | null {
+  return step
+    ? {
+        ...step,
+        averagePriceAfter: averagePriceOf(step.costAfter, step.quantityAfter),
+        averagePriceBefore: averagePriceOf(step.costBefore, step.quantityBefore),
+      }
     : null;
 }
 function toPosition(
@@ -178,6 +202,7 @@ function toPosition(
       openResult === null || result.cost === 0
         ? null
         : Math.round((openResult / result.cost) * 10000) / 10000,
+    pendingFractions: result.pendingFractions,
     quantity: result.quantity,
     realizedResult: result.realizedResult,
   };

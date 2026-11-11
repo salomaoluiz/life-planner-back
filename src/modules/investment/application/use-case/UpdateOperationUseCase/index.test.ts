@@ -9,10 +9,12 @@ import {
   fixedIncomeDetailFixture,
   operationFixture,
 } from '@investment/domain/entity/mocks/investment.fixture';
-import { InvestmentFeeKind } from '@investment/domain/enum';
+import { InvestmentFeeKind, InvestmentOperationType } from '@investment/domain/enum';
 import { FixedIncomeRedemptionTooLargeError } from '@investment/domain/error/FixedIncomeRedemptionTooLargeError';
+import { FractionSaleBreaksError } from '@investment/domain/error/FractionSaleBreaksError';
 import { NegativePositionError } from '@investment/domain/error/NegativePositionError';
 import { ValidationError } from '@shared/domain/error/ValidationError';
+import { Decimal8 } from '@shared/infra/decimal';
 
 import { mocks, setup, spies } from './index.mocks';
 
@@ -217,4 +219,189 @@ describe('on a calculated title (spec 105)', () => {
 
 it('SHOULD refuse the fixed income fields on a regular asset', async () => {
   await expect(setup.execute({ ...base, netAmount: 500 })).rejects.toThrow(ValidationError);
+});
+
+describe('events and fraction sales (spec 108)', () => {
+  const bought = operationFixture({
+    assetId: mocks.asset.id,
+    date: '2026-01-10',
+    id: 'buy-1',
+    quantity: Decimal8.parse('3155'),
+    total: 319100,
+  });
+  const reverse = operationFixture({
+    assetId: mocks.asset.id,
+    date: '2026-03-10',
+    event: { kind: 'SPLIT', ratioFrom: Decimal8.parse('10'), ratioTo: Decimal8.parse('1') },
+    id: 'event-1',
+    quantity: Decimal8.zero(),
+    total: 0,
+    type: InvestmentOperationType.REVERSE_SPLIT,
+    unitPrice: Decimal8.zero(),
+  });
+  const bonus = operationFixture({
+    assetId: mocks.asset.id,
+    date: '2026-11-10',
+    event: { kind: 'BONUS', percent: Decimal8.parse('10'), unitCost: Decimal8.parse('4.5') },
+    id: 'bonus-1',
+    quantity: Decimal8.zero(),
+    total: 0,
+    type: InvestmentOperationType.BONUS,
+    unitPrice: Decimal8.zero(),
+  });
+  const sale = operationFixture({
+    accountId: 'acc-1',
+    assetId: mocks.asset.id,
+    date: '2026-04-04',
+    fractionOfOperationId: 'event-1',
+    generateTransaction: true,
+    gross: 520,
+    id: 'sale-1',
+    quantity: Decimal8.parse('0.5'),
+    total: 520,
+    transactionId: 'tx-1',
+    type: InvestmentOperationType.SELL,
+    unitPrice: Decimal8.parse('10.4'),
+  });
+
+  function load(operation: typeof reverse) {
+    spies.findOperationById.mockResolvedValue(operation);
+    spies.findAssetById.mockResolvedValue({
+      ...mocks.detail,
+      operations: [bought, reverse, bonus, sale],
+    });
+  }
+
+  beforeEach(() => {
+    spies.writeEvent.mockResolvedValue('event-1');
+  });
+
+  it('SHOULD change the date AND the ratio of an event, keeping its type', async () => {
+    load(reverse);
+
+    await setup.execute({ ...base, date: '2026-03-11', id: 'event-1', ratioFrom: '20' });
+
+    const draft = spies.writeEvent.mock.calls[0][0];
+
+    expect(draft).toMatchObject({
+      date: '2026-03-11',
+      operationId: 'event-1',
+      type: InvestmentOperationType.REVERSE_SPLIT,
+    });
+    expect(draft.ratioFrom.toString()).toBe('20');
+    expect(draft.ratioTo.toString()).toBe('1');
+    expect(spies.writeOperation).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD clear the unit cost of a bonus WHEN it is sent as null', async () => {
+    load(bonus);
+    spies.writeEvent.mockResolvedValue('bonus-1');
+
+    await setup.execute({ ...base, bonusPercent: '5', bonusUnitCost: null, id: 'bonus-1' });
+
+    const draft = spies.writeEvent.mock.calls[0][0];
+
+    expect(draft.bonusPercent.toString()).toBe('5');
+    expect(draft.bonusUnitCost).toBeNull();
+  });
+
+  it('SHOULD refuse BUY and SELL fields on an event with 400', async () => {
+    load(reverse);
+
+    for (const extra of [
+      { quantity: '10' },
+      { unitPrice: '2' },
+      { fees: [] },
+      { accountId: 'acc-1' },
+      { generateTransaction: true },
+      { grossAmount: 10 },
+    ]) {
+      await expect(setup.execute({ ...base, id: 'event-1', ...extra })).rejects.toBeInstanceOf(
+        ValidationError,
+      );
+    }
+  });
+
+  it('SHOULD refuse a change that breaks the direction of the ratio or mixes a bonus in', async () => {
+    load(reverse);
+
+    await expect(
+      setup.execute({ ...base, id: 'event-1', ratioFrom: '1', ratioTo: '4' }),
+    ).rejects.toBeInstanceOf(ValidationError);
+    await expect(
+      setup.execute({ ...base, bonusPercent: '10', id: 'event-1' }),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it('SHOULD answer 422 WHEN the edit leaves the fraction sale without a fraction', async () => {
+    load(reverse);
+    spies.writeEvent.mockRejectedValue(new FractionSaleBreaksError('2026-04-04'));
+
+    await expect(
+      setup.execute({ ...base, date: '2026-03-11', id: 'event-1' }),
+    ).rejects.toMatchObject({ status: 422 });
+  });
+
+  it('SHOULD change the amount, date AND fees of a fraction sale keeping quantity AND link', async () => {
+    load(sale);
+    spies.writeOperation.mockResolvedValue('sale-1');
+
+    await setup.execute({
+      ...base,
+      date: '2026-04-06',
+      fees: [{ amount: 20, kind: InvestmentFeeKind.BROKERAGE }],
+      grossAmount: 600,
+      id: 'sale-1',
+    });
+
+    expect(spies.writeOperation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId: 'acc-1',
+        date: '2026-04-06',
+        feesTotal: 20,
+        fractionOfOperationId: 'event-1',
+        generateTransaction: true,
+        gross: 600,
+        operationId: 'sale-1',
+        total: 580,
+        type: InvestmentOperationType.SELL,
+      }),
+    );
+    expect(spies.writeOperation.mock.calls[0][0].quantity.toString()).toBe('0.5');
+    expect(spies.writeOperation.mock.calls[0][0].unitPrice.toString()).toBe('12');
+  });
+
+  it('SHOULD refuse quantity AND unit price of a fraction sale with 400', async () => {
+    load(sale);
+
+    await expect(setup.execute({ ...base, id: 'sale-1', quantity: '1' })).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+    await expect(setup.execute({ ...base, id: 'sale-1', unitPrice: '1' })).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+  });
+
+  it('SHOULD refuse a date before the event AND a zero amount with a finance entry', async () => {
+    load(sale);
+
+    await expect(
+      setup.execute({ ...base, date: '2026-03-09', id: 'sale-1' }),
+    ).rejects.toMatchObject({ status: 422 });
+    await expect(setup.execute({ ...base, grossAmount: 0, id: 'sale-1' })).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+  });
+
+  it('SHOULD write the fraction off WHEN the amount is zero AND the finance entry is turned off', async () => {
+    load(sale);
+    spies.writeOperation.mockResolvedValue('sale-1');
+
+    await setup.execute({ ...base, generateTransaction: false, grossAmount: 0, id: 'sale-1' });
+
+    expect(spies.writeOperation).toHaveBeenCalledWith(
+      expect.objectContaining({ accountId: null, generateTransaction: false, gross: 0, total: 0 }),
+    );
+    expect(spies.writeOperation.mock.calls[0][0].unitPrice.toString()).toBe('0');
+  });
 });

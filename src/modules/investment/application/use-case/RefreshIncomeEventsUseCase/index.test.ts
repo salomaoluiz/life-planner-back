@@ -1,3 +1,4 @@
+import { InvestmentAssetClass } from '@investment/domain/enum';
 import { QuoteMarket } from '@investment/domain/enum/QuoteMarket';
 import { QuoteSourceLimitError, QuoteSourceUnavailableError } from '@shared/infra/quotes/types';
 
@@ -44,7 +45,15 @@ it('SHOULD fetch US symbols through Finnhub', async () => {
 
 it('SHOULD skip an asset with no BUY and an event before its position existed', async () => {
   spies.incomes.findSuggestionInputs.mockResolvedValue({
-    assets: [{ assetId: 'asset-1', market: QuoteMarket.B3, operations: [], ticker: 'ITSA4' }],
+    assets: [
+      {
+        assetClass: InvestmentAssetClass.BR_STOCK,
+        assetId: 'asset-1',
+        market: QuoteMarket.B3,
+        operations: [],
+        ticker: 'ITSA4',
+      },
+    ],
     existing: [],
     incomes: [],
   });

@@ -4,6 +4,7 @@ import axios from 'axios';
 import { EnvService } from '@shared/infra/env/env.service';
 
 import {
+  CorporateEventResult,
   DailyClose,
   IBrapiQuotes,
   IncomeEventResult,
@@ -40,6 +41,11 @@ interface RawQuote {
   shortName?: null | string;
   symbol?: string;
 }
+interface RawStockDividend {
+  factor?: null | number;
+  label?: null | string;
+  lastDatePrior?: null | string;
+}
 
 function asDay(value: null | string | undefined): null | string {
   const day = typeof value === 'string' ? value.slice(0, 10) : '';
@@ -49,6 +55,32 @@ function asDay(value: null | string | undefined): null | string {
 // brapi labels (`DIVIDENDO`, `JRS CAP PROPRIO`, `RENDIMENTO`, ...) to the income types.
 function asText(value: null | number | undefined): null | string {
   return typeof value === 'number' ? String(value) : null;
+}
+function toCorporateEvent(
+  row: RawStockDividend,
+): null | Pick<CorporateEventResult, 'bonusPercent' | 'ratioFrom' | 'ratioTo' | 'type'> {
+  const factor = row.factor;
+  const label = (row.label ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+
+  if (typeof factor !== 'number' || !(factor > 0)) {
+    return null;
+  }
+  if (label.includes('DESDOBRAMENTO')) {
+    return factor > 1 ? { ratioFrom: '1', ratioTo: String(factor), type: 'SPLIT' } : null;
+  }
+  if (label.includes('GRUPAMENTO')) {
+    return factor < 1
+      ? { ratioFrom: String(Number((1 / factor).toFixed(8))), ratioTo: '1', type: 'REVERSE_SPLIT' }
+      : null;
+  }
+  if (label.includes('BONIFICACAO')) {
+    return factor <= 1000 ? { bonusPercent: String(factor), type: 'BONUS' } : null;
+  }
+
+  return null;
 }
 function toIncomeType(label: null | string | undefined): IncomeEventType {
   const text = (label ?? '').toUpperCase();
@@ -115,6 +147,23 @@ export class BrapiQuotes implements IBrapiQuotes {
         close: String(row.close),
         date: new Date((row.date as number) * 1000).toISOString().slice(0, 10),
       }));
+  }
+
+  // Spec 108: `stockDividends` of the same quote response (DESDOBRAMENTO, GRUPAMENTO, BONIFICACAO). Unknown labels,
+  // a factor that points the wrong way and rows without a data-com are ignored.
+  async getCorporateEvents(symbol: string): Promise<CorporateEventResult[]> {
+    const ticker = normalizeTicker(symbol);
+    const data = await this.request<{
+      results?: { dividendsData?: { stockDividends?: RawStockDividend[] } }[];
+    }>(`/quote/${ticker}`, { dividends: 'true' });
+    const rows = data.results?.[0]?.dividendsData?.stockDividends ?? [];
+
+    return rows.flatMap((row) => {
+      const recordDate = asDay(row.lastDatePrior);
+      const event = recordDate ? toCorporateEvent(row) : null;
+
+      return recordDate && event ? [{ ...event, currency: 'BRL', recordDate, ticker }] : [];
+    });
   }
 
   async getIncomeEvents(symbol: string): Promise<IncomeEventResult[]> {

@@ -17,9 +17,12 @@ import { AssetDetail } from '@investment/domain/entity/AssetEntity';
 import { FeeInput } from '@investment/domain/entity/OperationEntity';
 import { hasOwnerAccess, OwnerAccess } from '@investment/domain/entity/OwnerAccess';
 import { InvestmentAssetStatus, InvestmentOperationType } from '@investment/domain/enum';
+import { FractionSaleBreaksError } from '@investment/domain/error/FractionSaleBreaksError';
 import { NegativePositionError } from '@investment/domain/error/NegativePositionError';
+import { NoPositionError } from '@investment/domain/error/NoPositionError';
 import { IInvestmentRepository, OperationAccount } from '@investment/domain/repository';
 import {
+  computeFractionTotals,
   computeTotals,
   FeesHigherThanSaleError,
 } from '@investment/domain/service/PositionCalculator';
@@ -103,8 +106,12 @@ export interface OperationDraft {
   context?: QuoteContext;
   date: string;
   fees: FeeInput[];
+  // Spec 108 FR 15: the event whose fraction this SELL sells.
+  fractionOfOperationId?: string;
   fxRate?: null | string;
   generateTransaction: boolean;
+  // Spec 108 FR 16: a fraction sale's gross is the auction amount.
+  grossCents?: number;
   operationId?: string;
   owners: OwnerAccess[];
   quantity: Decimal8;
@@ -123,6 +130,21 @@ export function toNegativePositionException(
     details: { date: error.date, operationId: error.operationId },
     message: error.message,
   });
+}
+
+// Spec 102 FR 17, spec 108 FR 13, 14, 18: what a position re-run refuses answers 422 with where it breaks.
+export function toPositionException(error: unknown): unknown {
+  if (error instanceof NegativePositionError) {
+    return toNegativePositionException(error);
+  }
+  if (error instanceof NoPositionError || error instanceof FractionSaleBreaksError) {
+    return new UnprocessableEntityException({
+      details: { date: error.date },
+      message: error.message,
+    });
+  }
+
+  return error;
 }
 
 function canWrite(owners: OwnerAccess[], account: OperationAccount): boolean {
@@ -164,6 +186,7 @@ export async function persistOperation(
       date: draft.date,
       fees: draft.fees,
       feesTotal: totals.feesTotal,
+      fractionOfOperationId: draft.fractionOfOperationId,
       fxRate,
       generateTransaction: draft.generateTransaction,
       gross: totals.gross,
@@ -174,16 +197,26 @@ export async function persistOperation(
       unitPrice: draft.unitPrice,
     });
   } catch (error) {
-    throw error instanceof NegativePositionError ? toNegativePositionException(error) : error;
+    throw toPositionException(error);
   }
 
-  const detail = await repository.findAssetById(asset.id);
+  return readWriteResult(repository, asset.id, operationId, draft.context);
+}
+
+// The refreshed asset and the written operation, read back after the transaction (404 when either is gone).
+export async function readWriteResult(
+  repository: IInvestmentRepository,
+  assetId: string,
+  operationId: string,
+  context?: QuoteContext,
+): Promise<OperationWriteResult> {
+  const detail = await repository.findAssetById(assetId);
 
   if (!detail) {
     throw new NotFoundException();
   }
 
-  const operation = toAssetDetailView(detail, draft.context).operations.find(
+  const operation = toAssetDetailView(detail, context).operations.find(
     (view) => view.operation.id === operationId,
   );
 
@@ -191,11 +224,18 @@ export async function persistOperation(
     throw new NotFoundException();
   }
 
-  return { asset: toAssetView(detailToListRow(detail), draft.context), operation };
+  return { asset: toAssetView(detailToListRow(detail), context), operation };
 }
 
 function totalsOf(draft: OperationDraft) {
   try {
+    if (draft.grossCents !== undefined) {
+      return computeFractionTotals(
+        draft.grossCents,
+        draft.fees.map((fee) => fee.amount),
+      );
+    }
+
     return computeTotals(
       draft.type,
       draft.quantity,

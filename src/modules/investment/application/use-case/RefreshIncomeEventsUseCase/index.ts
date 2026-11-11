@@ -4,11 +4,11 @@ import { IncomeEventUpsert, IncomeSuggestionInputs } from '@investment/domain/en
 import { InvestmentIncomeType, InvestmentOperationType } from '@investment/domain/enum';
 import { QuoteMarket } from '@investment/domain/enum/QuoteMarket';
 import { IIncomeRepository, IQuoteRepository } from '@investment/domain/repository';
+import { unitStepOf } from '@investment/domain/service/CorporateEventMath';
 import { MatcherAsset, matchSuggestions } from '@investment/domain/service/IncomeSuggestionMatcher';
 import { addDays, marketDateOf } from '@investment/domain/service/MarketDate';
 import { calculatePosition } from '@investment/domain/service/PositionCalculator';
 import { UseCase } from '@shared/application/use-case/types';
-import { Decimal8 } from '@shared/infra/decimal';
 import { ILogger, LogLevel } from '@shared/infra/logger/types';
 import {
   IBrapiQuotes,
@@ -30,14 +30,8 @@ export interface RefreshIncomeEventsResult {
 }
 
 function toMatcherAsset(asset: IncomeSuggestionInputs['assets'][number]): MatcherAsset {
-  const operations = asset.operations.map((operation) => ({
-    createdAt: operation.createdAt,
-    date: operation.date,
-    id: operation.id,
-    quantity: Decimal8.parse(operation.quantity),
-    total: operation.total,
-    type: operation.type as InvestmentOperationType,
-  }));
+  const { operations } = asset;
+  const step = unitStepOf(asset.assetClass);
   const buys = operations
     .filter((operation) => operation.type === InvestmentOperationType.BUY)
     .map((operation) => operation.date)
@@ -48,7 +42,10 @@ function toMatcherAsset(asset: IncomeSuggestionInputs['assets'][number]): Matche
     id: asset.assetId,
     market: asset.market,
     positionAt: (date) =>
-      calculatePosition(operations.filter((operation) => operation.date <= date)).quantity,
+      calculatePosition(
+        operations.filter((operation) => operation.date <= date),
+        { step },
+      ).quantity,
     ticker: asset.ticker,
   };
 }

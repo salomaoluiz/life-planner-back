@@ -47,8 +47,11 @@ export function operationFixture(overrides: Partial<OperationEntity> = {}): Oper
     assetId: faker.string.uuid(),
     createdAt: new Date('2026-01-01T00:00:00Z'),
     date: '2026-06-10',
+    event: null,
+    eventSuggestionId: null,
     fees: [],
     feesTotal: 0,
+    fractionOfOperationId: null,
     fxRate: null,
     generateTransaction: false,
     gross: 510000,
@@ -113,6 +116,7 @@ export function repositorySpies(): Record<keyof IInvestmentRepository, jest.Mock
     updateFixedIncomeRate: jest.fn(),
     upsertFixedIncomeAdjustment: jest.fn(),
     upsertValuation: jest.fn(),
+    writeEvent: jest.fn(),
     writeOperation: jest.fn(),
   };
 }

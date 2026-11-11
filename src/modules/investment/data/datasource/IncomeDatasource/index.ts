@@ -8,7 +8,10 @@ import {
   lockAccounts,
   lockAsset,
 } from '@investment/data/datasource/financeLink';
-import { InvestmentMapper } from '@investment/data/datasource/mapper/InvestmentMapper';
+import {
+  InvestmentMapper,
+  POSITION_SELECT,
+} from '@investment/data/datasource/mapper/InvestmentMapper';
 import { toOwnerWhere } from '@investment/data/datasource/mapper/OwnerWhere';
 import {
   CategoryRow,
@@ -221,14 +224,7 @@ export class IncomeDatasource implements IIncomeDatasource {
         asset_class: true,
         id: true,
         operations: {
-          select: {
-            created_at: true,
-            date: true,
-            id: true,
-            quantity: true,
-            total: true,
-            type: true,
-          },
+          select: POSITION_SELECT,
         },
         ticker: true,
       },
@@ -243,7 +239,15 @@ export class IncomeDatasource implements IIncomeDatasource {
       const market = asset.asset_class === 'FOREIGN_STOCK' ? 'US' : 'B3';
 
       return asset.ticker && wanted.has(`${market}:${asset.ticker}`)
-        ? [{ asset_id: asset.id, market, operations: asset.operations, ticker: asset.ticker }]
+        ? [
+            {
+              asset_class: asset.asset_class,
+              asset_id: asset.id,
+              market,
+              operations: asset.operations,
+              ticker: asset.ticker,
+            },
+          ]
         : [];
     });
     const ids = matched.map((asset) => asset.asset_id);

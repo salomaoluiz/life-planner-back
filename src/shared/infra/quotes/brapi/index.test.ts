@@ -340,3 +340,83 @@ describe('BrapiQuotes.getIncomeEvents (spec 107)', () => {
     ).rejects.toBeInstanceOf(QuoteSourceLimitError);
   });
 });
+
+describe('BrapiQuotes.getCorporateEvents (spec 108)', () => {
+  function stockDividends(rows: object[]) {
+    getSpy.mockResolvedValue({
+      data: { results: [{ dividendsData: { stockDividends: rows } }] },
+    });
+  }
+
+  it('SHOULD map split, reverse split and bonus to ratios and percent', async () => {
+    stockDividends([
+      { factor: 4, label: 'DESDOBRAMENTO', lastDatePrior: '2026-08-25T00:00:00.000Z' },
+      { factor: 0.1, label: 'GRUPAMENTO', lastDatePrior: '2026-03-10T00:00:00.000Z' },
+      { factor: 10, label: 'BONIFICACAO', lastDatePrior: '2026-11-18T00:00:00.000Z' },
+    ]);
+
+    const events = await new BrapiQuotes(envWith('your-token')).getCorporateEvents('mglu3');
+
+    expect(getSpy).toHaveBeenCalledWith('https://brapi.dev/api/quote/MGLU3', {
+      params: { dividends: 'true', token: 'your-token' },
+      timeout: 5000,
+    });
+    expect(events).toEqual([
+      {
+        currency: 'BRL',
+        ratioFrom: '1',
+        ratioTo: '4',
+        recordDate: '2026-08-25',
+        ticker: 'MGLU3',
+        type: 'SPLIT',
+      },
+      {
+        currency: 'BRL',
+        ratioFrom: '10',
+        ratioTo: '1',
+        recordDate: '2026-03-10',
+        ticker: 'MGLU3',
+        type: 'REVERSE_SPLIT',
+      },
+      {
+        bonusPercent: '10',
+        currency: 'BRL',
+        recordDate: '2026-11-18',
+        ticker: 'MGLU3',
+        type: 'BONUS',
+      },
+    ]);
+  });
+
+  it('SHOULD ignore unknown labels, factor 1, wrong direction and rows without a date', async () => {
+    stockDividends([
+      { factor: 2, label: 'CISAO', lastDatePrior: '2026-08-25T00:00:00.000Z' },
+      { factor: 1, label: 'DESDOBRAMENTO', lastDatePrior: '2026-08-25T00:00:00.000Z' },
+      { factor: 0.5, label: 'DESDOBRAMENTO', lastDatePrior: '2026-08-25T00:00:00.000Z' },
+      { factor: 2, label: 'GRUPAMENTO', lastDatePrior: '2026-08-25T00:00:00.000Z' },
+      { factor: 0, label: 'BONIFICACAO', lastDatePrior: '2026-08-25T00:00:00.000Z' },
+      { factor: 5000, label: 'BONIFICACAO', lastDatePrior: '2026-08-25T00:00:00.000Z' },
+      { factor: 4, label: 'DESDOBRAMENTO' },
+    ]);
+
+    expect(await new BrapiQuotes(envWith('your-token')).getCorporateEvents('MGLU3')).toEqual([]);
+  });
+
+  it('SHOULD return [] WHEN the answer has no stock dividends', async () => {
+    getSpy.mockResolvedValue({ data: { results: [] } });
+
+    expect(await new BrapiQuotes(envWith('your-token')).getCorporateEvents('MGLU3')).toEqual([]);
+  });
+
+  it('SHOULD throw WHEN the token is missing OR the source answers 429', async () => {
+    await expect(new BrapiQuotes(envWith()).getCorporateEvents('MGLU3')).rejects.toBeInstanceOf(
+      QuoteSourceUnavailableError,
+    );
+
+    getSpy.mockRejectedValue({ response: { status: 429 } });
+
+    await expect(
+      new BrapiQuotes(envWith('your-token')).getCorporateEvents('MGLU3'),
+    ).rejects.toBeInstanceOf(QuoteSourceLimitError);
+  });
+});

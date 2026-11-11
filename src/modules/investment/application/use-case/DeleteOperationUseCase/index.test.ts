@@ -68,3 +68,48 @@ it('SHOULD answer 422 with the redemption WHEN deleting a lot makes it larger th
     response: { details: { date: '2026-11-04', operationId: 'sell-1' } },
   });
 });
+
+describe('deleting an event (spec 108 FR 21)', () => {
+  const event = operationFixture({
+    assetId: mocks.asset.id,
+    id: 'event-1',
+    type: 'REVERSE_SPLIT' as never,
+  });
+  const sale = operationFixture({
+    accountId: 'acc-1',
+    assetId: mocks.asset.id,
+    fractionOfOperationId: 'event-1',
+    generateTransaction: true,
+    id: 'sale-1',
+  });
+
+  beforeEach(() => {
+    spies.findOperationById.mockResolvedValue(event);
+    spies.findAssetById.mockResolvedValue({ ...mocks.detail, operations: [event, sale] });
+  });
+
+  it('SHOULD delete the event WHEN the account of its fraction sale is writable', async () => {
+    spies.findAccountForOperation.mockResolvedValue(mocks.account);
+
+    await setup.execute({ ...base, id: 'event-1' });
+
+    expect(spies.findAccountForOperation).toHaveBeenCalledWith('acc-1');
+    expect(spies.deleteOperation).toHaveBeenCalledWith('event-1');
+  });
+
+  it('SHOULD answer 403 WHEN the fraction sale uses an account the caller cannot change', async () => {
+    spies.findAccountForOperation.mockResolvedValue({ ...mocks.account, ownerId: 'left-user' });
+
+    await expect(setup.execute({ ...base, id: 'event-1' })).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+    expect(spies.deleteOperation).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD answer 422 WHEN removing the event would break the position', async () => {
+    spies.findAccountForOperation.mockResolvedValue(mocks.account);
+    spies.deleteOperation.mockRejectedValue(new NegativePositionError('2026-04-01', 'sell-1'));
+
+    await expect(setup.execute({ ...base, id: 'event-1' })).rejects.toMatchObject({ status: 422 });
+  });
+});

@@ -20,6 +20,9 @@ const spies = {
   assetFindMany: jest.fn(),
   assetFindUnique: jest.fn(),
   assetUpdate: jest.fn(),
+  eventSuggestionDelete: jest.fn(),
+  eventSuggestionFindMany: jest.fn(),
+  eventSuggestionUpdate: jest.fn(),
   incomeFindMany: jest.fn(),
   operationCreate: jest.fn(),
   operationDelete: jest.fn(),
@@ -66,6 +69,11 @@ const tx = {
     findMany: spies.assetFindMany,
     findUnique: spies.assetFindUnique,
     update: spies.assetUpdate,
+  },
+  investmentEventSuggestion: {
+    delete: spies.eventSuggestionDelete,
+    findMany: spies.eventSuggestionFindMany,
+    update: spies.eventSuggestionUpdate,
   },
   investmentFixedIncomeAdjustment: {
     deleteMany: spies.adjustmentDeleteMany,
@@ -119,6 +127,7 @@ export let setup: InvestmentDatasource;
 beforeEach(async () => {
   jest.resetAllMocks();
   spies.incomeFindMany.mockResolvedValue([]);
+  spies.eventSuggestionFindMany.mockResolvedValue([]);
   spies.suggestionFindMany.mockResolvedValue([]);
 
   const module = await Test.createTestingModule({

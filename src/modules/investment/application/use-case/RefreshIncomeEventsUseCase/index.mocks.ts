@@ -5,7 +5,9 @@ import {
   incomeRepositorySpies,
 } from '@investment/domain/entity/mocks/income.fixture';
 import { quoteRepositorySpies } from '@investment/domain/entity/mocks/investment.fixture';
+import { InvestmentAssetClass, InvestmentOperationType } from '@investment/domain/enum';
 import { QuoteMarket } from '@investment/domain/enum/QuoteMarket';
+import { Decimal8 } from '@shared/infra/decimal';
 
 import { RefreshIncomeEventsUseCase } from './index';
 
@@ -30,9 +32,9 @@ export const mocks = {
     createdAt: new Date('2026-01-01T00:00:00Z'),
     date: '2026-01-10',
     id: 'op-1',
-    quantity: '300.00000000',
+    quantity: Decimal8.parse('300'),
     total: 100000,
-    type: 'BUY',
+    type: InvestmentOperationType.BUY,
   },
   event: incomeEventFixture({ id: 'ev-1', ticker: 'ITSA4' }),
   tracked: [{ fetchedAt: null, market: QuoteMarket.B3, ticker: 'ITSA4' }],
@@ -52,7 +54,13 @@ beforeEach(async () => {
   spies.incomes.findEvents.mockResolvedValue([mocks.event]);
   spies.incomes.findSuggestionInputs.mockResolvedValue({
     assets: [
-      { assetId: 'asset-1', market: QuoteMarket.B3, operations: [mocks.buy], ticker: 'ITSA4' },
+      {
+        assetClass: InvestmentAssetClass.BR_STOCK,
+        assetId: 'asset-1',
+        market: QuoteMarket.B3,
+        operations: [mocks.buy],
+        ticker: 'ITSA4',
+      },
     ],
     existing: [],
     incomes: [],

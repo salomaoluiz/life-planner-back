@@ -134,3 +134,62 @@ describe('FinnhubQuotes.getIncomeEvents (spec 107)', () => {
     ).rejects.toBeInstanceOf(QuoteSourceLimitError);
   });
 });
+
+describe('FinnhubQuotes.getCorporateEvents (spec 108)', () => {
+  it('SHOULD map splits AND reverse splits, with the data-com the day before the effective date', async () => {
+    getSpy.mockResolvedValue({
+      data: [
+        { date: '2026-08-25', fromFactor: 1, symbol: 'AAPL', toFactor: 4 },
+        { date: '2026-03-01', fromFactor: 10, symbol: 'AAPL', toFactor: 1 },
+        { date: '2026-02-01', fromFactor: 1, symbol: 'AAPL', toFactor: 1 },
+        { date: '2026-02-01', fromFactor: 0, symbol: 'AAPL', toFactor: 1 },
+        { fromFactor: 1, toFactor: 2 },
+      ],
+    });
+
+    const events = await new FinnhubQuotes(envWith('your-token')).getCorporateEvents('aapl');
+
+    expect(getSpy).toHaveBeenCalledWith(
+      'https://finnhub.io/api/v1/stock/split',
+      expect.objectContaining({
+        params: expect.objectContaining({ symbol: 'AAPL', token: 'your-token' }),
+      }),
+    );
+    expect(events).toEqual([
+      {
+        currency: 'USD',
+        ratioFrom: '1',
+        ratioTo: '4',
+        recordDate: '2026-08-24',
+        ticker: 'AAPL',
+        type: 'SPLIT',
+      },
+      {
+        currency: 'USD',
+        ratioFrom: '10',
+        ratioTo: '1',
+        recordDate: '2026-02-28',
+        ticker: 'AAPL',
+        type: 'REVERSE_SPLIT',
+      },
+    ]);
+  });
+
+  it('SHOULD return [] WHEN the plan has no splits endpoint (403)', async () => {
+    getSpy.mockRejectedValue(Object.assign(new Error('Forbidden'), { response: { status: 403 } }));
+
+    expect(await new FinnhubQuotes(envWith('your-token')).getCorporateEvents('AAPL')).toEqual([]);
+  });
+
+  it('SHOULD throw WHEN the token is missing OR the source is rate limited', async () => {
+    await expect(new FinnhubQuotes(envWith()).getCorporateEvents('AAPL')).rejects.toBeInstanceOf(
+      QuoteSourceUnavailableError,
+    );
+
+    getSpy.mockRejectedValue({ response: { status: 429 } });
+
+    await expect(
+      new FinnhubQuotes(envWith('your-token')).getCorporateEvents('AAPL'),
+    ).rejects.toBeInstanceOf(QuoteSourceLimitError);
+  });
+});

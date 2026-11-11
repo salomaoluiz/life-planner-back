@@ -244,21 +244,21 @@ model FinancialCategoryScope {
 // Money is integer cents (BRL implied). `date` is a calendar date (no time, no timezone).
 // Both FKs are RESTRICT: an account or category with transactions can never be deleted by accident.
 model FinancialTransaction {
-  id                       String                @id @default(uuid())
+  id                       String                   @id @default(uuid())
   description              String
   // Spec 059: free text, trimmed, at most 1000 characters (CHECK in the migration); NULL when empty.
   notes                    String?
   value                    Int
-  date                     DateTime              @db.Date
+  date                     DateTime                 @db.Date
   type                     TransactionType
   account_id               String?
   credit_card_id           String?
-  invoice_month            String?               @db.Char(7)
+  invoice_month            String?                  @db.Char(7)
   // Account rows only (spec 033); card rows are NULL and derive their status from the invoice.
   paid                     Boolean?
   category_id              String
   installment_plan_id      String?
-  installment_number       Int?                  @db.SmallInt
+  installment_number       Int?                     @db.SmallInt
   // Recurring series (spec 034): both set or both null; `occurrence_number` is the position in the series.
   recurrence_id            String?
   occurrence_number        Int?
@@ -267,18 +267,18 @@ model FinancialTransaction {
   refunded_plan_id         String?
   prepayment_id            String?
   payment_method           InvoicePaymentMethod?
-  paid_from_transaction_id String?               @unique
+  paid_from_transaction_id String?                  @unique
   // Spec 096: a card EXPENSE not charged yet (CHECK in the migration); counts apart from the effective totals.
-  projected                Boolean               @default(false)
+  projected                Boolean                  @default(false)
   // Spec 098: out, in and fee rows of a transfer; they change only through the transfer.
   transfer_id              String?
   // Spec 107: a row managed by another module (investment income); finance never edits or deletes it directly.
   external_lock            TransactionExternalLock?
-  currency                 String                @default("BRL") @db.VarChar(3)
+  currency                 String                   @default("BRL") @db.VarChar(3)
   owner                    OwnerType
   owner_id                 String
-  created_at               DateTime              @default(now()) @db.Timestamptz(3)
-  updated_at               DateTime              @updatedAt @db.Timestamptz(6)
+  created_at               DateTime                 @default(now()) @db.Timestamptz(3)
+  updated_at               DateTime                 @updatedAt @db.Timestamptz(6)
 
   account              FinancialAccount?         @relation(fields: [account_id], references: [id], onDelete: Restrict)
   credit_card          FinancialCreditCard?      @relation(fields: [credit_card_id], references: [id], onDelete: Restrict)
@@ -651,6 +651,15 @@ enum InvestmentAssetStatus {
 enum InvestmentOperationType {
   BUY
   SELL
+  SPLIT
+  REVERSE_SPLIT
+  BONUS
+}
+
+enum InvestmentCorporateEventType {
+  SPLIT
+  REVERSE_SPLIT
+  BONUS
 }
 
 enum InvestmentFeeKind {
@@ -804,34 +813,44 @@ model InvestmentAsset {
   fixed_income_adjustments InvestmentFixedIncomeAdjustment[]
   incomes                  InvestmentIncome[]
   income_suggestions       InvestmentIncomeSuggestion[]
+  event_suggestions        InvestmentEventSuggestion[]
 
   @@index([owner, owner_id])
   @@map("investment_assets")
 }
 
 model InvestmentOperation {
-  id                   String                               @id @default(uuid())
-  asset_id             String
-  type                 InvestmentOperationType
-  date                 DateTime                             @db.Date
-  quantity             Decimal                              @db.Decimal(18, 8)
-  unit_price           Decimal                              @db.Decimal(20, 8)
-  gross                Int
-  fees_total           Int
-  total                Int
-  generate_transaction Boolean
-  account_id           String?
-  transaction_id       String?                              @unique
-  fx_rate              Decimal?                             @db.Decimal(12, 6)
-  redemption_kind      InvestmentFixedIncomeRedemptionKind?
-  net_amount           Int?
-  created_at           DateTime                             @default(now()) @db.Timestamptz(6)
-  updated_at           DateTime                             @updatedAt @db.Timestamptz(6)
+  id                       String                               @id @default(uuid())
+  asset_id                 String
+  type                     InvestmentOperationType
+  date                     DateTime                             @db.Date
+  quantity                 Decimal?                             @db.Decimal(18, 8)
+  unit_price               Decimal?                             @db.Decimal(20, 8)
+  gross                    Int?
+  fees_total               Int?
+  total                    Int?
+  ratio_from               Decimal?                             @db.Decimal(18, 8)
+  ratio_to                 Decimal?                             @db.Decimal(18, 8)
+  bonus_percent            Decimal?                             @db.Decimal(12, 8)
+  bonus_unit_cost          Decimal?                             @db.Decimal(20, 8)
+  fraction_of_operation_id String?                              @unique
+  event_suggestion_id      String?                              @unique
+  generate_transaction     Boolean
+  account_id               String?
+  transaction_id           String?                              @unique
+  fx_rate                  Decimal?                             @db.Decimal(12, 6)
+  redemption_kind          InvestmentFixedIncomeRedemptionKind?
+  net_amount               Int?
+  created_at               DateTime                             @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime                             @updatedAt @db.Timestamptz(6)
 
-  asset       InvestmentAsset          @relation(fields: [asset_id], references: [id], onDelete: Cascade)
-  account     FinancialAccount?        @relation(fields: [account_id], references: [id], onDelete: SetNull)
-  transaction FinancialTransaction?    @relation(fields: [transaction_id], references: [id], onDelete: SetNull)
-  fees        InvestmentOperationFee[]
+  asset            InvestmentAsset            @relation(fields: [asset_id], references: [id], onDelete: Cascade)
+  account          FinancialAccount?          @relation(fields: [account_id], references: [id], onDelete: SetNull)
+  transaction      FinancialTransaction?      @relation(fields: [transaction_id], references: [id], onDelete: SetNull)
+  fees             InvestmentOperationFee[]
+  fraction_of      InvestmentOperation?       @relation("FractionSale", fields: [fraction_of_operation_id], references: [id], onDelete: SetNull)
+  fraction_sale    InvestmentOperation?       @relation("FractionSale")
+  event_suggestion InvestmentEventSuggestion? @relation(fields: [event_suggestion_id], references: [id], onDelete: SetNull)
 
   @@index([asset_id, date, created_at, id])
   @@index([account_id])
@@ -980,4 +999,44 @@ model InvestmentIncomeSuggestion {
   @@unique([asset_id, event_id])
   @@index([asset_id, status])
   @@map("investment_income_suggestions")
+}
+
+model InvestmentCorporateEvent {
+  id              String                       @id @default(uuid())
+  market          QuoteMarket
+  ticker          String                       @db.VarChar(20)
+  event_key       String                       @unique
+  source          String
+  type            InvestmentCorporateEventType
+  record_date     DateTime                     @db.Date
+  ratio_from      Decimal?                     @db.Decimal(18, 8)
+  ratio_to        Decimal?                     @db.Decimal(18, 8)
+  bonus_percent   Decimal?                     @db.Decimal(12, 8)
+  bonus_unit_cost Decimal?                     @db.Decimal(20, 8)
+  currency        String                       @db.VarChar(3)
+  fetched_at      DateTime                     @db.Timestamptz(6)
+
+  suggestions InvestmentEventSuggestion[]
+
+  @@index([market, ticker, record_date])
+  @@map("investment_corporate_events")
+}
+
+model InvestmentEventSuggestion {
+  id         String                     @id @default(uuid())
+  asset_id   String
+  event_id   String
+  quantity   Decimal                    @db.Decimal(18, 8)
+  status     InvestmentSuggestionStatus @default(PENDING)
+  decided_by String?
+  decided_at DateTime?                  @db.Timestamptz(6)
+  created_at DateTime                   @default(now()) @db.Timestamptz(6)
+
+  asset     InvestmentAsset          @relation(fields: [asset_id], references: [id], onDelete: Cascade)
+  event     InvestmentCorporateEvent @relation(fields: [event_id], references: [id])
+  operation InvestmentOperation?
+
+  @@unique([asset_id, event_id])
+  @@index([asset_id, status])
+  @@map("investment_event_suggestions")
 }

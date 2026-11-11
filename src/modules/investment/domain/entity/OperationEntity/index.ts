@@ -5,6 +5,10 @@ import {
 } from '@investment/domain/enum';
 import { Decimal8 } from '@shared/infra/decimal';
 
+// Spec 108 FR 4-5: the numbers of an event operation (its quantity and money fields are zero).
+export type EventData =
+  | { kind: 'BONUS'; percent: Decimal8; unitCost: Decimal8 | null }
+  | { kind: 'SPLIT'; ratioFrom: Decimal8; ratioTo: Decimal8 };
 export interface FeeEntity {
   amount: number;
   description: null | string;
@@ -23,8 +27,13 @@ export interface OperationEntity {
   assetId: string;
   createdAt: Date;
   date: string;
+  // Set on SPLIT / REVERSE_SPLIT / BONUS.
+  event: EventData | null;
+  eventSuggestionId: null | string;
   fees: FeeEntity[];
   feesTotal: number;
+  // Spec 108 FR 15: the event whose fraction this SELL sold.
+  fractionOfOperationId: null | string;
   fxRate: null | string;
   generateTransaction: boolean;
   gross: number;

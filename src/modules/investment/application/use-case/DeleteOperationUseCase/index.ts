@@ -37,6 +37,13 @@ export class DeleteOperationUseCase implements UseCaseWithParams<OperationAccess
       operation.accountId,
     );
 
+    // Spec 108 FR 21: deleting an event also deletes its fraction sale, so its account must be writable too.
+    const sale = found.operations.find((item) => item.fractionOfOperationId === operation.id);
+
+    if (sale) {
+      await assertLinkedAccountChangeable(this.repository, input.accessibleOwners, sale.accountId);
+    }
+
     await mapFixedIncomeErrors(async () => this.repository.deleteOperation(operation.id));
   }
 }

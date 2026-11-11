@@ -1,5 +1,6 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 
+import { RefreshCorporateEventsUseCase } from '@investment/application/use-case/RefreshCorporateEventsUseCase';
 import { RefreshIncomeEventsUseCase } from '@investment/application/use-case/RefreshIncomeEventsUseCase';
 import { EnvService } from '@shared/infra/env/env.service';
 import { ILogger, LogLevel } from '@shared/infra/logger/types';
@@ -12,7 +13,8 @@ export const INCOME_EVENTS_SCHEDULE = {
   timeZone: 'America/Sao_Paulo',
 };
 
-// The only path that asks the providers for announced income. `INVESTMENT_QUOTES_JOB_ENABLED=false` turns it off.
+// The only path that asks the providers for announced income and, since spec 108, corporate events (the second step
+// runs right after, and a failing step never stops the other). `INVESTMENT_QUOTES_JOB_ENABLED=false` turns it off.
 @Injectable()
 export class RefreshIncomeEventsJob implements OnModuleInit {
   constructor(
@@ -20,6 +22,7 @@ export class RefreshIncomeEventsJob implements OnModuleInit {
     @Inject('ILogger') private readonly logger: ILogger,
     private readonly env: EnvService,
     private readonly refresh: RefreshIncomeEventsUseCase,
+    private readonly refreshCorporate: RefreshCorporateEventsUseCase,
   ) {}
 
   onModuleInit(): void {
@@ -36,8 +39,28 @@ export class RefreshIncomeEventsJob implements OnModuleInit {
       INCOME_EVENTS_SCHEDULE.cron,
       INCOME_EVENTS_SCHEDULE.timeZone,
       async () => {
-        await this.refresh.execute();
+        await this.refreshBoth();
       },
     );
+  }
+
+  private async refreshBoth(): Promise<void> {
+    let failure: unknown;
+
+    try {
+      await this.refresh.execute();
+    } catch (error) {
+      failure = error;
+    }
+
+    try {
+      await this.refreshCorporate.execute();
+    } catch (error) {
+      failure ??= error;
+    }
+
+    if (failure) {
+      throw failure;
+    }
   }
 }

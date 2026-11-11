@@ -31,7 +31,7 @@ const input = {
   ],
   generateTransaction: true,
   quantity: '500',
-  type: InvestmentOperationType.BUY,
+  type: InvestmentOperationType.BUY as InvestmentOperationType.BUY | InvestmentOperationType.SELL,
   unitPrice: '10.20',
 };
 

@@ -5,6 +5,7 @@ import { InvestmentService } from '@api/investment/v1/investment.service';
 import { GetUserFamilyAccessUseCase } from '@family/application/use-case/GetUserFamilyAccessUseCase';
 import { AssetDetailView, AssetView } from '@investment/application/service/AssetView';
 import { CreateAssetUseCase } from '@investment/application/use-case/CreateAssetUseCase';
+import { CreateEventUseCase } from '@investment/application/use-case/CreateEventUseCase';
 import { CreateOperationUseCase } from '@investment/application/use-case/CreateOperationUseCase';
 import { DeleteAssetUseCase } from '@investment/application/use-case/DeleteAssetUseCase';
 import { DeleteOperationUseCase } from '@investment/application/use-case/DeleteOperationUseCase';
@@ -47,15 +48,23 @@ const position = {
   currentValueDate: '2026-11-01',
   openResult: 84960,
   openResultPercent: 0.0721,
+  pendingFractions: [],
   quantity: Decimal8.parse('1200'),
   realizedResult: 31790,
 };
 const market: AssetView['market'] = { fx: null, priceSource: 'MANUAL', quote: null, usd: null };
-const view: AssetView = { asset, fixedIncome: null, market, operationCount: 1, position };
+const view: AssetView = {
+  asset,
+  fixedIncome: null,
+  market,
+  operationCount: 1,
+  pendingFractionCount: 0,
+  position,
+};
 const valuation = valuationFixture({ assetId: asset.id });
 const detailView: AssetDetailView = {
   ...view,
-  operations: [{ costRemoved: 294660, operation, realizedResult: 31790 }],
+  operations: [{ costRemoved: 294660, event: null, operation, realizedResult: 31790 }],
   valuations: [valuation],
 };
 const positionApi = {
@@ -66,12 +75,14 @@ const positionApi = {
   currentValueDate: '2026-11-01',
   openResult: 84960,
   openResultPercent: 0.0721,
+  pendingFractions: [],
   quantity: '1200',
   realizedResult: 31790,
 };
 
 const useCaseMocks = {
   createAsset: { execute: jest.fn() },
+  createEvent: { execute: jest.fn() },
   createOperation: { execute: jest.fn() },
   deleteAsset: { execute: jest.fn() },
   deleteOperation: { execute: jest.fn() },
@@ -99,6 +110,7 @@ beforeEach(async () => {
     providers: [
       InvestmentService,
       { provide: CreateAssetUseCase, useValue: useCaseMocks.createAsset },
+      { provide: CreateEventUseCase, useValue: useCaseMocks.createEvent },
       { provide: CreateOperationUseCase, useValue: useCaseMocks.createOperation },
       { provide: DeleteAssetUseCase, useValue: useCaseMocks.deleteAsset },
       { provide: DeleteOperationUseCase, useValue: useCaseMocks.deleteOperation },

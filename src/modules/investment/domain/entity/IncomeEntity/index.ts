@@ -4,6 +4,7 @@ import {
   InvestmentSuggestionStatus,
 } from '@investment/domain/enum';
 import { QuoteMarket } from '@investment/domain/enum/QuoteMarket';
+import { PositionOperation } from '@investment/domain/service/PositionCalculator';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 // Spec 107: money in integer minor units, quantities and prices as decimal strings, dates as `YYYY-MM-DD`.
@@ -81,16 +82,10 @@ export interface IncomeSuggestionEntity {
 }
 // What the matcher needs of an asset: its operations (for the position) and the quoted symbol.
 export interface IncomeSuggestionAsset {
+  assetClass: InvestmentAssetClass;
   assetId: string;
   market: QuoteMarket;
-  operations: {
-    createdAt: Date;
-    date: string;
-    id: string;
-    quantity: string;
-    total: number;
-    type: string;
-  }[];
+  operations: PositionOperation[];
   ticker: string;
 }
 export interface IncomeSuggestionInputs {

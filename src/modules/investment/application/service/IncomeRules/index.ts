@@ -10,20 +10,25 @@ import { ensureOwnerWritable } from '@investment/application/service/OwnerWritab
 import { todayInSaoPaulo } from '@investment/application/service/Today';
 import { AssetDetail } from '@investment/domain/entity/AssetEntity';
 import { IncomeCategory, IncomeEntity } from '@investment/domain/entity/IncomeEntity';
+import { OperationEntity } from '@investment/domain/entity/OperationEntity';
 import { hasOwnerAccess, OwnerAccess } from '@investment/domain/entity/OwnerAccess';
-import { InvestmentIncomeType, InvestmentOperationType } from '@investment/domain/enum';
+import { InvestmentAssetClass, InvestmentIncomeType } from '@investment/domain/enum';
 import {
   IIncomeRepository,
   IInvestmentRepository,
   OperationAccount,
 } from '@investment/domain/repository';
+import { unitStepOf } from '@investment/domain/service/CorporateEventMath';
 import {
   bpsToRate,
   defaultIncomeType,
   estimateIncome,
   withholdingBps,
 } from '@investment/domain/service/IncomeWithholding';
-import { calculatePosition } from '@investment/domain/service/PositionCalculator';
+import {
+  calculatePosition,
+  toPositionOperation,
+} from '@investment/domain/service/PositionCalculator';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { Decimal8 } from '@shared/infra/decimal';
 
@@ -230,18 +235,15 @@ export async function resolveIncomeCategory(
 
 // Position at the end of `date` (operations dated on or before it); no date = today's position.
 export function positionAt(
-  operations: {
-    createdAt: Date;
-    date: string;
-    id: string;
-    quantity: Decimal8;
-    total: number;
-    type: InvestmentOperationType;
-  }[],
+  operations: OperationEntity[],
+  assetClass: InvestmentAssetClass,
   date?: string,
 ): Decimal8 {
   return calculatePosition(
-    date ? operations.filter((operation) => operation.date <= date) : operations,
+    (date ? operations.filter((operation) => operation.date <= date) : operations).map(
+      toPositionOperation,
+    ),
+    { step: unitStepOf(assetClass) },
   ).quantity;
 }
 
@@ -269,7 +271,7 @@ export async function resolveIncomeDefaults(
     accountId: account?.id ?? null,
     categoryId: category?.id ?? null,
     currency: asset.currency,
-    quantity: positionAt(asset.operations, options.exDate).toString(),
+    quantity: positionAt(asset.operations, asset.assetClass, options.exDate).toString(),
     type,
     withholdingRate: bpsToRate(withholdingBps(type, asset.assetClass)),
   };
