@@ -295,6 +295,42 @@ export const ListAssetsQuerySchema = z.object({
   status: z.enum(InvestmentAssetStatus).optional(),
 });
 
+// Spec 109: `?ownerId=a&ownerId=b` arrives as an array, `?ownerId=a` as a string; `today` is the client's local date.
+export const InvestmentsSummaryQuerySchema = z.object({
+  ownerId: z.union([z.uuid(), z.array(z.uuid()).min(1)]),
+  today: z.iso.date().optional(),
+});
+export const InvestmentsSummaryApiSchema = z.strictObject({
+  currency: z.literal('BRL'),
+  currentValueCents: z.number().int(),
+  hasPositions: z.boolean(),
+  income: z.strictObject({
+    count: z.number().int(),
+    month: z.string(),
+    pendingSuggestions: z.number().int(),
+    totalCents: z.number().int(),
+  }),
+  investedCents: z.number().int(),
+  nextMaturity: z
+    .strictObject({
+      assetId: z.string(),
+      currency: z.string(),
+      maturityDate: CalendarDateApiSchema,
+      name: z.string(),
+      netEstimatedCents: z.number().int(),
+    })
+    .nullable(),
+  quotes: z.strictObject({
+    asOf: z.iso.datetime().nullable(),
+    manualCount: z.number().int(),
+    stale: z.boolean(),
+    withoutPrice: z.number().int(),
+  }),
+  resultBasisPoints: z.number().int().nullable(),
+  resultCents: z.number().int(),
+});
+export type InvestmentsSummaryOutputType = z.infer<typeof InvestmentsSummaryApiSchema>;
+
 export const TickerSearchQuerySchema = z.object({
   market: z.enum(QuoteMarket),
   q: z.string().trim().min(2).max(20),
@@ -353,6 +389,7 @@ export class AssetDetailOutput extends createZodDto(AssetDetailApiSchema) {}
 export class AssetItemOutput extends createZodDto(AssetItemApiSchema) {}
 export class AssetListOutput extends createZodDto(AssetListApiSchema) {}
 export class CreateAssetBody extends createZodDto(CreateAssetApiSchema) {}
+export class InvestmentsSummaryOutput extends createZodDto(InvestmentsSummaryApiSchema) {}
 // Swagger only: the controller validates with the union above (a union cannot be a DTO base class).
 const CreateOperationDocSchema = z.object({
   ...CreateTradeApiSchema.partial().shape,

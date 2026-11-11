@@ -12,6 +12,7 @@ import { DeleteOperationUseCase } from '@investment/application/use-case/DeleteO
 import { DeleteValuationUseCase } from '@investment/application/use-case/DeleteValuationUseCase';
 import { GetAssetByIdUseCase } from '@investment/application/use-case/GetAssetByIdUseCase';
 import { GetAssetsUseCase } from '@investment/application/use-case/GetAssetsUseCase';
+import { GetInvestmentsHomeSummaryUseCase } from '@investment/application/use-case/GetInvestmentsHomeSummaryUseCase';
 import { GetPriceHistoryUseCase } from '@investment/application/use-case/GetPriceHistoryUseCase';
 import { RefreshQuotesNowUseCase } from '@investment/application/use-case/RefreshQuotesNowUseCase';
 import { SearchTickersUseCase } from '@investment/application/use-case/SearchTickersUseCase';
@@ -89,6 +90,7 @@ const useCaseMocks = {
   deleteValuation: { execute: jest.fn() },
   getAssetById: { execute: jest.fn() },
   getAssets: { execute: jest.fn() },
+  getInvestmentsHomeSummary: { execute: jest.fn() },
   getPriceHistory: { execute: jest.fn() },
   getUserFamilyAccess: { execute: jest.fn() },
   refreshQuotesNow: { execute: jest.fn() },
@@ -117,6 +119,10 @@ beforeEach(async () => {
       { provide: DeleteValuationUseCase, useValue: useCaseMocks.deleteValuation },
       { provide: GetAssetByIdUseCase, useValue: useCaseMocks.getAssetById },
       { provide: GetAssetsUseCase, useValue: useCaseMocks.getAssets },
+      {
+        provide: GetInvestmentsHomeSummaryUseCase,
+        useValue: useCaseMocks.getInvestmentsHomeSummary,
+      },
       { provide: GetPriceHistoryUseCase, useValue: useCaseMocks.getPriceHistory },
       { provide: GetUserFamilyAccessUseCase, useValue: useCaseMocks.getUserFamilyAccess },
       { provide: RefreshQuotesNowUseCase, useValue: useCaseMocks.refreshQuotesNow },

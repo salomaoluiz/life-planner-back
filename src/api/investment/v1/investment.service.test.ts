@@ -437,3 +437,63 @@ describe('corporate events (spec 108)', () => {
     expect(mocks.useCases.createOperation.execute).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('getSummary (spec 109)', () => {
+  it('SHOULD resolve the readable owners, call the use case AND map dates and nulls to the contract', async () => {
+    mocks.useCases.getInvestmentsHomeSummary.execute.mockResolvedValue({
+      currency: 'BRL',
+      currentValueCents: 18432055,
+      hasPositions: true,
+      income: { count: 6, month: '2026-11', pendingSuggestions: 2, totalCents: 128430 },
+      investedCents: 16290000,
+      nextMaturity: {
+        assetId: 'asset-1',
+        currency: 'BRL',
+        maturityDate: '2026-12-15',
+        name: 'CDB',
+        netEstimatedCents: 2187010,
+      },
+      quotes: {
+        asOf: new Date('2026-11-04T19:05:00Z'),
+        manualCount: 2,
+        stale: false,
+        withoutPrice: 0,
+      },
+      resultBasisPoints: 1315,
+      resultCents: 2142055,
+    });
+
+    const result = await setup.getSummary(mocks.userId, ['owner-1'], '2026-11-04');
+
+    expect(mocks.useCases.getInvestmentsHomeSummary.execute).toHaveBeenCalledWith({
+      accessibleOwners: mocks.accessibleOwners,
+      ownerIds: ['owner-1'],
+      today: '2026-11-04',
+    });
+    expect(result).toMatchObject({
+      nextMaturity: { assetId: 'asset-1', maturityDate: '2026-12-15' },
+      quotes: { asOf: '2026-11-04T19:05:00.000Z', manualCount: 2 },
+      resultBasisPoints: 1315,
+    });
+  });
+
+  it('SHOULD keep a null asOf AND a null nextMaturity', async () => {
+    mocks.useCases.getInvestmentsHomeSummary.execute.mockResolvedValue({
+      currency: 'BRL',
+      currentValueCents: 0,
+      hasPositions: false,
+      income: { count: 0, month: '2026-11', pendingSuggestions: 0, totalCents: 0 },
+      investedCents: 0,
+      nextMaturity: null,
+      quotes: { asOf: null, manualCount: 0, stale: false, withoutPrice: 0 },
+      resultBasisPoints: null,
+      resultCents: 0,
+    });
+
+    const result = await setup.getSummary(mocks.userId, ['owner-1'], '2026-11-04');
+
+    expect(result.quotes.asOf).toBeNull();
+    expect(result.nextMaturity).toBeNull();
+    expect(result.resultBasisPoints).toBeNull();
+  });
+});

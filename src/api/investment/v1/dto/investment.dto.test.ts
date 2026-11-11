@@ -2,6 +2,8 @@ import {
   AssetDetailApiSchema,
   CreateAssetApiSchema,
   CreateOperationApiSchema,
+  InvestmentsSummaryApiSchema,
+  InvestmentsSummaryQuerySchema,
   OperationApiSchema,
   PositionApiSchema,
   UpdateAssetApiSchema,
@@ -176,5 +178,44 @@ describe('corporate events on the operation schemas (spec 108)', () => {
     expect(PositionApiSchema.safeParse({ ...position, pendingFractions: undefined }).success).toBe(
       false,
     );
+  });
+});
+
+describe('InvestmentsSummaryQuerySchema (spec 109)', () => {
+  it('SHOULD accept one owner id or many, with or without today', () => {
+    expect(InvestmentsSummaryQuerySchema.safeParse({ ownerId }).success).toBe(true);
+    expect(
+      InvestmentsSummaryQuerySchema.safeParse({ ownerId: [ownerId, ownerId], today: '2026-11-04' })
+        .success,
+    ).toBe(true);
+  });
+
+  it.each([{}, { ownerId: 'abc' }, { ownerId: [] }, { ownerId, today: '2026-13-40' }])(
+    'SHOULD reject %j',
+    (query) => {
+      expect(InvestmentsSummaryQuerySchema.safeParse(query).success).toBe(false);
+    },
+  );
+});
+
+describe('InvestmentsSummaryApiSchema (spec 109)', () => {
+  const body = {
+    currency: 'BRL',
+    currentValueCents: 18432055,
+    hasPositions: true,
+    income: { count: 6, month: '2026-11', pendingSuggestions: 2, totalCents: 128430 },
+    investedCents: 16290000,
+    nextMaturity: null,
+    quotes: { asOf: '2026-11-04T19:05:00.000Z', manualCount: 2, stale: false, withoutPrice: 0 },
+    resultBasisPoints: null,
+    resultCents: 2142055,
+  };
+
+  it('SHOULD accept the contract with null maturity and null percentage', () => {
+    expect(InvestmentsSummaryApiSchema.safeParse(body).success).toBe(true);
+  });
+
+  it('SHOULD reject an unknown field', () => {
+    expect(InvestmentsSummaryApiSchema.safeParse({ ...body, extra: 1 }).success).toBe(false);
   });
 });

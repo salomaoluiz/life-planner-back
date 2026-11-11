@@ -16,6 +16,7 @@ import {
 import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 
+import { resolveToday, toOwnerIds } from '@api/finance/v1/finance-query';
 import {
   AssetDetailOutput,
   AssetItemOutput,
@@ -24,6 +25,8 @@ import {
   CreateAssetBody,
   CreateOperationApiSchema,
   CreateOperationBody,
+  InvestmentsSummaryOutput,
+  InvestmentsSummaryQuerySchema,
   ListAssetsQuerySchema,
   OperationWriteOutput,
   PriceHistoryOutput,
@@ -116,6 +119,7 @@ export class InvestmentController {
     return this.investmentService.findAssets(req.user.id, validate(ListAssetsQuerySchema, query));
   }
 
+  // Spec 109: one call for the home section. Declared before the `:id` routes.
   @Get('assets/:id/price-history')
   @ZodResponse({ status: 200, type: PriceHistoryOutput })
   async priceHistory(
@@ -144,6 +148,18 @@ export class InvestmentController {
   @ZodResponse({ status: 200, type: TickerSearchOutput })
   async searchTickers(@Query() query: Record<string, unknown>) {
     return this.investmentService.searchTickers(validate(TickerSearchQuerySchema, query));
+  }
+
+  @Get('summary')
+  @ZodResponse({ status: 200, type: InvestmentsSummaryOutput })
+  async summary(@Request() req: JwtPayload & Request, @Query() query: Record<string, unknown>) {
+    const { ownerId, today } = validate(InvestmentsSummaryQuerySchema, query);
+
+    return this.investmentService.getSummary(
+      req.user.id,
+      toOwnerIds(ownerId) as string[],
+      resolveToday(today),
+    );
   }
 
   @Patch('assets/:id')

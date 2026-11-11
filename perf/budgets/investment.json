@@ -124,6 +124,14 @@
     "reason": "Needs incomes in the pinned perf dataset (spec 093); the seed gets investments in a later spec. Keyset pages and one asset per query (spec 107).",
     "scenario": ""
   },
+  "GET /api/v1/investments/summary": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": 600,
+    "maxQueries": 3,
+    "p50Ms": 30,
+    "scenario": ""
+  },
   "GET /api/v1/investments/tickers/search": {
     "indexes": null,
     "kind": "unmeasured",
