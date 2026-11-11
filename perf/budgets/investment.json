@@ -88,6 +88,15 @@
     "reason": "Needs an asset with a ticker in the pinned perf dataset (spec 093); the seed gets investments in a later spec. Reads stored closes only (3 queries: asset, history range, rate).",
     "scenario": ""
   },
+  "GET /api/v1/investments/event-suggestions": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs event suggestions in the pinned perf dataset (spec 093); reads stored rows only, never a provider, one operations read for the listed assets, capped at 200 with a cursor (spec 108).",
+    "scenario": ""
+  },
   "GET /api/v1/investments/income-suggestions": {
     "indexes": null,
     "kind": "unmeasured",
@@ -214,6 +223,24 @@
     "reason": "Writes are not measured: perf tests only read (spec 093).",
     "scenario": ""
   },
+  "POST /api/v1/investments/event-suggestions/:id/approve": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "POST /api/v1/investments/event-suggestions/:id/reject": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
   "POST /api/v1/investments/fixed-income": {
     "indexes": null,
     "kind": "unmeasured",
@@ -260,6 +287,15 @@
     "scenario": ""
   },
   "POST /api/v1/investments/incomes/:id/receive": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "POST /api/v1/investments/operations/:id/fraction-sale": {
     "indexes": null,
     "kind": "unmeasured",
     "maxBytes": null,

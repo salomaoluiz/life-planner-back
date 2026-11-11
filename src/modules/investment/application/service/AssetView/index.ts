@@ -5,6 +5,7 @@ import { InvestmentAssetClass } from '@investment/domain/enum';
 import { EventStep, unitStepOf } from '@investment/domain/service/CorporateEventMath';
 import { averageFxCost, FxResult, splitFxResult } from '@investment/domain/service/FxResultSplit';
 import {
+  averagePriceOf,
   calculatePosition,
   PendingFraction,
   PositionResult,
@@ -54,10 +55,14 @@ export interface AssetView {
   pendingFractionCount: number;
   position: AssetPosition;
 }
+export type EventResult = {
+  averagePriceAfter: null | string;
+  averagePriceBefore: null | string;
+} & EventStep;
 export interface OperationView {
   costRemoved: null | number;
   // Spec 108 FR 12: the before/after numbers of an event, null for any other operation.
-  event: EventStep | null;
+  event: EventResult | null;
   operation: OperationEntity;
   realizedResult: null | number;
 }
@@ -98,7 +103,7 @@ export function toAssetDetailView(
 
       return {
         costRemoved: sell?.costRemoved ?? null,
-        event: result.perEvent.get(operation.id) ?? null,
+        event: toEventResult(result.perEvent.get(operation.id)),
         operation,
         realizedResult: sell?.realizedResult ?? null,
       };
@@ -163,6 +168,15 @@ function quoteOf(asset: AssetEntity, context: QuoteContext) {
 
   return market && asset.ticker
     ? (context.quotes.get(quoteKey(market, asset.ticker)) ?? null)
+    : null;
+}
+function toEventResult(step: EventStep | undefined): EventResult | null {
+  return step
+    ? {
+        ...step,
+        averagePriceAfter: averagePriceOf(step.costAfter, step.quantityAfter),
+        averagePriceBefore: averagePriceOf(step.costBefore, step.quantityBefore),
+      }
     : null;
 }
 function toPosition(

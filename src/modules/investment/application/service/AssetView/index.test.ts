@@ -260,6 +260,8 @@ describe('corporate events (spec 108)', () => {
     const row = view.operations.find((item) => item.operation.id === 'event-1');
 
     expect(row?.event).toMatchObject({
+      averagePriceAfter: '10.11409524',
+      averagePriceBefore: '1.01141046',
       costAfter: 318594,
       costBefore: 319100,
       fractionCost: 506,

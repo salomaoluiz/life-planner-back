@@ -5,6 +5,7 @@ import { InvestmentService } from '@api/investment/v1/investment.service';
 import { GetUserFamilyAccessUseCase } from '@family/application/use-case/GetUserFamilyAccessUseCase';
 import { AssetDetailView, AssetView } from '@investment/application/service/AssetView';
 import { CreateAssetUseCase } from '@investment/application/use-case/CreateAssetUseCase';
+import { CreateEventUseCase } from '@investment/application/use-case/CreateEventUseCase';
 import { CreateOperationUseCase } from '@investment/application/use-case/CreateOperationUseCase';
 import { DeleteAssetUseCase } from '@investment/application/use-case/DeleteAssetUseCase';
 import { DeleteOperationUseCase } from '@investment/application/use-case/DeleteOperationUseCase';
@@ -74,12 +75,14 @@ const positionApi = {
   currentValueDate: '2026-11-01',
   openResult: 84960,
   openResultPercent: 0.0721,
+  pendingFractions: [],
   quantity: '1200',
   realizedResult: 31790,
 };
 
 const useCaseMocks = {
   createAsset: { execute: jest.fn() },
+  createEvent: { execute: jest.fn() },
   createOperation: { execute: jest.fn() },
   deleteAsset: { execute: jest.fn() },
   deleteOperation: { execute: jest.fn() },
@@ -107,6 +110,7 @@ beforeEach(async () => {
     providers: [
       InvestmentService,
       { provide: CreateAssetUseCase, useValue: useCaseMocks.createAsset },
+      { provide: CreateEventUseCase, useValue: useCaseMocks.createEvent },
       { provide: CreateOperationUseCase, useValue: useCaseMocks.createOperation },
       { provide: DeleteAssetUseCase, useValue: useCaseMocks.deleteAsset },
       { provide: DeleteOperationUseCase, useValue: useCaseMocks.deleteOperation },

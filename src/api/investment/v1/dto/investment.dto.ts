@@ -52,7 +52,7 @@ export const UpdateAssetApiSchema = z
   })
   .partial();
 
-export const CreateOperationApiSchema = z.strictObject({
+const CreateTradeApiSchema = z.strictObject({
   accountId: z.uuid().nullish(),
   date: CalendarDateApiSchema,
   fees: z.array(FeeApiSchema).max(10).optional(),
@@ -62,6 +62,25 @@ export const CreateOperationApiSchema = z.strictObject({
   type: z.enum([InvestmentOperationType.BUY, InvestmentOperationType.SELL]),
   unitPrice: DecimalApiSchema,
 });
+// Spec 108 FR 6: an event carries none of the buy and sell fields (the strict object answers 400 for them) and
+// never a finance entry. Which of the ratio or bonus fields it needs is checked by the use case.
+const CreateEventApiSchema = z.strictObject({
+  bonusPercent: DecimalApiSchema.optional(),
+  bonusUnitCost: DecimalApiSchema.nullish(),
+  date: CalendarDateApiSchema,
+  generateTransaction: z.literal(false).optional(),
+  ratioFrom: DecimalApiSchema.optional(),
+  ratioTo: DecimalApiSchema.optional(),
+  type: z.enum([
+    InvestmentOperationType.SPLIT,
+    InvestmentOperationType.REVERSE_SPLIT,
+    InvestmentOperationType.BONUS,
+  ]),
+});
+export const CreateOperationApiSchema = z.discriminatedUnion('type', [
+  CreateTradeApiSchema,
+  CreateEventApiSchema,
+]);
 
 // The asset and the type cannot change (FR 18): `.strict()` rejects them.
 // Spec 105: on a calculated title the body is `{ date, amount, ... }` (contribution) or `{ date, kind, netAmount, ... }`.
@@ -69,13 +88,19 @@ export const UpdateOperationApiSchema = z
   .strictObject({
     accountId: z.uuid().nullable(),
     amount: z.number().int().positive(),
+    // Spec 108: the fields of an event, and the auction amount of a fraction sale (0 only without a finance entry).
+    bonusPercent: DecimalApiSchema,
+    bonusUnitCost: DecimalApiSchema.nullable(),
     date: CalendarDateApiSchema,
     fees: z.array(FeeApiSchema).max(10),
     fxRate: FxRateApiSchema.nullable(),
     generateTransaction: z.boolean(),
+    grossAmount: z.number().int().min(0),
     kind: z.enum(InvestmentFixedIncomeRedemptionKind),
     netAmount: z.number().int().positive(),
     quantity: DecimalApiSchema,
+    ratioFrom: DecimalApiSchema,
+    ratioTo: DecimalApiSchema,
     unitPrice: DecimalApiSchema,
   })
   .partial();
@@ -92,6 +117,15 @@ export const PositionApiSchema = z.strictObject({
   currentValueDate: z.string().nullable(),
   openResult: z.number().int().nullable(),
   openResultPercent: z.number().nullable(),
+  // Spec 108 FR 12: fractions that left the position and wait for their sale.
+  pendingFractions: z.array(
+    z.strictObject({
+      cost: z.number().int(),
+      date: z.string(),
+      eventId: z.uuid(),
+      quantity: z.string(),
+    }),
+  ),
   quantity: z.string(),
   realizedResult: z.number().int(),
 });
@@ -178,7 +212,10 @@ export const AssetItemApiSchema = z.strictObject({
   operationCount: z.number().int(),
   operationsWithoutFxRate: z.number().int(),
   owner: OwnerTypeApiSchema,
+  // Spec 108 FR 32: event suggestions waiting for a decision (the list only) and fractions still to sell.
   ownerId: z.uuid(),
+  pendingEventSuggestions: z.number().int().optional(),
+  pendingFractionCount: z.number().int(),
   position: PositionApiSchema,
   quote: QuoteApiSchema.nullable(),
   resultBrl: z.number().int().nullable(),
@@ -196,24 +233,37 @@ const OperationFeeApiSchema = z.strictObject({
   kind: z.enum(InvestmentFeeKind),
 });
 
+// Spec 108: an event (SPLIT, REVERSE_SPLIT, BONUS) carries its ratio or bonus fields and the before/after numbers
+// instead of the buy and sell fields, which are left out.
 export const OperationApiSchema = z.strictObject({
-  accountId: z.uuid().nullable(),
+  accountId: z.uuid().nullable().optional(),
+  averagePriceAfter: z.string().nullable().optional(),
+  averagePriceBefore: z.string().nullable().optional(),
+  bonusPercent: z.string().optional(),
+  bonusUnitCost: z.string().optional(),
   costRemoved: z.number().int().nullable(),
   date: z.string(),
   fees: z.array(OperationFeeApiSchema),
-  feesTotal: z.number().int(),
-  fxRate: z.string().nullable(),
-  generateTransaction: z.boolean(),
-  gross: z.number().int(),
+  feesTotal: z.number().int().optional(),
+  fractionCost: z.number().int().optional(),
+  fractionOfOperationId: z.uuid().optional(),
+  fractionQuantity: z.string().optional(),
+  fxRate: z.string().nullable().optional(),
+  generateTransaction: z.boolean().optional(),
+  gross: z.number().int().optional(),
   id: z.uuid(),
-  netAmount: z.number().int().nullable(),
-  quantity: z.string(),
+  netAmount: z.number().int().nullable().optional(),
+  quantity: z.string().optional(),
+  quantityAfter: z.string().optional(),
+  quantityBefore: z.string().optional(),
+  ratioFrom: z.string().optional(),
+  ratioTo: z.string().optional(),
   realizedResult: z.number().int().nullable(),
-  redemptionKind: z.enum(InvestmentFixedIncomeRedemptionKind).nullable(),
-  total: z.number().int(),
-  transactionId: z.uuid().nullable(),
+  redemptionKind: z.enum(InvestmentFixedIncomeRedemptionKind).nullable().optional(),
+  total: z.number().int().optional(),
+  transactionId: z.uuid().nullable().optional(),
   type: z.enum(InvestmentOperationType),
-  unitPrice: z.string(),
+  unitPrice: z.string().optional(),
 });
 
 export const ValuationApiSchema = z.strictObject({
@@ -303,7 +353,14 @@ export class AssetDetailOutput extends createZodDto(AssetDetailApiSchema) {}
 export class AssetItemOutput extends createZodDto(AssetItemApiSchema) {}
 export class AssetListOutput extends createZodDto(AssetListApiSchema) {}
 export class CreateAssetBody extends createZodDto(CreateAssetApiSchema) {}
-export class CreateOperationBody extends createZodDto(CreateOperationApiSchema) {}
+// Swagger only: the controller validates with the union above (a union cannot be a DTO base class).
+const CreateOperationDocSchema = z.object({
+  ...CreateTradeApiSchema.partial().shape,
+  ...CreateEventApiSchema.partial().shape,
+  date: CalendarDateApiSchema,
+  type: z.enum(InvestmentOperationType),
+});
+export class CreateOperationBody extends createZodDto(CreateOperationDocSchema) {}
 export class OperationWriteOutput extends createZodDto(OperationWriteApiSchema) {}
 export class PriceHistoryOutput extends createZodDto(PriceHistoryApiSchema) {}
 export class RefreshQuotesBody extends createZodDto(RefreshQuotesApiSchema) {}
