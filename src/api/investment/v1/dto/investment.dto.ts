@@ -411,6 +411,7 @@ export const TickerSearchQuerySchema = z.object({
 export const TickerSearchApiSchema = z.strictObject({
   items: z.array(
     z.strictObject({
+      assetClass: z.enum(InvestmentAssetClass).nullable(),
       changePercent: z.string().nullable(),
       currency: z.string(),
       exchange: z.string(),
