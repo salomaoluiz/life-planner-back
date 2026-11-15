@@ -17,6 +17,7 @@ const names = [
   'findIncomes',
   'findLastIncomeCategoryId',
   'findPendingSuggestions',
+  'findPeriodIncomes',
   'findReceivedByOwners',
   'findSuggestionById',
   'findSuggestionInputs',

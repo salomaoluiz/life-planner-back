@@ -177,6 +177,34 @@ export class InvestmentRepository implements IInvestmentRepository {
     }));
   }
 
+  async findAssetDetailsByOwners(owners: OwnerAccess[]): Promise<AssetDetail[]> {
+    if (owners.length === 0) {
+      return [];
+    }
+
+    const assets = await this.datasource.findAssets(owners, InvestmentAssetStatus.ACTIVE);
+
+    if (assets.length === 0) {
+      return [];
+    }
+
+    const ids = assets.map((asset) => asset.id);
+    const [operations, valuations] = await Promise.all([
+      this.datasource.findOperationsByAssetIds(ids),
+      this.datasource.findValuationsByAssetIds(ids),
+    ]);
+
+    return assets.map((asset) => ({
+      ...InvestmentMapper.toAsset(asset),
+      operations: operations
+        .filter((row) => row.asset_id === asset.id)
+        .map((row) => InvestmentMapper.toOperation(row)),
+      valuations: valuations
+        .filter((row) => row.asset_id === asset.id)
+        .map((row) => InvestmentMapper.toValuation(row)),
+    }));
+  }
+
   async findFixedIncomeAdjustmentById(
     id: string,
   ): Promise<FixedIncomeAdjustmentEntity | undefined> {

@@ -1,3 +1,5 @@
+import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
+
 import { mocks, setup, spies } from './index.mocks';
 
 it('SHOULD map an income AND answer undefined WHEN it does not exist', async () => {
@@ -154,4 +156,21 @@ describe('home summary reads (spec 109)', () => {
     expect(await setup.countPendingSuggestionsByAssets(['a', 'b'])).toBe(4);
     expect(spies.countPendingSuggestionsByAssets).toHaveBeenCalledWith(['a', 'b']);
   });
+});
+
+it('SHOULD read the incomes of the period in ONE query AND convert the dates', async () => {
+  spies.findPeriodIncomes.mockResolvedValue([mocks.incomeRow]);
+
+  const rows = await setup.findPeriodIncomes(
+    [{ owner: OwnerType.USER, ownerId: 'user-1' }],
+    '2026-01-01',
+    '2026-11-04',
+  );
+
+  expect(rows).toHaveLength(1);
+  expect(spies.findPeriodIncomes).toHaveBeenCalledWith(
+    [{ owner: OwnerType.USER, ownerId: 'user-1' }],
+    new Date('2026-01-01T00:00:00.000Z'),
+    new Date('2026-11-04T00:00:00.000Z'),
+  );
 });

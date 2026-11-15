@@ -134,3 +134,33 @@ describe('QuoteRepository writes', () => {
     expect(await setup.runExclusive(1, jest.fn())).toBe(false);
   });
 });
+
+describe('findHistories (spec 110)', () => {
+  it('SHOULD read the closes of the symbols in ONE datasource query', async () => {
+    spies.findHistories.mockResolvedValue([
+      {
+        close: mocks.decimal('12.5'),
+        date: new Date('2026-06-30T00:00:00Z'),
+        market: 'B3',
+        source: 'BRAPI',
+        ticker: 'ITSA4',
+      },
+    ]);
+
+    const rows = await setup.findHistories(
+      [{ market: 'B3' as never, ticker: 'ITSA4' }],
+      '2025-12-01',
+      '2026-11-04',
+    );
+
+    expect(rows).toEqual([
+      { close: expect.anything(), date: '2026-06-30', market: 'B3', source: 'BRAPI', ticker: 'ITSA4' },
+    ]);
+    expect(spies.findHistories).toHaveBeenCalledTimes(1);
+    expect(spies.findHistories).toHaveBeenCalledWith(
+      [{ market: 'B3', ticker: 'ITSA4' }],
+      new Date('2025-12-01T00:00:00.000Z'),
+      new Date('2026-11-04T00:00:00.000Z'),
+    );
+  });
+});

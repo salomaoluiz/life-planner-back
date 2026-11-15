@@ -91,6 +91,20 @@ export class IncomeRepository implements IIncomeRepository {
     return rows.map((row) => IncomeMapper.toIncome(row));
   }
 
+  async findPeriodIncomes(
+    owners: { owner: OwnerType; ownerId: string }[],
+    from: string,
+    to: string,
+  ): Promise<IncomeEntity[]> {
+    const rows = await this.datasource.findPeriodIncomes(
+      owners,
+      InvestmentMapper.fromCalendarDate(from),
+      InvestmentMapper.fromCalendarDate(to),
+    );
+
+    return rows.map((row) => IncomeMapper.toIncome(row));
+  }
+
   async findLastIncomeCategoryId(
     owner: OwnerType,
     ownerId: string,

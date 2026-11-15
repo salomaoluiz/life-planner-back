@@ -497,3 +497,54 @@ describe('getSummary (spec 109)', () => {
     expect(result.resultBasisPoints).toBeNull();
   });
 });
+
+describe('getDashboard (spec 110)', () => {
+  const dashboard = {
+    allocation: [
+      {
+        assetClass: 'BR_STOCK' as const,
+        share: 1,
+        usd: null,
+        value: 120000,
+      },
+    ],
+    incomes: [],
+    period: { bucket: 'MONTH' as const, from: '2025-12-01', to: '2026-11-04' },
+    ranking: [],
+    series: [{ date: '2026-11-04', invested: 100000, marketValue: 120000 }],
+    summary: {
+      assetsWithoutValue: 0,
+      currentValue: 120000,
+      historyStartsAt: '2026-06-30',
+      incomePlanned: 0,
+      incomeReceived: 0,
+      invested: 100000,
+      openResult: 20000,
+      openResultPercent: 0.2,
+      operationsWithoutFxRate: 0,
+      realizedResult: 0,
+      salesCount: 0,
+      staleQuotes: 0,
+    },
+  };
+
+  it('SHOULD resolve the owners AND pass the period through', async () => {
+    mocks.useCases.getInvestmentsDashboard.execute.mockResolvedValue(dashboard);
+
+    const result = await setup.getDashboard(mocks.userId, ['owner-1'], {
+      from: '2025-12-01',
+      to: '2026-11-04',
+      today: '2026-11-04',
+    });
+
+    expect(mocks.useCases.getInvestmentsDashboard.execute).toHaveBeenCalledWith({
+      accessibleOwners: mocks.accessibleOwners,
+      from: '2025-12-01',
+      ownerIds: ['owner-1'],
+      to: '2026-11-04',
+      today: '2026-11-04',
+    });
+    expect(result.summary).toMatchObject({ currentValue: 120000, openResultPercent: 0.2 });
+    expect(result.period.bucket).toBe('MONTH');
+  });
+});

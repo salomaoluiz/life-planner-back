@@ -24,6 +24,8 @@ export type IQuoteRepository = {
     from: string,
     to: string,
   ): Promise<PriceHistoryRow[]>;
+  // Spec 110 FR 10: the closes of several symbols in one query.
+  findHistories(keys: QuoteKey[], from: string, to: string): Promise<PriceHistoryRow[]>;
   findQuotes(keys: QuoteKey[]): Promise<QuoteEntity[]>;
   // Quoted, non-archived assets of any owner with quantity > 0, or an operation since `since`; with the last fetch.
   findTrackedSymbols(since: string): Promise<TrackedSymbol[]>;

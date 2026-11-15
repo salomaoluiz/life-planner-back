@@ -437,3 +437,29 @@ describe('fixed income', () => {
     );
   });
 });
+
+describe('findAssetDetailsByOwners (spec 110)', () => {
+  it('SHOULD read the assets, the operations and the valuations in three queries', async () => {
+    spies.findAssets.mockResolvedValue([mocks.asset]);
+    spies.findOperationsByAssetIds.mockResolvedValue([mocks.operation]);
+    spies.findValuationsByAssetIds.mockResolvedValue([mocks.valuation]);
+
+    const details = await setup.findAssetDetailsByOwners([
+      { owner: OwnerType.USER, ownerId: 'owner-1' },
+    ]);
+
+    expect(details).toHaveLength(1);
+    expect(details[0].operations).toHaveLength(1);
+    expect(details[0].valuations).toHaveLength(1);
+    expect(details[0].ticker).toBe('ITSA4');
+    expect(spies.findOperationsByAssetIds).toHaveBeenCalledWith(['asset-1']);
+    expect(spies.findValuationsByAssetIds).toHaveBeenCalledWith(['asset-1']);
+  });
+
+  it('SHOULD skip the reads WHEN the owner has no asset', async () => {
+    spies.findAssets.mockResolvedValue([]);
+
+    expect(await setup.findAssetDetailsByOwners([{ owner: OwnerType.USER, ownerId: 'owner-1' }])).toEqual([]);
+    expect(spies.findOperationsByAssetIds).not.toHaveBeenCalled();
+  });
+});

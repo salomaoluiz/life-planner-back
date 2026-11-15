@@ -36,6 +36,7 @@ export type IIncomeDatasource = {
   findIncomes(filter: IncomeFilter): Promise<IncomeRow[]>;
   findLastIncomeCategoryId(owner: OwnerType, ownerId: string, type: string): Promise<null | string>;
   findPendingSuggestions(assetIds: string[]): Promise<SuggestionRow[]>;
+  findPeriodIncomes(owners: OwnerAccess[], from: Date, to: Date): Promise<IncomeRow[]>;
   findReceivedByOwners(
     owners: OwnerAccess[],
     from: Date,

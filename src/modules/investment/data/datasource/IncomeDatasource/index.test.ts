@@ -364,3 +364,23 @@ describe('home summary reads (spec 109)', () => {
     });
   });
 });
+
+describe('findPeriodIncomes (spec 110)', () => {
+  it('SHOULD read every income of the period in ONE query', async () => {
+    spies.incomeFindMany.mockResolvedValue([{ id: 'i' }]);
+
+    const rows = await setup.findPeriodIncomes(
+      [{ owner: OwnerType.USER, ownerId: 'user-1' }],
+      new Date('2026-01-01'),
+      new Date('2026-11-04'),
+    );
+
+    expect(rows).toEqual([{ id: 'i' }]);
+    expect(spies.incomeFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: [{ payment_date: 'asc' }, { id: 'asc' }],
+        where: expect.objectContaining({ payment_date: { gte: new Date('2026-01-01'), lte: new Date('2026-11-04') } }) as unknown,
+      }),
+    );
+  });
+});

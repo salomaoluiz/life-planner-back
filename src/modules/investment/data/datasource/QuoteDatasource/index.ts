@@ -49,6 +49,24 @@ export class QuoteDatasource implements IQuoteDatasource {
     });
   }
 
+  async findHistories(
+    keys: QuoteDatasourceKey[],
+    from: Date,
+    to: Date,
+  ): Promise<InvestmentPriceHistory[]> {
+    if (keys.length === 0) {
+      return [];
+    }
+
+    return this.db.client.investmentPriceHistory.findMany({
+      orderBy: [{ date: 'asc' }, { ticker: 'asc' }],
+      where: {
+        OR: keys.map((key) => ({ market: key.market as InvestmentPriceHistory['market'], ticker: key.ticker })),
+        date: { gte: from, lte: to },
+      },
+    });
+  }
+
   async findQuotes(keys: QuoteDatasourceKey[]): Promise<InvestmentQuote[]> {
     if (keys.length === 0) {
       return [];
