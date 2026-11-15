@@ -104,8 +104,8 @@ export function snapshotAt(input: AssetValuationInput, date: string): AssetSnaps
         marketValueUsd,
       })
     : null;
-  const costCents = split?.costBrl ?? convert(position.cost, rate);
-  const valueCents = split?.marketValueBrl ?? convert(marketValueUsd, rate);
+  const costCents = split?.costBrl ?? convertCents(position.cost, rate);
+  const valueCents = split?.marketValueBrl ?? convertCents(marketValueUsd, rate);
 
   return snapshotOf(costCents, valueCents, quantity, price?.kind ?? 'COST', {
     averageFxRate,
@@ -194,12 +194,12 @@ function snapshotOf(
     valueKind,
   };
 }
-// A USD cents value into BRL cents at `rate` (BRL per USD).
-function convert(cents: number, rate: string): number {
+// A USD cents value into BRL cents at `rate` (BRL per USD), rounded half up.
+export function convertCents(cents: number, rate: string): number {
   return Number(divRound(BigInt(cents) * rateScaled(rate), RATE_SCALE));
 }
 function toBrl(cents: number, rate: null | string): number {
-  return rate === null ? 0 : convert(cents, rate);
+  return rate === null ? 0 : convertCents(cents, rate);
 }
 function rateScaled(rate: string): bigint {
   const [integer, fraction = ''] = rate.split('.');
