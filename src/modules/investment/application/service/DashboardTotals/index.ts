@@ -1,5 +1,9 @@
 import { IncomeEntity } from '@investment/domain/entity/IncomeEntity';
-import { InvestmentIncomeType, InvestmentOperationType } from '@investment/domain/enum';
+import {
+  InvestmentAssetClass,
+  InvestmentIncomeType,
+  InvestmentOperationType,
+} from '@investment/domain/enum';
 import { DashboardBucket, endOfMonthOf } from '@investment/domain/service/DashboardBuckets';
 import {
   AssetValuationInput,
@@ -12,7 +16,7 @@ import {
 import { Decimal8 } from '@shared/infra/decimal';
 
 export interface DashboardAllocation {
-  assetClass: string;
+  assetClass: InvestmentAssetClass;
   share: number;
   usd: null | {
     fxRate: string;
@@ -29,7 +33,7 @@ export interface DashboardIncomeBucket {
   received: number;
 }
 export interface DashboardRankingRow {
-  assetClass: string;
+  assetClass: InvestmentAssetClass;
   assetId: string;
   currency: string;
   name: string;
@@ -172,7 +176,7 @@ function allocationOf(
   totalValue: number,
   fxRate: null | string,
 ): DashboardAllocation[] {
-  const byClass = new Map<string, DashboardAllocation>();
+  const byClass = new Map<InvestmentAssetClass, DashboardAllocation>();
 
   for (const { asset, snapshot } of end) {
     const current = byClass.get(asset.asset.assetClass) ?? {

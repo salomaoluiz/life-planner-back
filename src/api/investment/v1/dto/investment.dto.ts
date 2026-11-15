@@ -9,6 +9,7 @@ import {
   InvestmentFixedIncomeProduct,
   InvestmentFixedIncomeRateMode,
   InvestmentFixedIncomeRedemptionKind,
+  InvestmentIncomeType,
   InvestmentOperationType,
   InvestmentValuationSource,
 } from '@investment/domain/enum';
@@ -331,6 +332,78 @@ export const InvestmentsSummaryApiSchema = z.strictObject({
 });
 export type InvestmentsSummaryOutputType = z.infer<typeof InvestmentsSummaryApiSchema>;
 
+export const InvestmentsDashboardQuerySchema = z.object({
+  from: CalendarDateApiSchema,
+  ownerId: z.union([z.uuid(), z.array(z.uuid()).min(1)]),
+  to: CalendarDateApiSchema,
+  today: z.iso.date().optional(),
+});
+const DashboardUsdAllocationApiSchema = z.strictObject({
+  fxRate: z.string(),
+  resultFromAsset: z.number().int(),
+  resultFromFx: z.number().int(),
+  value: z.string(),
+});
+const DashboardRankingRowApiSchema = z.strictObject({
+  assetClass: z.enum(InvestmentAssetClass),
+  assetId: z.string(),
+  currency: z.string(),
+  name: z.string(),
+  openResult: z.number().int(),
+  openResultPercent: z.number().nullable(),
+  share: z.number(),
+  ticker: z.string().nullable(),
+  usdValue: z.string().nullable(),
+  value: z.number().int(),
+  valueKind: z.enum(['COST', 'FIXED_INCOME_NET', 'MANUAL', 'QUOTE']),
+});
+const DashboardIncomeBucketApiSchema = z.strictObject({
+  byType: z.record(z.enum(InvestmentIncomeType), z.number().int()),
+  date: CalendarDateApiSchema,
+  planned: z.number().int(),
+  received: z.number().int(),
+});
+// Spec 110 FR 7: the whole overview in one response.
+export const InvestmentsDashboardApiSchema = z.strictObject({
+  allocation: z.array(
+    z.strictObject({
+      assetClass: z.enum(InvestmentAssetClass),
+      share: z.number(),
+      usd: DashboardUsdAllocationApiSchema.nullable(),
+      value: z.number().int(),
+    }),
+  ),
+  incomes: z.array(DashboardIncomeBucketApiSchema),
+  period: z.strictObject({
+    bucket: z.enum(['DAY', 'MONTH', 'WEEK']),
+    from: CalendarDateApiSchema,
+    to: CalendarDateApiSchema,
+  }),
+  ranking: z.array(DashboardRankingRowApiSchema),
+  series: z.array(
+    z.strictObject({
+      date: CalendarDateApiSchema,
+      invested: z.number().int().nullable(),
+      marketValue: z.number().int().nullable(),
+    }),
+  ),
+  summary: z.strictObject({
+    assetsWithoutValue: z.number().int(),
+    currentValue: z.number().int(),
+    historyStartsAt: CalendarDateApiSchema.nullable(),
+    incomePlanned: z.number().int(),
+    incomeReceived: z.number().int(),
+    invested: z.number().int(),
+    openResult: z.number().int(),
+    openResultPercent: z.number().nullable(),
+    operationsWithoutFxRate: z.number().int(),
+    realizedResult: z.number().int(),
+    salesCount: z.number().int(),
+    staleQuotes: z.number().int(),
+  }),
+});
+export type InvestmentsDashboardOutputType = z.infer<typeof InvestmentsDashboardApiSchema>;
+
 export const TickerSearchQuerySchema = z.object({
   market: z.enum(QuoteMarket),
   q: z.string().trim().min(2).max(20),
@@ -389,6 +462,7 @@ export class AssetDetailOutput extends createZodDto(AssetDetailApiSchema) {}
 export class AssetItemOutput extends createZodDto(AssetItemApiSchema) {}
 export class AssetListOutput extends createZodDto(AssetListApiSchema) {}
 export class CreateAssetBody extends createZodDto(CreateAssetApiSchema) {}
+export class InvestmentsDashboardOutput extends createZodDto(InvestmentsDashboardApiSchema) {}
 export class InvestmentsSummaryOutput extends createZodDto(InvestmentsSummaryApiSchema) {}
 // Swagger only: the controller validates with the union above (a union cannot be a DTO base class).
 const CreateOperationDocSchema = z.object({
