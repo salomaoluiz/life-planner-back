@@ -10,11 +10,6 @@ export type IQuoteDatasource = {
     from: Date,
     to: Date,
   ): Promise<InvestmentPriceHistory[]>;
-  findHistories(
-    keys: QuoteDatasourceKey[],
-    from: Date,
-    to: Date,
-  ): Promise<InvestmentPriceHistory[]>;
   findQuotes(keys: QuoteDatasourceKey[]): Promise<InvestmentQuote[]>;
   findTrackedSymbols(since: Date): Promise<QuoteDatasourceKey[]>;
   hasHistory(market: string, ticker: string): Promise<boolean>;
