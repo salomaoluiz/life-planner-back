@@ -167,6 +167,9 @@ export function kindOfRow(row: RawListRow): B3TickerKind {
   }
 }
 
+// Spec 111: `subType` is authoritative; a `fund` without one is read by its name. The name must say what the fund is:
+// a real-estate fund (FII/IMOBILIARIO) is a REIT and anything else has no rule (`IBOV11` is an ETF whose name is just
+// the symbol, and guessing it would refuse a legitimate stock). A guess towards UNKNOWN only loses the rule.
 function fundKindByName(name: null | string | undefined): B3TickerKind {
   const text = (name ?? '')
     .normalize('NFD')
@@ -176,8 +179,11 @@ function fundKindByName(name: null | string | undefined): B3TickerKind {
   if (/FI-?AGRO/.test(text)) {
     return 'FIAGRO';
   }
+  if (/ETF|INDICE|ISHARES/.test(text)) {
+    return 'ETF';
+  }
 
-  return /ETF|INDICE|ISHARES/.test(text) ? 'ETF' : 'REIT';
+  return /FII|IMOBILIARIO/.test(text) ? 'REIT' : 'UNKNOWN';
 }
 @Injectable()
 export class BrapiQuotes implements IBrapiQuotes {

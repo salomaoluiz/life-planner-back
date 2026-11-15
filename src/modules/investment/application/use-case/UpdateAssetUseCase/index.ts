@@ -62,9 +62,11 @@ export class UpdateAssetUseCase implements UseCaseWithParams<UpdateAssetInput, A
     const classChanged = input.assetClass !== undefined && input.assetClass !== asset.assetClass;
     const currencyChanged = input.currency !== undefined && input.currency !== asset.currency;
 
+    // Rule 8: same market, same currency (BRL) and the same whole-unit rule, so only the class moves.
     const pairSwitch =
       classChanged &&
       !currencyChanged &&
+      asset.currency === 'BRL' &&
       B3_CLASS_PAIR.includes(asset.assetClass) &&
       B3_CLASS_PAIR.includes(assetClass);
 

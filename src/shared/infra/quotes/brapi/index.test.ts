@@ -434,13 +434,15 @@ describe('BrapiQuotes.getTickerKinds', () => {
       { name: 'Taesa', stock: 'TAEE11', subType: 'unit', type: 'stock' },
       { name: 'Fiagro Riza', stock: 'RZAG11', subType: 'fi-agro', type: 'fund' },
       { name: 'Fundo Infra', stock: 'KDIF11', subType: 'fi-infra', type: 'fund' },
-      { name: 'Ibov', stock: 'IBOV11', subType: null, type: 'fund' },
+      { name: 'IBOV11', stock: 'IBOV11', subType: null, type: 'fund' },
+      { name: 'Itausa', stock: 'ITSA4', subType: 'stock', type: 'stock' },
     ]);
 
     expect(await new BrapiQuotes(envWith('your-token')).getTickerKinds('knri')).toEqual({
       AAPL34: 'BDR',
       BOVA11: 'ETF',
-      IBOV11: 'REIT',
+      IBOV11: 'UNKNOWN',
+      ITSA4: 'STOCK',
       KDIF11: 'UNKNOWN',
       KNRI11: 'REIT',
       RZAG11: 'FIAGRO',
@@ -452,11 +454,15 @@ describe('BrapiQuotes.getTickerKinds', () => {
     });
   });
 
-  it('SHOULD map a fund by its name WHEN the subtype is missing', async () => {
+  it('SHOULD map a fund by its name WHEN the subtype is missing AND claim nothing otherwise', async () => {
     listRows([
       { name: 'ISHARES IBOVESPA CLASSE DE ÍNDICE', stock: 'BOVA11', type: 'fund' },
       { name: 'FIAGRO RIZA AGRO IMOBILIÁRIO', stock: 'RZAG11', type: 'fund' },
-      { name: 'KINEA RENDA IMOBILIÁRIA FUNDO', stock: 'KNRI11', type: 'fund' },
+      {
+        name: 'KINEA RENDA IMOBILIÁRIA FUNDO DE INVESTIMENTO IMOBILIÁRIO',
+        stock: 'KNRI11',
+        type: 'fund',
+      },
       { name: 'PETROLEO BRASILEIRO', stock: 'PETR4', type: 'stock' },
       { name: 'SEM TIPO', stock: 'XPTO3' },
       { name: 'SEM SIMBOLO', type: 'fund' },

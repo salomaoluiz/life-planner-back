@@ -68,7 +68,7 @@ describe('SearchTickersUseCase', () => {
     jest.useRealTimers();
   });
 
-  it('SHOULD answer the items without a class WHEN the kind list fails', async () => {
+  it('SHOULD answer the items without a class WHEN the kind list fails AND not cache that answer', async () => {
     spies.brapi.search.mockResolvedValue([mocks.result]);
     spies.brapi.getTickerKinds.mockRejectedValue(new Error('down'));
 
@@ -76,6 +76,12 @@ describe('SearchTickersUseCase', () => {
 
     expect(items).toHaveLength(1);
     expect(items[0].assetClass).toBeNull();
+
+    // The failure is not cached: the next search retries the kind list instead of pinning a null class.
+    spies.brapi.getTickerKinds.mockResolvedValue({ ITSA4: 'STOCK' });
+    const again = await setup.execute({ market: 'B3' as never, q: 'itsa' });
+
+    expect(again[0].assetClass).toBe('BR_STOCK');
   });
 
   it('SHOULD answer from the cache for 10 minutes per (market, normalized query)', async () => {

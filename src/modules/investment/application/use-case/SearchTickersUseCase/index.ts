@@ -15,6 +15,7 @@ import {
 import { validate } from '@shared/infra/validation';
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
+const EMPTY_KINDS: Record<string, B3TickerKind> = {};
 const CURRENCY: Record<QuoteMarket, string> = { [QuoteMarket.B3]: 'BRL', [QuoteMarket.US]: 'USD' };
 
 export interface TickerSearchItem {
@@ -66,15 +67,12 @@ export class SearchTickersUseCase implements UseCaseWithParams<
     }
 
     // Spec 111 rule 4: one list call per search carries the kind of every B3 result; a failure means no rule.
-    const kinds =
-      input.market === QuoteMarket.B3
-        ? await this.kindsOf(input.q)
-        : ({} as Record<string, B3TickerKind>);
+    const isB3 = input.market === QuoteMarket.B3;
+    const kinds = isB3 ? await this.kindsOf(input.q) : { failed: false, kinds: EMPTY_KINDS };
     const items = results.map((result) => ({
-      assetClass:
-        input.market === QuoteMarket.B3
-          ? classOfTickerKind(kinds[result.ticker] ?? 'UNKNOWN')
-          : InvestmentAssetClass.FOREIGN_STOCK,
+      assetClass: isB3
+        ? classOfTickerKind(kinds.kinds[result.ticker] ?? 'UNKNOWN')
+        : InvestmentAssetClass.FOREIGN_STOCK,
       changePercent: result.changePercent,
       currency: CURRENCY[input.market],
       exchange: input.market,
@@ -85,16 +83,21 @@ export class SearchTickersUseCase implements UseCaseWithParams<
       ticker: result.ticker,
     }));
 
-    this.cache.set(key, { at: Date.now(), items });
+    // A failed kind list is not cached: the next search retries it instead of pinning a null class for 10 minutes.
+    if (!kinds.failed) {
+      this.cache.set(key, { at: Date.now(), items });
+    }
 
     return items;
   }
 
-  private async kindsOf(query: string): Promise<Record<string, B3TickerKind>> {
+  private async kindsOf(
+    query: string,
+  ): Promise<{ failed: boolean; kinds: Record<string, B3TickerKind> }> {
     try {
-      return await this.brapi.getTickerKinds(query);
+      return { failed: false, kinds: await this.brapi.getTickerKinds(query) };
     } catch {
-      return {};
+      return { failed: true, kinds: EMPTY_KINDS };
     }
   }
 }

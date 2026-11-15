@@ -120,6 +120,14 @@ it('SHOULD keep the class locked for a class outside the B3 pair WHEN there are 
   ).rejects.toBeInstanceOf(UnprocessableEntityException);
 });
 
+it('SHOULD keep the class locked WHEN the B3 asset is not in BRL', async () => {
+  spies.findAssetById.mockResolvedValue({ ...mocks.detailWithOperation, currency: 'USD' });
+
+  await expect(
+    setup.execute({ ...base, assetClass: InvestmentAssetClass.BR_REIT }),
+  ).rejects.toBeInstanceOf(UnprocessableEntityException);
+});
+
 it('SHOULD not write WHEN the ticker class check refuses the swap', async () => {
   spies.findAssetById.mockResolvedValue(mocks.detailWithOperation);
   quoteSpies.validate.mockRejectedValueOnce(new UnprocessableEntityException('mismatch'));
