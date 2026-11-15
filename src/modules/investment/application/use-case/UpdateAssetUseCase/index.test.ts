@@ -75,7 +75,7 @@ it('SHOULD lock class and currency after the first operation', async () => {
   spies.findAssetById.mockResolvedValue(mocks.detailWithOperation);
 
   await expect(
-    setup.execute({ ...base, assetClass: InvestmentAssetClass.BR_REIT }),
+    setup.execute({ ...base, assetClass: InvestmentAssetClass.FIXED_INCOME }),
   ).rejects.toThrow(
     new UnprocessableEntityException("Class and currency can't change after the first operation"),
   );
@@ -85,6 +85,49 @@ it('SHOULD lock class and currency after the first operation', async () => {
   await expect(
     setup.execute({ ...base, assetClass: mocks.asset.assetClass, currency: 'BRL', name: 'ok' }),
   ).resolves.toBeDefined();
+});
+
+// Spec 111 rule 8: a B3 stock and a B3 FII are the same market, currency and unit rule, so the class may swap.
+it('SHOULD swap a B3 stock and FII after the first operation AND re-check the ticker class', async () => {
+  spies.findAssetById.mockResolvedValue(mocks.detailWithOperation);
+
+  await setup.execute({ ...base, assetClass: InvestmentAssetClass.BR_REIT });
+
+  expect(quoteSpies.validate).toHaveBeenCalledWith(InvestmentAssetClass.BR_REIT, 'ITSA4');
+  expect(spies.updateAsset).toHaveBeenCalledWith(
+    expect.objectContaining({ assetClass: InvestmentAssetClass.BR_REIT }),
+  );
+});
+
+it('SHOULD keep the class locked WHEN the pair switch also changes the currency', async () => {
+  spies.findAssetById.mockResolvedValue(mocks.detailWithOperation);
+
+  await expect(
+    setup.execute({ ...base, assetClass: InvestmentAssetClass.BR_REIT, currency: 'USD' }),
+  ).rejects.toBeInstanceOf(UnprocessableEntityException);
+  expect(spies.updateAsset).not.toHaveBeenCalled();
+});
+
+it('SHOULD keep the class locked for a class outside the B3 pair WHEN there are operations', async () => {
+  spies.findAssetById.mockResolvedValue({
+    ...mocks.detailWithOperation,
+    assetClass: InvestmentAssetClass.FOREIGN_STOCK,
+    currency: 'USD',
+  });
+
+  await expect(
+    setup.execute({ ...base, assetClass: InvestmentAssetClass.BR_STOCK }),
+  ).rejects.toBeInstanceOf(UnprocessableEntityException);
+});
+
+it('SHOULD not write WHEN the ticker class check refuses the swap', async () => {
+  spies.findAssetById.mockResolvedValue(mocks.detailWithOperation);
+  quoteSpies.validate.mockRejectedValueOnce(new UnprocessableEntityException('mismatch'));
+
+  await expect(
+    setup.execute({ ...base, assetClass: InvestmentAssetClass.BR_REIT }),
+  ).rejects.toBeInstanceOf(UnprocessableEntityException);
+  expect(spies.updateAsset).not.toHaveBeenCalled();
 });
 
 it('SHOULD change class and currency while there are no operations', async () => {

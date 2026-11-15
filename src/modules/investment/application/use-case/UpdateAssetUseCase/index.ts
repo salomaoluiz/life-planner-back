@@ -13,13 +13,20 @@ import { QuoteContextLoader } from '@investment/application/service/QuoteContext
 import { TickerValidator } from '@investment/application/service/TickerValidator';
 import { TICKER_EXISTS_MESSAGE } from '@investment/application/use-case/CreateAssetUseCase';
 import { hasOwnerAccess } from '@investment/domain/entity/OwnerAccess';
-import { InvestmentAssetStatus, TICKER_REQUIRED_CLASSES } from '@investment/domain/enum';
+import {
+  InvestmentAssetClass,
+  InvestmentAssetStatus,
+  TICKER_REQUIRED_CLASSES,
+} from '@investment/domain/enum';
 import { IInvestmentRepository } from '@investment/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { ValidationError } from '@shared/domain/error/ValidationError';
 import { validate } from '@shared/infra/validation';
 
 export const CLASS_LOCKED_MESSAGE = "Class and currency can't change after the first operation";
+
+// Spec 111 rule 8: the two B3 classes share market, currency and whole-unit rule, so they can be swapped later.
+const B3_CLASS_PAIR = [InvestmentAssetClass.BR_STOCK, InvestmentAssetClass.BR_REIT];
 
 export class UpdateAssetUseCase implements UseCaseWithParams<UpdateAssetInput, AssetView> {
   constructor(
@@ -55,7 +62,13 @@ export class UpdateAssetUseCase implements UseCaseWithParams<UpdateAssetInput, A
     const classChanged = input.assetClass !== undefined && input.assetClass !== asset.assetClass;
     const currencyChanged = input.currency !== undefined && input.currency !== asset.currency;
 
-    if ((classChanged || currencyChanged) && asset.operations.length > 0) {
+    const pairSwitch =
+      classChanged &&
+      !currencyChanged &&
+      B3_CLASS_PAIR.includes(asset.assetClass) &&
+      B3_CLASS_PAIR.includes(assetClass);
+
+    if (asset.operations.length > 0 && (currencyChanged || (classChanged && !pairSwitch))) {
       throw new UnprocessableEntityException(CLASS_LOCKED_MESSAGE);
     }
 
