@@ -3,6 +3,12 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.16.1] - 2026-11-15
+
+### Fixed
+
+- Asset class follows the ticker on B3; stocks and FIIs can be swapped after operations (spec 111): `GET /investments/tickers/search` carries `assetClass` per item, `POST|PATCH /investments/assets` answer `422 TICKER_CLASS_MISMATCH` (with `details.expectedClass`) when a ticker is saved under the wrong B3 class, and `PATCH` accepts `BR_STOCK` ↔ `BR_REIT` on an asset that already has operations.
+
 ## [3.16.0] - 2026-11-15
 
 ### Added
