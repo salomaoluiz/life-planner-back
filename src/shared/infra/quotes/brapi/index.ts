@@ -4,6 +4,7 @@ import axios from 'axios';
 import { EnvService } from '@shared/infra/env/env.service';
 
 import {
+  B3TickerKind,
   CorporateEventResult,
   DailyClose,
   IBrapiQuotes,
@@ -18,6 +19,8 @@ import {
 const BRAPI_API = 'https://brapi.dev/api';
 const TIMEOUT_MS = 5000;
 const MAX_SEARCH_RESULTS = 10;
+// Spec 111: one list search answers the kind of every symbol of the query.
+const MAX_KIND_RESULTS = 50;
 
 interface RawCashDividend {
   label?: null | string;
@@ -28,6 +31,12 @@ interface RawCashDividend {
 interface RawHistory {
   close?: null | number;
   date?: number;
+}
+interface RawListRow {
+  name?: null | string;
+  stock?: null | string;
+  subType?: null | string;
+  type?: null | string;
 }
 interface RawQuote {
   logourl?: null | string;
@@ -129,6 +138,47 @@ function toQuote(raw: RawQuote): null | QuoteResult {
     ticker: raw.symbol.toUpperCase(),
   };
 }
+const KIND_OF_SUBTYPE: Record<string, B3TickerKind> = {
+  bdr: 'BDR',
+  etf: 'ETF',
+  'fi-agro': 'FIAGRO',
+  fii: 'REIT',
+  stock: 'STOCK',
+  unit: 'STOCK',
+};
+// Spec 111: `subType` is authoritative; a `fund` without one is read by its name (the spec's markers).
+export function kindOfRow(row: RawListRow): B3TickerKind {
+  const subType = (row.subType ?? '').toLowerCase();
+
+  // A subtype the source reports but the app does not know (e.g. `fi-infra`) has no class.
+  if (subType) {
+    return KIND_OF_SUBTYPE[subType] ?? 'UNKNOWN';
+  }
+
+  switch ((row.type ?? '').toLowerCase()) {
+    case 'bdr':
+      return 'BDR';
+    case 'fund':
+      return fundKindByName(row.name);
+    case 'stock':
+      return 'STOCK';
+    default:
+      return 'UNKNOWN';
+  }
+}
+
+function fundKindByName(name: null | string | undefined): B3TickerKind {
+  const text = (name ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+
+  if (/FI-?AGRO/.test(text)) {
+    return 'FIAGRO';
+  }
+
+  return /ETF|INDICE|ISHARES/.test(text) ? 'ETF' : 'REIT';
+}
 @Injectable()
 export class BrapiQuotes implements IBrapiQuotes {
   private maxPerRequest: null | number = null;
@@ -191,6 +241,29 @@ export class BrapiQuotes implements IBrapiQuotes {
         },
       ];
     });
+  }
+
+  // Spec 111: `/quote/list?search=` answers symbol, name, type and subtype in one call.
+  async getTickerKinds(query: string): Promise<Record<string, B3TickerKind>> {
+    const term = query.trim().slice(0, 20);
+    const kinds: Record<string, B3TickerKind> = {};
+
+    if (!term) {
+      return kinds;
+    }
+
+    const data = await this.request<{ stocks?: RawListRow[] }>('/quote/list', {
+      limit: String(MAX_KIND_RESULTS),
+      search: term,
+    });
+
+    for (const row of data.stocks ?? []) {
+      if (row.stock) {
+        kinds[row.stock.toUpperCase()] = kindOfRow(row);
+      }
+    }
+
+    return kinds;
   }
 
   // The free plan takes ONE ticker per request: the first `QUOTES_PER_REQUEST_EXCEEDED` answer teaches the limit and

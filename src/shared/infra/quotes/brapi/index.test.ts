@@ -420,3 +420,69 @@ describe('BrapiQuotes.getCorporateEvents (spec 108)', () => {
     ).rejects.toBeInstanceOf(QuoteSourceLimitError);
   });
 });
+
+describe('BrapiQuotes.getTickerKinds', () => {
+  function listRows(rows: Record<string, unknown>[]) {
+    getSpy.mockResolvedValue({ data: { stocks: rows } });
+  }
+
+  it('SHOULD request the list search with the token AND map the subtype to a kind', async () => {
+    listRows([
+      { name: 'Kinea Renda Imobiliaria', stock: 'KNRI11', subType: 'fii', type: 'fund' },
+      { name: 'iShares Ibovespa', stock: 'BOVA11', subType: 'etf', type: 'fund' },
+      { name: 'AAPL34', stock: 'AAPL34', subType: 'bdr', type: 'bdr' },
+      { name: 'Taesa', stock: 'TAEE11', subType: 'unit', type: 'stock' },
+      { name: 'Fiagro Riza', stock: 'RZAG11', subType: 'fi-agro', type: 'fund' },
+      { name: 'Fundo Infra', stock: 'KDIF11', subType: 'fi-infra', type: 'fund' },
+      { name: 'Ibov', stock: 'IBOV11', subType: null, type: 'fund' },
+    ]);
+
+    expect(await new BrapiQuotes(envWith('your-token')).getTickerKinds('knri')).toEqual({
+      AAPL34: 'BDR',
+      BOVA11: 'ETF',
+      IBOV11: 'REIT',
+      KDIF11: 'UNKNOWN',
+      KNRI11: 'REIT',
+      RZAG11: 'FIAGRO',
+      TAEE11: 'STOCK',
+    });
+    expect(getSpy).toHaveBeenCalledWith('https://brapi.dev/api/quote/list', {
+      params: { limit: '50', search: 'knri', token: 'your-token' },
+      timeout: 5000,
+    });
+  });
+
+  it('SHOULD map a fund by its name WHEN the subtype is missing', async () => {
+    listRows([
+      { name: 'ISHARES IBOVESPA CLASSE DE ÍNDICE', stock: 'BOVA11', type: 'fund' },
+      { name: 'FIAGRO RIZA AGRO IMOBILIÁRIO', stock: 'RZAG11', type: 'fund' },
+      { name: 'KINEA RENDA IMOBILIÁRIA FUNDO', stock: 'KNRI11', type: 'fund' },
+      { name: 'PETROLEO BRASILEIRO', stock: 'PETR4', type: 'stock' },
+      { name: 'SEM TIPO', stock: 'XPTO3' },
+      { name: 'SEM SIMBOLO', type: 'fund' },
+    ]);
+
+    expect(await new BrapiQuotes(envWith('your-token')).getTickerKinds('x')).toEqual({
+      BOVA11: 'ETF',
+      KNRI11: 'REIT',
+      PETR4: 'STOCK',
+      RZAG11: 'FIAGRO',
+      XPTO3: 'UNKNOWN',
+    });
+  });
+
+  it('SHOULD answer {} for an empty query AND before calling the source', async () => {
+    const brapi = new BrapiQuotes(envWith('your-token'));
+
+    expect(await brapi.getTickerKinds('   ')).toEqual({});
+    expect(getSpy).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD throw WHEN the source fails', async () => {
+    getSpy.mockRejectedValue({ response: { status: 500 } });
+
+    await expect(
+      new BrapiQuotes(envWith('your-token')).getTickerKinds('knri'),
+    ).rejects.toBeInstanceOf(QuoteSourceLimitError);
+  });
+});
