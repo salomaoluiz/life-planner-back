@@ -5,7 +5,6 @@ import {
   AssetItemOutputType,
   CreateAssetApiInput,
   CreateOperationApiInput,
-  InvestmentsDashboardOutputType,
   InvestmentsSummaryOutputType,
   OperationOutputType,
   PositionOutputType,
@@ -33,7 +32,6 @@ import { DeleteOperationUseCase } from '@investment/application/use-case/DeleteO
 import { DeleteValuationUseCase } from '@investment/application/use-case/DeleteValuationUseCase';
 import { GetAssetByIdUseCase } from '@investment/application/use-case/GetAssetByIdUseCase';
 import { GetAssetsUseCase } from '@investment/application/use-case/GetAssetsUseCase';
-import { GetInvestmentsDashboardUseCase } from '@investment/application/use-case/GetInvestmentsDashboardUseCase';
 import { GetInvestmentsHomeSummaryUseCase } from '@investment/application/use-case/GetInvestmentsHomeSummaryUseCase';
 import { GetPriceHistoryUseCase } from '@investment/application/use-case/GetPriceHistoryUseCase';
 import { RefreshQuotesNowUseCase } from '@investment/application/use-case/RefreshQuotesNowUseCase';
@@ -246,7 +244,6 @@ export class InvestmentService {
     private readonly deleteValuationUseCase: DeleteValuationUseCase,
     private readonly getAssetByIdUseCase: GetAssetByIdUseCase,
     private readonly getAssetsUseCase: GetAssetsUseCase,
-    private readonly getInvestmentsDashboardUseCase: GetInvestmentsDashboardUseCase,
     private readonly getInvestmentsHomeSummaryUseCase: GetInvestmentsHomeSummaryUseCase,
     private readonly getPriceHistoryUseCase: GetPriceHistoryUseCase,
     private readonly getUserFamilyAccessUseCase: GetUserFamilyAccessUseCase,
@@ -367,22 +364,6 @@ export class InvestmentService {
       unitPrice: input.unitPrice,
     });
     return { item: toValuation(result.valuation), position: toPosition(result.asset.position) };
-  }
-  // Spec 110: the investments overview, consolidated in BRL over a period.
-  async getDashboard(
-    userId: string,
-    ownerIds: string[],
-    period: { from: string; to: string; today: string },
-  ): Promise<InvestmentsDashboardOutputType> {
-    const accessibleOwners = await this.getAccessibleOwners(userId);
-
-    return this.getInvestmentsDashboardUseCase.execute({
-      accessibleOwners,
-      from: period.from,
-      ownerIds,
-      to: period.to,
-      today: period.today,
-    });
   }
   // Spec 109: the home section, already consolidated in BRL.
   async getSummary(

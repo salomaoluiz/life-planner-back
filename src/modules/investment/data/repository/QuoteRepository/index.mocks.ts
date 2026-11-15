@@ -8,7 +8,6 @@ const names = [
   'findFx',
   'findFxHistory',
   'findFxOnOrBefore',
-  'findHistories',
   'findHistory',
   'findQuotes',
   'findTrackedSymbols',

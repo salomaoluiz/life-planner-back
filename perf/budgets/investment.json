@@ -88,14 +88,6 @@
     "reason": "Needs an asset with a ticker in the pinned perf dataset (spec 093); the seed gets investments in a later spec. Reads stored closes only (3 queries: asset, history range, rate).",
     "scenario": ""
   },
-  "GET /api/v1/investments/dashboard": {
-    "indexes": null,
-    "kind": "read",
-    "maxBytes": 262144,
-    "maxQueries": 12,
-    "p50Ms": 250,
-    "scenario": "from={twoYearsStart}&ownerId={userId}&to={monthEnd}&today={monthEnd}"
-  },
   "GET /api/v1/investments/event-suggestions": {
     "indexes": null,
     "kind": "unmeasured",

@@ -3,14 +3,6 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
-## [3.16.0] - 2026-11-15
-
-### Added
-
-- Investments dashboard (spec 110): `GET /investments/dashboard?ownerId=..&from=..&to=..&today=..` answers the whole investments overview in one read — summary (current value, invested, open and realized result, income received and planned), the invested vs market value series, allocation by class (with the USD/dollar split), the ranking of open positions and income per bucket.
-- Values are computed on read: listed assets at the last stored close (falling back to the manual valuation, the operation price and finally the cost), calculated fixed income at the estimated net, USD assets at the rate of each date.
-- The bucket size follows the range (daily ≤ 45 days, weekly ≤ 100 days, monthly above); `from ≤ to ≤ today` and at most 10 years. An owner id the caller cannot read answers `403`.
-
 ## [3.15.0] - 2026-11-11
 
 ### Added

@@ -41,12 +41,6 @@ export type IIncomeRepository = {
     type: InvestmentIncomeType,
   ): Promise<string | undefined>;
   findPendingSuggestions(assetIds: string[]): Promise<IncomeSuggestionEntity[]>;
-  // Spec 110 FR 9: every income paid in the period (planned and received) of the owners, one query.
-  findPeriodIncomes(
-    owners: { owner: OwnerType; ownerId: string }[],
-    from: string,
-    to: string,
-  ): Promise<IncomeEntity[]>;
   // Spec 109: the received (paid) incomes of the owners' assets paid in [from, to], one scalar pair each.
   findReceivedByOwners(
     owners: { owner: OwnerType; ownerId: string }[],

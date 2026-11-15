@@ -61,20 +61,6 @@ export class QuoteRepository implements IQuoteRepository {
     return rows.map((row) => QuoteMapper.toHistory(row));
   }
 
-  async findHistories(
-    keys: QuoteKey[],
-    from: string,
-    to: string,
-  ): Promise<PriceHistoryRow[]> {
-    const rows = await this.datasource.findHistories(
-      keys.map((key) => ({ market: key.market as string, ticker: key.ticker })),
-      InvestmentMapper.fromCalendarDate(from),
-      InvestmentMapper.fromCalendarDate(to),
-    );
-
-    return rows.map((row) => QuoteMapper.toHistory(row));
-  }
-
   async findQuotes(keys: QuoteKey[]): Promise<QuoteEntity[]> {
     const rows = await this.datasource.findQuotes(keys);
 
