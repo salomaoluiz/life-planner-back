@@ -179,14 +179,16 @@ describe('findHistories (spec 110)', () => {
     expect(spies.historyFindMany).toHaveBeenCalledWith({
       orderBy: [{ date: 'asc' }, { ticker: 'asc' }],
       where: {
-        OR: [key, { market: 'US', ticker: 'AAPL' }],
         date: { gte: new Date('2025-12-01'), lte: new Date('2026-11-04') },
+        OR: [key, { market: 'US', ticker: 'AAPL' }],
       },
     });
   });
 
   it('SHOULD skip the query WHEN there are no keys', async () => {
-    expect(await setup.findHistories([], new Date('2025-12-01'), new Date('2026-11-04'))).toEqual([]);
+    expect(await setup.findHistories([], new Date('2025-12-01'), new Date('2026-11-04'))).toEqual(
+      [],
+    );
     expect(spies.historyFindMany).not.toHaveBeenCalled();
   });
 });

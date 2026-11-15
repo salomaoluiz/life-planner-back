@@ -1,12 +1,12 @@
 import { addDays } from '@investment/domain/service/MarketDate';
 
 // Spec 110 FR 12: how many points the charts get, picked from the range by the server.
-export type DashboardBucketUnit = 'DAY' | 'MONTH' | 'WEEK';
 export interface DashboardBucket {
   // Last day of the bucket, inclusive.
   end: string;
   start: string;
 }
+export type DashboardBucketUnit = 'DAY' | 'MONTH' | 'WEEK';
 
 const MS_PER_DAY = 86_400_000;
 const MAX_DAY_DAYS = 45;
@@ -59,7 +59,6 @@ export function bucketsFor(from: string, to: string): DashboardBucket[] {
 
   return buckets;
 }
-
 export function daysBetween(from: string, to: string): number {
   return Math.round((dayNumber(to) - dayNumber(from)) / MS_PER_DAY) + 1;
 }

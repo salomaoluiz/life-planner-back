@@ -1,6 +1,9 @@
 import { FixedIncomeData } from '@investment/domain/entity/FixedIncomeEntity';
 import { OperationEntity } from '@investment/domain/entity/OperationEntity';
-import { InvestmentFixedIncomeRedemptionKind, InvestmentOperationType } from '@investment/domain/enum';
+import {
+  InvestmentFixedIncomeRedemptionKind,
+  InvestmentOperationType,
+} from '@investment/domain/enum';
 import { Decimal8 } from '@shared/infra/decimal';
 
 import { CalcInput } from './index';

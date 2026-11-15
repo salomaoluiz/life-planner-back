@@ -154,7 +154,13 @@ describe('findHistories (spec 110)', () => {
     );
 
     expect(rows).toEqual([
-      { close: expect.anything(), date: '2026-06-30', market: 'B3', source: 'BRAPI', ticker: 'ITSA4' },
+      {
+        close: expect.anything(),
+        date: '2026-06-30',
+        market: 'B3',
+        source: 'BRAPI',
+        ticker: 'ITSA4',
+      },
     ]);
     expect(spies.findHistories).toHaveBeenCalledTimes(1);
     expect(spies.findHistories).toHaveBeenCalledWith(

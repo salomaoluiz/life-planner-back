@@ -194,14 +194,6 @@ export class IncomeDatasource implements IIncomeDatasource {
     });
   }
 
-  async findPeriodIncomes(owners: OwnerAccess[], from: Date, to: Date): Promise<IncomeRow[]> {
-    return this.db.client.investmentIncome.findMany({
-      include: INCOME_INCLUDE,
-      orderBy: [{ payment_date: 'asc' }, { id: 'asc' }],
-      where: { asset: toOwnerWhere(owners), payment_date: { gte: from, lte: to } },
-    });
-  }
-
   async findLastIncomeCategoryId(
     owner: OwnerType,
     ownerId: string,
@@ -225,6 +217,14 @@ export class IncomeDatasource implements IIncomeDatasource {
       include: { event: true },
       orderBy: [{ event: { ex_date: 'desc' } }, { id: 'asc' }],
       where: { asset_id: { in: assetIds }, status: 'PENDING' },
+    });
+  }
+
+  async findPeriodIncomes(owners: OwnerAccess[], from: Date, to: Date): Promise<IncomeRow[]> {
+    return this.db.client.investmentIncome.findMany({
+      include: INCOME_INCLUDE,
+      orderBy: [{ payment_date: 'asc' }, { id: 'asc' }],
+      where: { asset: toOwnerWhere(owners), payment_date: { gte: from, lte: to } },
     });
   }
 

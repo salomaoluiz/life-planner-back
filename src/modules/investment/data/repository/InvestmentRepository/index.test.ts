@@ -459,7 +459,9 @@ describe('findAssetDetailsByOwners (spec 110)', () => {
   it('SHOULD skip the reads WHEN the owner has no asset', async () => {
     spies.findAssets.mockResolvedValue([]);
 
-    expect(await setup.findAssetDetailsByOwners([{ owner: OwnerType.USER, ownerId: 'owner-1' }])).toEqual([]);
+    expect(
+      await setup.findAssetDetailsByOwners([{ owner: OwnerType.USER, ownerId: 'owner-1' }]),
+    ).toEqual([]);
     expect(spies.findOperationsByAssetIds).not.toHaveBeenCalled();
   });
 });

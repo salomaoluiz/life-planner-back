@@ -9,6 +9,14 @@ import { Decimal8 } from '@shared/infra/decimal';
 
 import { AssetValuationInput, realizedInPeriod, snapshotAt } from './index';
 
+function buy(overrides: Parameters<typeof operationFixture>[0] = {}) {
+  return operationFixture({
+    date: '2026-03-10',
+    quantity: Decimal8.parse('100'),
+    total: 100000,
+    ...overrides,
+  });
+}
 function input(overrides: Partial<AssetValuationInput> = {}): AssetValuationInput {
   return {
     asset: assetFixture(),
@@ -22,8 +30,6 @@ function input(overrides: Partial<AssetValuationInput> = {}): AssetValuationInpu
     ...overrides,
   };
 }
-const buy = (overrides: Parameters<typeof operationFixture>[0] = {}) =>
-  operationFixture({ date: '2026-03-10', quantity: Decimal8.parse('100'), total: 100000, ...overrides });
 
 describe('snapshotAt', () => {
   it('SHOULD price a BRL stock at the latest close', () => {
@@ -64,7 +70,10 @@ describe('snapshotAt', () => {
       '2026-05-01',
     );
     const operationPrice = snapshotAt(input({ operations: [buy()] }), '2026-04-01');
-    const cost = snapshotAt(input({ operations: [buy({ unitPrice: Decimal8.parse('10') })] }), '2026-04-01');
+    const cost = snapshotAt(
+      input({ operations: [buy({ unitPrice: Decimal8.parse('10') })] }),
+      '2026-04-01',
+    );
     const noPrice = snapshotAt(
       input({ operations: [buy({ unitPrice: Decimal8.parse('0') })] }),
       '2026-04-01',

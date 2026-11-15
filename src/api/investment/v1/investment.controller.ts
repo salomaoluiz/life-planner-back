@@ -122,6 +122,18 @@ export class InvestmentController {
   }
 
   // Spec 109: one call for the home section. Declared before the `:id` routes.
+  @Get('dashboard')
+  @ZodResponse({ status: 200, type: InvestmentsDashboardOutput })
+  async dashboard(@Request() req: JwtPayload & Request, @Query() query: Record<string, unknown>) {
+    const { from, ownerId, to, today } = validate(InvestmentsDashboardQuerySchema, query);
+
+    return this.investmentService.getDashboard(req.user.id, toOwnerIds(ownerId) as string[], {
+      from,
+      to,
+      today: resolveToday(today),
+    });
+  }
+
   @Get('assets/:id/price-history')
   @ZodResponse({ status: 200, type: PriceHistoryOutput })
   async priceHistory(
@@ -150,18 +162,6 @@ export class InvestmentController {
   @ZodResponse({ status: 200, type: TickerSearchOutput })
   async searchTickers(@Query() query: Record<string, unknown>) {
     return this.investmentService.searchTickers(validate(TickerSearchQuerySchema, query));
-  }
-
-  @Get('dashboard')
-  @ZodResponse({ status: 200, type: InvestmentsDashboardOutput })
-  async dashboard(@Request() req: JwtPayload & Request, @Query() query: Record<string, unknown>) {
-    const { from, ownerId, to, today } = validate(InvestmentsDashboardQuerySchema, query);
-
-    return this.investmentService.getDashboard(req.user.id, toOwnerIds(ownerId) as string[], {
-      from,
-      to,
-      today: resolveToday(today),
-    });
   }
 
   @Get('summary')

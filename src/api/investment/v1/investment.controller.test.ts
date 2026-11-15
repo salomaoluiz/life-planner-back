@@ -153,7 +153,12 @@ describe('dashboard (spec 110)', () => {
     await setup.dashboard(mocks.request, { ...period, ownerId: [ownerId, ownerId] });
     await setup.dashboard(mocks.request, { ...period, ownerId });
 
-    expect(mocks.service.getDashboard).toHaveBeenNthCalledWith(1, userId, [ownerId, ownerId], period);
+    expect(mocks.service.getDashboard).toHaveBeenNthCalledWith(
+      1,
+      userId,
+      [ownerId, ownerId],
+      period,
+    );
     expect(mocks.service.getDashboard).toHaveBeenNthCalledWith(2, userId, [ownerId], period);
   });
 
@@ -174,12 +179,9 @@ describe('dashboard (spec 110)', () => {
     { from: '2025-12-01', ownerId, today: '2026-11-04' },
     { from: '04/12/2025', ownerId, to: '2026-11-04', today: '2026-11-04' },
     { from: '2025-12-01', ownerId: 'abc', to: '2026-11-04' },
-  ])(
-    'SHOULD reject %j',
-    async (query) => {
-      await expect(setup.dashboard(mocks.request, query)).rejects.toThrow(ValidationError);
-    },
-  );
+  ])('SHOULD reject %j', async (query) => {
+    await expect(setup.dashboard(mocks.request, query)).rejects.toThrow(ValidationError);
+  });
 });
 
 describe('summary (spec 109)', () => {

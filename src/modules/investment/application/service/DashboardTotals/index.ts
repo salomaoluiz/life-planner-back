@@ -6,8 +6,8 @@ import {
 } from '@investment/domain/enum';
 import { DashboardBucket, endOfMonthOf } from '@investment/domain/service/DashboardBuckets';
 import {
-  AssetValuationInput,
   AssetSnapshot,
+  AssetValuationInput,
   convertCents,
   InvestmentValueKind,
   realizedInPeriod,
@@ -18,13 +18,17 @@ import { Decimal8 } from '@shared/infra/decimal';
 export interface DashboardAllocation {
   assetClass: InvestmentAssetClass;
   share: number;
-  usd: null | {
+  usd: {
     fxRate: string;
     resultFromAsset: number;
     resultFromFx: number;
     value: string;
-  };
+  } | null;
   value: number;
+}
+export interface DashboardFxSeries {
+  history: { date: string; rate: string }[];
+  todayRate: null | string;
 }
 export interface DashboardIncomeBucket {
   byType: Record<InvestmentIncomeType, number>;
@@ -62,15 +66,11 @@ export interface DashboardSummaryNumbers {
   realizedResult: number;
   salesCount: number;
 }
-export interface DashboardFxSeries {
-  history: { date: string; rate: string }[];
-  todayRate: null | string;
-}
 export interface DashboardTotalsInput {
   assets: AssetValuationInput[];
   buckets: DashboardBucket[];
-  fx: DashboardFxSeries;
   from: string;
+  fx: DashboardFxSeries;
   incomes: IncomeEntity[];
   to: string;
   today: string;
@@ -85,13 +85,14 @@ export function dashboardTotals(input: DashboardTotalsInput): {
   summary: DashboardSummaryNumbers;
 } {
   const series: DashboardSeriesPoint[] = [];
-  const snapshotsOfDay = (date: string) =>
-    input.assets
+  function snapshotsOfDay(date: string) {
+    return input.assets
       .map((asset) => ({ asset, snapshot: snapshotAt(asset, date) }))
       .filter(
         (item): item is { asset: AssetValuationInput; snapshot: AssetSnapshot } =>
           item.snapshot !== null,
       );
+  }
 
   for (const bucket of input.buckets) {
     const snapshots = snapshotsOfDay(bucket.end);
@@ -117,11 +118,7 @@ export function dashboardTotals(input: DashboardTotalsInput): {
     income: incomeBuckets(input),
     ranking: end
       .map(({ asset, snapshot }) => rankingOf(asset, snapshot, totalValue))
-      .sort(
-        (a, b) =>
-          b.value - a.value ||
-          (a.ticker ?? a.name).localeCompare(b.ticker ?? b.name),
-      ),
+      .sort((a, b) => b.value - a.value || (a.ticker ?? a.name).localeCompare(b.ticker ?? b.name)),
     series,
     summary: {
       assetsWithoutValue: end.filter((item) => item.snapshot.valueKind === 'COST').length,
@@ -130,7 +127,8 @@ export function dashboardTotals(input: DashboardTotalsInput): {
       incomeReceived: incomeBuckets(input).reduce((total, bucket) => total + bucket.received, 0),
       invested,
       openResult,
-      openResultPercent: invested === 0 ? null : Math.round((openResult / invested) * 10000) / 10000,
+      openResultPercent:
+        invested === 0 ? null : Math.round((openResult / invested) * 10000) / 10000,
       operationsWithoutFxRate: input.assets.reduce(
         (total, asset) =>
           total +
@@ -160,7 +158,6 @@ export function dashboardTotals(input: DashboardTotalsInput): {
     },
   };
 }
-
 export function fxRateOn(fx: DashboardFxSeries, date: string, today: string): null | string {
   if (date >= today) {
     return fx.todayRate ?? fx.history[fx.history.length - 1]?.rate ?? null;
@@ -192,9 +189,7 @@ function allocationOf(
         fxRate,
         resultFromAsset: (current.usd?.resultFromAsset ?? 0) + snapshot.usd.resultFromAsset,
         resultFromFx: (current.usd?.resultFromFx ?? 0) + snapshot.usd.resultFromFx,
-        value: fromCents(
-          centsOf(current.usd?.value) + snapshot.usd.marketValueUsd,
-        ),
+        value: fromCents(centsOf(current.usd?.value) + snapshot.usd.marketValueUsd),
       };
     }
     byClass.set(asset.asset.assetClass, current);
@@ -222,12 +217,8 @@ function incomeBuckets(input: DashboardTotalsInput): DashboardIncomeBucket[] {
 
     const bucket = buckets[index];
     const rate = fxRateOn(input.fx, income.paymentDate, input.today);
-    const amount =
-      income.currency === 'USD'
-        ? rate === null
-          ? 0
-          : convertCents(income.netAmount, rate)
-        : income.netAmount;
+    const usdAmount = rate === null ? 0 : convertCents(income.netAmount, rate);
+    const amount = income.currency === 'USD' ? usdAmount : income.netAmount;
 
     if (income.paid) {
       bucket.received += amount;
@@ -243,6 +234,15 @@ function indexOfBucket(buckets: DashboardBucket[], date: string): number {
   return buckets.findIndex((bucket) => date >= bucket.start && date <= bucket.end);
 }
 // Spec 110 FR 21: the last bucket of a period that ends today also takes the planned incomes of the rest of its month.
+function emptyTypes(): Record<InvestmentIncomeType, number> {
+  return {
+    [InvestmentIncomeType.DIVIDEND]: 0,
+    [InvestmentIncomeType.INTEREST]: 0,
+    [InvestmentIncomeType.JCP]: 0,
+    [InvestmentIncomeType.OTHER]: 0,
+    [InvestmentIncomeType.YIELD]: 0,
+  };
+}
 function indexOfIncome(
   buckets: DashboardBucket[],
   income: IncomeEntity,
@@ -283,15 +283,6 @@ function rankingOf(
     valueKind: snapshot.valueKind,
   };
 }
-function emptyTypes(): Record<InvestmentIncomeType, number> {
-  return {
-    [InvestmentIncomeType.DIVIDEND]: 0,
-    [InvestmentIncomeType.INTEREST]: 0,
-    [InvestmentIncomeType.JCP]: 0,
-    [InvestmentIncomeType.OTHER]: 0,
-    [InvestmentIncomeType.YIELD]: 0,
-  };
-}
 function shareOf(value: number, total: number): number {
   return total === 0 ? 0 : Math.round((value / total) * 10000) / 10000;
 }
@@ -299,11 +290,11 @@ const ONE = Decimal8.parse('1');
 const CENTS_SCALE = 10n ** 6n;
 
 // Cents as a decimal string of the currency ("462800" cents -> "4628").
-function fromCents(cents: number): string {
-  return Decimal8.fromScaled(BigInt(cents) * CENTS_SCALE).toString();
-}
 function centsOf(value: string | undefined): number {
   return value === undefined ? 0 : Decimal8.parse(value).mulToCents(ONE);
+}
+function fromCents(cents: number): string {
+  return Decimal8.fromScaled(BigInt(cents) * CENTS_SCALE).toString();
 }
 function sum(values: number[]): number {
   return values.reduce((total, value) => total + value, 0);

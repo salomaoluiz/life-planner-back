@@ -7,11 +7,30 @@ import { unitStepOf } from '@investment/domain/service/CorporateEventMath';
 import { calculateTitle } from '@investment/domain/service/FixedIncomeCalculator';
 import { toCalcInput } from '@investment/domain/service/FixedIncomeCalculator/input';
 import { averageFxCost, splitFxResult } from '@investment/domain/service/FxResultSplit';
-import { calculatePosition, toPositionOperation } from '@investment/domain/service/PositionCalculator';
+import {
+  calculatePosition,
+  toPositionOperation,
+} from '@investment/domain/service/PositionCalculator';
 import { Decimal8 } from '@shared/infra/decimal';
 
 // Spec 110 FR 6: where the value of an open position came from at a date.
-export type InvestmentValueKind = 'COST' | 'FIXED_INCOME_NET' | 'MANUAL' | 'QUOTE';
+export interface AssetSnapshot {
+  costCents: number;
+  openResult: number;
+  // Fraction of the cost (0.1315 = 13.15%), 4 places; null at zero cost.
+  openResultPercent: null | number;
+  quantity: Decimal8;
+  // Foreign currency assets only.
+  usd: {
+    averageFxRate: null | string;
+    costUsd: number;
+    marketValueUsd: number;
+    resultFromAsset: number;
+    resultFromFx: number;
+  } | null;
+  valueCents: number;
+  valueKind: InvestmentValueKind;
+}
 export interface AssetValuationInput {
   asset: AssetEntity;
   // Stored closes, oldest first.
@@ -27,25 +46,8 @@ export interface AssetValuationInput {
   // Manual valuations, any order.
   valuations: ValuationEntity[];
 }
-export interface AssetSnapshot {
-  costCents: number;
-  openResult: number;
-  // Fraction of the cost (0.1315 = 13.15%), 4 places; null at zero cost.
-  openResultPercent: null | number;
-  quantity: Decimal8;
-  // Foreign currency assets only.
-  usd: null | {
-    averageFxRate: null | string;
-    costUsd: number;
-    marketValueUsd: number;
-    resultFromAsset: number;
-    resultFromFx: number;
-  };
-  valueCents: number;
-  valueKind: InvestmentValueKind;
-}
+export type InvestmentValueKind = 'COST' | 'FIXED_INCOME_NET' | 'MANUAL' | 'QUOTE';
 
-const ONE = Decimal8.parse('1');
 const RATE_SCALE = 1_000_000n;
 
 // Spec 110 FR 6-7: the position and its values at the end of `date`, computed on read (no I/O).
@@ -60,8 +62,9 @@ export function snapshotAt(input: AssetValuationInput, date: string): AssetSnaps
   }
 
   const fixedIncome = input.fixedIncome?.terms
-    ? calculateTitle(toCalcInput({ ...input.fixedIncome, terms: input.fixedIncome.terms }, operations, date))
-        .totals
+    ? calculateTitle(
+        toCalcInput({ ...input.fixedIncome, terms: input.fixedIncome.terms }, operations, date),
+      ).totals
     : null;
 
   if (fixedIncome) {
@@ -130,7 +133,9 @@ export function realizedInPeriod(input: AssetValuationInput, from: string, to: s
     .reduce((sum, operation) => {
       const result = position.perOperation.get(operation.id)?.realizedResult ?? 0;
 
-      return sum + (input.asset.currency === 'USD' ? toBrl(result, rateOf(input, operation)) : result);
+      return (
+        sum + (input.asset.currency === 'USD' ? toBrl(result, rateOf(input, operation)) : result)
+      );
     }, 0);
 }
 
@@ -139,7 +144,7 @@ function priceAt(
   input: AssetValuationInput,
   operations: OperationEntity[],
   date: string,
-): null | { kind: InvestmentValueKind; unitPrice: Decimal8 } {
+): { kind: InvestmentValueKind; unitPrice: Decimal8 } | null {
   const close = lastOnOrBefore(input.closes, date);
 
   if (close && close.price.isPositive()) {
@@ -157,7 +162,8 @@ function priceAt(
 
   const buy = latest(
     operations.filter(
-      (operation) => operation.type === InvestmentOperationType.BUY && operation.quantity.isPositive(),
+      (operation) =>
+        operation.type === InvestmentOperationType.BUY && operation.quantity.isPositive(),
     ),
     (operation) => operation.date,
   );
@@ -173,7 +179,9 @@ function rateAt(input: AssetValuationInput, date: string): null | string {
 }
 // The rate of an operation: its own, else the stored rate of its date, else the latest one.
 function rateOf(input: AssetValuationInput, operation: OperationEntity): null | string {
-  return operation.fxRate ?? lastOnOrBefore(input.fxHistory, operation.date)?.rate ?? input.todayRate;
+  return (
+    operation.fxRate ?? lastOnOrBefore(input.fxHistory, operation.date)?.rate ?? input.todayRate
+  );
 }
 function snapshotOf(
   costCents: number,
@@ -187,7 +195,8 @@ function snapshotOf(
   return {
     costCents,
     openResult,
-    openResultPercent: costCents === 0 ? null : Math.round((openResult / costCents) * 10000) / 10000,
+    openResultPercent:
+      costCents === 0 ? null : Math.round((openResult / costCents) * 10000) / 10000,
     quantity,
     usd,
     valueCents,
@@ -198,14 +207,7 @@ function snapshotOf(
 export function convertCents(cents: number, rate: string): number {
   return Number(divRound(BigInt(cents) * rateScaled(rate), RATE_SCALE));
 }
-function toBrl(cents: number, rate: null | string): number {
-  return rate === null ? 0 : convertCents(cents, rate);
-}
-function rateScaled(rate: string): bigint {
-  const [integer, fraction = ''] = rate.split('.');
 
-  return BigInt(integer) * RATE_SCALE + BigInt(fraction.padEnd(6, '0').slice(0, 6));
-}
 function divRound(numerator: bigint, denominator: bigint): bigint {
   const negative = numerator < 0n !== denominator < 0n;
   const n = numerator < 0n ? -numerator : numerator;
@@ -225,4 +227,12 @@ function latest<T>(rows: T[], key: (row: T) => string): T | undefined {
   const sorted = [...rows].sort((a, b) => key(a).localeCompare(key(b)));
 
   return sorted[sorted.length - 1];
+}
+function rateScaled(rate: string): bigint {
+  const [integer, fraction = ''] = rate.split('.');
+
+  return BigInt(integer) * RATE_SCALE + BigInt(fraction.padEnd(6, '0').slice(0, 6));
+}
+function toBrl(cents: number, rate: null | string): number {
+  return rate === null ? 0 : convertCents(cents, rate);
 }

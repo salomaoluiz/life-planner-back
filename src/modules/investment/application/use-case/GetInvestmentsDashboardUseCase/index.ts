@@ -19,6 +19,11 @@ import { PriceHistoryRow } from '@investment/domain/entity/QuoteEntity';
 import { InvestmentAssetClass } from '@investment/domain/enum';
 import { QuoteMarket } from '@investment/domain/enum/QuoteMarket';
 import {
+  IIncomeRepository,
+  IInvestmentRepository,
+  IQuoteRepository,
+} from '@investment/domain/repository';
+import {
   bucketsFor,
   bucketUnitFor,
   DashboardBucketUnit,
@@ -27,11 +32,6 @@ import {
 import { lastBusinessDay, marketDateOf } from '@investment/domain/service/MarketDate';
 import { AssetValuationInput } from '@investment/domain/service/PortfolioValuation';
 import { marketOfClass } from '@investment/domain/service/QuoteResolver';
-import {
-  IIncomeRepository,
-  IInvestmentRepository,
-  IQuoteRepository,
-} from '@investment/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 
@@ -89,7 +89,14 @@ export class GetInvestmentsDashboardUseCase implements UseCaseWithParams<
     const todayRate = fx?.rate ?? null;
     const buckets = bucketsFor(input.from, input.to);
     const assets = details.map((detail) =>
-      toValuationInput(detail, histories, fxHistory, fixedIncome.get(detail.id) ?? null, todayRate, input.today),
+      toValuationInput(
+        detail,
+        histories,
+        fxHistory,
+        fixedIncome.get(detail.id) ?? null,
+        todayRate,
+        input.today,
+      ),
     );
     const totals = dashboardTotals({
       assets,
@@ -189,7 +196,13 @@ function historyStartsAtOf(
 // Spec 110 FR 26: stored quotes that did not update on the market's last business day (spec 104 rule).
 function staleCountOf(
   details: AssetDetail[],
-  quotes: { fetchedAt: Date; lastErrorAt: Date | null; market: QuoteMarket; quotedAt: Date; ticker: string }[],
+  quotes: {
+    fetchedAt: Date;
+    lastErrorAt: Date | null;
+    market: QuoteMarket;
+    quotedAt: Date;
+    ticker: string;
+  }[],
 ): number {
   const now = new Date();
 

@@ -1,9 +1,9 @@
+import { incomeFixture } from '@investment/domain/entity/mocks/income.fixture';
 import {
   assetFixture,
   operationFixture,
   valuationFixture,
 } from '@investment/domain/entity/mocks/investment.fixture';
-import { incomeFixture } from '@investment/domain/entity/mocks/income.fixture';
 import { InvestmentAssetClass, InvestmentOperationType } from '@investment/domain/enum';
 import { bucketsFor } from '@investment/domain/service/DashboardBuckets';
 import { AssetValuationInput } from '@investment/domain/service/PortfolioValuation';
@@ -38,8 +38,8 @@ function totalsInput(overrides: Partial<DashboardTotalsInput> = {}): DashboardTo
   return {
     assets: [assetInput()],
     buckets: bucketsFor(from, TODAY),
-    fx: { history: [], todayRate: null },
     from,
+    fx: { history: [], todayRate: null },
     incomes: [],
     to: TODAY,
     today: TODAY,
@@ -110,9 +110,7 @@ describe('dashboardTotals', () => {
         { date: '2026-11-01', rate: '5.2' },
       ],
       todayRate: '5.5',
-      valuations: [
-        valuationFixture({ date: '2026-10-01', unitPrice: Decimal8.parse('10') }),
-      ],
+      valuations: [valuationFixture({ date: '2026-10-01', unitPrice: Decimal8.parse('10') })],
     });
     const { income, summary } = dashboardTotals(
       totalsInput({

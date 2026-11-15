@@ -10,7 +10,6 @@ import { InvestmentAssetClass } from '@investment/domain/enum';
 import { QuoteMarket } from '@investment/domain/enum/QuoteMarket';
 import { Decimal8 } from '@shared/infra/decimal';
 
-
 import { incomeSpies, mocks, quoteSpies, setup, spies } from './index.mocks';
 
 const input = {
@@ -27,7 +26,12 @@ function stockDetail() {
   return {
     ...asset,
     operations: [
-      operationFixture({ assetId: 'asset-1', date: '2026-03-10', quantity: Decimal8.parse('100'), total: 100000 }),
+      operationFixture({
+        assetId: 'asset-1',
+        date: '2026-03-10',
+        quantity: Decimal8.parse('100'),
+        total: 100000,
+      }),
     ],
     valuations: [],
   };
@@ -104,7 +108,11 @@ describe('GetInvestmentsDashboardUseCase', () => {
           }),
         ],
         valuations: [
-          valuationFixture({ assetId: 'asset-2', date: '2026-02-01', unitPrice: Decimal8.parse('200') }),
+          valuationFixture({
+            assetId: 'asset-2',
+            date: '2026-02-01',
+            unitPrice: Decimal8.parse('200'),
+          }),
         ],
       },
     ]);

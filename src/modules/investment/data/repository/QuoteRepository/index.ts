@@ -45,6 +45,16 @@ export class QuoteRepository implements IQuoteRepository {
     return row ? row.rate.toFixed(6) : undefined;
   }
 
+  async findHistories(keys: QuoteKey[], from: string, to: string): Promise<PriceHistoryRow[]> {
+    const rows = await this.datasource.findHistories(
+      keys.map((key) => ({ market: key.market as string, ticker: key.ticker })),
+      InvestmentMapper.fromCalendarDate(from),
+      InvestmentMapper.fromCalendarDate(to),
+    );
+
+    return rows.map((row) => QuoteMapper.toHistory(row));
+  }
+
   async findHistory(
     market: QuoteMarket,
     ticker: string,
@@ -54,20 +64,6 @@ export class QuoteRepository implements IQuoteRepository {
     const rows = await this.datasource.findHistory(
       market,
       ticker,
-      InvestmentMapper.fromCalendarDate(from),
-      InvestmentMapper.fromCalendarDate(to),
-    );
-
-    return rows.map((row) => QuoteMapper.toHistory(row));
-  }
-
-  async findHistories(
-    keys: QuoteKey[],
-    from: string,
-    to: string,
-  ): Promise<PriceHistoryRow[]> {
-    const rows = await this.datasource.findHistories(
-      keys.map((key) => ({ market: key.market as string, ticker: key.ticker })),
       InvestmentMapper.fromCalendarDate(from),
       InvestmentMapper.fromCalendarDate(to),
     );

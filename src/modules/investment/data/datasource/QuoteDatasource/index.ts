@@ -33,22 +33,6 @@ export class QuoteDatasource implements IQuoteDatasource {
     });
   }
 
-  async findHistory(
-    market: string,
-    ticker: string,
-    from: Date,
-    to: Date,
-  ): Promise<InvestmentPriceHistory[]> {
-    return this.db.client.investmentPriceHistory.findMany({
-      orderBy: { date: 'asc' },
-      where: {
-        date: { gte: from, lte: to },
-        market: market as InvestmentPriceHistory['market'],
-        ticker,
-      },
-    });
-  }
-
   async findHistories(
     keys: QuoteDatasourceKey[],
     from: Date,
@@ -61,8 +45,27 @@ export class QuoteDatasource implements IQuoteDatasource {
     return this.db.client.investmentPriceHistory.findMany({
       orderBy: [{ date: 'asc' }, { ticker: 'asc' }],
       where: {
-        OR: keys.map((key) => ({ market: key.market as InvestmentPriceHistory['market'], ticker: key.ticker })),
         date: { gte: from, lte: to },
+        OR: keys.map((key) => ({
+          market: key.market as InvestmentPriceHistory['market'],
+          ticker: key.ticker,
+        })),
+      },
+    });
+  }
+
+  async findHistory(
+    market: string,
+    ticker: string,
+    from: Date,
+    to: Date,
+  ): Promise<InvestmentPriceHistory[]> {
+    return this.db.client.investmentPriceHistory.findMany({
+      orderBy: { date: 'asc' },
+      where: {
+        date: { gte: from, lte: to },
+        market: market as InvestmentPriceHistory['market'],
+        ticker,
       },
     });
   }

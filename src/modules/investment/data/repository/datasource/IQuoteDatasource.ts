@@ -4,14 +4,14 @@ export type IQuoteDatasource = {
   findFx(pair: string): Promise<FxRate | null>;
   findFxHistory(pair: string, from: Date, to: Date): Promise<FxRateHistory[]>;
   findFxOnOrBefore(pair: string, date: Date): Promise<FxRateHistory | null>;
-  findHistory(
-    market: string,
-    ticker: string,
+  findHistories(
+    keys: QuoteDatasourceKey[],
     from: Date,
     to: Date,
   ): Promise<InvestmentPriceHistory[]>;
-  findHistories(
-    keys: QuoteDatasourceKey[],
+  findHistory(
+    market: string,
+    ticker: string,
     from: Date,
     to: Date,
   ): Promise<InvestmentPriceHistory[]>;

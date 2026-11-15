@@ -379,7 +379,9 @@ describe('findPeriodIncomes (spec 110)', () => {
     expect(spies.incomeFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
         orderBy: [{ payment_date: 'asc' }, { id: 'asc' }],
-        where: expect.objectContaining({ payment_date: { gte: new Date('2026-01-01'), lte: new Date('2026-11-04') } }) as unknown,
+        where: expect.objectContaining({
+          payment_date: { gte: new Date('2026-01-01'), lte: new Date('2026-11-04') },
+        }) as unknown,
       }),
     );
   });
