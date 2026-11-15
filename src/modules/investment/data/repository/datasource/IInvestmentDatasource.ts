@@ -79,6 +79,7 @@ export interface IInvestmentDatasource {
   findLatestValuations(assetIds: string[]): Promise<InvestmentValuation[]>;
   findValuationById(id: string): Promise<InvestmentValuation | null>;
   findValuationsByAssetId(assetId: string): Promise<InvestmentValuation[]>;
+  findValuationsByAssetIds(assetIds: string[]): Promise<InvestmentValuation[]>;
   updateAsset(params: UpdateAssetDatasourceParams): Promise<InvestmentAsset>;
   upsertValuation(assetId: string, date: Date, unitPrice: string): Promise<InvestmentValuation>;
   writeEvent(params: WriteEventDatasourceParams): Promise<string>;

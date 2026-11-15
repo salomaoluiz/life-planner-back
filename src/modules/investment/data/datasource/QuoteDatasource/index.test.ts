@@ -164,3 +164,29 @@ describe('QuoteDatasource.runExclusive', () => {
     expect(fn).not.toHaveBeenCalled();
   });
 });
+
+describe('findHistories (spec 110)', () => {
+  it('SHOULD read the closes of several symbols in ONE query', async () => {
+    spies.historyFindMany.mockResolvedValue([{ id: 'h' }]);
+
+    const rows = await setup.findHistories(
+      [key, { market: 'US', ticker: 'AAPL' }],
+      new Date('2025-12-01'),
+      new Date('2026-11-04'),
+    );
+
+    expect(rows).toEqual([{ id: 'h' }]);
+    expect(spies.historyFindMany).toHaveBeenCalledWith({
+      orderBy: [{ date: 'asc' }, { ticker: 'asc' }],
+      where: {
+        OR: [key, { market: 'US', ticker: 'AAPL' }],
+        date: { gte: new Date('2025-12-01'), lte: new Date('2026-11-04') },
+      },
+    });
+  });
+
+  it('SHOULD skip the query WHEN there are no keys', async () => {
+    expect(await setup.findHistories([], new Date('2025-12-01'), new Date('2026-11-04'))).toEqual([]);
+    expect(spies.historyFindMany).not.toHaveBeenCalled();
+  });
+});

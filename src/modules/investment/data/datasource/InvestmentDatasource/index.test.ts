@@ -675,3 +675,17 @@ describe('fixed income', () => {
     expect(await setup.findFixedIncomeAdjustmentById('adj')).toEqual({ id: 'adj' });
   });
 });
+
+describe('findValuationsByAssetIds (spec 110)', () => {
+  it('SHOULD read the valuations of every asset in ONE query AND skip it for no assets', async () => {
+    spies.valuationFindMany.mockResolvedValue([{ id: 'v' }]);
+
+    expect(await setup.findValuationsByAssetIds([])).toEqual([]);
+    expect(spies.valuationFindMany).not.toHaveBeenCalled();
+    expect(await setup.findValuationsByAssetIds(['a', 'b'])).toEqual([{ id: 'v' }]);
+    expect(spies.valuationFindMany).toHaveBeenCalledWith({
+      orderBy: [{ date: 'asc' }],
+      where: { asset_id: { in: ['a', 'b'] } },
+    });
+  });
+});

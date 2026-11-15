@@ -71,6 +71,8 @@ export type IInvestmentRepository = {
     ticker: string,
   ): Promise<AssetEntity | undefined>;
   findAssetsByOwners(owners: OwnerAccess[], status: InvestmentAssetStatus): Promise<AssetListRow[]>;
+  // Spec 110 FR 10: the assets of the owners with every operation and valuation, 3 queries (dashboard).
+  findAssetDetailsByOwners(owners: OwnerAccess[]): Promise<AssetDetail[]>;
   findOperationById(id: string): Promise<OperationEntity | undefined>;
   findOperationByTransactionId(
     transactionId: string,
