@@ -7,7 +7,7 @@ import { TickerValidator } from './index';
 
 export const spies = {
   backfill: { queue: jest.fn() },
-  brapi: { getQuotes: jest.fn() },
+  brapi: { getQuotes: jest.fn(), getTickerKinds: jest.fn() },
   fetcher: { save: jest.fn() },
   finnhub: { getQuotes: jest.fn() },
 };
@@ -16,6 +16,7 @@ export let setup: TickerValidator;
 
 beforeEach(async () => {
   jest.resetAllMocks();
+  spies.brapi.getTickerKinds.mockResolvedValue({});
 
   const module = await Test.createTestingModule({
     providers: [

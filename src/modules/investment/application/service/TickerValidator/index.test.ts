@@ -22,12 +22,64 @@ describe('TickerValidator.validate', () => {
     expect(spies.backfill.queue).toHaveBeenCalledWith('B3', 'ITSA4');
   });
 
+  it('SHOULD answer 422 TICKER_CLASS_MISMATCH WHEN a FII is saved as a stock', async () => {
+    spies.brapi.getQuotes.mockResolvedValue([{ price: '152.3', ticker: 'KNRI11' }]);
+    spies.brapi.getTickerKinds.mockResolvedValue({ KNRI11: 'REIT' });
+
+    await expect(setup.validate('BR_STOCK', 'KNRI11')).rejects.toMatchObject({
+      response: {
+        code: 'TICKER_CLASS_MISMATCH',
+        details: { expectedClass: 'BR_REIT' },
+        message: '"KNRI11" is a FII on B3. Use the class FIIs.',
+      },
+    });
+    expect(spies.brapi.getTickerKinds).toHaveBeenCalledWith('KNRI11');
+    expect(spies.fetcher.save).not.toHaveBeenCalled();
+    expect(spies.backfill.queue).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD answer 422 TICKER_CLASS_MISMATCH WHEN a stock is saved as a FII', async () => {
+    spies.brapi.getQuotes.mockResolvedValue([{ price: '45.3', ticker: 'PETR4' }]);
+    spies.brapi.getTickerKinds.mockResolvedValue({ PETR4: 'STOCK' });
+
+    await expect(setup.validate('BR_REIT', 'PETR4')).rejects.toMatchObject({
+      response: {
+        code: 'TICKER_CLASS_MISMATCH',
+        details: { expectedClass: 'BR_STOCK' },
+        message: '"PETR4" is a stock on B3. Use the class Stocks.',
+      },
+    });
+  });
+
+  it('SHOULD accept the ticker WHEN the source cannot tell its kind', async () => {
+    spies.brapi.getQuotes.mockResolvedValue([
+      { price: '10', ticker: 'RZAG11' },
+      { price: '11', ticker: 'XPTO3' },
+    ]);
+    spies.brapi.getTickerKinds.mockResolvedValue({ RZAG11: 'FIAGRO' });
+
+    await setup.validate('BR_STOCK', 'RZAG11');
+    await setup.validate('BR_REIT', 'XPTO3');
+
+    expect(spies.fetcher.save).toHaveBeenCalledTimes(2);
+  });
+
+  it('SHOULD accept the ticker WHEN the kind list fails', async () => {
+    spies.brapi.getQuotes.mockResolvedValue([{ price: '10', ticker: 'KNRI11' }]);
+    spies.brapi.getTickerKinds.mockRejectedValue(new Error('down'));
+
+    await setup.validate('BR_STOCK', 'KNRI11');
+
+    expect(spies.fetcher.save).toHaveBeenCalled();
+  });
+
   it('SHOULD validate foreign stocks against Finnhub', async () => {
     spies.finnhub.getQuotes.mockResolvedValue([{ price: '231.4', ticker: 'AAPL' }]);
 
     await setup.validate('FOREIGN_STOCK', 'AAPL');
 
     expect(spies.finnhub.getQuotes).toHaveBeenCalledWith(['AAPL']);
+    expect(spies.brapi.getTickerKinds).not.toHaveBeenCalled();
   });
 
   it('SHOULD answer 422 TICKER_NOT_FOUND WHEN the source does not return the ticker', async () => {
