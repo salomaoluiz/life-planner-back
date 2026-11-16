@@ -155,3 +155,49 @@ describe('home summary reads (spec 109)', () => {
     expect(spies.countPendingSuggestionsByAssets).toHaveBeenCalledWith(['a', 'b']);
   });
 });
+
+it('SHOULD map the dashboard incomes with the paid flag of the finance row (spec 110)', async () => {
+  spies.findDashboardIncomes.mockResolvedValue([
+    {
+      asset_id: 'asset-1',
+      currency: 'BRL',
+      net_amount: 7140,
+      payment_date: new Date('2026-10-30T00:00:00Z'),
+      transaction: { paid: true },
+      type: 'JCP',
+    },
+    {
+      asset_id: 'asset-2',
+      currency: 'USD',
+      net_amount: 500,
+      payment_date: new Date('2026-11-20T00:00:00Z'),
+      transaction: null,
+      type: 'DIVIDEND',
+    },
+  ]);
+  const owners = [{ owner: 'USER' as never, ownerId: 'owner-1' }];
+
+  expect(await setup.findDashboardIncomes(owners, '2026-01-01', '2026-11-30')).toEqual([
+    {
+      assetId: 'asset-1',
+      currency: 'BRL',
+      netAmount: 7140,
+      paid: true,
+      paymentDate: '2026-10-30',
+      type: 'JCP',
+    },
+    {
+      assetId: 'asset-2',
+      currency: 'USD',
+      netAmount: 500,
+      paid: false,
+      paymentDate: '2026-11-20',
+      type: 'DIVIDEND',
+    },
+  ]);
+  expect(spies.findDashboardIncomes).toHaveBeenCalledWith(
+    owners,
+    new Date('2026-01-01T00:00:00.000Z'),
+    new Date('2026-11-30T00:00:00.000Z'),
+  );
+});

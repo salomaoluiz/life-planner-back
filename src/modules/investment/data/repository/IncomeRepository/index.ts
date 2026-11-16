@@ -17,7 +17,7 @@ import {
 } from '@investment/domain/entity/IncomeEntity';
 import { InvestmentAssetClass, InvestmentIncomeType } from '@investment/domain/enum';
 import { QuoteMarket } from '@investment/domain/enum/QuoteMarket';
-import { IIncomeRepository } from '@investment/domain/repository';
+import { DashboardIncomeRow, IIncomeRepository } from '@investment/domain/repository';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 @Injectable()
@@ -53,6 +53,27 @@ export class IncomeRepository implements IIncomeRepository {
     const row = await this.datasource.findCategoryById(id);
 
     return row ? IncomeMapper.toCategory(row) : undefined;
+  }
+
+  async findDashboardIncomes(
+    owners: { owner: OwnerType; ownerId: string }[],
+    from: string,
+    to: string,
+  ): Promise<DashboardIncomeRow[]> {
+    const rows = await this.datasource.findDashboardIncomes(
+      owners,
+      InvestmentMapper.fromCalendarDate(from),
+      InvestmentMapper.fromCalendarDate(to),
+    );
+
+    return rows.map((row) => ({
+      assetId: row.asset_id,
+      currency: row.currency,
+      netAmount: row.net_amount,
+      paid: row.transaction?.paid === true,
+      paymentDate: InvestmentMapper.toCalendarDate(row.payment_date),
+      type: InvestmentIncomeType[row.type],
+    }));
   }
 
   async findDefaultAccountId(assetId: string): Promise<string | undefined> {

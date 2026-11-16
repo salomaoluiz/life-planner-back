@@ -72,6 +72,7 @@ export function incomeRepositorySpies(): Record<keyof IIncomeRepository, jest.Mo
     createSuggestions: jest.fn(),
     deleteIncome: jest.fn(),
     findCategoryById: jest.fn(),
+    findDashboardIncomes: jest.fn(),
     findDefaultAccountId: jest.fn(),
     findEvents: jest.fn(),
     findIncomeById: jest.fn(),

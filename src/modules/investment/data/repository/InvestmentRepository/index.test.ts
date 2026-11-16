@@ -437,3 +437,20 @@ describe('fixed income', () => {
     );
   });
 });
+
+describe('dashboard reads (spec 110)', () => {
+  it('SHOULD group the valuations by asset, oldest first, with an empty list for an asset without any', async () => {
+    spies.findValuationsByAssetIds.mockResolvedValue([
+      { ...mocks.valuation, asset_id: 'a', date: new Date('2026-01-01T00:00:00Z'), id: 'v1' },
+      { ...mocks.valuation, asset_id: 'a', date: new Date('2026-02-01T00:00:00Z'), id: 'v2' },
+      { ...mocks.valuation, asset_id: 'b', date: new Date('2026-01-15T00:00:00Z'), id: 'v3' },
+    ]);
+
+    const result = await setup.findValuationsByAssets(['a', 'b', 'c']);
+
+    expect(result.get('a')?.map((valuation) => valuation.id)).toEqual(['v1', 'v2']);
+    expect(result.get('b')?.map((valuation) => valuation.id)).toEqual(['v3']);
+    expect(result.get('c')).toEqual([]);
+    expect(spies.findValuationsByAssetIds).toHaveBeenCalledWith(['a', 'b', 'c']);
+  });
+});

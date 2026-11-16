@@ -10,6 +10,12 @@ export type IQuoteDatasource = {
     from: Date,
     to: Date,
   ): Promise<InvestmentPriceHistory[]>;
+  // Spec 110: the closes of several symbols in [from, to] plus, per symbol, the latest close on or before `from`.
+  findHistoryBatch(
+    keys: QuoteDatasourceKey[],
+    from: Date,
+    to: Date,
+  ): Promise<InvestmentPriceHistory[]>;
   findQuotes(keys: QuoteDatasourceKey[]): Promise<InvestmentQuote[]>;
   findTrackedSymbols(since: Date): Promise<QuoteDatasourceKey[]>;
   hasHistory(market: string, ticker: string): Promise<boolean>;

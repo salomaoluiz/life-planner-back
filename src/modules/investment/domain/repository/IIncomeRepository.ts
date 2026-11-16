@@ -14,6 +14,14 @@ import { InvestmentIncomeType } from '@investment/domain/enum';
 import { QuoteMarket } from '@investment/domain/enum/QuoteMarket';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
+export interface DashboardIncomeRow {
+  assetId: string;
+  currency: string;
+  netAmount: number;
+  paid: boolean;
+  paymentDate: string;
+  type: InvestmentIncomeType;
+}
 // Spec 107. Every write runs in ONE database transaction with the finance row and the account ledger.
 export type IIncomeRepository = {
   countPendingSuggestions(assetId: string): Promise<number>;
@@ -29,6 +37,12 @@ export type IIncomeRepository = {
     keys: { market: QuoteMarket; ticker: string }[],
     sinceExDate: string,
   ): Promise<IncomeEventEntity[]>;
+  // Spec 110: the incomes of the owners' assets dated in [from, to], planned and received.
+  findDashboardIncomes(
+    owners: { owner: OwnerType; ownerId: string }[],
+    from: string,
+    to: string,
+  ): Promise<DashboardIncomeRow[]>;
   findIncomeById(id: string): Promise<IncomeEntity | undefined>;
   findIncomeByTransactionId(
     transactionId: string,

@@ -364,3 +364,30 @@ describe('home summary reads (spec 109)', () => {
     });
   });
 });
+
+describe('dashboard reads (spec 110)', () => {
+  it('SHOULD read the incomes of the owners dated in the period with scalars only, paid or not', async () => {
+    spies.incomeFindMany.mockResolvedValue([{ asset_id: 'a' }]);
+    const from = new Date('2026-01-01T00:00:00Z');
+    const to = new Date('2026-11-04T00:00:00Z');
+
+    expect(
+      await setup.findDashboardIncomes([{ owner: OwnerType.USER, ownerId: 'owner-1' }], from, to),
+    ).toEqual([{ asset_id: 'a' }]);
+    expect(spies.incomeFindMany).toHaveBeenCalledTimes(1);
+    expect(spies.incomeFindMany).toHaveBeenCalledWith({
+      select: {
+        asset_id: true,
+        currency: true,
+        net_amount: true,
+        payment_date: true,
+        transaction: { select: { paid: true } },
+        type: true,
+      },
+      where: {
+        asset: { OR: [{ owner: 'USER', owner_id: 'owner-1' }] },
+        payment_date: { gte: from, lte: to },
+      },
+    });
+  });
+});

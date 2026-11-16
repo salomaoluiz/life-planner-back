@@ -134,3 +134,32 @@ describe('QuoteRepository writes', () => {
     expect(await setup.runExclusive(1, jest.fn())).toBe(false);
   });
 });
+
+describe('findHistoryBatch (spec 110)', () => {
+  it('SHOULD map the rows of several symbols AND pass the dates as calendar days', async () => {
+    spies.findHistoryBatch.mockResolvedValue([
+      {
+        close: mocks.decimal('12'),
+        date: new Date('2026-06-30T00:00:00Z'),
+        market: 'B3',
+        source: 'BRAPI',
+        ticker: 'ITSA4',
+      },
+    ]);
+
+    const rows = await setup.findHistoryBatch(
+      [{ market: 'B3' as never, ticker: 'ITSA4' }],
+      '2025-12-01',
+      '2026-11-04',
+    );
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ date: '2026-06-30', ticker: 'ITSA4' });
+    expect(rows[0]?.close.toString()).toBe('12');
+    expect(spies.findHistoryBatch).toHaveBeenCalledWith(
+      [{ market: 'B3', ticker: 'ITSA4' }],
+      new Date('2025-12-01T00:00:00.000Z'),
+      new Date('2026-11-04T00:00:00.000Z'),
+    );
+  });
+});

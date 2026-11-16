@@ -235,6 +235,17 @@ export class InvestmentRepository implements IInvestmentRepository {
     return row ? InvestmentMapper.toValuation(row) : undefined;
   }
 
+  async findValuationsByAssets(assetIds: string[]): Promise<Map<string, ValuationEntity[]>> {
+    const rows = await this.datasource.findValuationsByAssetIds(assetIds);
+    const byAsset = new Map<string, ValuationEntity[]>(assetIds.map((id) => [id, []]));
+
+    for (const row of rows) {
+      byAsset.get(row.asset_id)?.push(InvestmentMapper.toValuation(row));
+    }
+
+    return byAsset;
+  }
+
   async saveFixedIncomeTerms(params: SaveFixedIncomeTermsRepositoryParams): Promise<void> {
     await this.datasource.saveFixedIncomeTerms(params);
   }

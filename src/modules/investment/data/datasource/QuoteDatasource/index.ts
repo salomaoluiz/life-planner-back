@@ -49,6 +49,32 @@ export class QuoteDatasource implements IQuoteDatasource {
     });
   }
 
+  async findHistoryBatch(
+    keys: QuoteDatasourceKey[],
+    from: Date,
+    to: Date,
+  ): Promise<InvestmentPriceHistory[]> {
+    if (keys.length === 0) {
+      return [];
+    }
+
+    const symbols = Prisma.join(
+      keys.map((key) => Prisma.sql`(${key.market}::"QuoteMarket", ${key.ticker})`),
+    );
+
+    return this.db.client.$queryRaw<InvestmentPriceHistory[]>(Prisma.sql`
+      SELECT h.market, h.ticker, h.date, h.close, h.source
+      FROM investment_price_history h
+      WHERE (h.market, h.ticker) IN (${symbols})
+        AND h.date <= ${to}
+        AND h.date >= COALESCE((
+          SELECT MAX(s.date) FROM investment_price_history s
+          WHERE s.market = h.market AND s.ticker = h.ticker AND s.date <= ${from}
+        ), ${from})
+      ORDER BY h.market, h.ticker, h.date
+    `);
+  }
+
   async findQuotes(keys: QuoteDatasourceKey[]): Promise<InvestmentQuote[]> {
     if (keys.length === 0) {
       return [];
