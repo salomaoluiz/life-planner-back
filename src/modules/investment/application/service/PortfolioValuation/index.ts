@@ -5,6 +5,7 @@ import { ValuationEntity } from '@investment/domain/entity/ValuationEntity';
 import { InvestmentAssetClass, InvestmentOperationType } from '@investment/domain/enum';
 import { unitStepOf } from '@investment/domain/service/CorporateEventMath';
 import { latestOnOrBefore } from '@investment/domain/service/DatedSeries';
+import { calculateTitle } from '@investment/domain/service/FixedIncomeCalculator';
 import { averageFxCost, splitFxResult } from '@investment/domain/service/FxResultSplit';
 import {
   calculatePosition,
@@ -13,7 +14,7 @@ import {
 } from '@investment/domain/service/PositionCalculator';
 import { Decimal8 } from '@shared/infra/decimal';
 
-import { toFixedIncomeView } from '../FixedIncomeView';
+import { toCalcInput } from '../FixedIncomeView';
 
 // Latest known USD-BRL rate per day, ascending, and the current one (the latest quote) for dates after the curve.
 export interface AssetValue {
@@ -62,16 +63,16 @@ const EMPTY: AssetValue = {
 export function valueAssetAt(input: ValuationInput, on: string, fx: FxCurve): AssetValue {
   const operations = input.operations.filter((operation) => operation.date <= on);
   const position = positionOf(operations, input.asset.assetClass);
-  const calculated = toFixedIncomeView(input.fixedIncome, newestFirst(operations), on);
+  const calculated = calculatedTotals(input.fixedIncome, operations, on);
 
   if (calculated) {
-    return calculated.today.gross === 0
+    return calculated.gross === 0
       ? EMPTY
       : {
           ...EMPTY,
           costBrl: position.cost,
           quantityZero: false,
-          valueBrl: calculated.today.net,
+          valueBrl: calculated.net,
           valueKind: 'FIXED_INCOME_NET',
         };
   }
@@ -142,6 +143,22 @@ export function convertToBrl(cents: number, rate: null | string): number {
   return cents < 0 ? -converted : converted;
 }
 
+// The estimated gross and net of a calculated title on `on`; one calculation (the view also projects the maturity).
+function calculatedTotals(
+  data: FixedIncomeData | undefined,
+  operations: OperationEntity[],
+  on: string,
+): { gross: number; net: number } | null {
+  if (!data?.terms) {
+    return null;
+  }
+
+  const { totals } = calculateTitle(
+    toCalcInput({ ...data, terms: data.terms }, newestFirst(operations).reverse(), on),
+  );
+
+  return { gross: totals.gross, net: totals.net };
+}
 function newestFirst(operations: OperationEntity[]): OperationEntity[] {
   return [...operations].sort(
     (a, b) =>
