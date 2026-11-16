@@ -3,6 +3,12 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.16.1] - 2026-11-16
+
+### Fixed
+
+- Asset class follows the ticker on B3: the ticker search tells stocks from FIIs, saving a ticker under the wrong class answers `422 TICKER_CLASS_MISMATCH`, and stocks and FIIs can be swapped after operations (spec 111).
+
 ## [3.16.0] - 2026-11-16
 
 ### Added
