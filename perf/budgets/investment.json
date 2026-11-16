@@ -91,9 +91,9 @@
   "GET /api/v1/investments/dashboard": {
     "indexes": null,
     "kind": "read",
-    "maxBytes": 4000,
+    "maxBytes": 2400,
     "maxQueries": 3,
-    "p50Ms": 60,
+    "p50Ms": 30,
     "scenario": "ownerId={userId}&from=2025-01-01&to=2025-12-31"
   },
   "GET /api/v1/investments/event-suggestions": {
