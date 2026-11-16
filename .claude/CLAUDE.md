@@ -112,3 +112,5 @@ Reference implementation for any new work: **`user` module** (the only one compl
     - A failure left open is always listed in the PR description with that evidence; a green summary must never hide a failed flow.
 
 19. **Stay on the branch when the work ends.** Start new work with `git fetch origin main && git checkout -b <branch> origin/main` (never from a stale local `main` or another feature branch) and, when the work is finished (PR opened, checks run, final report), leave the checkout on that branch. Never `git checkout main` afterwards "to clean up"; the next task cuts its own branch from `origin/main`. Switch to another branch only when a check requires it and switch back right after. Same rule as the frontend's rule 11.
+
+- **Asset class from the ticker (spec 111):** `IBrapiQuotes.getKinds(query)` (brapi `/quote/list`, kind from `type`+`subType`+name) and the pure `classOfTickerKind` in `investment/domain/service/TickerKind`; `TickerValidator` refuses a B3 ticker under the wrong class (`422 TICKER_CLASS_MISMATCH`), `GET /investments/tickers/search` items carry `assetClass`, and `UpdateAssetUseCase` swaps `BR_STOCK` ↔ `BR_REIT` with operations.

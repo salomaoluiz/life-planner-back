@@ -1,4 +1,6 @@
 // Market data sources (spec 104). Prices are decimal strings so nothing passes through floats.
+// Spec 111: the instrument kind of a B3 ticker, as the source tells it.
+export type B3TickerKind = 'BDR' | 'ETF' | 'FIAGRO' | 'REIT' | 'STOCK' | 'UNKNOWN';
 export type CorporateEventKind = 'BONUS' | 'REVERSE_SPLIT' | 'SPLIT';
 export interface DailyClose {
   close: string;
@@ -30,6 +32,8 @@ export interface IBrapiQuotes {
   getDailyHistory(symbol: string, range: string): Promise<DailyClose[]>;
   // Announced dividends, JCP and yields of one B3 symbol (spec 107).
   getIncomeEvents(symbol: string): Promise<IncomeEventResult[]>;
+  // Kinds of the B3 symbols that match `query` (spec 111); rejects when the source fails.
+  getKinds(query: string): Promise<Record<string, B3TickerKind>>;
   getQuotes(symbols: string[]): Promise<QuoteResult[]>;
   search(query: string): Promise<QuoteResult[]>;
 }

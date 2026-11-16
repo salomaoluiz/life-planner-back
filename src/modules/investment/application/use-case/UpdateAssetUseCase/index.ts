@@ -13,11 +13,17 @@ import { QuoteContextLoader } from '@investment/application/service/QuoteContext
 import { TickerValidator } from '@investment/application/service/TickerValidator';
 import { TICKER_EXISTS_MESSAGE } from '@investment/application/use-case/CreateAssetUseCase';
 import { hasOwnerAccess } from '@investment/domain/entity/OwnerAccess';
-import { InvestmentAssetStatus, TICKER_REQUIRED_CLASSES } from '@investment/domain/enum';
+import {
+  InvestmentAssetClass,
+  InvestmentAssetStatus,
+  TICKER_REQUIRED_CLASSES,
+} from '@investment/domain/enum';
 import { IInvestmentRepository } from '@investment/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { ValidationError } from '@shared/domain/error/ValidationError';
 import { validate } from '@shared/infra/validation';
+
+const B3_CLASSES = [InvestmentAssetClass.BR_STOCK, InvestmentAssetClass.BR_REIT];
 
 export const CLASS_LOCKED_MESSAGE = "Class and currency can't change after the first operation";
 
@@ -55,7 +61,15 @@ export class UpdateAssetUseCase implements UseCaseWithParams<UpdateAssetInput, A
     const classChanged = input.assetClass !== undefined && input.assetClass !== asset.assetClass;
     const currencyChanged = input.currency !== undefined && input.currency !== asset.currency;
 
-    if ((classChanged || currencyChanged) && asset.operations.length > 0) {
+    // Spec 111 rule 8: Ações and FIIs share the market and the currency, so they swap even with operations; the
+    // ticker is checked against the new class below (rule 9).
+    const swapsB3Class =
+      classChanged &&
+      B3_CLASSES.includes(asset.assetClass) &&
+      B3_CLASSES.includes(assetClass) &&
+      asset.currency === 'BRL';
+
+    if (((classChanged && !swapsB3Class) || currencyChanged) && asset.operations.length > 0) {
       throw new UnprocessableEntityException(CLASS_LOCKED_MESSAGE);
     }
 

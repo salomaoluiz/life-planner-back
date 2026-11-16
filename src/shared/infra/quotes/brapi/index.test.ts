@@ -420,3 +420,48 @@ describe('BrapiQuotes.getCorporateEvents (spec 108)', () => {
     ).rejects.toBeInstanceOf(QuoteSourceLimitError);
   });
 });
+
+describe('BrapiQuotes.getKinds', () => {
+  it('SHOULD ask the list endpoint with the token AND map every kind', async () => {
+    getSpy.mockResolvedValueOnce({ data: { stocks: mocks.rawKinds } });
+
+    const kinds = await new BrapiQuotes(envWith('your-token')).getKinds(' pe ');
+
+    expect(getSpy).toHaveBeenCalledWith('https://brapi.dev/api/quote/list', {
+      params: { search: 'pe', token: 'your-token' },
+      timeout: 5000,
+    });
+    expect(kinds).toEqual({
+      AAA11: 'ETF',
+      AAPL34: 'BDR',
+      BBB11: 'REIT',
+      BOVA11: 'ETF',
+      CCC11: 'FIAGRO',
+      DDD3: 'UNKNOWN',
+      IBOV11: 'UNKNOWN',
+      KDIF11: 'UNKNOWN',
+      KNRI11: 'REIT',
+      PETR4: 'STOCK',
+      RZAG11: 'FIAGRO',
+      TAEE11: 'STOCK',
+    });
+  });
+
+  it('SHOULD return {} WHEN the list is empty', async () => {
+    getSpy.mockResolvedValueOnce({ data: {} });
+
+    expect(await new BrapiQuotes(envWith('your-token')).getKinds('zz')).toEqual({});
+  });
+
+  it('SHOULD reject WHEN there is no token OR the source fails', async () => {
+    await expect(new BrapiQuotes(envWith()).getKinds('pe')).rejects.toBeInstanceOf(
+      QuoteSourceUnavailableError,
+    );
+
+    getSpy.mockRejectedValueOnce({ response: { status: 500 } });
+
+    await expect(new BrapiQuotes(envWith('your-token')).getKinds('pe')).rejects.toBeInstanceOf(
+      QuoteSourceLimitError,
+    );
+  });
+});

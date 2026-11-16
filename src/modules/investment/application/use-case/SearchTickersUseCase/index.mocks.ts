@@ -3,7 +3,7 @@ import { Test } from '@nestjs/testing';
 import { SearchTickersUseCase } from './index';
 
 export const spies = {
-  brapi: { search: jest.fn() },
+  brapi: { getKinds: jest.fn(), search: jest.fn() },
   finnhub: { search: jest.fn() },
 };
 
