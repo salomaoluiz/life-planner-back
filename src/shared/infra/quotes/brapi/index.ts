@@ -4,6 +4,7 @@ import axios from 'axios';
 import { EnvService } from '@shared/infra/env/env.service';
 
 import {
+  B3TickerKind,
   CorporateEventResult,
   DailyClose,
   IBrapiQuotes,
@@ -28,6 +29,12 @@ interface RawCashDividend {
 interface RawHistory {
   close?: null | number;
   date?: number;
+}
+interface RawKind {
+  name?: null | string;
+  stock?: string;
+  subType?: null | string;
+  type?: null | string;
 }
 interface RawQuote {
   logourl?: null | string;
@@ -56,6 +63,12 @@ function asDay(value: null | string | undefined): null | string {
 function asText(value: null | number | undefined): null | string {
   return typeof value === 'number' ? String(value) : null;
 }
+function plain(value: null | string | undefined): string {
+  return (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+}
 function toCorporateEvent(
   row: RawStockDividend,
 ): null | Pick<CorporateEventResult, 'bonusPercent' | 'ratioFrom' | 'ratioTo' | 'type'> {
@@ -82,6 +95,8 @@ function toCorporateEvent(
 
   return null;
 }
+// Spec 111 rule 1: `type` + `subType` of brapi's `/quote/list`; a fund without a sub-type is told by its name and
+// never falls through to a guess (a wrong guess would refuse a legitimate save).
 function toIncomeType(label: null | string | undefined): IncomeEventType {
   const text = (label ?? '').toUpperCase();
 
@@ -93,6 +108,40 @@ function toIncomeType(label: null | string | undefined): IncomeEventType {
   }
 
   return text.includes('DIVIDENDO') ? 'DIVIDEND' : 'OTHER';
+}
+function toTickerKind(raw: RawKind): B3TickerKind {
+  if (raw.type === 'stock') {
+    return 'STOCK';
+  }
+  if (raw.type === 'bdr') {
+    return 'BDR';
+  }
+  if (raw.type !== 'fund') {
+    return 'UNKNOWN';
+  }
+  if (raw.subType === 'etf') {
+    return 'ETF';
+  }
+  if (raw.subType === 'fii') {
+    return 'REIT';
+  }
+  if (raw.subType === 'fi-agro') {
+    return 'FIAGRO';
+  }
+  if (raw.subType) {
+    return 'UNKNOWN';
+  }
+
+  const name = plain(raw.name);
+
+  if (/\b(ETF|INDICE|ISHARES)\b/.test(name)) {
+    return 'ETF';
+  }
+  if (/FI-?AGRO/.test(name)) {
+    return 'FIAGRO';
+  }
+
+  return /\b(FII|IMOBILIARIO)\b/.test(name) ? 'REIT' : 'UNKNOWN';
 }
 // `QUOTES_PER_REQUEST_EXCEEDED` ("... no máximo N ativo(s) por requisição ...") -> N; anything else -> null.
 function isNotFound(error: unknown): boolean {
@@ -191,6 +240,22 @@ export class BrapiQuotes implements IBrapiQuotes {
         },
       ];
     });
+  }
+
+  // Spec 111: one `/quote/list` call gives symbol, name and kind of every match.
+  async getKinds(query: string): Promise<Record<string, B3TickerKind>> {
+    const data = await this.request<{ stocks?: RawKind[] }>('/quote/list', {
+      search: query.trim().slice(0, 20),
+    });
+    const kinds: Record<string, B3TickerKind> = {};
+
+    for (const raw of data.stocks ?? []) {
+      if (raw.stock && /^[A-Z0-9.-]{1,12}$/.test(raw.stock)) {
+        kinds[raw.stock] = toTickerKind(raw);
+      }
+    }
+
+    return kinds;
   }
 
   // The free plan takes ONE ticker per request: the first `QUOTES_PER_REQUEST_EXCEEDED` answer teaches the limit and
