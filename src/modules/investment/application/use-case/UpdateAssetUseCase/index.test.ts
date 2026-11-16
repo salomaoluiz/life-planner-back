@@ -75,16 +75,53 @@ it('SHOULD lock class and currency after the first operation', async () => {
   spies.findAssetById.mockResolvedValue(mocks.detailWithOperation);
 
   await expect(
-    setup.execute({ ...base, assetClass: InvestmentAssetClass.BR_REIT }),
+    setup.execute({ ...base, assetClass: InvestmentAssetClass.FIXED_INCOME }),
   ).rejects.toThrow(
     new UnprocessableEntityException("Class and currency can't change after the first operation"),
   );
+  await expect(
+    setup.execute({ ...base, assetClass: InvestmentAssetClass.FOREIGN_STOCK }),
+  ).rejects.toBeInstanceOf(UnprocessableEntityException);
   await expect(setup.execute({ ...base, currency: 'USD' })).rejects.toBeInstanceOf(
     UnprocessableEntityException,
   );
   await expect(
+    setup.execute({ ...base, assetClass: InvestmentAssetClass.BR_REIT, currency: 'USD' }),
+  ).rejects.toBeInstanceOf(UnprocessableEntityException);
+  await expect(
     setup.execute({ ...base, assetClass: mocks.asset.assetClass, currency: 'BRL', name: 'ok' }),
   ).resolves.toBeDefined();
+});
+
+it('SHOULD swap Ações and FIIs even WITH operations, validating the ticker for the new class (spec 111)', async () => {
+  spies.findAssetById.mockResolvedValue(mocks.detailWithOperation);
+
+  await setup.execute({ ...base, assetClass: InvestmentAssetClass.BR_REIT });
+
+  expect(quoteSpies.validate).toHaveBeenCalledWith('BR_REIT', mocks.asset.ticker);
+  expect(spies.updateAsset).toHaveBeenCalledWith(
+    expect.objectContaining({ assetClass: 'BR_REIT', id: mocks.asset.id }),
+  );
+
+  spies.findAssetById.mockResolvedValue({
+    ...mocks.detailWithOperation,
+    assetClass: InvestmentAssetClass.BR_REIT,
+  });
+  await setup.execute({ ...base, assetClass: InvestmentAssetClass.BR_STOCK });
+
+  expect(spies.updateAsset).toHaveBeenLastCalledWith(
+    expect.objectContaining({ assetClass: 'BR_STOCK' }),
+  );
+});
+
+it('SHOULD write nothing WHEN the swapped class does not match the ticker (spec 111)', async () => {
+  spies.findAssetById.mockResolvedValue(mocks.detailWithOperation);
+  quoteSpies.validate.mockRejectedValue(new UnprocessableEntityException('TICKER_CLASS_MISMATCH'));
+
+  await expect(
+    setup.execute({ ...base, assetClass: InvestmentAssetClass.BR_REIT }),
+  ).rejects.toBeInstanceOf(UnprocessableEntityException);
+  expect(spies.updateAsset).not.toHaveBeenCalled();
 });
 
 it('SHOULD change class and currency while there are no operations', async () => {
