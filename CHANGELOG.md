@@ -3,6 +3,13 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.17.0] - 2026-11-16
+
+### Added
+
+- Asset conversion: `POST /investments/assets/:id/conversions` converts the whole position of an asset into another asset of the same class (existing or created on the spot) at a record date and ratio, with the cost carried over, the fraction left for its auction sale, an optional cash part, and the origin archived with a link; `GET|PATCH|DELETE /investments/conversions/:id` read, fix or undo it, and the middle of a chain is locked (spec 112).
+- Asset reads carry `convertedTo` / `convertedFrom`, and conversion operations carry their stored snapshot, ratio and cash part (spec 112).
+
 ## [3.16.1] - 2026-11-16
 
 ### Fixed

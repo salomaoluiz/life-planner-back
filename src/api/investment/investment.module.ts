@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 
+import { ConversionController } from '@api/investment/v1/conversion.controller';
+import { ConversionService } from '@api/investment/v1/conversion.service';
 import { CorporateEventController } from '@api/investment/v1/corporate-event.controller';
 import { CorporateEventService } from '@api/investment/v1/corporate-event.service';
 import { FixedIncomeController } from '@api/investment/v1/fixed-income.controller';
@@ -19,9 +21,11 @@ import { InvestmentModule } from '@investment/investment.module';
     FixedIncomeController,
     IncomeController,
     CorporateEventController,
+    ConversionController,
   ],
   imports: [FamilyModule, InvestmentModule],
   providers: [
+    ConversionService,
     CorporateEventService,
     FixedIncomeService,
     IncomeService,

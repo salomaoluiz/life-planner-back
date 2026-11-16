@@ -528,3 +528,77 @@ describe('getDashboard (spec 110)', () => {
     expect(result).toBe(dashboard);
   });
 });
+
+describe('conversion operations (spec 112)', () => {
+  it('SHOULD map a CONVERSION_OUT with its cash part AND the counterpart', () => {
+    const { toOperation } = jest.requireActual('./investment.service');
+    const { conversionScenario } = jest.requireActual(
+      '@investment/domain/entity/mocks/investment.fixture',
+    );
+    const { origin } = conversionScenario();
+    const out = origin.operations.find((operation: { id: string }) => operation.id === 'out-1');
+
+    const mapped = toOperation({
+      conversion: {
+        assetId: 'dest',
+        cashAmount: 1500,
+        cashReferenceUnitValue: null,
+        conversionId: 'conv-1',
+        locked: true,
+        ratioFrom: out.quantity,
+        ratioTo: out.quantity,
+        ticker: 'BTHF11',
+      },
+      costRemoved: 808550,
+      event: null,
+      operation: { ...out, cashCost: 1527, gross: 1500, total: 1500 },
+      realizedResult: -27,
+    });
+
+    expect(mapped).toMatchObject({
+      cashCost: 1527,
+      conversion: { assetId: 'dest', cashAmount: 1500, locked: true, ticker: 'BTHF11' },
+      conversionCost: 808550,
+      gross: 1500,
+      quantity: '103',
+      realizedResult: -27,
+      total: 1500,
+      type: 'CONVERSION_OUT',
+    });
+  });
+
+  it('SHOULD map a CONVERSION_IN with its fraction AND the before/after numbers', () => {
+    const { toOperation } = jest.requireActual('./investment.service');
+    const { conversionScenario } = jest.requireActual(
+      '@investment/domain/entity/mocks/investment.fixture',
+    );
+    const { destination } = conversionScenario();
+    const incoming = destination.operations[0];
+
+    const mapped = toOperation({
+      costRemoved: null,
+      event: {
+        averagePriceAfter: '10.61',
+        averagePriceBefore: null,
+        costAfter: 808338,
+        costBefore: 0,
+        fractionCost: 212,
+        fractionQuantity: incoming.fractionQuantity,
+        quantityAfter: incoming.quantity,
+        quantityBefore: incoming.quantity,
+      },
+      operation: incoming,
+      realizedResult: null,
+    });
+
+    expect(mapped).toMatchObject({
+      averagePriceAfter: '10.61',
+      conversionCost: 808550,
+      fractionCost: 212,
+      fractionQuantity: '0.2',
+      quantity: '762',
+      type: 'CONVERSION_IN',
+    });
+    expect(mapped).not.toHaveProperty('gross');
+  });
+});

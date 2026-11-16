@@ -8,6 +8,15 @@
     "reason": "Writes are not measured: perf tests only read (spec 093).",
     "scenario": ""
   },
+  "DELETE /api/v1/investments/conversions/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
   "DELETE /api/v1/investments/fixed-income/adjustments/:id": {
     "indexes": null,
     "kind": "unmeasured",
@@ -88,6 +97,15 @@
     "reason": "Needs an asset with a ticker in the pinned perf dataset (spec 093); the seed gets investments in a later spec. Reads stored closes only (3 queries: asset, history range, rate).",
     "scenario": ""
   },
+  "GET /api/v1/investments/conversions/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs a conversion in the pinned perf dataset (spec 093); the seed gets investments in a later spec.",
+    "scenario": ""
+  },
   "GET /api/v1/investments/dashboard": {
     "indexes": null,
     "kind": "read",
@@ -158,6 +176,15 @@
     "reason": "Writes are not measured: perf tests only read (spec 093).",
     "scenario": ""
   },
+  "PATCH /api/v1/investments/conversions/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
   "PATCH /api/v1/investments/fixed-income/rates/:id": {
     "indexes": null,
     "kind": "unmeasured",
@@ -186,6 +213,15 @@
     "scenario": ""
   },
   "POST /api/v1/investments/assets": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "POST /api/v1/investments/assets/:id/conversions": {
     "indexes": null,
     "kind": "unmeasured",
     "maxBytes": null,

@@ -197,10 +197,20 @@ const FixedIncomeDetailApiSchema = FixedIncomeListApiSchema.extend({
   rates: z.array(FixedIncomeRateApiSchema),
 });
 
+const ConversionLinkApiSchema = z.strictObject({
+  assetId: z.uuid(),
+  conversionId: z.uuid(),
+  date: z.string(),
+  ticker: z.string().optional(),
+});
+
 export const AssetItemApiSchema = z.strictObject({
   archivedAt: z.iso.datetime().nullable(),
   assetClass: z.enum(InvestmentAssetClass),
   averageFxRate: z.string().nullable(),
+  // Spec 112 FR 17: where a destination's quotas came from / where an origin was converted to.
+  convertedFrom: z.array(ConversionLinkApiSchema).optional(),
+  convertedTo: ConversionLinkApiSchema.optional(),
   costBrl: z.number().int().nullable(),
   currency: z.string(),
   currentPriceSource: z.enum(['MANUAL', 'QUOTE']).nullable(),
@@ -241,6 +251,21 @@ export const OperationApiSchema = z.strictObject({
   averagePriceBefore: z.string().nullable().optional(),
   bonusPercent: z.string().optional(),
   bonusUnitCost: z.string().optional(),
+  // Spec 112 FR 22: the stored snapshot (`costOut` / `costIn`), the cash share of the cost and the counterpart.
+  cashCost: z.number().int().optional(),
+  conversion: z
+    .strictObject({
+      assetId: z.uuid(),
+      cashAmount: z.number().int().optional(),
+      cashReferenceUnitValue: z.string().optional(),
+      conversionId: z.uuid(),
+      locked: z.boolean(),
+      ratioFrom: z.string(),
+      ratioTo: z.string(),
+      ticker: z.string().optional(),
+    })
+    .optional(),
+  conversionCost: z.number().int().optional(),
   costRemoved: z.number().int().nullable(),
   date: z.string(),
   fees: z.array(OperationFeeApiSchema),
