@@ -275,3 +275,96 @@ describe('computeFractionTotals (spec 108 FR 16)', () => {
     expect(() => computeFractionTotals(10, [11])).toThrow(FeesHigherThanSaleError);
   });
 });
+
+describe('calculatePosition conversions (spec 112)', () => {
+  function buy(quantity: string, total: number, date = '2026-01-10'): PositionOperation {
+    return {
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+      date,
+      id: `buy-${date}-${quantity}`,
+      quantity: Decimal8.parse(quantity),
+      total,
+      type: InvestmentOperationType.BUY,
+    };
+  }
+  function conversionIn(id = 'in', date = '2026-10-15'): PositionOperation {
+    return {
+      conversion: {
+        costIn: 808550,
+        fractionCost: 212,
+        fractionQuantity: Decimal8.parse('0.2'),
+        kind: 'IN',
+      },
+      createdAt: new Date('2026-10-16T00:00:00Z'),
+      date,
+      id,
+      quantity: Decimal8.parse('762'),
+      total: 0,
+      type: InvestmentOperationType.CONVERSION_IN,
+    };
+  }
+  function conversionOut(total = 0, cashCost = 0): PositionOperation {
+    return {
+      conversion: { cashCost, kind: 'OUT' },
+      createdAt: new Date('2026-10-16T00:00:00Z'),
+      date: '2026-10-15',
+      id: 'out',
+      quantity: Decimal8.parse('103'),
+      total,
+      type: InvestmentOperationType.CONVERSION_OUT,
+    };
+  }
+
+  it('SHOULD zero the origin on the OUT without a realized result', () => {
+    const result = calculatePosition([buy('103', 808550), conversionOut()]);
+
+    expect(result.quantity.isZero()).toBe(true);
+    expect(result.cost).toBe(0);
+    expect(result.realizedResult).toBe(0);
+  });
+
+  it('SHOULD book cash minus cash cost as the realized result of the OUT', () => {
+    const result = calculatePosition([buy('103', 808550), conversionOut(1500, 1527)]);
+
+    expect(result.realizedResult).toBe(-27);
+  });
+
+  it('SHOULD add the IN snapshot to the destination AND list the pending fraction', () => {
+    const result = calculatePosition([buy('50', 51000), conversionIn()]);
+
+    expect(result.quantity.toString()).toBe('812');
+    expect(result.cost).toBe(51000 + 808550 - 212);
+    expect(result.pendingFractions).toEqual([
+      expect.objectContaining({ cost: 212, eventId: 'in', quantity: Decimal8.parse('0.2') }),
+    ]);
+  });
+
+  it('SHOULD realize the fraction sale of an IN against its stored fraction cost', () => {
+    const sale: PositionOperation = {
+      createdAt: new Date('2026-10-21T00:00:00Z'),
+      date: '2026-10-20',
+      fractionOfOperationId: 'in',
+      id: 'sale',
+      quantity: Decimal8.parse('0.2'),
+      total: 230,
+      type: InvestmentOperationType.SELL,
+    };
+    const result = calculatePosition([buy('50', 51000), conversionIn(), sale]);
+
+    expect(result.pendingFractions).toEqual([]);
+    expect(result.realizedResult).toBe(230 - 212);
+  });
+
+  it('SHOULD report no position when the OUT meets an empty origin', () => {
+    const result = calculatePosition([conversionOut()]);
+
+    expect(result.noPositionAt).toEqual({ date: '2026-10-15', operationId: 'out' });
+  });
+
+  it('SHOULD sort the conversion after the BUY of the same date', () => {
+    const result = calculatePosition([conversionOut(), buy('103', 808550, '2026-10-15')]);
+
+    expect(result.noPositionAt).toBeNull();
+    expect(result.quantity.isZero()).toBe(true);
+  });
+});

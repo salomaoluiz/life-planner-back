@@ -32,6 +32,8 @@ export enum InvestmentIncomeType {
 export enum InvestmentOperationType {
   BONUS = 'BONUS',
   BUY = 'BUY',
+  CONVERSION_IN = 'CONVERSION_IN',
+  CONVERSION_OUT = 'CONVERSION_OUT',
   REVERSE_SPLIT = 'REVERSE_SPLIT',
   SELL = 'SELL',
   SPLIT = 'SPLIT',
@@ -84,5 +86,13 @@ export function isEventType(type: InvestmentOperationType): boolean {
     type === InvestmentOperationType.SPLIT ||
     type === InvestmentOperationType.REVERSE_SPLIT ||
     type === InvestmentOperationType.BONUS
+  );
+}
+
+// Spec 112 FR 8: the two operations of a conversion, one on each asset.
+export function isConversionType(type: InvestmentOperationType): boolean {
+  return (
+    type === InvestmentOperationType.CONVERSION_OUT ||
+    type === InvestmentOperationType.CONVERSION_IN
   );
 }

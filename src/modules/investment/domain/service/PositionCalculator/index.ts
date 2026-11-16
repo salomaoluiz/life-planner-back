@@ -1,5 +1,5 @@
 import { EventData, OperationEntity } from '@investment/domain/entity/OperationEntity';
-import { InvestmentOperationType, isEventType } from '@investment/domain/enum';
+import { InvestmentOperationType, isConversionType, isEventType } from '@investment/domain/enum';
 import {
   applyBonus,
   applySplit,
@@ -18,7 +18,12 @@ export interface PendingFraction {
   eventId: string;
   quantity: Decimal8;
 }
+// Spec 112 FR 8-12: the stored side of a conversion. The OUT takes the running position; the IN adds its snapshot.
+export type ConversionLeg =
+  | { cashCost: number; kind: 'OUT' }
+  | { costIn: number; fractionCost: number; fractionQuantity: Decimal8; kind: 'IN' };
 export interface PositionOperation {
+  conversion?: ConversionLeg | null;
   createdAt: Date;
   date: string;
   event?: EventData | null;
@@ -115,6 +120,47 @@ export function calculatePosition(
       continue;
     }
 
+    if (isConversionType(operation.type) && operation.conversion) {
+      if (operation.conversion.kind === 'OUT') {
+        if (quantity.isZero()) {
+          return finish(null, { date: operation.date, operationId: operation.id });
+        }
+
+        const result = operation.total > 0 ? operation.total - operation.conversion.cashCost : 0;
+
+        perOperation.set(operation.id, { costRemoved: cost, realizedResult: result });
+        realized += result;
+        quantity = Decimal8.zero();
+        cost = 0;
+        continue;
+      }
+
+      const leg = operation.conversion;
+      const quantityBefore = quantity;
+      const costBefore = cost;
+
+      quantity = quantity.plus(operation.quantity);
+      cost += leg.costIn - leg.fractionCost;
+      perEvent.set(operation.id, {
+        costAfter: cost,
+        costBefore,
+        fractionCost: leg.fractionCost,
+        fractionQuantity: leg.fractionQuantity,
+        quantityAfter: quantity,
+        quantityBefore,
+      });
+
+      if (leg.fractionQuantity.isPositive()) {
+        pending.set(operation.id, {
+          cost: leg.fractionCost,
+          date: operation.date,
+          eventId: operation.id,
+          quantity: leg.fractionQuantity,
+        });
+      }
+      continue;
+    }
+
     if (operation.fractionOfOperationId) {
       const fractionCost = perEvent.get(operation.fractionOfOperationId)?.fractionCost ?? 0;
       const result = operation.total - fractionCost;
@@ -148,10 +194,22 @@ export function calculatePosition(
 export function toPositionOperation(
   operation: Pick<
     OperationEntity,
-    'createdAt' | 'date' | 'event' | 'fractionOfOperationId' | 'id' | 'quantity' | 'total' | 'type'
+    | 'cashCost'
+    | 'conversionCost'
+    | 'createdAt'
+    | 'date'
+    | 'event'
+    | 'fractionCost'
+    | 'fractionOfOperationId'
+    | 'fractionQuantity'
+    | 'id'
+    | 'quantity'
+    | 'total'
+    | 'type'
   >,
 ): PositionOperation {
   return {
+    conversion: conversionLegOf(operation),
     createdAt: operation.createdAt,
     date: operation.date,
     event: operation.event,
@@ -209,6 +267,25 @@ function applyEvent(event: EventData, quantity: Decimal8, cost: number, step: Un
     ? applySplit({ cost, quantity, ratioFrom: event.ratioFrom, ratioTo: event.ratioTo, step })
     : applyBonus({ cost, percent: event.percent, quantity, step, unitCost: event.unitCost });
 }
+function conversionLegOf(
+  operation: Pick<
+    OperationEntity,
+    'cashCost' | 'conversionCost' | 'fractionCost' | 'fractionQuantity' | 'type'
+  >,
+): ConversionLeg | null {
+  if (operation.type === InvestmentOperationType.CONVERSION_OUT) {
+    return { cashCost: operation.cashCost ?? 0, kind: 'OUT' };
+  }
+
+  return operation.type === InvestmentOperationType.CONVERSION_IN
+    ? {
+        costIn: operation.conversionCost ?? 0,
+        fractionCost: operation.fractionCost ?? 0,
+        fractionQuantity: operation.fractionQuantity ?? Decimal8.zero(),
+        kind: 'IN',
+      }
+    : null;
+}
 // Same day: BUY/SELL first, then events, then fraction sales (they need the fraction cost of the event).
 function compareOperations(a: PositionOperation, b: PositionOperation): number {
   if (a.date !== b.date) {
@@ -234,5 +311,5 @@ function groupOf(operation: PositionOperation): number {
     return 2;
   }
 
-  return isEventType(operation.type) ? 1 : 0;
+  return isEventType(operation.type) || isConversionType(operation.type) ? 1 : 0;
 }

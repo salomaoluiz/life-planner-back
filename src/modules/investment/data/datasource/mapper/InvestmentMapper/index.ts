@@ -40,9 +40,13 @@ export interface EventColumns {
 }
 // The columns the position calculator reads from an operation row.
 export interface PositionColumns extends EventColumns {
+  cash_cost: null | number;
+  conversion_cost: null | number;
   created_at: Date;
   date: Date;
+  fraction_cost: null | number;
   fraction_of_operation_id: null | string;
+  fraction_quantity: Dec | null;
   id: string;
   quantity: Dec | null;
   total: null | number;
@@ -52,9 +56,13 @@ export interface PositionColumns extends EventColumns {
 export const POSITION_SELECT = {
   bonus_percent: true,
   bonus_unit_cost: true,
+  cash_cost: true,
+  conversion_cost: true,
   created_at: true,
   date: true,
+  fraction_cost: true,
   fraction_of_operation_id: true,
+  fraction_quantity: true,
   id: true,
   quantity: true,
   ratio_from: true,
@@ -106,6 +114,9 @@ export class InvestmentMapper {
     return {
       accountId: row.account_id,
       assetId: row.asset_id,
+      cashCost: row.cash_cost,
+      conversionCost: row.conversion_cost,
+      conversionId: row.conversion_id,
       createdAt: row.created_at,
       date: InvestmentMapper.toCalendarDate(row.date),
       event: InvestmentMapper.toEvent(row),
@@ -117,7 +128,11 @@ export class InvestmentMapper {
         kind: InvestmentFeeKind[fee.kind],
       })),
       feesTotal: row.fees_total ?? 0,
+      fractionCost: row.fraction_cost,
       fractionOfOperationId: row.fraction_of_operation_id,
+      fractionQuantity: row.fraction_quantity
+        ? InvestmentMapper.toDecimal(row.fraction_quantity)
+        : null,
       fxRate: row.fx_rate ? row.fx_rate.toFixed(6) : null,
       generateTransaction: row.generate_transaction,
       gross: row.gross ?? 0,
@@ -157,7 +172,7 @@ export class InvestmentMapper {
 
   // The calculator input from a raw operation row (datasource transactions select only these columns).
   static toPositionOperation(row: PositionColumns): PositionOperation {
-    return {
+    const operation = {
       createdAt: row.created_at,
       date: InvestmentMapper.toCalendarDate(row.date),
       event: InvestmentMapper.toEvent(row) ?? undefined,
@@ -166,6 +181,11 @@ export class InvestmentMapper {
       quantity: row.quantity ? InvestmentMapper.toDecimal(row.quantity) : Decimal8.zero(),
       total: row.total ?? 0,
       type: InvestmentOperationType[row.type],
+    };
+
+    return {
+      ...operation,
+      conversion: toConversionLeg(row, operation.type),
     };
   }
 
@@ -205,4 +225,25 @@ export class InvestmentMapper {
       unitPrice: InvestmentMapper.toDecimal(row.unit_price),
     };
   }
+}
+
+// Spec 112: the stored snapshot of a conversion row, null for every other type.
+function toConversionLeg(
+  row: PositionColumns,
+  type: InvestmentOperationType,
+): PositionOperation['conversion'] {
+  if (type === InvestmentOperationType.CONVERSION_OUT) {
+    return { cashCost: row.cash_cost ?? 0, kind: 'OUT' };
+  }
+
+  return type === InvestmentOperationType.CONVERSION_IN
+    ? {
+        costIn: row.conversion_cost ?? 0,
+        fractionCost: row.fraction_cost ?? 0,
+        fractionQuantity: row.fraction_quantity
+          ? InvestmentMapper.toDecimal(row.fraction_quantity)
+          : Decimal8.zero(),
+        kind: 'IN',
+      }
+    : null;
 }
