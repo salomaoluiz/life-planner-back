@@ -17,6 +17,10 @@ export function bucketFor(from: string, to: string): DashboardBucket {
 
   return days <= MAX_WEEK_SPAN ? 'WEEK' : 'MONTH';
 }
+// The last day of the bucket that contains `date` (not clipped).
+export function bucketEndOf(date: string, bucket: DashboardBucket): string {
+  return endOf(date, bucket);
+}
 // The last day of every bucket in [from, to]; the last bucket is clipped to `to` (the value "at the period end").
 export function bucketEnds(from: string, to: string, bucket: DashboardBucket): string[] {
   const ends: string[] = [];

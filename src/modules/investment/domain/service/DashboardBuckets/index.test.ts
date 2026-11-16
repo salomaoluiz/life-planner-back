@@ -1,4 +1,4 @@
-import { bucketEnds, bucketFor, incomeBucketEnds } from './index';
+import { bucketEndOf, bucketEnds, bucketFor, incomeBucketEnds } from './index';
 
 describe('bucketFor', () => {
   it.each([
@@ -55,5 +55,14 @@ describe('incomeBucketEnds', () => {
   it('SHOULD use weeks for 1M AND 3M, months above', () => {
     expect(incomeBucketEnds('2026-11-01', '2026-11-04')).toEqual(['2026-11-01', '2026-11-04']);
     expect(incomeBucketEnds('2025-12-01', '2026-11-04')).toHaveLength(12);
+  });
+});
+
+describe('bucketEndOf', () => {
+  it('SHOULD give the natural end of the bucket that contains the date', () => {
+    expect(bucketEndOf('2026-11-04', 'MONTH')).toBe('2026-11-30');
+    expect(bucketEndOf('2026-11-04', 'WEEK')).toBe('2026-11-08');
+    expect(bucketEndOf('2026-11-08', 'WEEK')).toBe('2026-11-08');
+    expect(bucketEndOf('2026-11-04', 'DAY')).toBe('2026-11-04');
   });
 });

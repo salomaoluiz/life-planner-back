@@ -123,13 +123,14 @@ export function realizedInPeriod(
       sales += 1;
     }
 
-    cents += input.asset.currency === 'USD' ? convertSigned(native, rateOf(operation, fx)) : native;
+    cents += input.asset.currency === 'USD' ? convertToBrl(native, rateOf(operation, fx)) : native;
   }
 
   return { cents, sales };
 }
 
-function convertSigned(cents: number, rate: null | string): number {
+// BRL cents of foreign cents; `null` rate gives 0 (nothing invented). Negative amounts keep their sign.
+export function convertToBrl(cents: number, rate: null | string): number {
   if (rate === null) {
     return 0;
   }
@@ -140,6 +141,7 @@ function convertSigned(cents: number, rate: null | string): number {
 
   return cents < 0 ? -converted : converted;
 }
+
 function newestFirst(operations: OperationEntity[]): OperationEntity[] {
   return [...operations].sort(
     (a, b) =>
@@ -155,6 +157,10 @@ function positionOf(
   return calculatePosition(operations.map(toPositionOperation), { step: unitStepOf(assetClass) });
 }
 // FR 6: a manual valuation dated on or after the latest close wins; before any close the latest operation price.
+export function rateAt(date: string, fx: FxCurve): null | string {
+  return latestOnOrBefore(fx.rates, date)?.rate ?? fx.current;
+}
+
 function priceAt(
   input: ValuationInput,
   operations: OperationEntity[],
@@ -188,9 +194,6 @@ function priceAt(
     kind: input.asset.ticker ? 'QUOTE' : 'MANUAL',
     unitPrice: traded.unitPrice,
   };
-}
-function rateAt(date: string, fx: FxCurve): null | string {
-  return latestOnOrBefore(fx.rates, date)?.rate ?? fx.current;
 }
 function rateOf(operation: OperationEntity, fx: FxCurve): null | string {
   return operation.fxRate ?? rateAt(operation.date, fx);
