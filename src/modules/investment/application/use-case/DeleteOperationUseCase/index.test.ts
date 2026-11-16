@@ -113,3 +113,14 @@ describe('deleting an event (spec 108 FR 21)', () => {
     await expect(setup.execute({ ...base, id: 'event-1' })).rejects.toMatchObject({ status: 422 });
   });
 });
+
+it('SHOULD answer 422 USE_CONVERSION_ROUTE for a conversion operation (spec 112)', async () => {
+  spies.findOperationById.mockResolvedValue(
+    operationFixture({ assetId: mocks.asset.id, type: 'CONVERSION_OUT' as never }),
+  );
+
+  await expect(setup.execute(base)).rejects.toMatchObject({
+    response: { code: 'USE_CONVERSION_ROUTE', message: 'Edit the conversion instead.' },
+  });
+  expect(spies.deleteOperation).not.toHaveBeenCalled();
+});

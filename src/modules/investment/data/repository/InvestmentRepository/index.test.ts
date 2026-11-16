@@ -466,7 +466,7 @@ describe('conversions (spec 112)', () => {
     id: 'conv-1',
     ratio_from: new Prisma.Decimal('1'),
     ratio_to: new Prisma.Decimal('7.4'),
-    to: { ticker: 'BTHF11' },
+    to: { conversion_out: null, ticker: 'BTHF11' },
     to_asset_id: 'b',
     updated_at: new Date(),
   };

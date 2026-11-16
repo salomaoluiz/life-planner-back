@@ -2,6 +2,7 @@ import { Inject, NotFoundException } from '@nestjs/common';
 
 import { AssetAccessInput, AssetAccessSchema } from '@investment/application/dto/AssetAccess';
 import { AssetDetailView, toAssetDetailView } from '@investment/application/service/AssetView';
+import { withConversions } from '@investment/application/service/ConversionView';
 import { QuoteContextLoader } from '@investment/application/service/QuoteContext';
 import { hasOwnerAccess } from '@investment/domain/entity/OwnerAccess';
 import { IInvestmentRepository } from '@investment/domain/repository';
@@ -24,6 +25,11 @@ export class GetAssetByIdUseCase implements UseCaseWithParams<AssetAccessInput, 
       throw new NotFoundException();
     }
 
-    return toAssetDetailView(asset, await this.quotes.load([asset]));
+    const [context, conversions] = await Promise.all([
+      this.quotes.load([asset]),
+      this.repository.findConversionsByAssetIds([asset.id]),
+    ]);
+
+    return withConversions(asset, toAssetDetailView(asset, context), conversions);
   }
 }

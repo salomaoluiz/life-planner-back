@@ -7,6 +7,7 @@ import { TickerValidator } from '@investment/application/service/TickerValidator
 import { ApproveEventSuggestionUseCase } from '@investment/application/use-case/ApproveEventSuggestionUseCase';
 import { ApproveIncomeSuggestionUseCase } from '@investment/application/use-case/ApproveIncomeSuggestionUseCase';
 import { CreateAssetUseCase } from '@investment/application/use-case/CreateAssetUseCase';
+import { CreateConversionUseCase } from '@investment/application/use-case/CreateConversionUseCase';
 import { CreateEventUseCase } from '@investment/application/use-case/CreateEventUseCase';
 import { CreateFixedIncomeContributionUseCase } from '@investment/application/use-case/CreateFixedIncomeContributionUseCase';
 import { CreateFixedIncomeRateUseCase } from '@investment/application/use-case/CreateFixedIncomeRateUseCase';
@@ -16,6 +17,7 @@ import { CreateFractionSaleUseCase } from '@investment/application/use-case/Crea
 import { CreateIncomeUseCase } from '@investment/application/use-case/CreateIncomeUseCase';
 import { CreateOperationUseCase } from '@investment/application/use-case/CreateOperationUseCase';
 import { DeleteAssetUseCase } from '@investment/application/use-case/DeleteAssetUseCase';
+import { DeleteConversionUseCase } from '@investment/application/use-case/DeleteConversionUseCase';
 import { DeleteFixedIncomeAdjustmentUseCase } from '@investment/application/use-case/DeleteFixedIncomeAdjustmentUseCase';
 import { DeleteFixedIncomeRateUseCase } from '@investment/application/use-case/DeleteFixedIncomeRateUseCase';
 import { DeleteIncomeUseCase } from '@investment/application/use-case/DeleteIncomeUseCase';
@@ -26,6 +28,7 @@ import { FindIncomeByTransactionIdUseCase } from '@investment/application/use-ca
 import { FindOperationByTransactionIdUseCase } from '@investment/application/use-case/FindOperationByTransactionIdUseCase';
 import { GetAssetByIdUseCase } from '@investment/application/use-case/GetAssetByIdUseCase';
 import { GetAssetsUseCase } from '@investment/application/use-case/GetAssetsUseCase';
+import { GetConversionByIdUseCase } from '@investment/application/use-case/GetConversionByIdUseCase';
 import { GetEventSuggestionsUseCase } from '@investment/application/use-case/GetEventSuggestionsUseCase';
 import { GetIncomeByIdUseCase } from '@investment/application/use-case/GetIncomeByIdUseCase';
 import { GetIncomeDefaultsUseCase } from '@investment/application/use-case/GetIncomeDefaultsUseCase';
@@ -46,6 +49,7 @@ import { RejectIncomeSuggestionUseCase } from '@investment/application/use-case/
 import { SearchTickersUseCase } from '@investment/application/use-case/SearchTickersUseCase';
 import { SimulateFixedIncomeUseCase } from '@investment/application/use-case/SimulateFixedIncomeUseCase';
 import { UpdateAssetUseCase } from '@investment/application/use-case/UpdateAssetUseCase';
+import { UpdateConversionUseCase } from '@investment/application/use-case/UpdateConversionUseCase';
 import { UpdateFixedIncomeRateUseCase } from '@investment/application/use-case/UpdateFixedIncomeRateUseCase';
 import { UpdateIncomeUseCase } from '@investment/application/use-case/UpdateIncomeUseCase';
 import { UpdateOperationUseCase } from '@investment/application/use-case/UpdateOperationUseCase';
@@ -65,8 +69,12 @@ const services = [HistoryBackfill, QuoteContextLoader, QuoteFetcher, TickerValid
 const useCases = [
   ApproveEventSuggestionUseCase,
   ApproveIncomeSuggestionUseCase,
+  CreateConversionUseCase,
   CreateEventUseCase,
   CreateFractionSaleUseCase,
+  DeleteConversionUseCase,
+  GetConversionByIdUseCase,
+  UpdateConversionUseCase,
   CreateIncomeUseCase,
   DeleteIncomeUseCase,
   FindIncomeByTransactionIdUseCase,

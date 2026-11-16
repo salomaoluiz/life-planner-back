@@ -19,6 +19,15 @@ import { emptyContext, QuoteContext, quoteKey } from '../QuoteContext';
 import { QuoteView, toQuoteView } from '../QuoteView';
 import { todayInSaoPaulo } from '../Today';
 
+// Spec 112 FR 17: where an asset's conversion points to (the origin side) or comes from (the destination side).
+export interface ConversionLink {
+  assetId: string;
+  conversionId: string;
+  date: string;
+  ticker: null | string;
+}
+// Spec 112 FR 22: the conversion data of a CONVERSION_OUT / CONVERSION_IN operation.
+// Spec 112 FR 22: the conversion data of a CONVERSION_OUT / CONVERSION_IN operation.
 export interface AssetDetailView extends AssetView {
   operations: OperationView[];
   valuations: ValuationEntity[];
@@ -47,6 +56,9 @@ export interface AssetPosition {
 }
 export interface AssetView {
   asset: AssetEntity;
+  // Spec 112 FR 17: set on the asset reads (detail, list, conversion results).
+  convertedFrom?: ConversionLink[];
+  convertedTo?: ConversionLink | null;
   // Spec 105: the computed numbers of a calculated title, null for any other asset.
   fixedIncome: FixedIncomeView | null;
   market: AssetMarket;
@@ -59,7 +71,19 @@ export type EventResult = {
   averagePriceAfter: null | string;
   averagePriceBefore: null | string;
 } & EventStep;
+export interface OperationConversion {
+  assetId: string;
+  cashAmount: null | number;
+  cashReferenceUnitValue: Decimal8 | null;
+  conversionId: string;
+  locked: boolean;
+  ratioFrom: Decimal8;
+  ratioTo: Decimal8;
+  ticker: null | string;
+}
 export interface OperationView {
+  // Spec 112 FR 22: the counterpart, ratio and cash part of a conversion operation.
+  conversion?: OperationConversion;
   costRemoved: null | number;
   // Spec 108 FR 12: the before/after numbers of an event, null for any other operation.
   event: EventResult | null;

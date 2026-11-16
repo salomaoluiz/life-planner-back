@@ -6,7 +6,12 @@ import {
 } from '@nestjs/common';
 
 import { quoteSpies } from '@investment/application/service/QuoteContext/index.mocks';
-import { InvestmentAssetStatus, InvestmentFeeKind } from '@investment/domain/enum';
+import { operationFixture } from '@investment/domain/entity/mocks/investment.fixture';
+import {
+  InvestmentAssetStatus,
+  InvestmentFeeKind,
+  InvestmentOperationType,
+} from '@investment/domain/enum';
 import { ValidationError } from '@shared/domain/error/ValidationError';
 import { Decimal8 } from '@shared/infra/decimal';
 
@@ -158,5 +163,30 @@ it('SHOULD answer 422 for an archived asset', async () => {
 it('SHOULD answer 400 for a finance entry without an account', async () => {
   await expect(setup.execute({ ...input, accountId: null })).rejects.toBeInstanceOf(
     ValidationError,
+  );
+});
+
+it('SHOULD sell the fraction left by a conversion (spec 112 FR 11)', async () => {
+  const incoming = operationFixture({
+    assetId: mocks.asset.id,
+    conversionCost: 808550,
+    conversionId: 'conv-1',
+    date: '2026-03-10',
+    fractionCost: 212,
+    fractionQuantity: Decimal8.parse('0.2'),
+    id: 'event-1',
+    quantity: Decimal8.parse('762'),
+    total: 0,
+    type: InvestmentOperationType.CONVERSION_IN,
+  });
+  const detail = { ...mocks.detail, operations: [mocks.bought, incoming] };
+
+  spies.findOperationById.mockResolvedValue(incoming);
+  readsAsset(detail, { ...detail, operations: [...detail.operations, mocks.sale] });
+
+  await setup.execute(input);
+
+  expect(spies.writeOperation).toHaveBeenCalledWith(
+    expect.objectContaining({ fractionOfOperationId: 'event-1', quantity: Decimal8.parse('0.2') }),
   );
 });

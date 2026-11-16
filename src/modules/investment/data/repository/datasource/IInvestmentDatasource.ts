@@ -22,7 +22,7 @@ import { OwnerAccess } from '@investment/domain/entity/OwnerAccess';
 
 export type ConversionRow = {
   from: { ticker: null | string };
-  to: { ticker: null | string };
+  to: { conversion_out: { id: string } | null; ticker: null | string };
 } & InvestmentConversion;
 export interface CreateAssetDatasourceParams {
   asset_class: InvestmentAssetClass;

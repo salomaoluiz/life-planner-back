@@ -4,6 +4,7 @@ import {
   OperationAccessInput,
   OperationAccessSchema,
 } from '@investment/application/dto/OperationInput';
+import { assertNotConversionOperation } from '@investment/application/service/ConversionWrite';
 import { mapFixedIncomeErrors } from '@investment/application/service/FixedIncomeRules';
 import {
   assertLinkedAccountChangeable,
@@ -30,6 +31,7 @@ export class DeleteOperationUseCase implements UseCaseWithParams<OperationAccess
       throw new NotFoundException();
     }
 
+    assertNotConversionOperation(operation);
     await loadWritableAsset(this.repository, found.id, input.accessibleOwners);
     await assertLinkedAccountChangeable(
       this.repository,

@@ -125,3 +125,41 @@ describe('corporate events (spec 108 FR 32)', () => {
     expect(eventSpies.countPendingByAsset).not.toHaveBeenCalled();
   });
 });
+
+it('SHOULD add convertedTo to the archived list AND skip the conversions query for the active one (spec 112)', async () => {
+  const row = listRowFixture({ ticker: 'BCFF11' });
+
+  spies.findAssetsByOwners.mockResolvedValue([row]);
+  spies.findConversionsByAssetIds.mockResolvedValue([
+    {
+      cashAmount: null,
+      cashReferenceUnitValue: null,
+      date: '2026-10-15',
+      fromAssetId: row.id,
+      fromTicker: 'BCFF11',
+      id: 'conv-1',
+      locked: false,
+      ratioFrom: Decimal8.parse('1'),
+      ratioTo: Decimal8.parse('7.4'),
+      toAssetId: 'dest',
+      toTicker: 'BTHF11',
+    },
+  ]);
+
+  const archived = await setup.execute({
+    accessibleOwners: mocks.owners,
+    status: InvestmentAssetStatus.ARCHIVED,
+  });
+
+  expect(archived[0].convertedTo).toEqual({
+    assetId: 'dest',
+    conversionId: 'conv-1',
+    date: '2026-10-15',
+    ticker: 'BTHF11',
+  });
+
+  spies.findConversionsByAssetIds.mockClear();
+  await setup.execute({ accessibleOwners: mocks.owners });
+
+  expect(spies.findConversionsByAssetIds).not.toHaveBeenCalled();
+});

@@ -59,7 +59,7 @@ import { Database } from '@shared/infra/db/Database';
 
 const CONVERSION_INCLUDE = {
   from: { select: { ticker: true } },
-  to: { select: { ticker: true } },
+  to: { select: { conversion_out: { select: { id: true } }, ticker: true } },
 } as const;
 const OPERATION_ORDER = [{ date: 'desc' }, { created_at: 'desc' }, { id: 'desc' }] as const;
 

@@ -121,6 +121,7 @@ export class InvestmentMapper {
       fromAssetId: row.from_asset_id,
       fromTicker: row.from.ticker,
       id: row.id,
+      locked: row.to.conversion_out !== null,
       ratioFrom: InvestmentMapper.toDecimal(row.ratio_from),
       ratioTo: InvestmentMapper.toDecimal(row.ratio_to),
       toAssetId: row.to_asset_id,

@@ -48,7 +48,7 @@ export class CreateFractionSaleUseCase implements UseCaseWithParams<
 
     const asset = await loadWritableAsset(this.repository, found.id, input.accessibleOwners);
 
-    if (!isEventType(event.type)) {
+    if (!isEventType(event.type) && event.type !== InvestmentOperationType.CONVERSION_IN) {
       throw new UnprocessableEntityException('This operation has no fraction to sell');
     }
     if (found.operations.some((operation) => operation.fractionOfOperationId === event.id)) {

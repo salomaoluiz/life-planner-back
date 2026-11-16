@@ -6,6 +6,7 @@ import {
   UpdateOperationInput,
   UpdateOperationSchema,
 } from '@investment/application/dto/OperationInput';
+import { assertNotConversionOperation } from '@investment/application/service/ConversionWrite';
 import { persistEvent } from '@investment/application/service/EventRules';
 import {
   assertRatesCoverContributions,
@@ -53,6 +54,8 @@ export class UpdateOperationUseCase implements UseCaseWithParams<
     if (!operation || !found || !hasOwnerAccess(input.accessibleOwners, found)) {
       throw new NotFoundException();
     }
+
+    assertNotConversionOperation(operation);
 
     const asset = await loadWritableAsset(this.repository, found.id, input.accessibleOwners);
 

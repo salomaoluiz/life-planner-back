@@ -405,3 +405,15 @@ describe('events and fraction sales (spec 108)', () => {
     expect(spies.writeOperation.mock.calls[0][0].unitPrice.toString()).toBe('0');
   });
 });
+
+it('SHOULD answer 422 USE_CONVERSION_ROUTE for a conversion operation (spec 112)', async () => {
+  spies.findOperationById.mockResolvedValue(
+    operationFixture({ assetId: mocks.asset.id, type: InvestmentOperationType.CONVERSION_IN }),
+  );
+  spies.findAssetById.mockResolvedValue(mocks.detail);
+
+  await expect(setup.execute({ ...base, date: '2026-06-11' })).rejects.toMatchObject({
+    response: { code: 'USE_CONVERSION_ROUTE' },
+  });
+  expect(spies.writeOperation).not.toHaveBeenCalled();
+});

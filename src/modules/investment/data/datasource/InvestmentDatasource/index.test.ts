@@ -1011,7 +1011,10 @@ describe('conversions (spec 112)', () => {
     await setup.findConversionsByAssetIds(['a', 'b']);
 
     expect(spies.conversionFindMany).toHaveBeenCalledWith({
-      include: { from: { select: { ticker: true } }, to: { select: { ticker: true } } },
+      include: {
+        from: { select: { ticker: true } },
+        to: { select: { conversion_out: { select: { id: true } }, ticker: true } },
+      },
       where: { OR: [{ from_asset_id: { in: ['a', 'b'] } }, { to_asset_id: { in: ['a', 'b'] } }] },
     });
   });

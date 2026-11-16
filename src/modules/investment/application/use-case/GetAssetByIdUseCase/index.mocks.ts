@@ -30,6 +30,7 @@ export let setup: GetAssetByIdUseCase;
 
 beforeEach(async () => {
   jest.resetAllMocks();
+  spies.findConversionsByAssetIds.mockResolvedValue([]);
 
   const module = await Test.createTestingModule({
     providers: [
