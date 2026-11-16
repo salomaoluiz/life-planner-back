@@ -7,7 +7,7 @@ import { TickerValidator } from './index';
 
 export const spies = {
   backfill: { queue: jest.fn() },
-  brapi: { getQuotes: jest.fn() },
+  brapi: { getKinds: jest.fn(), getQuotes: jest.fn() },
   fetcher: { save: jest.fn() },
   finnhub: { getQuotes: jest.fn() },
 };
