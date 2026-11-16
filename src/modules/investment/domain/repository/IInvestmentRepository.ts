@@ -76,6 +76,8 @@ export type IInvestmentRepository = {
     transactionId: string,
   ): Promise<{ assetId: string; operationId: string } | undefined>;
   findValuationById(id: string): Promise<undefined | ValuationEntity>;
+  // Spec 110: the valuations of the assets, oldest first, one list per requested asset (empty when none).
+  findValuationsByAssets(assetIds: string[]): Promise<Map<string, ValuationEntity[]>>;
   updateAsset(params: UpdateAssetRepositoryParams): Promise<AssetEntity>;
   upsertValuation(params: UpsertValuationRepositoryParams): Promise<ValuationEntity>;
   // One database transaction: operation, fees, linked finance row, ledger balance and the never-negative check.

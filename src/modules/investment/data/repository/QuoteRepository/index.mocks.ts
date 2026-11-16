@@ -9,6 +9,7 @@ const names = [
   'findFxHistory',
   'findFxOnOrBefore',
   'findHistory',
+  'findHistoryBatch',
   'findQuotes',
   'findTrackedSymbols',
   'hasHistory',

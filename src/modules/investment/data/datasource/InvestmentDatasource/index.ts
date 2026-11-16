@@ -308,6 +308,17 @@ export class InvestmentDatasource implements IInvestmentDatasource {
     });
   }
 
+  async findValuationsByAssetIds(assetIds: string[]): Promise<InvestmentValuation[]> {
+    if (assetIds.length === 0) {
+      return [];
+    }
+
+    return this.db.client.investmentValuation.findMany({
+      orderBy: [{ date: 'asc' }],
+      where: { asset_id: { in: assetIds } },
+    });
+  }
+
   async saveFixedIncomeTerms(params: SaveFixedIncomeTermsDatasourceParams): Promise<void> {
     await this.db.client.$transaction(async (tx) => {
       await lockAsset(tx, params.assetId);

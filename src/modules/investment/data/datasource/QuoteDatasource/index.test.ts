@@ -164,3 +164,29 @@ describe('QuoteDatasource.runExclusive', () => {
     expect(fn).not.toHaveBeenCalled();
   });
 });
+
+describe('findHistoryBatch (spec 110)', () => {
+  const from = new Date('2025-12-01T00:00:00Z');
+  const to = new Date('2026-11-04T00:00:00Z');
+
+  it('SHOULD skip the query WHEN there are no keys', async () => {
+    expect(await setup.findHistoryBatch([], from, to)).toEqual([]);
+    expect(spies.queryRaw).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD read the rows of every symbol with its seed close in ONE statement', async () => {
+    spies.queryRaw.mockResolvedValue([{ ticker: 'ITSA4' }]);
+
+    expect(await setup.findHistoryBatch([key, { market: 'US', ticker: 'AAPL' }], from, to)).toEqual(
+      [{ ticker: 'ITSA4' }],
+    );
+    expect(spies.queryRaw).toHaveBeenCalledTimes(1);
+
+    const { sql, values } = spies.queryRaw.mock.calls[0][0] as { sql: string; values: unknown[] };
+
+    expect(sql).toContain('investment_price_history');
+    // The seed: the latest close on or before `from`, so a bucket before the first row in range still has a price.
+    expect(sql).toContain('MAX(s.date)');
+    expect(values).toEqual(expect.arrayContaining([from, to, 'ITSA4', 'AAPL']));
+  });
+});

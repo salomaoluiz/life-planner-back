@@ -16,6 +16,9 @@ import { OwnerAccess } from '@investment/domain/entity/OwnerAccess';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export type CategoryRow = { scopes: FinancialCategoryScope[] } & FinancialCategory;
+export type DashboardIncomeRow = {
+  transaction: { paid: boolean | null } | null;
+} & Pick<InvestmentIncome, 'asset_id' | 'currency' | 'net_amount' | 'payment_date' | 'type'>;
 export type IIncomeDatasource = {
   countPendingSuggestions(assetId: string): Promise<number>;
   countPendingSuggestionsByAssets(assetIds: string[]): Promise<number>;
@@ -29,6 +32,8 @@ export type IIncomeDatasource = {
     keys: { market: string; ticker: string }[],
     sinceExDate: Date,
   ): Promise<InvestmentIncomeEvent[]>;
+  // Spec 110: every income of the owners' assets dated in [from, to], paid or not, scalars only.
+  findDashboardIncomes(owners: OwnerAccess[], from: Date, to: Date): Promise<DashboardIncomeRow[]>;
   findIncomeById(id: string): Promise<IncomeRow | null>;
   findIncomeByTransactionId(
     transactionId: string,

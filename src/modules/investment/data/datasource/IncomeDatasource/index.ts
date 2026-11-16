@@ -160,6 +160,20 @@ export class IncomeDatasource implements IIncomeDatasource {
   }
 
   // Keyset on `(payment_date desc, id desc)`; the caller asks for `limit + 1` rows to know if there is a next page.
+  async findDashboardIncomes(owners: OwnerAccess[], from: Date, to: Date) {
+    return this.db.client.investmentIncome.findMany({
+      select: {
+        asset_id: true,
+        currency: true,
+        net_amount: true,
+        payment_date: true,
+        transaction: { select: { paid: true } },
+        type: true,
+      },
+      where: { asset: toOwnerWhere(owners), payment_date: { gte: from, lte: to } },
+    });
+  }
+
   async findIncomes(filter: IncomeFilter): Promise<IncomeRow[]> {
     const and: Prisma.InvestmentIncomeWhereInput[] = [];
 

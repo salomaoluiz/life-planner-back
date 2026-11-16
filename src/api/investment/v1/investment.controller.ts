@@ -25,6 +25,8 @@ import {
   CreateAssetBody,
   CreateOperationApiSchema,
   CreateOperationBody,
+  InvestmentsDashboardOutput,
+  InvestmentsDashboardQuerySchema,
   InvestmentsSummaryOutput,
   InvestmentsSummaryQuerySchema,
   ListAssetsQuerySchema,
@@ -120,6 +122,20 @@ export class InvestmentController {
   }
 
   // Spec 109: one call for the home section. Declared before the `:id` routes.
+  @Get('dashboard')
+  @ZodResponse({ status: 200, type: InvestmentsDashboardOutput })
+  async dashboard(@Request() req: JwtPayload & Request, @Query() query: Record<string, unknown>) {
+    const { from, ownerId, to, today } = validate(InvestmentsDashboardQuerySchema, query);
+
+    return this.investmentService.getDashboard(
+      req.user.id,
+      toOwnerIds(ownerId) as string[],
+      from,
+      to,
+      resolveToday(today),
+    );
+  }
+
   @Get('assets/:id/price-history')
   @ZodResponse({ status: 200, type: PriceHistoryOutput })
   async priceHistory(

@@ -10,6 +10,7 @@ const names = [
   'createSuggestions',
   'deleteIncome',
   'findCategoryById',
+  'findDashboardIncomes',
   'findDefaultAccountId',
   'findEvents',
   'findIncomeById',

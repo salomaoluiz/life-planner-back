@@ -31,6 +31,7 @@ const names = [
   'findOperationsByAssetIds',
   'findValuationById',
   'findValuationsByAssetId',
+  'findValuationsByAssetIds',
   'updateAsset',
   'upsertValuation',
   'writeEvent',

@@ -2,6 +2,8 @@ import {
   AssetDetailApiSchema,
   CreateAssetApiSchema,
   CreateOperationApiSchema,
+  InvestmentsDashboardApiSchema,
+  InvestmentsDashboardQuerySchema,
   InvestmentsSummaryApiSchema,
   InvestmentsSummaryQuerySchema,
   OperationApiSchema,
@@ -217,5 +219,97 @@ describe('InvestmentsSummaryApiSchema (spec 109)', () => {
 
   it('SHOULD reject an unknown field', () => {
     expect(InvestmentsSummaryApiSchema.safeParse({ ...body, extra: 1 }).success).toBe(false);
+  });
+});
+
+describe('InvestmentsDashboardQuerySchema (spec 110)', () => {
+  const period = { from: '2025-12-01', to: '2026-11-04' };
+
+  it('SHOULD accept one owner id or many, with or without today', () => {
+    expect(InvestmentsDashboardQuerySchema.safeParse({ ownerId, ...period }).success).toBe(true);
+    expect(
+      InvestmentsDashboardQuerySchema.safeParse({
+        ownerId: [ownerId, ownerId],
+        ...period,
+        today: '2026-11-04',
+      }).success,
+    ).toBe(true);
+  });
+
+  it.each([
+    {},
+    { ownerId },
+    { from: '2025-12-01', ownerId },
+    { ...period, ownerId: [] },
+    { ...period, ownerId: 'abc' },
+    { from: '2025-13-01', ownerId, to: '2026-11-04' },
+    { ...period, ownerId, today: '04/11/2026' },
+  ])('SHOULD reject %j', (query) => {
+    expect(InvestmentsDashboardQuerySchema.safeParse(query).success).toBe(false);
+  });
+});
+
+describe('InvestmentsDashboardApiSchema (spec 110)', () => {
+  it('SHOULD accept the contract with null points AND an optional USD detail', () => {
+    const body = {
+      allocation: [
+        {
+          assetClass: 'FOREIGN_STOCK',
+          share: 0.22,
+          usd: {
+            fxRate: '5.5601',
+            resultFromAsset: 695403,
+            resultFromFx: 217228,
+            value: '7293.15',
+          },
+          value: 4055052,
+        },
+      ],
+      incomes: [
+        {
+          byType: { DIVIDEND: 2, INTEREST: 0, JCP: 1, OTHER: 0, YIELD: 3 },
+          date: '2026-11-30',
+          planned: 41000,
+          received: 128430,
+        },
+      ],
+      period: { bucket: 'MONTH', from: '2025-12-01', to: '2026-11-04' },
+      ranking: [
+        {
+          assetClass: 'FOREIGN_STOCK',
+          assetId: 'a1',
+          currency: 'USD',
+          name: 'Apple Inc.',
+          openResult: 670779,
+          openResultPercent: 0.3525,
+          share: 0.1396,
+          ticker: 'AAPL',
+          usdValue: '4628.00',
+          value: 2573200,
+          valueKind: 'QUOTE',
+        },
+      ],
+      series: [
+        { date: '2025-12-31', invested: null, marketValue: null },
+        { date: '2026-01-31', invested: 11200000, marketValue: 12000000 },
+      ],
+      summary: {
+        assetsWithoutValue: 0,
+        currentValue: 18432055,
+        historyStartsAt: null,
+        incomePlanned: 41000,
+        incomeReceived: 984620,
+        invested: 16290000,
+        openResult: 2142055,
+        openResultPercent: 0.1315,
+        operationsWithoutFxRate: 0,
+        realizedResult: 318040,
+        salesCount: 4,
+        staleQuotes: 0,
+      },
+    };
+
+    expect(InvestmentsDashboardApiSchema.safeParse(body).success).toBe(true);
+    expect(InvestmentsDashboardApiSchema.safeParse({ ...body, extra: true }).success).toBe(false);
   });
 });

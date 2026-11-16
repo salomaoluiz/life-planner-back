@@ -497,3 +497,34 @@ describe('getSummary (spec 109)', () => {
     expect(result.resultBasisPoints).toBeNull();
   });
 });
+
+describe('getDashboard (spec 110)', () => {
+  it('SHOULD resolve the readable owners AND hand the period to the use case, returning its result as is', async () => {
+    const dashboard = {
+      allocation: [],
+      incomes: [],
+      period: { bucket: 'MONTH', from: '2025-12-01', to: '2026-11-04' },
+      ranking: [],
+      series: [],
+      summary: {},
+    };
+    mocks.useCases.getInvestmentsDashboard.execute.mockResolvedValue(dashboard);
+
+    const result = await setup.getDashboard(
+      mocks.userId,
+      ['owner-1'],
+      '2025-12-01',
+      '2026-11-04',
+      '2026-11-04',
+    );
+
+    expect(mocks.useCases.getInvestmentsDashboard.execute).toHaveBeenCalledWith({
+      accessibleOwners: mocks.accessibleOwners,
+      from: '2025-12-01',
+      ownerIds: ['owner-1'],
+      to: '2026-11-04',
+      today: '2026-11-04',
+    });
+    expect(result).toBe(dashboard);
+  });
+});
