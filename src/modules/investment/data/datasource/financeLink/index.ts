@@ -13,6 +13,8 @@ export interface LinkedRow {
   value: number;
 }
 
+export const LINKED_SELECT = { account_id: true, paid: true, type: true, value: true } as const;
+
 export async function applyDeltas(
   tx: Prisma.TransactionClient,
   deltas: LedgerDelta[],
@@ -74,4 +76,19 @@ function toDeltas(totals: Map<string, number>): LedgerDelta[] {
     .filter(([, delta]) => delta !== 0)
     .map(([accountId, delta]) => ({ accountId, delta }))
     .sort((a, b) => a.accountId.localeCompare(b.accountId));
+}
+
+// The finance row of an operation as the ledger rule needs it; undefined without an account.
+export function toLinkedRow(
+  row: { account_id: null | string; type: string; value: number } | null,
+): LinkedRow | undefined {
+  if (!row || !row.account_id) {
+    return undefined;
+  }
+
+  return {
+    accountId: row.account_id,
+    type: row.type === 'INCOME' ? 'INCOME' : 'EXPENSE',
+    value: row.value,
+  };
 }

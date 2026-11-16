@@ -5,8 +5,12 @@ import {
   InvestmentFixedIncomeTerms,
   InvestmentValuation,
 } from '@db/client';
-import { OperationRow } from '@investment/data/repository/datasource/IInvestmentDatasource';
+import {
+  ConversionRow,
+  OperationRow,
+} from '@investment/data/repository/datasource/IInvestmentDatasource';
 import { AssetEntity } from '@investment/domain/entity/AssetEntity';
+import { ConversionDetail } from '@investment/domain/entity/ConversionEntity';
 import {
   FixedIncomeAdjustmentEntity,
   FixedIncomeRateEntity,
@@ -104,6 +108,24 @@ export class InvestmentMapper {
 
   static toCalendarDate(value: Date): string {
     return value.toISOString().slice(0, 10);
+  }
+
+  // Spec 112: a conversion with the tickers of both sides.
+  static toConversion(row: ConversionRow): ConversionDetail {
+    return {
+      cashAmount: row.cash_amount,
+      cashReferenceUnitValue: row.cash_reference_unit_value
+        ? InvestmentMapper.toDecimal(row.cash_reference_unit_value)
+        : null,
+      date: InvestmentMapper.toCalendarDate(row.date),
+      fromAssetId: row.from_asset_id,
+      fromTicker: row.from.ticker,
+      id: row.id,
+      ratioFrom: InvestmentMapper.toDecimal(row.ratio_from),
+      ratioTo: InvestmentMapper.toDecimal(row.ratio_to),
+      toAssetId: row.to_asset_id,
+      toTicker: row.to.ticker,
+    };
   }
 
   static toDecimal(value: { toFixed(places: number): string }): Decimal8 {

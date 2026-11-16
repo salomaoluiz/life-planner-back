@@ -693,3 +693,326 @@ describe('dashboard reads (spec 110)', () => {
     expect(spies.valuationFindMany).not.toHaveBeenCalled();
   });
 });
+
+describe('conversions (spec 112)', () => {
+  const date = new Date('2026-10-15T00:00:00Z');
+  const params = {
+    account_id: null,
+    asset_label: 'BCFF11',
+    cash_amount: null,
+    cash_reference_unit_value: null,
+    currency: 'BRL',
+    date,
+    destination: { asset_id: 'to-1' },
+    from_asset_id: 'from-1',
+    generate_transaction: false,
+    ratio_from: '1',
+    ratio_to: '7.4',
+  };
+
+  function row(overrides: Record<string, unknown>) {
+    return {
+      bonus_percent: null,
+      bonus_unit_cost: null,
+      cash_cost: null,
+      conversion_cost: null,
+      created_at: new Date('2026-01-01T00:00:00Z'),
+      date: new Date('2026-06-10T00:00:00Z'),
+      fraction_cost: null,
+      fraction_of_operation_id: null,
+      fraction_quantity: null,
+      id: 'row',
+      quantity: mocks.decimal('0'),
+      ratio_from: null,
+      ratio_to: null,
+      total: 0,
+      type: 'BUY',
+      ...overrides,
+    };
+  }
+
+  const originBuy = row({ id: 'buy', quantity: mocks.decimal('103'), total: 808550 });
+  const outRow = row({
+    conversion_cost: 808550,
+    date,
+    id: 'out',
+    quantity: mocks.decimal('103'),
+    type: 'CONVERSION_OUT',
+  });
+  const inRow = row({
+    conversion_cost: 808550,
+    date,
+    fraction_cost: 212,
+    fraction_quantity: mocks.decimal('0.2'),
+    id: 'in',
+    quantity: mocks.decimal('762'),
+    type: 'CONVERSION_IN',
+  });
+
+  beforeEach(() => {
+    spies.assetFindUnique.mockResolvedValue({ asset_class: 'BR_REIT', ticker: 'BCFF11' });
+    spies.conversionCreate.mockResolvedValue({ id: 'conv-1' });
+    spies.conversionUpdate.mockResolvedValue({ id: 'conv-1' });
+    spies.operationCreate.mockResolvedValue({ id: 'out' });
+    spies.operationUpdate.mockResolvedValue({ id: 'out' });
+    spies.operationFindMany.mockImplementation(
+      async ({ where }: { where: { asset_id: string } }) =>
+        where.asset_id === 'from-1' ? [originBuy, outRow] : [inRow],
+    );
+    // the origin read BEFORE the conversion exists has no OUT yet
+    spies.operationFindMany.mockResolvedValueOnce([originBuy]);
+  });
+
+  it('SHOULD write both operations with the stored snapshot AND archive the origin', async () => {
+    await expect(setup.writeConversion(params)).resolves.toBe('conv-1');
+
+    expect(spies.conversionCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ from_asset_id: 'from-1', to_asset_id: 'to-1' }),
+    });
+    expect(spies.operationCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        asset_id: 'from-1',
+        cash_cost: null,
+        conversion_cost: 808550,
+        quantity: '103.00000000',
+        type: 'CONVERSION_OUT',
+      }),
+    });
+    expect(spies.operationCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        asset_id: 'to-1',
+        conversion_cost: 808550,
+        fraction_cost: 212,
+        fraction_quantity: '0.20000000',
+        quantity: '762.00000000',
+        type: 'CONVERSION_IN',
+      }),
+    });
+    expect(spies.assetUpdate).toHaveBeenCalledWith({
+      data: { archived_at: expect.any(Date), status: 'ARCHIVED' },
+      where: { id: 'from-1' },
+    });
+    expect(spies.suggestionUpdateMany).toHaveBeenCalled();
+    expect(spies.eventSuggestionUpdateMany).toHaveBeenCalled();
+    expect(spies.transactionCreate).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD lock both assets in id order', async () => {
+    await setup.writeConversion(params);
+
+    const sql = spies.queryRaw.mock.calls.map((call) => JSON.stringify(call[0].values));
+
+    expect(sql.slice(0, 2)).toEqual([JSON.stringify(['from-1']), JSON.stringify(['to-1'])]);
+  });
+
+  it('SHOULD create the destination asset inside the same transaction', async () => {
+    spies.assetCreate.mockResolvedValue({ id: 'new-1' });
+
+    await setup.writeConversion({
+      ...params,
+      destination: {
+        new_asset: {
+          asset_class: 'BR_REIT',
+          currency: 'BRL',
+          name: 'Fundo Exemplo',
+          owner: 'USER',
+          owner_id: 'owner-1',
+          ticker: 'XPTO11',
+        },
+      },
+    });
+
+    expect(spies.assetCreate).toHaveBeenCalled();
+    expect(spies.conversionCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ to_asset_id: 'new-1' }),
+    });
+  });
+
+  it('SHOULD write the cash row AND move the ledger WHEN there is a cash part', async () => {
+    spies.accountFindUnique.mockResolvedValue({ owner: 'USER', owner_id: 'owner-1' });
+    spies.transactionCreate.mockResolvedValue({ id: 'tx-1' });
+
+    await setup.writeConversion({
+      ...params,
+      account_id: 'acc-1',
+      cash_amount: 1500,
+      cash_reference_unit_value: '10.4',
+      generate_transaction: true,
+    });
+
+    expect(spies.operationCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        account_id: 'acc-1',
+        cash_cost: 1527,
+        gross: 1500,
+        total: 1500,
+        type: 'CONVERSION_OUT',
+      }),
+    });
+    expect(spies.transactionCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        category_id: '00000000-0000-4000-8000-00000000000a',
+        paid: true,
+        type: 'INCOME',
+        value: 1500,
+      }),
+    });
+    expect(spies.accountUpdate).toHaveBeenCalledWith({
+      data: { ledger_balance: { increment: 1500 } },
+      where: { id: 'acc-1' },
+    });
+  });
+
+  it('SHOULD refuse AND list the operations dated after the record date', async () => {
+    spies.operationFindMany.mockReset();
+    spies.operationFindMany.mockResolvedValue([
+      originBuy,
+      row({ date: new Date('2026-11-01T00:00:00Z'), id: 'late', quantity: mocks.decimal('3') }),
+    ]);
+
+    await expect(setup.writeConversion(params)).rejects.toMatchObject({
+      date: '2026-10-15',
+      operations: [{ date: '2026-11-01', id: 'late', type: 'BUY' }],
+    });
+    expect(spies.operationCreate).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD refuse a conversion WHEN the origin holds nothing on the date', async () => {
+    spies.operationFindMany.mockReset();
+    spies.operationFindMany.mockResolvedValue([]);
+
+    await expect(setup.writeConversion(params)).rejects.toBeInstanceOf(NoPositionError);
+  });
+
+  it('SHOULD rewrite the snapshot in place AND keep the archive WHEN editing', async () => {
+    spies.conversionFindUnique.mockResolvedValue({
+      from_asset_id: 'from-1',
+      id: 'conv-1',
+      operations: [
+        {
+          account_id: null,
+          id: 'out',
+          transaction: null,
+          transaction_id: null,
+          type: 'CONVERSION_OUT',
+        },
+        {
+          account_id: null,
+          id: 'in',
+          transaction: null,
+          transaction_id: null,
+          type: 'CONVERSION_IN',
+        },
+      ],
+      to_asset_id: 'to-1',
+    });
+    spies.operationFindMany.mockReset();
+    spies.operationFindMany.mockImplementation(
+      async ({ where }: { where: { asset_id: string; id?: unknown } }) => {
+        if (where.asset_id === 'from-1') {
+          // the edit reads the origin without its own CONVERSION_OUT
+          return where.id ? [originBuy] : [originBuy, outRow];
+        }
+
+        return [inRow];
+      },
+    );
+
+    await setup.writeConversion({ ...params, conversion_id: 'conv-1', ratio_to: '2' });
+
+    expect(spies.operationUpdate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ quantity: '103.00000000' }),
+      where: { id: 'out' },
+    });
+    expect(spies.operationUpdate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ quantity: '206.00000000' }),
+      where: { id: 'in' },
+    });
+    expect(spies.operationCreate).not.toHaveBeenCalled();
+    expect(spies.assetUpdate).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD fail WHEN the edited conversion does not exist', async () => {
+    spies.conversionFindUnique.mockResolvedValue(null);
+
+    await expect(
+      setup.writeConversion({ ...params, conversion_id: 'missing' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('SHOULD delete both operations, the fraction sale AND the cash row, then reactivate the origin', async () => {
+    spies.conversionFindUnique.mockResolvedValue({
+      from_asset_id: 'from-1',
+      id: 'conv-1',
+      operations: [
+        {
+          account_id: 'acc-1',
+          id: 'out',
+          transaction: { account_id: 'acc-1', paid: true, type: 'INCOME', value: 1500 },
+          transaction_id: 'tx-out',
+          type: 'CONVERSION_OUT',
+        },
+        {
+          account_id: null,
+          id: 'in',
+          transaction: null,
+          transaction_id: null,
+          type: 'CONVERSION_IN',
+        },
+      ],
+      to_asset_id: 'to-1',
+    });
+    spies.operationFindUnique.mockResolvedValue({
+      account_id: 'acc-1',
+      id: 'sale',
+      transaction: { account_id: 'acc-1', paid: true, type: 'INCOME', value: 230 },
+      transaction_id: 'tx-sale',
+    });
+    spies.operationFindMany.mockReset();
+    spies.operationFindMany.mockResolvedValue([originBuy]);
+
+    await setup.deleteConversion('conv-1');
+
+    expect(spies.operationDelete.mock.calls.map((call) => call[0].where.id)).toEqual([
+      'sale',
+      'out',
+      'in',
+    ]);
+    expect(spies.transactionDelete).toHaveBeenCalledWith({ where: { id: 'tx-sale' } });
+    expect(spies.transactionDelete).toHaveBeenCalledWith({ where: { id: 'tx-out' } });
+    expect(spies.accountUpdate).toHaveBeenCalledWith({
+      data: { ledger_balance: { increment: -230 } },
+      where: { id: 'acc-1' },
+    });
+    expect(spies.accountUpdate).toHaveBeenCalledWith({
+      data: { ledger_balance: { increment: -1500 } },
+      where: { id: 'acc-1' },
+    });
+    expect(spies.conversionDelete).toHaveBeenCalledWith({ where: { id: 'conv-1' } });
+    expect(spies.assetUpdate).toHaveBeenCalledWith({
+      data: { archived_at: null, status: 'ACTIVE' },
+      where: { id: 'from-1' },
+    });
+  });
+
+  it('SHOULD do nothing WHEN the conversion to delete is missing', async () => {
+    spies.conversionFindUnique.mockResolvedValue(null);
+
+    await setup.deleteConversion('missing');
+
+    expect(spies.operationDelete).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD read a conversion AND the conversions of some assets with both tickers', async () => {
+    spies.conversionFindUnique.mockResolvedValue(null);
+    spies.conversionFindMany.mockResolvedValue([]);
+
+    await expect(setup.findConversionById('c')).resolves.toBeNull();
+    await setup.findConversionsByAssetIds(['a', 'b']);
+
+    expect(spies.conversionFindMany).toHaveBeenCalledWith({
+      include: { from: { select: { ticker: true } }, to: { select: { ticker: true } } },
+      where: { OR: [{ from_asset_id: { in: ['a', 'b'] } }, { to_asset_id: { in: ['a', 'b'] } }] },
+    });
+  });
+});

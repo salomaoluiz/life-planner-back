@@ -1,6 +1,7 @@
 import { faker } from '@faker-js/faker';
 
 import { AssetDetail, AssetEntity, AssetListRow } from '@investment/domain/entity/AssetEntity';
+import { ConversionDetail } from '@investment/domain/entity/ConversionEntity';
 import {
   FixedIncomeData,
   FixedIncomeRateEntity,
@@ -35,6 +36,21 @@ export function assetFixture(overrides: Partial<AssetEntity> = {}): AssetEntity 
     ownerId: faker.string.uuid(),
     status: InvestmentAssetStatus.ACTIVE,
     ticker: 'ITSA4',
+    ...overrides,
+  };
+}
+export function conversionFixture(overrides: Partial<ConversionDetail> = {}): ConversionDetail {
+  return {
+    cashAmount: null,
+    cashReferenceUnitValue: null,
+    date: '2026-10-15',
+    fromAssetId: faker.string.uuid(),
+    fromTicker: 'BCFF11',
+    id: faker.string.uuid(),
+    ratioFrom: Decimal8.parse('1'),
+    ratioTo: Decimal8.parse('7.4'),
+    toAssetId: faker.string.uuid(),
+    toTicker: 'BTHF11',
     ...overrides,
   };
 }
@@ -101,6 +117,7 @@ export function repositorySpies(): Record<keyof IInvestmentRepository, jest.Mock
     createFixedIncomeTitle: jest.fn(),
     deleteAsset: jest.fn(),
     deleteAssetsByOwner: jest.fn(),
+    deleteConversion: jest.fn(),
     deleteFixedIncomeAdjustment: jest.fn(),
     deleteFixedIncomeRate: jest.fn(),
     deleteOperation: jest.fn(),
@@ -110,6 +127,8 @@ export function repositorySpies(): Record<keyof IInvestmentRepository, jest.Mock
     findAssetById: jest.fn(),
     findAssetByTicker: jest.fn(),
     findAssetsByOwners: jest.fn(),
+    findConversionById: jest.fn(),
+    findConversionsByAssetIds: jest.fn(),
     findFixedIncomeAdjustmentById: jest.fn(),
     findFixedIncomeByAssetIds: jest.fn(),
     findFixedIncomeRateById: jest.fn(),
@@ -122,6 +141,7 @@ export function repositorySpies(): Record<keyof IInvestmentRepository, jest.Mock
     updateFixedIncomeRate: jest.fn(),
     upsertFixedIncomeAdjustment: jest.fn(),
     upsertValuation: jest.fn(),
+    writeConversion: jest.fn(),
     writeEvent: jest.fn(),
     writeOperation: jest.fn(),
   };

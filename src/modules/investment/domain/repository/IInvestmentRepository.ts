@@ -1,4 +1,5 @@
 import { AssetDetail, AssetEntity, AssetListRow } from '@investment/domain/entity/AssetEntity';
+import { ConversionDetail } from '@investment/domain/entity/ConversionEntity';
 import {
   FixedIncomeAdjustmentEntity,
   FixedIncomeData,
@@ -48,8 +49,14 @@ export type IInvestmentRepository = {
   createFixedIncomeTitle(
     params: CreateFixedIncomeTitleRepositoryParams,
   ): Promise<{ assetId: string; operationId: string }>;
+  // Spec 112: deletes both operations, the cash row, the destination's fraction sale and its row, and reactivates the
+  // origin in one transaction. Throws `NegativePositionError` when the destination sold the converted quotas.
+  deleteConversion(id: string): Promise<void>;
   deleteFixedIncomeAdjustment(assetId: string, id: string): Promise<void>;
   deleteFixedIncomeRate(assetId: string, id: string): Promise<void>;
+  findConversionById(id: string): Promise<ConversionDetail | undefined>;
+  // The conversions where any of the assets is the origin or the destination.
+  findConversionsByAssetIds(assetIds: string[]): Promise<ConversionDetail[]>;
   findFixedIncomeAdjustmentById(id: string): Promise<FixedIncomeAdjustmentEntity | undefined>;
   findFixedIncomeByAssetIds(assetIds: string[]): Promise<Map<string, FixedIncomeData>>;
   findFixedIncomeRateById(id: string): Promise<FixedIncomeRateEntity | undefined>;
@@ -86,6 +93,9 @@ export type IInvestmentRepository = {
   // Spec 108: a split, reverse split or bonus in one database transaction (no finance row). Throws
   // `NegativePositionError`, `NoPositionError` or `FractionSaleBreaksError` and writes nothing.
   writeEvent(params: WriteEventRepositoryParams): Promise<string>;
+  // Spec 112: a conversion (create or edit) in one database transaction; returns its id. Throws
+  // `NoPositionError`, `ConversionLaterOperationsError`, `NegativePositionError` or `FractionSaleBreaksError`.
+  writeConversion(params: WriteConversionRepositoryParams): Promise<string>;
 };
 export interface OperationAccount {
   archived: boolean;
@@ -111,6 +121,22 @@ export interface UpsertValuationRepositoryParams {
   assetId: string;
   date: string;
   unitPrice: Decimal8;
+}
+export interface WriteConversionRepositoryParams {
+  accountId: null | string;
+  // Description of the cash finance row.
+  assetLabel: string;
+  cashAmount: null | number;
+  cashReferenceUnitValue: Decimal8 | null;
+  // Set when editing (the destination can't change).
+  conversionId?: string;
+  currency: string;
+  date: string;
+  destination: { assetId: string } | { newAsset: CreateAssetRepositoryParams };
+  fromAssetId: string;
+  generateTransaction: boolean;
+  ratioFrom: Decimal8;
+  ratioTo: Decimal8;
 }
 export interface WriteEventRepositoryParams {
   assetId: string;

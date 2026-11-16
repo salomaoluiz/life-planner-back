@@ -3,6 +3,7 @@ import {
   InvestmentAsset,
   InvestmentAssetClass,
   InvestmentAssetStatus,
+  InvestmentConversion,
   InvestmentFixedIncomeAdjustment,
   InvestmentFixedIncomeRate,
   InvestmentFixedIncomeRedemptionKind,
@@ -19,6 +20,10 @@ import {
 } from '@investment/domain/entity/FixedIncomeEntity';
 import { OwnerAccess } from '@investment/domain/entity/OwnerAccess';
 
+export type ConversionRow = {
+  from: { ticker: null | string };
+  to: { ticker: null | string };
+} & InvestmentConversion;
 export interface CreateAssetDatasourceParams {
   asset_class: InvestmentAssetClass;
   currency: string;
@@ -48,6 +53,7 @@ export interface IInvestmentDatasource {
   ): Promise<{ assetId: string; operationId: string }>;
   deleteAsset(id: string): Promise<void>;
   deleteAssetsByOwner(owner: OwnerType, ownerId: string): Promise<number>;
+  deleteConversion(id: string): Promise<void>;
   deleteFixedIncomeAdjustment(assetId: string, id: string): Promise<void>;
   deleteFixedIncomeRate(assetId: string, id: string): Promise<void>;
   deleteOperation(id: string): Promise<void>;
@@ -63,6 +69,8 @@ export interface IInvestmentDatasource {
     ticker: string,
   ): Promise<InvestmentAsset | null>;
   findAssets(owners: OwnerAccess[], status: InvestmentAssetStatus): Promise<InvestmentAsset[]>;
+  findConversionById(id: string): Promise<ConversionRow | null>;
+  findConversionsByAssetIds(assetIds: string[]): Promise<ConversionRow[]>;
   findFixedIncomeAdjustmentById(id: string): Promise<InvestmentFixedIncomeAdjustment | null>;
   findFixedIncomeByAssetIds(assetIds: string[]): Promise<FixedIncomeRows>;
   findFixedIncomeRateById(id: string): Promise<InvestmentFixedIncomeRate | null>;
@@ -83,6 +91,7 @@ export interface IInvestmentDatasource {
   findValuationsByAssetIds(assetIds: string[]): Promise<InvestmentValuation[]>;
   updateAsset(params: UpdateAssetDatasourceParams): Promise<InvestmentAsset>;
   upsertValuation(assetId: string, date: Date, unitPrice: string): Promise<InvestmentValuation>;
+  writeConversion(params: WriteConversionDatasourceParams): Promise<string>;
   writeEvent(params: WriteEventDatasourceParams): Promise<string>;
   writeOperation(params: WriteOperationDatasourceParams): Promise<string>;
 }
@@ -106,6 +115,22 @@ export interface UpdateAssetDatasourceParams {
   owner_id?: string;
   status?: InvestmentAssetStatus;
   ticker?: null | string;
+}
+// Spec 112: a conversion, created or edited (`conversion_id`).
+export interface WriteConversionDatasourceParams {
+  account_id: null | string;
+  asset_label: string;
+  cash_amount: null | number;
+  cash_reference_unit_value: null | string;
+  // Set when editing.
+  conversion_id?: string;
+  currency: string;
+  date: Date;
+  destination: { asset_id: string } | { new_asset: CreateAssetDatasourceParams };
+  from_asset_id: string;
+  generate_transaction: boolean;
+  ratio_from: string;
+  ratio_to: string;
 }
 // Spec 108: a split, reverse split or bonus. No finance row, no money fields.
 export interface WriteEventDatasourceParams {

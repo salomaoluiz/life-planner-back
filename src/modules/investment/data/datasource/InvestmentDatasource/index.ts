@@ -11,6 +11,7 @@ import {
   OwnerType,
   Prisma,
 } from '@db/client';
+import { deleteConversionIn, writeConversionIn } from '@investment/data/datasource/conversion';
 import {
   assertPositionValid,
   recomputeEventSuggestions,
@@ -18,10 +19,12 @@ import {
 import {
   applyDeltas,
   ledgerDeltasFor,
+  LINKED_SELECT,
   LinkedRow,
   lockAccounts,
   lockAsset,
   reversalDeltas,
+  toLinkedRow,
 } from '@investment/data/datasource/financeLink';
 import {
   convertManualOperations,
@@ -36,6 +39,7 @@ import {
 import { recomputeSuggestions } from '@investment/data/datasource/income';
 import { toOwnerWhere } from '@investment/data/datasource/mapper/OwnerWhere';
 import {
+  ConversionRow,
   CreateAssetDatasourceParams,
   CreateFixedIncomeTitleDatasourceParams,
   FixedIncomeRows,
@@ -43,6 +47,7 @@ import {
   OperationRow,
   SaveFixedIncomeTermsDatasourceParams,
   UpdateAssetDatasourceParams,
+  WriteConversionDatasourceParams,
   WriteEventDatasourceParams,
   WriteOperationDatasourceParams,
 } from '@investment/data/repository/datasource/IInvestmentDatasource';
@@ -52,8 +57,11 @@ import { categoryIdOf } from '@investment/domain/entity/SystemCategories';
 import { InvestmentOperationType } from '@investment/domain/enum';
 import { Database } from '@shared/infra/db/Database';
 
+const CONVERSION_INCLUDE = {
+  from: { select: { ticker: true } },
+  to: { select: { ticker: true } },
+} as const;
 const OPERATION_ORDER = [{ date: 'desc' }, { created_at: 'desc' }, { id: 'desc' }] as const;
-const LINKED_SELECT = { account_id: true, paid: true, type: true, value: true } as const;
 
 @Injectable()
 export class InvestmentDatasource implements IInvestmentDatasource {
@@ -126,6 +134,12 @@ export class InvestmentDatasource implements IInvestmentDatasource {
       );
 
       return assets.length;
+    });
+  }
+
+  async deleteConversion(id: string): Promise<void> {
+    await this.db.client.$transaction(async (tx) => {
+      await deleteConversionIn(tx, id);
     });
   }
 
@@ -239,6 +253,20 @@ export class InvestmentDatasource implements IInvestmentDatasource {
     return this.db.client.investmentAsset.findMany({
       orderBy: [{ asset_class: 'asc' }, { ticker: 'asc' }, { name: 'asc' }],
       where: { ...toOwnerWhere(owners), status },
+    });
+  }
+
+  async findConversionById(id: string): Promise<ConversionRow | null> {
+    return this.db.client.investmentConversion.findUnique({
+      include: CONVERSION_INCLUDE,
+      where: { id },
+    });
+  }
+
+  async findConversionsByAssetIds(assetIds: string[]): Promise<ConversionRow[]> {
+    return this.db.client.investmentConversion.findMany({
+      include: CONVERSION_INCLUDE,
+      where: { OR: [{ from_asset_id: { in: assetIds } }, { to_asset_id: { in: assetIds } }] },
     });
   }
 
@@ -377,6 +405,10 @@ export class InvestmentDatasource implements IInvestmentDatasource {
       update: { unit_price: unitPrice },
       where: { asset_id_date: { asset_id: assetId, date } },
     });
+  }
+
+  async writeConversion(params: WriteConversionDatasourceParams): Promise<string> {
+    return this.db.client.$transaction(async (tx) => writeConversionIn(tx, params));
   }
 
   async writeEvent(params: WriteEventDatasourceParams): Promise<string> {
@@ -595,17 +627,4 @@ async function removeAssets(tx: Prisma.TransactionClient, assetIds: string[]): P
 
   await applyDeltas(tx, reversalDeltas(rows));
   await tx.investmentAsset.deleteMany({ where: { id: { in: assetIds } } });
-}
-function toLinkedRow(
-  row: { account_id: null | string; type: string; value: number } | null,
-): LinkedRow | undefined {
-  if (!row || !row.account_id) {
-    return undefined;
-  }
-
-  return {
-    accountId: row.account_id,
-    type: row.type === 'INCOME' ? 'INCOME' : 'EXPENSE',
-    value: row.value,
-  };
 }
