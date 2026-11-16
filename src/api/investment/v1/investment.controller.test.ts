@@ -177,3 +177,55 @@ describe('summary (spec 109)', () => {
     },
   );
 });
+
+describe('dashboard (spec 110)', () => {
+  const period = { from: '2025-12-01', to: '2026-11-04' };
+
+  it('SHOULD pass the owners as a list, the period AND the local date to the service', async () => {
+    await setup.dashboard(mocks.request, {
+      ownerId: [ownerId, ownerId],
+      ...period,
+      today: '2026-11-04',
+    });
+    await setup.dashboard(mocks.request, { ownerId, ...period, today: '2026-11-04' });
+
+    expect(mocks.service.getDashboard).toHaveBeenNthCalledWith(
+      1,
+      userId,
+      [ownerId, ownerId],
+      period.from,
+      period.to,
+      '2026-11-04',
+    );
+    expect(mocks.service.getDashboard).toHaveBeenNthCalledWith(
+      2,
+      userId,
+      [ownerId],
+      period.from,
+      period.to,
+      '2026-11-04',
+    );
+  });
+
+  it('SHOULD default today to the server date WHEN it is missing', async () => {
+    await setup.dashboard(mocks.request, { ownerId, ...period });
+
+    expect(mocks.service.getDashboard).toHaveBeenCalledWith(
+      userId,
+      [ownerId],
+      period.from,
+      period.to,
+      new Date().toISOString().slice(0, 10),
+    );
+  });
+
+  it.each([
+    {},
+    { ownerId },
+    { from: '2025-12-01', ownerId },
+    { from: '2025-12-01', ownerId: 'abc', to: '2026-11-04' },
+  ])('SHOULD reject %j', async (query) => {
+    await expect(setup.dashboard(mocks.request, query)).rejects.toThrow();
+    expect(mocks.service.getDashboard).not.toHaveBeenCalled();
+  });
+});

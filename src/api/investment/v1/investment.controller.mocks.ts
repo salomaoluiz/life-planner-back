@@ -19,6 +19,7 @@ const investmentServiceMock = {
   deleteValuation: jest.fn().mockResolvedValue(undefined),
   findAssetById: jest.fn().mockResolvedValue(resultMock),
   findAssets: jest.fn().mockResolvedValue({ items: [resultMock] }),
+  getDashboard: jest.fn().mockResolvedValue(resultMock),
   getSummary: jest.fn().mockResolvedValue(resultMock),
   priceHistory: jest.fn().mockResolvedValue(resultMock),
   refreshQuotes: jest.fn().mockResolvedValue(resultMock),

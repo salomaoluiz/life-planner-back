@@ -3,6 +3,12 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [3.16.0] - 2026-11-16
+
+### Added
+
+- `GET /api/v1/investments/dashboard`: the investments overview of a period (up to 10 years) in BRL: value, invested and open result, realized result, evolution (day, week or month points), allocation by class with the USD detail, ranking of open positions and income by month (received and planned). One fixed set of queries, whatever the number of assets (spec 110).
+
 ## [3.15.0] - 2026-11-11
 
 ### Added

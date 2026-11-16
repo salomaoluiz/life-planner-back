@@ -300,6 +300,85 @@ export const InvestmentsSummaryQuerySchema = z.object({
   ownerId: z.union([z.uuid(), z.array(z.uuid()).min(1)]),
   today: z.iso.date().optional(),
 });
+// Spec 110: the overview of the portfolio for a period (up to 10 years, validated again by the use case).
+export const InvestmentsDashboardQuerySchema = z.object({
+  from: z.iso.date(),
+  ownerId: z.union([z.uuid(), z.array(z.uuid()).min(1)]),
+  to: z.iso.date(),
+  today: z.iso.date().optional(),
+});
+export const InvestmentsDashboardApiSchema = z.strictObject({
+  allocation: z.array(
+    z.strictObject({
+      assetClass: z.enum(InvestmentAssetClass),
+      share: z.number(),
+      usd: z
+        .strictObject({
+          fxRate: z.string(),
+          resultFromAsset: z.number().int(),
+          resultFromFx: z.number().int(),
+          value: z.string(),
+        })
+        .optional(),
+      value: z.number().int(),
+    }),
+  ),
+  incomes: z.array(
+    z.strictObject({
+      byType: z.strictObject({
+        DIVIDEND: z.number().int(),
+        INTEREST: z.number().int(),
+        JCP: z.number().int(),
+        OTHER: z.number().int(),
+        YIELD: z.number().int(),
+      }),
+      date: CalendarDateApiSchema,
+      planned: z.number().int(),
+      received: z.number().int(),
+    }),
+  ),
+  period: z.strictObject({
+    bucket: z.enum(['DAY', 'MONTH', 'WEEK']),
+    from: CalendarDateApiSchema,
+    to: CalendarDateApiSchema,
+  }),
+  ranking: z.array(
+    z.strictObject({
+      assetClass: z.enum(InvestmentAssetClass),
+      assetId: z.string(),
+      currency: z.string(),
+      name: z.string(),
+      openResult: z.number().int(),
+      openResultPercent: z.number().nullable(),
+      share: z.number(),
+      ticker: z.string().nullable(),
+      usdValue: z.string().optional(),
+      value: z.number().int(),
+      valueKind: z.enum(['COST', 'FIXED_INCOME_NET', 'MANUAL', 'QUOTE']),
+    }),
+  ),
+  series: z.array(
+    z.strictObject({
+      date: CalendarDateApiSchema,
+      invested: z.number().int().nullable(),
+      marketValue: z.number().int().nullable(),
+    }),
+  ),
+  summary: z.strictObject({
+    assetsWithoutValue: z.number().int(),
+    currentValue: z.number().int(),
+    historyStartsAt: CalendarDateApiSchema.nullable(),
+    incomePlanned: z.number().int(),
+    incomeReceived: z.number().int(),
+    invested: z.number().int(),
+    openResult: z.number().int(),
+    openResultPercent: z.number().nullable(),
+    operationsWithoutFxRate: z.number().int(),
+    realizedResult: z.number().int(),
+    salesCount: z.number().int(),
+    staleQuotes: z.number().int(),
+  }),
+});
 export const InvestmentsSummaryApiSchema = z.strictObject({
   currency: z.literal('BRL'),
   currentValueCents: z.number().int(),
@@ -329,6 +408,7 @@ export const InvestmentsSummaryApiSchema = z.strictObject({
   resultBasisPoints: z.number().int().nullable(),
   resultCents: z.number().int(),
 });
+export type InvestmentsDashboardOutputType = z.infer<typeof InvestmentsDashboardApiSchema>;
 export type InvestmentsSummaryOutputType = z.infer<typeof InvestmentsSummaryApiSchema>;
 
 export const TickerSearchQuerySchema = z.object({
@@ -389,6 +469,7 @@ export class AssetDetailOutput extends createZodDto(AssetDetailApiSchema) {}
 export class AssetItemOutput extends createZodDto(AssetItemApiSchema) {}
 export class AssetListOutput extends createZodDto(AssetListApiSchema) {}
 export class CreateAssetBody extends createZodDto(CreateAssetApiSchema) {}
+export class InvestmentsDashboardOutput extends createZodDto(InvestmentsDashboardApiSchema) {}
 export class InvestmentsSummaryOutput extends createZodDto(InvestmentsSummaryApiSchema) {}
 // Swagger only: the controller validates with the union above (a union cannot be a DTO base class).
 const CreateOperationDocSchema = z.object({
