@@ -29,6 +29,7 @@ export let setup: DeleteAssetUseCase;
 
 beforeEach(async () => {
   jest.resetAllMocks();
+  spies.findConversionsByAssetIds.mockResolvedValue([]);
 
   const module = await Test.createTestingModule({
     providers: [DeleteAssetUseCase, { provide: 'IInvestmentRepository', useValue: spies }],

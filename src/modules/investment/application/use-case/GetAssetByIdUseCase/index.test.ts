@@ -1,6 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 
 import {
+  conversionScenario,
   operationFixture,
   valuationFixture,
 } from '@investment/domain/entity/mocks/investment.fixture';
@@ -62,4 +63,42 @@ it('SHOULD give each sell its realized result AND the position the spec expects'
     realizedResult: 31790,
   });
   expect(view.valuations).toHaveLength(2);
+});
+
+it('SHOULD carry the conversion links AND the counterpart of each conversion operation (spec 112)', async () => {
+  const { conversion, destination, origin } = conversionScenario();
+
+  spies.findAssetById.mockResolvedValue(origin);
+  spies.findConversionsByAssetIds.mockResolvedValue([conversion]);
+
+  const view = await setup.execute({ ...base, id: origin.id });
+
+  expect(view.convertedTo).toMatchObject({ assetId: destination.id, ticker: 'BTHF11' });
+  expect(view.operations.find((item) => item.operation.id === 'out-1')?.conversion).toMatchObject({
+    assetId: destination.id,
+    conversionId: 'conv-1',
+    locked: false,
+    ticker: 'BTHF11',
+  });
+  expect(view.position.quantity.isZero()).toBe(true);
+});
+
+it('SHOULD list where a destination came from AND its pending fraction', async () => {
+  const { conversion, destination } = conversionScenario();
+
+  spies.findAssetById.mockResolvedValue(destination);
+  spies.findConversionsByAssetIds.mockResolvedValue([conversion]);
+
+  const view = await setup.execute({ ...base, id: destination.id });
+
+  expect(view.convertedFrom).toEqual([
+    {
+      assetId: conversion.fromAssetId,
+      conversionId: 'conv-1',
+      date: '2026-10-15',
+      ticker: 'BCFF11',
+    },
+  ]);
+  expect(view.position.quantity.toString()).toBe('762');
+  expect(view.position.pendingFractions).toHaveLength(1);
 });

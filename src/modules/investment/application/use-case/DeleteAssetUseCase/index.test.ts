@@ -37,3 +37,11 @@ it('SHOULD answer 422 WHEN the owner is an archived family', async () => {
     }),
   ).rejects.toBeInstanceOf(UnprocessableEntityException);
 });
+
+it('SHOULD refuse WHEN the asset has a conversion (spec 112)', async () => {
+  spies.findAssetById.mockResolvedValue(mocks.detailWithOperation);
+  spies.findConversionsByAssetIds.mockResolvedValue([{ id: 'conv-1' } as never]);
+
+  await expect(setup.execute(base)).rejects.toBeInstanceOf(UnprocessableEntityException);
+  expect(spies.deleteAsset).not.toHaveBeenCalled();
+});

@@ -654,6 +654,8 @@ enum InvestmentOperationType {
   SPLIT
   REVERSE_SPLIT
   BONUS
+  CONVERSION_OUT
+  CONVERSION_IN
 }
 
 enum InvestmentCorporateEventType {
@@ -814,6 +816,8 @@ model InvestmentAsset {
   incomes                  InvestmentIncome[]
   income_suggestions       InvestmentIncomeSuggestion[]
   event_suggestions        InvestmentEventSuggestion[]
+  conversion_out           InvestmentConversion?             @relation("ConversionFrom")
+  conversions_in           InvestmentConversion[]            @relation("ConversionTo")
 
   @@index([owner, owner_id])
   @@map("investment_assets")
@@ -841,9 +845,15 @@ model InvestmentOperation {
   fx_rate                  Decimal?                             @db.Decimal(12, 6)
   redemption_kind          InvestmentFixedIncomeRedemptionKind?
   net_amount               Int?
+  conversion_id            String?
+  conversion_cost          Int?
+  fraction_quantity        Decimal?                             @db.Decimal(18, 8)
+  fraction_cost            Int?
+  cash_cost                Int?
   created_at               DateTime                             @default(now()) @db.Timestamptz(6)
   updated_at               DateTime                             @updatedAt @db.Timestamptz(6)
 
+  conversion       InvestmentConversion?      @relation(fields: [conversion_id], references: [id], onDelete: Cascade)
   asset            InvestmentAsset            @relation(fields: [asset_id], references: [id], onDelete: Cascade)
   account          FinancialAccount?          @relation(fields: [account_id], references: [id], onDelete: SetNull)
   transaction      FinancialTransaction?      @relation(fields: [transaction_id], references: [id], onDelete: SetNull)
@@ -852,9 +862,30 @@ model InvestmentOperation {
   fraction_sale    InvestmentOperation?       @relation("FractionSale")
   event_suggestion InvestmentEventSuggestion? @relation(fields: [event_suggestion_id], references: [id], onDelete: SetNull)
 
+  @@unique([conversion_id, type])
   @@index([asset_id, date, created_at, id])
   @@index([account_id])
   @@map("investment_operations")
+}
+
+model InvestmentConversion {
+  id                        String   @id @default(uuid())
+  from_asset_id             String   @unique
+  to_asset_id               String
+  date                      DateTime @db.Date
+  ratio_from                Decimal  @db.Decimal(18, 8)
+  ratio_to                  Decimal  @db.Decimal(18, 8)
+  cash_amount               Int?
+  cash_reference_unit_value Decimal? @db.Decimal(20, 8)
+  created_at                DateTime @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime @updatedAt @db.Timestamptz(6)
+
+  from       InvestmentAsset       @relation("ConversionFrom", fields: [from_asset_id], references: [id], onDelete: Cascade)
+  to         InvestmentAsset       @relation("ConversionTo", fields: [to_asset_id], references: [id], onDelete: Cascade)
+  operations InvestmentOperation[]
+
+  @@index([to_asset_id])
+  @@map("investment_conversions")
 }
 
 model InvestmentOperationFee {

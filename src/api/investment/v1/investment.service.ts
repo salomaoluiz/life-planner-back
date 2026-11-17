@@ -19,6 +19,7 @@ import { GetUserFamilyAccessUseCase } from '@family/application/use-case/GetUser
 import {
   AssetDetailView,
   AssetView,
+  ConversionLink,
   EventResult,
   OperationView,
 } from '@investment/application/service/AssetView';
@@ -44,9 +45,15 @@ import { UpsertValuationUseCase } from '@investment/application/use-case/UpsertV
 import { EventData } from '@investment/domain/entity/OperationEntity';
 import { OwnerAccess } from '@investment/domain/entity/OwnerAccess';
 import { ValuationEntity } from '@investment/domain/entity/ValuationEntity';
-import { InvestmentAssetStatus, isEventType } from '@investment/domain/enum';
+import {
+  InvestmentAssetStatus,
+  InvestmentOperationType,
+  isConversionType,
+  isEventType,
+} from '@investment/domain/enum';
 import { QuoteMarket } from '@investment/domain/enum/QuoteMarket';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
+import { Decimal8 } from '@shared/infra/decimal';
 
 // `pendingEventSuggestions` comes with the list only (spec 108 FR 32).
 export function toAssetItem(
@@ -60,6 +67,10 @@ export function toAssetItem(
     assetClass: asset.assetClass,
     averageFxRate: market.usd?.averageFxRate ?? null,
     costBrl: usd?.costBrl ?? null,
+    ...(view.convertedFrom?.length
+      ? { convertedFrom: view.convertedFrom.map((link) => toConversionLink(link)) }
+      : {}),
+    ...(view.convertedTo ? { convertedTo: toConversionLink(view.convertedTo) } : {}),
     currency: asset.currency,
     currentPriceSource: market.priceSource,
     fixedIncome: view.fixedIncome ? toFixedIncomeSummary(view.fixedIncome) : null,
@@ -133,6 +144,10 @@ export function toFixedIncomeSummary(view: FixedIncomeView) {
 export function toOperation(view: OperationView): OperationOutputType {
   const { operation } = view;
 
+  if (isConversionType(operation.type)) {
+    return toConversionOperation(view);
+  }
+
   if (view.event && operation.event) {
     return toEventOperation(view, view.event, operation.event);
   }
@@ -201,10 +216,71 @@ export function toOperationWrite(result: OperationWriteResult) {
   return { item: toOperation(result.operation), position: toPosition(result.asset.position) };
 }
 
+function toConversionLink(link: ConversionLink) {
+  return {
+    assetId: link.assetId,
+    conversionId: link.conversionId,
+    date: link.date,
+    ...(link.ticker ? { ticker: link.ticker } : {}),
+  };
+}
+// Spec 112 FR 22: a conversion operation carries its stored snapshot, not the BUY/SELL fields.
 function isEventInput(
   input: CreateOperationApiInput,
 ): input is Extract<CreateOperationApiInput, { type: 'BONUS' | 'REVERSE_SPLIT' | 'SPLIT' }> {
   return isEventType(input.type);
+}
+function isOutCash(operation: OperationView['operation']) {
+  return operation.total > 0 ? { gross: operation.gross, total: operation.total } : {};
+}
+function toConversionOperation(view: OperationView): OperationOutputType {
+  const { conversion, event, operation } = view;
+  const isOut = operation.type === InvestmentOperationType.CONVERSION_OUT;
+
+  return {
+    accountId: operation.accountId,
+    ...(operation.cashCost === null ? {} : { cashCost: operation.cashCost }),
+    ...(conversion
+      ? {
+          conversion: {
+            assetId: conversion.assetId,
+            ...(conversion.cashAmount === null ? {} : { cashAmount: conversion.cashAmount }),
+            ...(conversion.cashReferenceUnitValue
+              ? { cashReferenceUnitValue: conversion.cashReferenceUnitValue.toString() }
+              : {}),
+            conversionId: conversion.conversionId,
+            locked: conversion.locked,
+            ratioFrom: conversion.ratioFrom.toString(),
+            ratioTo: conversion.ratioTo.toString(),
+            ...(conversion.ticker ? { ticker: conversion.ticker } : {}),
+          },
+        }
+      : {}),
+    conversionCost: operation.conversionCost ?? 0,
+    costRemoved: view.costRemoved,
+    date: operation.date,
+    fees: [],
+    generateTransaction: operation.generateTransaction,
+    id: operation.id,
+    quantity: operation.quantity.toString(),
+    realizedResult: view.realizedResult,
+    transactionId: operation.transactionId,
+    type: operation.type,
+    ...(isOut
+      ? isOutCash(operation)
+      : {
+          fractionCost: operation.fractionCost ?? 0,
+          fractionQuantity: (operation.fractionQuantity ?? Decimal8.zero()).toString(),
+        }),
+    ...(event
+      ? {
+          averagePriceAfter: event.averagePriceAfter,
+          averagePriceBefore: event.averagePriceBefore,
+          quantityAfter: event.quantityAfter.toString(),
+          quantityBefore: event.quantityBefore.toString(),
+        }
+      : {}),
+  };
 }
 function toEventOperation(
   view: OperationView,

@@ -6,6 +6,7 @@ import {
   WriteOperationDatasourceParams,
 } from '@investment/data/repository/datasource/IInvestmentDatasource';
 import { AssetDetail, AssetEntity, AssetListRow } from '@investment/domain/entity/AssetEntity';
+import { ConversionDetail } from '@investment/domain/entity/ConversionEntity';
 import {
   FixedIncomeAdjustmentEntity,
   FixedIncomeData,
@@ -24,6 +25,7 @@ import {
   SaveFixedIncomeTermsRepositoryParams,
   UpdateAssetRepositoryParams,
   UpsertValuationRepositoryParams,
+  WriteConversionRepositoryParams,
   WriteEventRepositoryParams,
   WriteOperationRepositoryParams,
 } from '@investment/domain/repository';
@@ -83,6 +85,10 @@ export class InvestmentRepository implements IInvestmentRepository {
 
   async deleteAssetsByOwner(access: Pick<OwnerAccess, 'owner' | 'ownerId'>): Promise<number> {
     return this.datasource.deleteAssetsByOwner(access.owner, access.ownerId);
+  }
+
+  async deleteConversion(id: string): Promise<void> {
+    await this.datasource.deleteConversion(id);
   }
 
   async deleteFixedIncomeAdjustment(assetId: string, id: string): Promise<void> {
@@ -175,6 +181,22 @@ export class InvestmentRepository implements IInvestmentRepository {
         .filter((row) => row.asset_id === asset.id)
         .map((row) => InvestmentMapper.toOperation(row)),
     }));
+  }
+
+  async findConversionById(id: string): Promise<ConversionDetail | undefined> {
+    const row = await this.datasource.findConversionById(id);
+
+    return row ? InvestmentMapper.toConversion(row) : undefined;
+  }
+
+  async findConversionsByAssetIds(assetIds: string[]): Promise<ConversionDetail[]> {
+    if (assetIds.length === 0) {
+      return [];
+    }
+
+    const rows = await this.datasource.findConversionsByAssetIds(assetIds);
+
+    return rows.map((row) => InvestmentMapper.toConversion(row));
   }
 
   async findFixedIncomeAdjustmentById(
@@ -290,6 +312,35 @@ export class InvestmentRepository implements IInvestmentRepository {
     );
 
     return InvestmentMapper.toValuation(row);
+  }
+
+  async writeConversion(params: WriteConversionRepositoryParams): Promise<string> {
+    return this.datasource.writeConversion({
+      account_id: params.accountId,
+      asset_label: params.assetLabel,
+      cash_amount: params.cashAmount,
+      cash_reference_unit_value: params.cashReferenceUnitValue?.toFixed8() ?? null,
+      conversion_id: params.conversionId,
+      currency: params.currency,
+      date: InvestmentMapper.fromCalendarDate(params.date),
+      destination:
+        'assetId' in params.destination
+          ? { asset_id: params.destination.assetId }
+          : {
+              new_asset: {
+                asset_class: params.destination.newAsset.assetClass,
+                currency: params.destination.newAsset.currency,
+                name: params.destination.newAsset.name,
+                owner: params.destination.newAsset.owner,
+                owner_id: params.destination.newAsset.ownerId,
+                ticker: params.destination.newAsset.ticker,
+              },
+            },
+      from_asset_id: params.fromAssetId,
+      generate_transaction: params.generateTransaction,
+      ratio_from: params.ratioFrom.toFixed8(),
+      ratio_to: params.ratioTo.toFixed8(),
+    });
   }
 
   async writeEvent(params: WriteEventRepositoryParams): Promise<string> {

@@ -10,6 +10,7 @@ import { assetFixture } from '@investment/domain/entity/mocks/investment.fixture
 import { InvestmentAssetClass, InvestmentAssetStatus } from '@investment/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { ValidationError } from '@shared/domain/error/ValidationError';
+import { Decimal8 } from '@shared/infra/decimal';
 
 import { mocks, setup, spies } from './index.mocks';
 
@@ -221,4 +222,61 @@ it('SHOULD NOT update WHEN the new ticker is rejected', async () => {
     UnprocessableEntityException,
   );
   expect(spies.updateAsset).not.toHaveBeenCalled();
+});
+
+it('SHOULD refuse to reactivate an origin whose conversion still exists (spec 112 FR 21)', async () => {
+  spies.findAssetById.mockResolvedValue({
+    ...mocks.detail,
+    status: InvestmentAssetStatus.ARCHIVED,
+  });
+  spies.findConversionsByAssetIds.mockResolvedValue([
+    {
+      cashAmount: null,
+      cashReferenceUnitValue: null,
+      date: '2026-10-15',
+      fromAssetId: mocks.asset.id,
+      fromTicker: 'BCFF11',
+      id: 'conv-1',
+      locked: false,
+      ratioFrom: Decimal8.parse('1'),
+      ratioTo: Decimal8.parse('1'),
+      toAssetId: 'dest',
+      toTicker: 'BTHF11',
+    },
+  ]);
+
+  await expect(
+    setup.execute({ ...base, status: InvestmentAssetStatus.ACTIVE }),
+  ).rejects.toMatchObject({
+    response: {
+      message: 'This asset was converted into BTHF11. Delete the conversion to reactivate it.',
+    },
+  });
+  expect(spies.updateAsset).not.toHaveBeenCalled();
+});
+
+it('SHOULD reactivate an archived asset that came from a conversion (it is the destination)', async () => {
+  spies.findAssetById.mockResolvedValue({
+    ...mocks.detail,
+    status: InvestmentAssetStatus.ARCHIVED,
+  });
+  spies.findConversionsByAssetIds.mockResolvedValue([
+    {
+      cashAmount: null,
+      cashReferenceUnitValue: null,
+      date: '2026-10-15',
+      fromAssetId: 'origin',
+      fromTicker: 'BCFF11',
+      id: 'conv-1',
+      locked: false,
+      ratioFrom: Decimal8.parse('1'),
+      ratioTo: Decimal8.parse('1'),
+      toAssetId: mocks.asset.id,
+      toTicker: 'BTHF11',
+    },
+  ]);
+
+  await setup.execute({ ...base, status: InvestmentAssetStatus.ACTIVE });
+
+  expect(spies.updateAsset).toHaveBeenCalled();
 });

@@ -454,3 +454,112 @@ describe('dashboard reads (spec 110)', () => {
     expect(spies.findValuationsByAssetIds).toHaveBeenCalledWith(['a', 'b', 'c']);
   });
 });
+
+describe('conversions (spec 112)', () => {
+  const row = {
+    cash_amount: null,
+    cash_reference_unit_value: null,
+    created_at: new Date(),
+    date: new Date('2026-10-15T00:00:00Z'),
+    from: { ticker: 'BCFF11' },
+    from_asset_id: 'a',
+    id: 'conv-1',
+    ratio_from: new Prisma.Decimal('1'),
+    ratio_to: new Prisma.Decimal('7.4'),
+    to: { conversion_out: null, ticker: 'BTHF11' },
+    to_asset_id: 'b',
+    updated_at: new Date(),
+  };
+
+  it('SHOULD write a conversion into an existing destination with 8-place decimals', async () => {
+    spies.writeConversion.mockResolvedValue('conv-1');
+
+    await expect(
+      setup.writeConversion({
+        accountId: null,
+        assetLabel: 'BCFF11',
+        cashAmount: 1500,
+        cashReferenceUnitValue: Decimal8.parse('10.4'),
+        currency: 'BRL',
+        date: '2026-10-15',
+        destination: { assetId: 'b' },
+        fromAssetId: 'a',
+        generateTransaction: false,
+        ratioFrom: Decimal8.parse('1'),
+        ratioTo: Decimal8.parse('7.4'),
+      }),
+    ).resolves.toBe('conv-1');
+    expect(spies.writeConversion).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cash_reference_unit_value: '10.40000000',
+        date: new Date('2026-10-15T00:00:00.000Z'),
+        destination: { asset_id: 'b' },
+        ratio_to: '7.40000000',
+      }),
+    );
+  });
+
+  it('SHOULD map a new destination asset to its columns', async () => {
+    spies.writeConversion.mockResolvedValue('conv-2');
+
+    await setup.writeConversion({
+      accountId: null,
+      assetLabel: 'BCFF11',
+      cashAmount: null,
+      cashReferenceUnitValue: null,
+      currency: 'BRL',
+      date: '2026-10-15',
+      destination: {
+        newAsset: {
+          assetClass: InvestmentAssetClass.BR_REIT,
+          currency: 'BRL',
+          name: 'Fundo Exemplo',
+          owner: OwnerType.USER,
+          ownerId: 'o',
+          ticker: 'XPTO11',
+        },
+      },
+      fromAssetId: 'a',
+      generateTransaction: false,
+      ratioFrom: Decimal8.parse('1'),
+      ratioTo: Decimal8.parse('1'),
+    });
+
+    expect(spies.writeConversion).toHaveBeenCalledWith(
+      expect.objectContaining({
+        destination: {
+          new_asset: {
+            asset_class: 'BR_REIT',
+            currency: 'BRL',
+            name: 'Fundo Exemplo',
+            owner: 'USER',
+            owner_id: 'o',
+            ticker: 'XPTO11',
+          },
+        },
+      }),
+    );
+  });
+
+  it('SHOULD read conversions as entities with both tickers, an empty list without a query', async () => {
+    spies.findConversionById.mockResolvedValue(row);
+    spies.findConversionsByAssetIds.mockResolvedValue([row]);
+
+    const found = await setup.findConversionById('conv-1');
+    const list = await setup.findConversionsByAssetIds(['a']);
+
+    expect(found).toMatchObject({ fromTicker: 'BCFF11', id: 'conv-1', toTicker: 'BTHF11' });
+    expect(found?.ratioTo.toString()).toBe('7.4');
+    expect(list).toHaveLength(1);
+    await expect(setup.findConversionsByAssetIds([])).resolves.toEqual([]);
+
+    spies.findConversionById.mockResolvedValue(null);
+    await expect(setup.findConversionById('x')).resolves.toBeUndefined();
+  });
+
+  it('SHOULD delete through the datasource', async () => {
+    await setup.deleteConversion('conv-1');
+
+    expect(spies.deleteConversion).toHaveBeenCalledWith('conv-1');
+  });
+});

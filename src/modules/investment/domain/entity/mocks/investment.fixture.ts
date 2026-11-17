@@ -1,6 +1,7 @@
 import { faker } from '@faker-js/faker';
 
 import { AssetDetail, AssetEntity, AssetListRow } from '@investment/domain/entity/AssetEntity';
+import { ConversionDetail } from '@investment/domain/entity/ConversionEntity';
 import {
   FixedIncomeData,
   FixedIncomeRateEntity,
@@ -38,6 +39,22 @@ export function assetFixture(overrides: Partial<AssetEntity> = {}): AssetEntity 
     ...overrides,
   };
 }
+export function conversionFixture(overrides: Partial<ConversionDetail> = {}): ConversionDetail {
+  return {
+    cashAmount: null,
+    cashReferenceUnitValue: null,
+    date: '2026-10-15',
+    fromAssetId: faker.string.uuid(),
+    fromTicker: 'BCFF11',
+    id: faker.string.uuid(),
+    locked: false,
+    ratioFrom: Decimal8.parse('1'),
+    ratioTo: Decimal8.parse('7.4'),
+    toAssetId: faker.string.uuid(),
+    toTicker: 'BTHF11',
+    ...overrides,
+  };
+}
 export function listRowFixture(overrides: Partial<AssetListRow> = {}): AssetListRow {
   return { ...assetFixture(), latestValuation: null, operations: [], ...overrides };
 }
@@ -45,13 +62,18 @@ export function operationFixture(overrides: Partial<OperationEntity> = {}): Oper
   return {
     accountId: null,
     assetId: faker.string.uuid(),
+    cashCost: null,
+    conversionCost: null,
+    conversionId: null,
     createdAt: new Date('2026-01-01T00:00:00Z'),
     date: '2026-06-10',
     event: null,
     eventSuggestionId: null,
     fees: [],
     feesTotal: 0,
+    fractionCost: null,
     fractionOfOperationId: null,
+    fractionQuantity: null,
     fxRate: null,
     generateTransaction: false,
     gross: 510000,
@@ -96,6 +118,7 @@ export function repositorySpies(): Record<keyof IInvestmentRepository, jest.Mock
     createFixedIncomeTitle: jest.fn(),
     deleteAsset: jest.fn(),
     deleteAssetsByOwner: jest.fn(),
+    deleteConversion: jest.fn(),
     deleteFixedIncomeAdjustment: jest.fn(),
     deleteFixedIncomeRate: jest.fn(),
     deleteOperation: jest.fn(),
@@ -105,6 +128,8 @@ export function repositorySpies(): Record<keyof IInvestmentRepository, jest.Mock
     findAssetById: jest.fn(),
     findAssetByTicker: jest.fn(),
     findAssetsByOwners: jest.fn(),
+    findConversionById: jest.fn(),
+    findConversionsByAssetIds: jest.fn(),
     findFixedIncomeAdjustmentById: jest.fn(),
     findFixedIncomeByAssetIds: jest.fn(),
     findFixedIncomeRateById: jest.fn(),
@@ -117,6 +142,7 @@ export function repositorySpies(): Record<keyof IInvestmentRepository, jest.Mock
     updateFixedIncomeRate: jest.fn(),
     upsertFixedIncomeAdjustment: jest.fn(),
     upsertValuation: jest.fn(),
+    writeConversion: jest.fn(),
     writeEvent: jest.fn(),
     writeOperation: jest.fn(),
   };
@@ -209,5 +235,77 @@ export function fixedIncomeTermsFixture(
     product: InvestmentFixedIncomeProduct.CDB,
     taxExempt: false,
     ...overrides,
+  };
+}
+
+// Spec 112: BCFF11 (103 quotas, cost 808550) converted into BTHF11 at 1 for 7.4 (762 quotas + a 0.2 fraction).
+export function conversionScenario(): {
+  conversion: ConversionDetail;
+  destination: AssetDetail;
+  origin: AssetDetail;
+} {
+  const origin = assetFixture({
+    archivedAt: new Date('2026-10-16T00:00:00Z'),
+    assetClass: InvestmentAssetClass.BR_REIT,
+    ownerId: 'user-1',
+    status: InvestmentAssetStatus.ARCHIVED,
+    ticker: 'BCFF11',
+  });
+  const destination = assetFixture({
+    assetClass: InvestmentAssetClass.BR_REIT,
+    ownerId: 'user-1',
+    ticker: 'BTHF11',
+  });
+  const conversion = conversionFixture({
+    fromAssetId: origin.id,
+    id: 'conv-1',
+    toAssetId: destination.id,
+  });
+
+  return {
+    conversion,
+    destination: {
+      ...destination,
+      operations: [
+        operationFixture({
+          assetId: destination.id,
+          conversionCost: 808550,
+          conversionId: conversion.id,
+          date: '2026-10-15',
+          fractionCost: 212,
+          fractionQuantity: Decimal8.parse('0.2'),
+          generateTransaction: false,
+          id: 'in-1',
+          quantity: Decimal8.parse('762'),
+          total: 0,
+          type: InvestmentOperationType.CONVERSION_IN,
+        }),
+      ],
+      valuations: [],
+    },
+    origin: {
+      ...origin,
+      operations: [
+        operationFixture({
+          assetId: origin.id,
+          conversionCost: 808550,
+          conversionId: conversion.id,
+          date: '2026-10-15',
+          generateTransaction: false,
+          id: 'out-1',
+          quantity: Decimal8.parse('103'),
+          total: 0,
+          type: InvestmentOperationType.CONVERSION_OUT,
+        }),
+        operationFixture({
+          assetId: origin.id,
+          date: '2026-06-10',
+          id: 'buy-1',
+          quantity: Decimal8.parse('103'),
+          total: 808550,
+        }),
+      ],
+      valuations: [],
+    },
   };
 }

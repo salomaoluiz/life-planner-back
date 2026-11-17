@@ -25,6 +25,11 @@ export interface FeeInput {
 export interface OperationEntity {
   accountId: null | string;
   assetId: string;
+  // Spec 112 (CONVERSION_OUT with a cash part): the share of the cost the cash took.
+  cashCost: null | number;
+  // Spec 112 FR 12: the stored snapshot (`costOut` on the OUT, `costIn` on the IN).
+  conversionCost: null | number;
+  conversionId: null | string;
   createdAt: Date;
   date: string;
   // Set on SPLIT / REVERSE_SPLIT / BONUS.
@@ -33,7 +38,10 @@ export interface OperationEntity {
   fees: FeeEntity[];
   feesTotal: number;
   // Spec 108 FR 15: the event whose fraction this SELL sold.
+  fractionCost: null | number;
   fractionOfOperationId: null | string;
+  // Spec 112 (CONVERSION_IN): the fraction left by the ratio.
+  fractionQuantity: Decimal8 | null;
   fxRate: null | string;
   generateTransaction: boolean;
   gross: number;

@@ -46,6 +46,13 @@ export class UpdateAssetUseCase implements UseCaseWithParams<UpdateAssetInput, A
 
     ensureOwnerWritable(input.accessibleOwners, asset);
 
+    if (
+      input.status === InvestmentAssetStatus.ACTIVE &&
+      asset.status === InvestmentAssetStatus.ARCHIVED
+    ) {
+      await this.assertNotConverted(asset.id);
+    }
+
     const target =
       input.owner !== undefined && input.ownerId !== undefined
         ? { owner: input.owner, ownerId: input.ownerId }
@@ -115,6 +122,18 @@ export class UpdateAssetUseCase implements UseCaseWithParams<UpdateAssetInput, A
     const row = detailToListRow(detail ?? { ...updated, operations: [], valuations: [] });
 
     return toAssetView(row, await this.quotes.load([row]));
+  }
+
+  // Spec 112 FR 21: an origin stays archived while its conversion exists.
+  private async assertNotConverted(assetId: string): Promise<void> {
+    const conversions = await this.repository.findConversionsByAssetIds([assetId]);
+    const converted = conversions.find((conversion) => conversion.fromAssetId === assetId);
+
+    if (converted) {
+      throw new UnprocessableEntityException(
+        `This asset was converted into ${converted.toTicker ?? 'another asset'}. Delete the conversion to reactivate it.`,
+      );
+    }
   }
 }
 
