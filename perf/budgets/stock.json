@@ -38,7 +38,7 @@
     "indexes": null,
     "kind": "read",
     "knownException": "Deferred, see perf-roadmap.md",
-    "maxBytes": 800000,
+    "maxBytes": 640000,
     "maxQueries": 6,
     "p50Ms": null,
     "scenario": ""
