@@ -3,6 +3,14 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [5.1.0] - 2026-11-17
+
+### Added
+
+- Recurring investment income: a series of incomes (every N days, weeks, months or years) with the past ones created as received, this month planned and later ones projected in finance (spec 115).
+- Incomes can skip finance: `withFinance: false` keeps them only in investments, and the status is stored on the income (spec 115).
+- Edit or delete an income of a series with a scope (only this, this and next, all); selling every unit ends the series by itself (spec 115).
+
 ## [5.0.0] - 2026-11-17
 
 ### Changed

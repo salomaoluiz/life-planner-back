@@ -159,3 +159,7 @@ Spec 098 contract: additive. New `POST|GET|PATCH|DELETE /finance/transfers[/:id]
 Investments overview (spec 110, additive): new `GET /api/v1/investments/dashboard` (see `api.md`) read by the frontend `Investment/Overview` screen through `getInvestmentsDashboardUseCase`. No migration and no existing response changes; deploy the API first.
 
 Recurrence interval (spec 114, **breaking contract**): `frequency`/`recurrenceFrequency` change from an enum string to `{ unit, interval }` in recurrences, splits, transfers and transactions. Backend and frontend PRs ship together; older app builds fail to create or read series until updated (owner decision, no compatibility layer).
+
+## Income series (spec 115)
+
+Contract additions for the frontend: the `income-series` routes and the `scope`/`withFinance` fields described in `api.md`; `Income` gains `withFinance`, `seriesId`, `occurrenceNumber`; finance projection items gain optional `investmentIncomeSeriesId` and `assetId`. Errors `NO_POSITION_AT_START` (with `details.firstBuyDate`) and `TOO_MANY_OCCURRENCES` (with `details { count, max }`) travel as `{ code, message, details }`.
