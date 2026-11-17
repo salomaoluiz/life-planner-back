@@ -15,6 +15,9 @@ SET
   END,
   "frequency_interval" = CASE "frequency" WHEN 'BIWEEKLY' THEN 2 ELSE 1 END;
 
+-- The UPDATE queues deferred constraint triggers; fire them now or the ALTER TABLEs below are refused.
+SET CONSTRAINTS ALL IMMEDIATE;
+
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM "financial_recurrences" WHERE "frequency_unit" IS NULL OR "frequency_interval" IS NULL) THEN
