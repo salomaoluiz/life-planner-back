@@ -150,6 +150,23 @@
     "reason": "Needs incomes in the pinned perf dataset (spec 093); the seed gets investments in a later spec. Keyset pages and one asset per query (spec 107).",
     "scenario": ""
   },
+  "GET /api/v1/investments/market-indexes": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": 1200,
+    "maxQueries": 9,
+    "p50Ms": 40,
+    "scenario": ""
+  },
+  "GET /api/v1/investments/market-indexes/:index/history": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Path parameter and period; the perf dataset has no stored indexes (spec 113). Reads stored values only: followers, one or two history queries and the family access.",
+    "scenario": ""
+  },
   "GET /api/v1/investments/summary": {
     "indexes": null,
     "kind": "read",
@@ -345,6 +362,15 @@
     "maxQueries": 0,
     "p50Ms": null,
     "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "POST /api/v1/investments/market-indexes/refresh": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes: calls the Central Bank and stores indexes; perf tests only read (spec 093).",
     "scenario": ""
   },
   "POST /api/v1/investments/operations/:id/fraction-sale": {

@@ -37,12 +37,15 @@ import { GetIncomeSuggestionsUseCase } from '@investment/application/use-case/Ge
 import { GetIncomesUseCase } from '@investment/application/use-case/GetIncomesUseCase';
 import { GetInvestmentsDashboardUseCase } from '@investment/application/use-case/GetInvestmentsDashboardUseCase';
 import { GetInvestmentsHomeSummaryUseCase } from '@investment/application/use-case/GetInvestmentsHomeSummaryUseCase';
+import { GetMarketIndexesUseCase } from '@investment/application/use-case/GetMarketIndexesUseCase';
+import { GetMarketIndexHistoryUseCase } from '@investment/application/use-case/GetMarketIndexHistoryUseCase';
 import { GetPriceHistoryUseCase } from '@investment/application/use-case/GetPriceHistoryUseCase';
 import { HasInvestmentsByOwnerUseCase } from '@investment/application/use-case/HasInvestmentsByOwnerUseCase';
 import { PreviewFixedIncomeRedemptionUseCase } from '@investment/application/use-case/PreviewFixedIncomeRedemptionUseCase';
 import { ReceiveIncomeUseCase } from '@investment/application/use-case/ReceiveIncomeUseCase';
 import { RefreshCorporateEventsUseCase } from '@investment/application/use-case/RefreshCorporateEventsUseCase';
 import { RefreshIncomeEventsUseCase } from '@investment/application/use-case/RefreshIncomeEventsUseCase';
+import { RefreshMarketIndexesNowUseCase } from '@investment/application/use-case/RefreshMarketIndexesNowUseCase';
 import { RefreshMarketIndexesUseCase } from '@investment/application/use-case/RefreshMarketIndexesUseCase';
 import { RefreshQuotesNowUseCase } from '@investment/application/use-case/RefreshQuotesNowUseCase';
 import { RefreshTrackedQuotesUseCase } from '@investment/application/use-case/RefreshTrackedQuotesUseCase';
@@ -95,9 +98,12 @@ const useCases = [
   GetIncomesUseCase,
   GetInvestmentsDashboardUseCase,
   GetInvestmentsHomeSummaryUseCase,
+  GetMarketIndexesUseCase,
+  GetMarketIndexHistoryUseCase,
   ReceiveIncomeUseCase,
   RefreshCorporateEventsUseCase,
   RefreshIncomeEventsUseCase,
+  RefreshMarketIndexesNowUseCase,
   RefreshMarketIndexesUseCase,
   RejectEventSuggestionUseCase,
   RejectIncomeSuggestionUseCase,

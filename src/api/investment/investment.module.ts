@@ -13,6 +13,8 @@ import { InvestmentService } from '@api/investment/v1/investment.service';
 import { RefreshIncomeEventsJob } from '@api/investment/v1/job/RefreshIncomeEventsJob';
 import { RefreshMarketIndexesJob } from '@api/investment/v1/job/RefreshMarketIndexesJob';
 import { RefreshQuotesJob } from '@api/investment/v1/job/RefreshQuotesJob';
+import { MarketIndexController } from '@api/investment/v1/market-index.controller';
+import { MarketIndexService } from '@api/investment/v1/market-index.service';
 import { FamilyModule } from '@family/family.module';
 import { InvestmentModule } from '@investment/investment.module';
 
@@ -23,6 +25,7 @@ import { InvestmentModule } from '@investment/investment.module';
     IncomeController,
     CorporateEventController,
     ConversionController,
+    MarketIndexController,
   ],
   imports: [FamilyModule, InvestmentModule],
   providers: [
@@ -31,6 +34,7 @@ import { InvestmentModule } from '@investment/investment.module';
     FixedIncomeService,
     IncomeService,
     InvestmentService,
+    MarketIndexService,
     RefreshIncomeEventsJob,
     RefreshMarketIndexesJob,
     RefreshQuotesJob,
