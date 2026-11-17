@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import { IncomeMapper } from '@investment/data/datasource/mapper/IncomeMapper';
+import { IncomeSeriesMapper } from '@investment/data/datasource/mapper/IncomeSeriesMapper';
 import { InvestmentMapper } from '@investment/data/datasource/mapper/InvestmentMapper';
 import { IIncomeDatasource } from '@investment/data/repository/datasource/IIncomeDatasource';
 import {
@@ -170,8 +171,10 @@ export class IncomeRepository implements IIncomeRepository {
         assetId: income.asset_id,
         exDate: income.ex_date ? InvestmentMapper.toCalendarDate(income.ex_date) : null,
         paymentDate: InvestmentMapper.toCalendarDate(income.payment_date),
+        seriesId: income.series_id,
         type: income.type as InvestmentIncomeType,
       })),
+      series: row.series.map((item) => IncomeSeriesMapper.toSeries(item)),
     };
   }
 

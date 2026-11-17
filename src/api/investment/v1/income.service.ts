@@ -91,10 +91,15 @@ export class IncomeService {
     };
   }
 
-  async deleteIncome(userId: string, id: string): Promise<void> {
+  async deleteIncome(
+    userId: string,
+    id: string,
+    scope?: 'ALL' | 'ONLY_THIS' | 'THIS_AND_NEXT',
+  ): Promise<void> {
     await this.deleteIncomeUseCase.execute({
       accessibleOwners: await this.getAccessibleOwners(userId),
       id,
+      scope,
     });
   }
 
@@ -189,7 +194,11 @@ export class IncomeService {
     });
   }
 
-  async updateIncome(userId: string, id: string, input: UpdateIncomeApiInput) {
+  async updateIncome(
+    userId: string,
+    id: string,
+    input: { scope?: 'ALL' | 'ONLY_THIS' | 'THIS_AND_NEXT' } & UpdateIncomeApiInput,
+  ) {
     const accessibleOwners = await this.getAccessibleOwners(userId);
 
     return {

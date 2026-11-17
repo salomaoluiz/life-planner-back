@@ -287,18 +287,27 @@ export class IncomeDatasource implements IIncomeDatasource {
         : [];
     });
     const ids = matched.map((asset) => asset.asset_id);
-    const [existing, incomes] = await Promise.all([
+    const [existing, incomes, series] = await Promise.all([
       this.db.client.investmentIncomeSuggestion.findMany({
         select: { asset_id: true, event_id: true },
         where: { asset_id: { in: ids } },
       }),
       this.db.client.investmentIncome.findMany({
-        select: { asset_id: true, ex_date: true, payment_date: true, type: true },
+        select: {
+          asset_id: true,
+          ex_date: true,
+          payment_date: true,
+          series_id: true,
+          type: true,
+        },
         where: { asset_id: { in: ids } },
+      }),
+      this.db.client.investmentIncomeSeries.findMany({
+        where: { asset_id: { in: ids }, ended_at: null },
       }),
     ]);
 
-    return { assets: matched, existing, incomes };
+    return { assets: matched, existing, incomes, series };
   }
 
   async incomeTotals(assetId: string, yearFrom: Date, yearTo: Date) {
@@ -383,7 +392,7 @@ export class IncomeDatasource implements IIncomeDatasource {
   }
 }
 
-function toLinkedRow(
+export function toLinkedRow(
   row: { account_id: null | string; type: string; value: number } | null,
 ): LinkedRow | undefined {
   if (!row || !row.account_id) {
@@ -396,7 +405,7 @@ function toLinkedRow(
     value: row.value,
   };
 }
-async function writeIncomeIn(
+export async function writeIncomeIn(
   tx: Prisma.TransactionClient,
   params: WriteIncomeParams,
 ): Promise<string> {

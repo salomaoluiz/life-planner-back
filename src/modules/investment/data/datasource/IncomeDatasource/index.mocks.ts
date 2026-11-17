@@ -22,6 +22,7 @@ const spies = {
   incomeUpdate: jest.fn(),
   operationFindFirst: jest.fn(),
   queryRaw: jest.fn(),
+  seriesFindMany: jest.fn(),
   suggestionCount: jest.fn(),
   suggestionCreateMany: jest.fn(),
   suggestionFindMany: jest.fn(),
@@ -52,6 +53,7 @@ const tx = {
     update: spies.incomeUpdate,
   },
   investmentIncomeEvent: { findMany: spies.eventFindMany, upsert: spies.eventUpsert },
+  investmentIncomeSeries: { findMany: spies.seriesFindMany },
   investmentIncomeSuggestion: {
     count: spies.suggestionCount,
     createMany: spies.suggestionCreateMany,

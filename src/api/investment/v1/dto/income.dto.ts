@@ -1,7 +1,7 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-import { InvestmentIncomeType } from '@investment/domain/enum';
+import { IncomeSeriesUnit, InvestmentIncomeType } from '@investment/domain/enum';
 
 const DecimalApiSchema = z.string().regex(/^\d+(\.\d{1,8})?$/);
 const CalendarDateApiSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -35,8 +35,19 @@ export const CreateIncomeApiSchema = z
   .refine((data) => data.withFinance === false || (data.accountId && data.categoryId), {
     message: 'accountId and categoryId are required with withFinance',
   });
+export const ScopeQuerySchema = z.object({
+  scope: z.enum(['ALL', 'ONLY_THIS', 'THIS_AND_NEXT']).optional(),
+});
 export const UpdateIncomeApiSchema = z
-  .strictObject({ ...z.object(fields).partial().shape, withFinance: z.boolean().optional() })
+  .strictObject({
+    ...z.object(fields).partial().shape,
+    endDate: CalendarDateApiSchema.nullish(),
+    exDateOffsetDays: z.number().int().min(0).max(90).nullish(),
+    frequency: z
+      .strictObject({ interval: z.number().int(), unit: z.enum(IncomeSeriesUnit) })
+      .optional(),
+    withFinance: z.boolean().optional(),
+  })
   .refine((data) => data.withFinance !== false || (!data.accountId && !data.categoryId), {
     message: 'accountId and categoryId must be absent without withFinance',
   });

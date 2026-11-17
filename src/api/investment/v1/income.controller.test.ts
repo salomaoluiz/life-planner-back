@@ -43,10 +43,10 @@ it('SHOULD create after validating the strict body', async () => {
 });
 
 it('SHOULD edit with a partial body AND refuse the asset id', async () => {
-  await setup.updateIncome(mocks.request, id, { status: 'PLANNED' } as never);
+  await setup.updateIncome(mocks.request, id, { status: 'PLANNED' } as never, {});
 
   expect(mocks.service.updateIncome).toHaveBeenCalledWith(userId, id, { status: 'PLANNED' });
-  await expect(setup.updateIncome(mocks.request, id, { assetId: id } as never)).rejects.toThrow(
+  await expect(setup.updateIncome(mocks.request, id, { assetId: id } as never, {})).rejects.toThrow(
     ValidationError,
   );
 });
@@ -64,11 +64,11 @@ it('SHOULD receive with an optional body', async () => {
 
 it('SHOULD read, delete AND list with the validated query', async () => {
   await setup.findIncomeById(mocks.request, id);
-  await setup.deleteIncome(mocks.request, id);
+  await setup.deleteIncome(mocks.request, id, {});
   await setup.findIncomes(mocks.request, { assetId: id, limit: '20', status: 'PLANNED' });
 
   expect(mocks.service.findIncomeById).toHaveBeenCalledWith(userId, id);
-  expect(mocks.service.deleteIncome).toHaveBeenCalledWith(userId, id);
+  expect(mocks.service.deleteIncome).toHaveBeenCalledWith(userId, id, undefined);
   expect(mocks.service.findIncomes).toHaveBeenCalledWith(userId, {
     assetId: id,
     limit: 20,

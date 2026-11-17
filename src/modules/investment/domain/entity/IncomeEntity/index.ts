@@ -1,3 +1,4 @@
+import { IncomeSeriesEntity } from '@investment/domain/entity/IncomeSeriesEntity';
 import {
   InvestmentAssetClass,
   InvestmentIncomeType,
@@ -101,8 +102,11 @@ export interface IncomeSuggestionInputs {
     assetId: string;
     exDate: null | string;
     paymentDate: string;
+    seriesId: null | string;
     type: InvestmentIncomeType;
   }[];
+  // Spec 115 FR 28: the active series of the assets.
+  series: IncomeSeriesEntity[];
 }
 export interface IncomeSummaryTotals {
   planned: number;

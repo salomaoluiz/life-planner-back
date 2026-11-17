@@ -86,9 +86,11 @@ it('SHOULD map the matcher inputs to domain keys AND dates', async () => {
         asset_id: 'asset-1',
         ex_date: new Date('2026-09-10T00:00:00Z'),
         payment_date: new Date('2026-10-30T00:00:00Z'),
+        series_id: null,
         type: 'JCP',
       },
     ],
+    series: [],
   });
 
   expect(await setup.findSuggestionInputs([])).toMatchObject({

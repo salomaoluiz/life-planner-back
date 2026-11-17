@@ -373,6 +373,7 @@ describe('suggestions and events', () => {
     ]);
     spies.suggestionFindMany.mockResolvedValue([{ asset_id: 'a1', event_id: 'e1' }]);
     spies.incomeFindMany.mockResolvedValue([]);
+    spies.seriesFindMany.mockResolvedValue([]);
 
     const inputs = await setup.findSuggestionInputs([{ market: 'B3', ticker: 'PETR4' }]);
 

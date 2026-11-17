@@ -1,10 +1,13 @@
 import { Type } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 
+import { IncomeSeriesGate } from '@investment/application/service/IncomeSeriesGate';
+import { UpdateIncomeSeriesUseCase } from '@investment/application/use-case/UpdateIncomeSeriesUseCase';
 import {
   incomeCategoryFixture,
   incomeFixture,
   incomeRepositorySpies,
+  incomeSeriesRepositorySpies,
 } from '@investment/domain/entity/mocks/income.fixture';
 import { assetFixture, repositorySpies } from '@investment/domain/entity/mocks/investment.fixture';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -20,6 +23,9 @@ export async function buildIncomeUseCase<T>(
       useCase,
       { provide: 'IInvestmentRepository', useValue: spies.investment },
       { provide: 'IIncomeRepository', useValue: spies.incomes },
+      { provide: 'IIncomeSeriesRepository', useValue: spies.series },
+      { provide: IncomeSeriesGate, useValue: spies.gate },
+      { provide: UpdateIncomeSeriesUseCase, useValue: spies.updateSeries },
     ],
   }).compile();
 
@@ -53,5 +59,11 @@ export function wireIncomeSpies(scenario: ReturnType<typeof incomeScenario>) {
   incomes.findDefaultAccountId.mockResolvedValue(scenario.account.id);
   incomes.findLastIncomeCategoryId.mockResolvedValue(scenario.category.id);
 
-  return { incomes, investment };
+  return {
+    gate: { invalidate: jest.fn(), runOnce: jest.fn() },
+    incomes,
+    investment,
+    series: incomeSeriesRepositorySpies(),
+    updateSeries: { execute: jest.fn() },
+  };
 }

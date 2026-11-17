@@ -4,6 +4,7 @@ import {
   InvestmentAsset,
   InvestmentIncome,
   InvestmentIncomeEvent,
+  InvestmentIncomeSeries,
   InvestmentIncomeSuggestion,
 } from '@db/client';
 import { PositionColumns } from '@investment/data/datasource/mapper/InvestmentMapper';
@@ -72,6 +73,7 @@ export interface SuggestionInputsRow {
     ticker: string;
   }[];
   existing: { asset_id: string; event_id: string }[];
-  incomes: Pick<InvestmentIncome, 'asset_id' | 'ex_date' | 'payment_date' | 'type'>[];
+  incomes: Pick<InvestmentIncome, 'asset_id' | 'ex_date' | 'payment_date' | 'series_id' | 'type'>[];
+  series: InvestmentIncomeSeries[];
 }
 export type SuggestionRow = { event: InvestmentIncomeEvent } & InvestmentIncomeSuggestion;
