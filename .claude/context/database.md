@@ -122,3 +122,8 @@ Two migrations (PostgreSQL cannot use a new enum value in the transaction that a
 ## Investment conversions (spec 112)
 
 - Migrations `20261116115900_investment_conversion_enum` (own migration for the enum values) and `20261116120000_investment_conversions`: table `investment_conversions` (unique `from_asset_id`, index `to_asset_id`, CHECKs: different assets, positive ratios, cash fields together), columns `conversion_id`, `conversion_cost`, `fraction_quantity`, `fraction_cost`, `cash_cost` on `investment_operations`, unique `(conversion_id, type)`, and `investment_operations_kind_check` rewritten with the two conversion branches (OUT carries money fields only with a cash part, IN never).
+
+## Market indexes (spec 113)
+
+- Migration `20261116130000_market_indexes`: enum `MarketIndexSeries`, `market_index_values` (no owner; unique `(series, date)`, `value numeric(14,8)`, `source` `BCB_SGS|BCB_FOCUS`, `fetched_at`), `market_index_fetches` (PK `series`, `last_success_at`, `last_attempt_at`, `last_error` short code such as `HTTP_503`, `TIMEOUT`, `OUT_OF_RANGE`). Both are filled ONLY by `RefreshMarketIndexesUseCase` (`MarketIndexDatasource.upsertValues` is one `INSERT … ON CONFLICT` per 1000 rows).
+- `investment_fixed_income_rates.index_rate` stays nullable but is never written or read; the CHECK `investment_fixed_income_rates_mode_check` no longer mentions it. `effective_rate` is a snapshot for indexed modes. A later spec drops the column.

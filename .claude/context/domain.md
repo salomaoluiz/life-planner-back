@@ -84,3 +84,10 @@ Pure services in `investment/domain/service`: `CorporateEventMath` (`applySplit`
 - `ConversionMath.computeConversion` (pure): `raw = quantityOut × ratioTo / ratioFrom`, `quantityIn` floored to the unit step, `fractionCost = round_half_up(costIn × fraction / raw)`, `cashCost = round_half_up(costOut × cash / (cash + raw × reference × 100))`, `realizedOut = cash − cashCost`.
 - `PositionCalculator`: conversions sort with the events (group 1); the OUT takes the running quantity/cost (and books the cash result), the IN adds `quantityIn` and `costIn − fractionCost` and lists the fraction in `pendingFractions` (its fraction sale realizes against `fractionCost`).
 - `ConversionRules`: `checkAssetPair` (same class and currency, no fixed income), `operationsAfter` (FR 5). Errors: `ConversionLaterOperationsError`.
+
+## Market indexes (spec 113)
+
+- Enums `MarketIndexSeries` (`CDI_DAILY`, `CDI_ANNUAL`, `SELIC_DAILY`, `SELIC_TARGET`, `IPCA_MONTHLY`, `IPCA_12M`, `IPCA_EXPECTED_12M`) and `MarketIndex` (`CDI|SELIC|IPCA`); `MarketIndexEntity` (fetch status, follower, point, fx pair), `IMarketIndexRepository`.
+- `IndexSeries` (pure): `IndexSeriesData` (`cdiDaily`, `ipcaMonthly`, `ipcaExpected`, ascending), `cdiGrowth` (product over the business days of `1 + CDI_DAILY × percent`, a missing day carries the previous value, days before the first stored value count as 1), `ipcaPlusGrowth` (per month `(1 + IPCA_m)^(n/du_m)`, the Focus monthly equivalent for unpublished months, then `(1 + spread)^(n/252)`), `currentCdiEffective`/`currentIpcaEffective`, `hasIndexFor`.
+- `FixedIncomeCalculator`: `CalcRate` gains `mode/cdiPercent/spread` and `CalcInput.indexes`; an indexed period uses the series when they exist, else the stored `effectiveRate` snapshot (first deploy, before the first backfill). `effectiveRateOf(input, indexes?)` is only the snapshot/display rate of an entry (`0` without series).
+- `MarketIndexRules` (pure): `isInRange` (FR 2 limits), `isStale` (4 business days daily series, 10 for the Focus, 45 days after the end of the reference month for the monthly IPCA), `sourceOf`.
