@@ -272,11 +272,9 @@ describe('addDays', () => {
 });
 
 describe('flexible interval (spec 114)', () => {
-  const rule = (unit: RecurrenceUnit, interval: number, startDate: string, endDate?: string) => ({
-    endDate,
-    frequency: { interval, unit },
-    startDate,
-  });
+  function rule(unit: RecurrenceUnit, interval: number, startDate: string, endDate?: string) {
+    return { endDate, frequency: { interval, unit }, startDate };
+  }
 
   it('steps every N days from the start date', () => {
     expect(occurrenceDate(rule(RecurrenceUnit.DAY, 15, '2026-11-12'), 3)).toBe('2026-12-12');
