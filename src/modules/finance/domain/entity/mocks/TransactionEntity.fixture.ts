@@ -2,7 +2,7 @@ import { faker } from '@faker-js/faker';
 
 import { SYSTEM_CATEGORY_IDS } from '@finance/domain/entity/SystemCategory';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
-import { RecurrenceFrequency, SystemCategoryKey, TransactionType } from '@finance/domain/enum';
+import { RecurrenceUnit, SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 class TransactionEntityFixture {
@@ -165,7 +165,7 @@ class TransactionEntityFixture {
     this.value.recurrenceId = recurrenceId;
     this.value.occurrenceNumber = occurrenceNumber;
     this.value.occurrenceCount = occurrenceCount;
-    this.value.recurrenceFrequency = RecurrenceFrequency.MONTHLY;
+    this.value.recurrenceFrequency = { interval: 1, unit: RecurrenceUnit.MONTH };
     return this;
   }
 

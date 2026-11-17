@@ -1,7 +1,7 @@
 import { faker } from '@faker-js/faker';
 
 import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
-import { RecurrenceFrequency, RecurrenceStatus, TransactionType } from '@finance/domain/enum';
+import { RecurrenceStatus, RecurrenceUnit, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 class RecurrenceEntityFixture {
@@ -49,7 +49,7 @@ class RecurrenceEntityFixture {
       description: faker.commerce.productName().slice(0, 100),
       endDate: null,
       firstNumber: 1,
-      frequency: RecurrenceFrequency.MONTHLY,
+      frequency: { interval: 1, unit: RecurrenceUnit.MONTH },
       id: faker.string.uuid(),
       lastGeneratedNumber: 1,
       nextOccurrenceDate: '2026-11-05',

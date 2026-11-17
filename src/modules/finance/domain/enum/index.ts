@@ -29,15 +29,16 @@ export enum InvoiceStatus {
   OPEN = 'OPEN',
   PAID = 'PAID',
 }
-export enum RecurrenceFrequency {
-  BIWEEKLY = 'BIWEEKLY',
-  MONTHLY = 'MONTHLY',
-  WEEKLY = 'WEEKLY',
-  YEARLY = 'YEARLY',
-}
 export enum RecurrenceStatus {
   ACTIVE = 'ACTIVE',
   ENDED = 'ENDED',
+}
+// Spec 114: the base unit of a series rule (`frequency.unit`), stepped every `frequency.interval` units.
+export enum RecurrenceUnit {
+  DAY = 'DAY',
+  MONTH = 'MONTH',
+  WEEK = 'WEEK',
+  YEAR = 'YEAR',
 }
 // Spec 107: the module that manages a row; finance never edits or deletes it directly.
 export enum SystemCategoryKey {

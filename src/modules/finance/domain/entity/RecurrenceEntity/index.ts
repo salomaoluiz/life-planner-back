@@ -4,8 +4,9 @@ import {
   TransactionCardSummary,
   TransactionCategorySummary,
 } from '@finance/domain/entity/TransactionEntity';
-import { RecurrenceFrequency, RecurrenceStatus, TransactionType } from '@finance/domain/enum';
+import { RecurrenceStatus, TransactionType } from '@finance/domain/enum';
 import { CurrencyCode, DEFAULT_CURRENCY } from '@finance/domain/enum/Currency';
+import { RecurrenceFrequency } from '@finance/domain/service/RecurrenceInterval';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 interface IRecurrenceEntity {

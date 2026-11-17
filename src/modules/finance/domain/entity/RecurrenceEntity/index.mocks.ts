@@ -1,4 +1,4 @@
-import { RecurrenceFrequency, RecurrenceStatus, TransactionType } from '@finance/domain/enum';
+import { RecurrenceStatus, RecurrenceUnit, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import RecurrenceEntity from './index';
@@ -25,7 +25,7 @@ const paramsMock: RecurrenceEntity = {
   description: 'Rent',
   endDate: '2027-09-05',
   firstNumber: 1,
-  frequency: RecurrenceFrequency.MONTHLY,
+  frequency: { interval: 1, unit: RecurrenceUnit.MONTH },
   id: 'recurrence-uuid-1',
   lastGeneratedNumber: 1,
   nextOccurrenceDate: '2026-11-05',

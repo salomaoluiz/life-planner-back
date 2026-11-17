@@ -1,5 +1,6 @@
-import { RecurrenceFrequency, RecurrenceStatus } from '@finance/domain/enum';
+import { RecurrenceStatus, RecurrenceUnit } from '@finance/domain/enum';
 import { firstUnpaidInvoiceMonth, invoiceMonthOf } from '@finance/domain/service/InvoiceCalculator';
+import { RecurrenceFrequency } from '@finance/domain/service/RecurrenceInterval';
 
 export interface MaterializationPlan {
   // Position of the last occurrence up to the horizon (skipped ones included), or the previous one when nothing is due.
@@ -72,16 +73,16 @@ export function planMaterialization(params: {
 // Spec 034 FR 3: always computed from the start date, never from the previous occurrence.
 export function occurrenceDate(rule: RecurrenceRule, k: number): string {
   const [year, month, day] = parts(rule.startDate);
-  const step = k - 1;
+  const step = (k - 1) * rule.frequency.interval;
 
-  switch (rule.frequency) {
-    case RecurrenceFrequency.BIWEEKLY:
-      return addDays(rule.startDate, step * 14);
-    case RecurrenceFrequency.MONTHLY:
+  switch (rule.frequency.unit) {
+    case RecurrenceUnit.DAY:
+      return addDays(rule.startDate, step);
+    case RecurrenceUnit.MONTH:
       return inMonth(year, month - 1 + step, day);
-    case RecurrenceFrequency.WEEKLY:
+    case RecurrenceUnit.WEEK:
       return addDays(rule.startDate, step * 7);
-    case RecurrenceFrequency.YEARLY:
+    case RecurrenceUnit.YEAR:
       return inMonth(year + step, month - 1, day);
   }
 }

@@ -4,8 +4,9 @@ import {
   TransactionCardSummary,
   TransactionCategorySummary,
 } from '@finance/domain/entity/TransactionEntity';
-import { RecurrenceFrequency, TransactionType } from '@finance/domain/enum';
+import { TransactionType } from '@finance/domain/enum';
 import { CurrencyCode } from '@finance/domain/enum/Currency';
+import { RecurrenceFrequency } from '@finance/domain/service/RecurrenceInterval';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 // A future occurrence of a series, computed on read and never stored (spec 034 FR 8, FR 12).
