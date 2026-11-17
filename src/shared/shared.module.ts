@@ -13,6 +13,7 @@ import { AllExceptionsFilter } from './infra/http/filters/all-exception-filter';
 import { JwtAuthGuard } from './infra/http/guards/JwtAuthGuard';
 import { NestJwtProvider } from './infra/jwt/nest';
 import { Logger } from './infra/logger';
+import { BcbIndexes } from './infra/market-index/bcb';
 import { BcryptHasher } from './infra/password-hasher/bcrypt/BcryptHasher';
 import { BrapiQuotes } from './infra/quotes/brapi';
 import { FinnhubQuotes } from './infra/quotes/finnhub';
@@ -30,6 +31,7 @@ import { Scheduler } from './infra/scheduler';
     'IBrapiQuotes',
     'IFinnhubQuotes',
     'IFxRates',
+    'IBcbIndexes',
     'IScheduler',
     Database,
     EnvModule,
@@ -45,6 +47,7 @@ import { Scheduler } from './infra/scheduler';
     { provide: 'IBrapiQuotes', useClass: BrapiQuotes },
     { provide: 'IFinnhubQuotes', useClass: FinnhubQuotes },
     { provide: 'IFxRates', useClass: FxRates },
+    { provide: 'IBcbIndexes', useClass: BcbIndexes },
     { provide: 'IScheduler', useClass: Scheduler },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
