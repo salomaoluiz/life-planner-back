@@ -169,7 +169,6 @@ export const FixedIncomeRateApiSchema = z.strictObject({
   cdiPercent: z.string().nullable(),
   effectiveRate: z.string(),
   id: z.uuid(),
-  indexRate: z.string().nullable(),
   mode: z.enum(InvestmentFixedIncomeRateMode),
   spread: z.string().nullable(),
   startDate: z.string(),
@@ -182,17 +181,21 @@ export const FixedIncomeAdjustmentApiSchema = z.strictObject({
 // Spec 105 FR 26: the list carries the summary, the detail adds the history, the lots and the projection.
 const FixedIncomeListApiSchema = z.strictObject({
   currentEffectiveRate: z.string().nullable(),
+  // Spec 113 FR 14: no stored index yet, so the totals are `null` and the screen waits for the Central Bank.
+  indexMissing: z.boolean(),
   liquidity: z.enum(InvestmentFixedIncomeLiquidity),
   liquidityDate: z.string().nullable(),
   maturityDate: z.string(),
   maturityPending: z.boolean(),
+  // Spec 113 FR 16: a redemption the recalculated curve no longer covers.
+  needsReview: z.strictObject({ date: z.string(), operationId: z.uuid() }).nullable(),
   product: z.enum(InvestmentFixedIncomeProduct),
   taxExempt: z.boolean(),
-  today: TotalsApiSchema,
+  today: TotalsApiSchema.nullable(),
 });
 const FixedIncomeDetailApiSchema = FixedIncomeListApiSchema.extend({
   adjustments: z.array(FixedIncomeAdjustmentApiSchema),
-  atMaturity: TotalsApiSchema,
+  atMaturity: TotalsApiSchema.nullable(),
   lots: z.array(FixedIncomeLotApiSchema),
   rates: z.array(FixedIncomeRateApiSchema),
 });

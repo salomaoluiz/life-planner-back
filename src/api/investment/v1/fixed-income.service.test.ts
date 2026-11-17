@@ -23,7 +23,7 @@ describe('detail mapping', () => {
     expect(fixedIncome?.product).toBe('CDB');
     expect(fixedIncome?.lots).toHaveLength(1);
     expect(fixedIncome?.rates[0]).toMatchObject({ effectiveRate: '12.000000', mode: 'PREFIXED' });
-    expect(fixedIncome?.atMaturity.gross).toBeGreaterThan(fixedIncome?.today.gross ?? 0);
+    expect(fixedIncome?.atMaturity?.gross).toBeGreaterThan(fixedIncome?.today?.gross ?? 0);
   });
 
   it('SHOULD map a manual asset with no fixed income', () => {

@@ -1,5 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 
+import {
+  FOLLOWED_SERIES,
+  indexWindowStart,
+  toIndexSeriesData,
+} from '@investment/data/datasource/mapper/IndexSeriesMapper';
 import { InvestmentMapper } from '@investment/data/datasource/mapper/InvestmentMapper';
 import { toOwnerWhere } from '@investment/data/datasource/mapper/OwnerWhere';
 import { IMarketIndexDatasource } from '@investment/data/repository/datasource/IMarketIndexDatasource';
@@ -15,12 +20,6 @@ import { InvestmentFixedIncomeRateMode, MarketIndexSeries } from '@investment/do
 import { IMarketIndexRepository } from '@investment/domain/repository';
 import { IndexSeriesData } from '@investment/domain/service/IndexSeries';
 
-const FOLLOWED = [
-  MarketIndexSeries.CDI_DAILY,
-  MarketIndexSeries.IPCA_EXPECTED_12M,
-  MarketIndexSeries.IPCA_MONTHLY,
-];
-const SEED_DAYS = 10;
 const DAY_MS = 86_400_000;
 
 @Injectable()
@@ -110,50 +109,21 @@ export class MarketIndexRepository implements IMarketIndexRepository {
     );
   }
 
-  // One read from a few days (and the month) before `from`, so the value of a day before the first row still carries
-  // forward; a second one only when no Focus expectation fell inside the window.
+  // One read from a few days (and the month) before `from`; a second one only when no Focus expectation fell
+  // inside the window.
   async findSeriesData(from: string): Promise<IndexSeriesData> {
-    const start = new Date(
-      Math.min(
-        InvestmentMapper.fromCalendarDate(from).getTime() - SEED_DAYS * DAY_MS,
-        InvestmentMapper.fromCalendarDate(`${from.slice(0, 7)}-01`).getTime(),
-      ),
-    );
-    const rows = await this.datasource.findValues(FOLLOWED, start);
-    function only(series: MarketIndexSeries): { date: string; value: number }[] {
-      return rows
-        .filter((row) => row.series === series)
-        .map((row) => ({
-          date: InvestmentMapper.toCalendarDate(row.date),
-          value: Number(row.value.toString()),
-        }));
-    }
-    let ipcaExpected = only(MarketIndexSeries.IPCA_EXPECTED_12M);
+    const rows = await this.datasource.findValues(FOLLOWED_SERIES, indexWindowStart(from));
+    const hasExpected = rows.some((row) => row.series === MarketIndexSeries.IPCA_EXPECTED_12M);
+    const fallback = hasExpected
+      ? null
+      : await this.datasource.findLatestBefore(
+          MarketIndexSeries.IPCA_EXPECTED_12M,
+          new Date(Date.now() + DAY_MS),
+        );
 
-    if (ipcaExpected.length === 0) {
-      const latest = await this.datasource.findLatestBefore(
-        MarketIndexSeries.IPCA_EXPECTED_12M,
-        new Date(Date.now() + DAY_MS),
-      );
-
-      ipcaExpected = latest
-        ? [
-            {
-              date: InvestmentMapper.toCalendarDate(latest.date),
-              value: Number(latest.value.toString()),
-            },
-          ]
-        : [];
-    }
-
-    return {
-      cdiDaily: only(MarketIndexSeries.CDI_DAILY),
-      ipcaExpected,
-      ipcaMonthly: only(MarketIndexSeries.IPCA_MONTHLY),
-    };
+    return toIndexSeriesData(rows, fallback);
   }
 
-  // FR 16: a title whose redemption no longer fits stays as it is (the read flags it with `needsReview`).
   async recalculateIndexedTitles(): Promise<number> {
     const ids = await this.datasource.findIndexedAssetIds();
     let done = 0;

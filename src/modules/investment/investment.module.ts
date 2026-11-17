@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { HistoryBackfill } from '@investment/application/service/HistoryBackfill';
+import { IndexSeriesLoader } from '@investment/application/service/IndexSeriesLoader';
 import { QuoteContextLoader } from '@investment/application/service/QuoteContext';
 import { QuoteFetcher } from '@investment/application/service/QuoteFetcher';
 import { TickerValidator } from '@investment/application/service/TickerValidator';
@@ -68,7 +69,13 @@ import { InvestmentRepository } from '@investment/data/repository/InvestmentRepo
 import { MarketIndexRepository } from '@investment/data/repository/MarketIndexRepository';
 import { QuoteRepository } from '@investment/data/repository/QuoteRepository';
 
-const services = [HistoryBackfill, QuoteContextLoader, QuoteFetcher, TickerValidator];
+const services = [
+  HistoryBackfill,
+  IndexSeriesLoader,
+  QuoteContextLoader,
+  QuoteFetcher,
+  TickerValidator,
+];
 const useCases = [
   ApproveEventSuggestionUseCase,
   ApproveIncomeSuggestionUseCase,

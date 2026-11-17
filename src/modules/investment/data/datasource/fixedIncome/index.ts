@@ -1,14 +1,21 @@
-import { InvestmentFixedIncomeRateMode, Prisma } from '@db/client';
+import { InvestmentFixedIncomeRateMode, MarketIndexSeries, Prisma } from '@db/client';
+import {
+  FOLLOWED_SERIES,
+  indexWindowStart,
+  toIndexSeriesData,
+} from '@investment/data/datasource/mapper/IndexSeriesMapper';
 import {
   FixedIncomeRateWrite,
   FixedIncomeTermsWrite,
 } from '@investment/domain/entity/FixedIncomeEntity';
 import {
+  InvestmentFixedIncomeRateMode as DomainRateMode,
   InvestmentFixedIncomeRedemptionKind,
   InvestmentOperationType,
 } from '@investment/domain/enum';
 import { FixedIncomeRedemptionTooLargeError } from '@investment/domain/error/FixedIncomeRedemptionTooLargeError';
 import { calculateTitle } from '@investment/domain/service/FixedIncomeCalculator';
+import { EMPTY_INDEXES, IndexSeriesData } from '@investment/domain/service/IndexSeries';
 import { Decimal8, roundDiv } from '@shared/infra/decimal';
 
 const CENT_SCALE = 10n ** 6n;
@@ -61,6 +68,7 @@ export async function recalculateFixedIncome(
   }
 
   const rates = await tx.investmentFixedIncomeRate.findMany({ where: { asset_id: assetId } });
+  const indexes = await loadIndexSeries(tx, rates);
   const adjustments = await tx.investmentFixedIncomeAdjustment.findMany({
     where: { asset_id: assetId },
   });
@@ -80,6 +88,7 @@ export async function recalculateFixedIncome(
   const netAmounts = new Map<string, number>();
   const result = calculateTitle({
     adjustments: adjustments.map((row) => ({ date: day(row.date), grossAmount: row.gross_amount })),
+    indexes,
     lots: operations
       .filter((row) => row.type === InvestmentOperationType.BUY)
       .map((row) => ({
@@ -89,7 +98,10 @@ export async function recalculateFixedIncome(
       })),
     on: maturityDate,
     rates: rates.map((row) => ({
+      cdiPercent: row.cdi_percent ? Number(row.cdi_percent) : undefined,
       effectiveRate: Number(row.effective_rate),
+      mode: DomainRateMode[row.mode],
+      spread: row.spread ? Number(row.spread) : undefined,
       startDate: day(row.start_date),
     })),
     redemptions: operations
@@ -182,15 +194,42 @@ export async function saveTerms(
 function centsOf(quantity: { toFixed(places: number): string }): number {
   return Number(roundDiv(Decimal8.parse(quantity.toFixed(8)).scaled, CENT_SCALE));
 }
+// Spec 113: the stored series an indexed rate of the title follows (none for a prefixed-only title).
 function day(value: Date): string {
   return value.toISOString().slice(0, 10);
+}
+async function loadIndexSeries(
+  tx: Prisma.TransactionClient,
+  rates: { mode: string; start_date: Date }[],
+): Promise<IndexSeriesData> {
+  const indexed = rates.filter((rate) => rate.mode !== InvestmentFixedIncomeRateMode.PREFIXED);
+
+  if (indexed.length === 0) {
+    return EMPTY_INDEXES;
+  }
+
+  const first = indexed.map((rate) => day(rate.start_date)).sort()[0] as string;
+  const rows = await tx.marketIndexValue.findMany({
+    orderBy: [{ series: 'asc' }, { date: 'asc' }],
+    where: {
+      date: { gte: indexWindowStart(first) },
+      series: { in: FOLLOWED_SERIES as unknown as MarketIndexSeries[] },
+    },
+  });
+  const fallback = rows.some((row) => row.series === MarketIndexSeries.IPCA_EXPECTED_12M)
+    ? null
+    : await tx.marketIndexValue.findFirst({
+        orderBy: { date: 'desc' },
+        where: { series: MarketIndexSeries.IPCA_EXPECTED_12M },
+      });
+
+  return toIndexSeriesData(rows, fallback);
 }
 function rateColumns(rate: FixedIncomeRateWrite) {
   return {
     annual_rate: rate.annualRate,
     cdi_percent: rate.cdiPercent,
     effective_rate: rate.effectiveRate,
-    index_rate: rate.indexRate,
     mode: rate.mode as InvestmentFixedIncomeRateMode,
     spread: rate.spread,
     start_date: new Date(`${rate.startDate}T00:00:00.000Z`),

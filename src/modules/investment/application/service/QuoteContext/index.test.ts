@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 
 import {
   assetFixture,
+  marketIndexRepositorySpies,
   quoteFixture,
   quoteRepositorySpies,
   repositorySpies,
@@ -11,6 +12,7 @@ import { emptyContext, QuoteContextLoader, quoteKey } from './index';
 
 const spies = quoteRepositorySpies();
 const investmentSpies = repositorySpies();
+const indexSpies = marketIndexRepositorySpies();
 let setup: QuoteContextLoader;
 
 beforeEach(async () => {
@@ -21,6 +23,7 @@ beforeEach(async () => {
       QuoteContextLoader,
       { provide: 'IQuoteRepository', useValue: spies },
       { provide: 'IInvestmentRepository', useValue: investmentSpies },
+      { provide: 'IMarketIndexRepository', useValue: indexSpies },
     ],
   }).compile();
 
@@ -73,6 +76,10 @@ describe('QuoteContextLoader.load', () => {
   });
 });
 
+function rate(mode: string, startDate: string) {
+  return { mode, startDate };
+}
+
 describe('QuoteContextLoader.load fixed income', () => {
   it('SHOULD read the calculated titles of the FIXED_INCOME assets in ONE call', async () => {
     const data = { adjustments: [], rates: [], terms: null };
@@ -94,5 +101,47 @@ describe('QuoteContextLoader.load fixed income', () => {
 
     expect(investmentSpies.findFixedIncomeByAssetIds).not.toHaveBeenCalled();
     expect(context.fixedIncome.size).toBe(0);
+  });
+
+  it('SHOULD read the index series ONCE from the earliest indexed rate AND none for prefixed titles (spec 113 FR 13)', async () => {
+    const series = { cdiDaily: [], ipcaExpected: [], ipcaMonthly: [] };
+    const fixed = assetFixture({ assetClass: 'FIXED_INCOME' as never, ticker: null });
+
+    spies.findQuotes.mockResolvedValue([]);
+    indexSpies.findSeriesData.mockResolvedValue(series);
+    investmentSpies.findFixedIncomeByAssetIds.mockResolvedValue(
+      new Map([
+        [
+          fixed.id,
+          {
+            adjustments: [],
+            rates: [
+              rate('PREFIXED', '2020-01-01'),
+              rate('CDI_PERCENT', '2026-03-01'),
+              rate('IPCA_PLUS', '2025-06-01'),
+            ],
+            terms: null,
+          },
+        ],
+      ]),
+    );
+
+    expect((await setup.load([fixed])).indexes).toBe(series);
+    expect(indexSpies.findSeriesData).toHaveBeenCalledTimes(1);
+    expect(indexSpies.findSeriesData).toHaveBeenCalledWith('2025-06-01');
+
+    indexSpies.findSeriesData.mockClear();
+    investmentSpies.findFixedIncomeByAssetIds.mockResolvedValue(
+      new Map([
+        [fixed.id, { adjustments: [], rates: [rate('PREFIXED', '2020-01-01')], terms: null }],
+      ]),
+    );
+
+    expect((await setup.load([fixed])).indexes).toEqual({
+      cdiDaily: [],
+      ipcaExpected: [],
+      ipcaMonthly: [],
+    });
+    expect(indexSpies.findSeriesData).not.toHaveBeenCalled();
   });
 });

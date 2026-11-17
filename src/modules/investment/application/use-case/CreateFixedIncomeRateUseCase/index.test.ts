@@ -14,7 +14,6 @@ const input = {
   assetId: 'asset-fi',
   rate: {
     cdiPercent: '110',
-    indexRate: '15.2',
     mode: 'CDI_PERCENT' as never,
     startDate: '2026-10-01',
   },

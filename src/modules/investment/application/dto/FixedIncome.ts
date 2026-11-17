@@ -30,20 +30,18 @@ const CentsSchema = z.number().int().positive();
 
 function rateVariants<T extends z.ZodRawShape>(extra: T) {
   return z.discriminatedUnion('mode', [
-    z.object({
+    z.strictObject({
       ...extra,
       annualRate: PercentSchema,
       mode: z.literal(InvestmentFixedIncomeRateMode.PREFIXED),
     }),
-    z.object({
+    z.strictObject({
       ...extra,
       cdiPercent: PercentSchema,
-      indexRate: PercentSchema,
       mode: z.literal(InvestmentFixedIncomeRateMode.CDI_PERCENT),
     }),
-    z.object({
+    z.strictObject({
       ...extra,
-      indexRate: PercentSchema,
       mode: z.literal(InvestmentFixedIncomeRateMode.IPCA_PLUS),
       spread: PercentSchema,
     }),

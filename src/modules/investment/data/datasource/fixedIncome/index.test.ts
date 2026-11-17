@@ -23,6 +23,8 @@ const spies = {
   adjustmentDeleteMany: jest.fn(),
   adjustmentFindMany: jest.fn(),
   adjustmentUpsert: jest.fn(),
+  indexFindFirst: jest.fn(),
+  indexFindMany: jest.fn(),
   operationFindMany: jest.fn(),
   operationUpdate: jest.fn(),
   rateCreate: jest.fn(),
@@ -48,13 +50,13 @@ const tx = {
   investmentFixedIncomeTerms: { findUnique: spies.termsFindUnique, upsert: spies.termsUpsert },
   investmentOperation: { findMany: spies.operationFindMany, update: spies.operationUpdate },
   investmentValuation: { deleteMany: spies.valuationDeleteMany },
+  marketIndexValue: { findFirst: spies.indexFindFirst, findMany: spies.indexFindMany },
 } as unknown as Prisma.TransactionClient;
 
 const rate = {
   annualRate: '12',
   cdiPercent: null,
   effectiveRate: '12.000000',
-  indexRate: null,
   mode: 'PREFIXED' as never,
   spread: null,
   startDate: '2026-01-02',
@@ -71,7 +73,7 @@ describe('recalculateFixedIncome', () => {
       tax_exempt: false,
     });
     spies.rateFindMany.mockResolvedValue([
-      { effective_rate: decimal('12'), start_date: date('2026-01-02') },
+      { effective_rate: decimal('12'), mode: 'PREFIXED', start_date: date('2026-01-02') },
     ]);
     spies.adjustmentFindMany.mockResolvedValue([]);
     spies.operationFindMany.mockResolvedValue([
@@ -93,6 +95,63 @@ describe('recalculateFixedIncome', () => {
       },
     ]);
   }
+
+  it('SHOULD not read the index series WHEN every rate is prefixed', async () => {
+    seed(600_000);
+
+    await recalculateFixedIncome(tx, 'asset-1');
+
+    expect(spies.indexFindMany).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD price an indexed rate with the stored CDI AND read the series once (no expectation fallback needed)', async () => {
+    seed(600_000);
+    spies.rateFindMany.mockResolvedValue([
+      {
+        cdi_percent: decimal('100'),
+        effective_rate: decimal('1'),
+        mode: 'CDI_PERCENT',
+        spread: null,
+        start_date: date('2026-01-02'),
+      },
+    ]);
+    spies.indexFindMany.mockResolvedValue([
+      { date: date('2026-01-02'), series: 'CDI_DAILY', value: decimal('0.05') },
+      { date: date('2026-01-02'), series: 'IPCA_EXPECTED_12M', value: decimal('4') },
+    ]);
+
+    await recalculateFixedIncome(tx, 'asset-1');
+
+    expect(spies.indexFindMany).toHaveBeenCalledTimes(1);
+    expect(spies.indexFindFirst).not.toHaveBeenCalled();
+
+    const sell = spies.operationUpdate.mock.calls.find((call) => call[0].where.id === 'sell-1');
+    // 2026-01-02 to 2026-11-04 at 0.05% a day (about 11%) taxes far more than the 1% snapshot would (about 601 000).
+    expect(sell?.[0].data.gross).toBeGreaterThan(610_000);
+  });
+
+  it('SHOULD fall back to the latest stored expectation WHEN none is inside the window', async () => {
+    seed(600_000);
+    spies.rateFindMany.mockResolvedValue([
+      {
+        cdi_percent: null,
+        effective_rate: decimal('0'),
+        mode: 'IPCA_PLUS',
+        spread: decimal('6'),
+        start_date: date('2026-01-02'),
+      },
+    ]);
+    spies.indexFindMany.mockResolvedValue([]);
+    spies.indexFindFirst.mockResolvedValue({
+      date: date('2025-12-10'),
+      series: 'IPCA_EXPECTED_12M',
+      value: decimal('4'),
+    });
+
+    await recalculateFixedIncome(tx, 'asset-1');
+
+    expect(spies.indexFindFirst).toHaveBeenCalledTimes(1);
+  });
 
   it('SHOULD do nothing for an asset without terms', async () => {
     spies.termsFindUnique.mockResolvedValue(null);

@@ -21,12 +21,18 @@ it('SHOULD create a title after validating the body (strict, mode fields)', asyn
     name: 'CDB',
     owner: 'USER',
     ownerId,
-    rate: { cdiPercent: '110', indexRate: '14.90', mode: 'CDI_PERCENT' },
+    rate: { cdiPercent: '110', mode: 'CDI_PERCENT' },
     terms: { liquidity: 'DAILY', maturityDate: '2030-01-02', product: 'CDB', taxExempt: false },
   };
 
   expect(await setup.createTitle(mocks.request, body as never)).toBe(mocks.result);
   expect(mocks.service.createTitle).toHaveBeenCalledWith(userId, body);
+  await expect(
+    setup.createTitle(mocks.request, {
+      ...body,
+      rate: { cdiPercent: '110', indexRate: '14.90', mode: 'CDI_PERCENT' },
+    } as never),
+  ).rejects.toThrow(ValidationError);
   await expect(
     setup.createTitle(mocks.request, { ...body, rate: { mode: 'CDI_PERCENT' } } as never),
   ).rejects.toThrow(ValidationError);

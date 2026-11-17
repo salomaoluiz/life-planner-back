@@ -10,6 +10,7 @@ import {
   valuationFixture,
 } from '@investment/domain/entity/mocks/investment.fixture';
 import { InvestmentAssetClass, InvestmentOperationType } from '@investment/domain/enum';
+import { EMPTY_INDEXES } from '@investment/domain/service/IndexSeries';
 import { Decimal8 } from '@shared/infra/decimal';
 
 import { pickNextMaturity, summarizeHoldings, sumReceivedIncome, toHolding } from './index';
@@ -18,7 +19,14 @@ const now = new Date('2026-11-04T18:00:00Z');
 const FX = { pair: 'USD-BRL', quotedAt: now, rate: '5.5601', source: 'BRAPI' };
 
 function context(overrides: Partial<QuoteContext> = {}): QuoteContext {
-  return { fixedIncome: new Map(), fx: null, now, quotes: new Map(), ...overrides };
+  return {
+    fixedIncome: new Map(),
+    fx: null,
+    indexes: EMPTY_INDEXES,
+    now,
+    quotes: new Map(),
+    ...overrides,
+  };
 }
 function fixedIncomeView(name: string, maturityDate: string, ctxBase = context()) {
   const asset = assetFixture({

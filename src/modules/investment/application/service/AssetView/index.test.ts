@@ -6,6 +6,7 @@ import {
   valuationFixture,
 } from '@investment/domain/entity/mocks/investment.fixture';
 import { InvestmentOperationType } from '@investment/domain/enum';
+import { EMPTY_INDEXES } from '@investment/domain/service/IndexSeries';
 import { Decimal8 } from '@shared/infra/decimal';
 
 import { QuoteContext, quoteKey } from '../QuoteContext';
@@ -24,6 +25,7 @@ function context(overrides: Partial<QuoteContext> = {}): QuoteContext {
   return {
     fixedIncome: new Map(),
     fx: null,
+    indexes: EMPTY_INDEXES,
     now,
     quotes: new Map([[quoteKey('B3', 'ITSA4'), quoteFixture()]]),
     ...overrides,

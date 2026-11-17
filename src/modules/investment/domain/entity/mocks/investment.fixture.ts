@@ -236,7 +236,6 @@ export function fixedIncomeRateFixture(
     cdiPercent: null,
     effectiveRate: '12.000000',
     id: faker.string.uuid(),
-    indexRate: null,
     mode: InvestmentFixedIncomeRateMode.PREFIXED,
     spread: null,
     startDate: '2026-01-02',
