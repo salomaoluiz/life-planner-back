@@ -68,3 +68,39 @@ CREATE UNIQUE INDEX "investment_incomes_series_id_occurrence_number_key"
   ON "investment_incomes"("series_id", "occurrence_number");
 ALTER TABLE "investment_incomes" ADD CONSTRAINT "investment_incomes_series_number_check"
   CHECK (("series_id" IS NULL) = ("occurrence_number" IS NULL));
+
+-- Spec 092 / 115 FR 22: finance reads show the projected incomes of the series of their assets, so a series write (and an
+-- operation write on an asset that has a series in finance, which moves the position) bumps the version of the asset's owner.
+CREATE FUNCTION "finance_bump_investment_asset"(aid TEXT) RETURNS void LANGUAGE plpgsql AS $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN SELECT "owner", "owner_id" FROM "investment_assets" WHERE "id" = aid LOOP
+    PERFORM "finance_bump_owner"(r."owner", r."owner_id");
+  END LOOP;
+END
+$$;
+
+CREATE FUNCTION "finance_bump_investment_series"() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM "finance_bump_investment_asset"(CASE WHEN TG_OP = 'DELETE' THEN OLD."asset_id" ELSE NEW."asset_id" END);
+  RETURN NULL;
+END
+$$;
+
+CREATE FUNCTION "finance_bump_investment_operation"() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+  aid TEXT;
+BEGIN
+  aid := CASE WHEN TG_OP = 'DELETE' THEN OLD."asset_id" ELSE NEW."asset_id" END;
+
+  IF EXISTS (SELECT 1 FROM "investment_income_series" WHERE "asset_id" = aid AND "with_finance") THEN
+    PERFORM "finance_bump_investment_asset"(aid);
+  END IF;
+
+  RETURN NULL;
+END
+$$;
+
+CREATE CONSTRAINT TRIGGER "investment_income_series_bump_version" AFTER INSERT OR UPDATE OR DELETE ON "investment_income_series" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION "finance_bump_investment_series"();
+CREATE CONSTRAINT TRIGGER "investment_operations_bump_version" AFTER INSERT OR UPDATE OR DELETE ON "investment_operations" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION "finance_bump_investment_operation"();
