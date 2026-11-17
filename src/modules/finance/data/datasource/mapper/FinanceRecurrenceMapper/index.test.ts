@@ -1,3 +1,5 @@
+import { RecurrenceUnit } from '@finance/domain/enum';
+
 import { FinanceRecurrenceMapper } from './index';
 import { mocks } from './index.mocks';
 
@@ -23,7 +25,7 @@ describe('FinanceRecurrenceMapper.toDomain', () => {
       description: 'Rent',
       endDate: '2027-09-05',
       firstNumber: 1,
-      frequency: 'MONTHLY',
+      frequency: { interval: 1, unit: RecurrenceUnit.MONTH },
       id: mocks.raw.id,
       lastGeneratedNumber: 1,
       nextOccurrenceDate: '2026-11-05',

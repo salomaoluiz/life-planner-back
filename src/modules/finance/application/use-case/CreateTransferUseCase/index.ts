@@ -1,6 +1,7 @@
 import { Inject } from '@nestjs/common';
 
 import { CreateTransferInput, CreateTransferSchema } from '@finance/application/dto/CreateTransfer';
+import { assertFrequencyAllowed } from '@finance/application/service/FrequencyGuard';
 import {
   applyTransferRules,
   loadWritableSides,
@@ -66,6 +67,8 @@ export class CreateTransferUseCase implements UseCaseWithParams<
     if (input.recurrence === undefined) {
       return this.transferRepository.createTransfer(write);
     }
+
+    assertFrequencyAllowed(input.recurrence.frequency);
 
     // Occurrence 1 is what the user typed; the others due up to the end of the month follow the series: unpaid, the
     // fixed amount in for the same currency and none for different ones (it is typed when each is paid).

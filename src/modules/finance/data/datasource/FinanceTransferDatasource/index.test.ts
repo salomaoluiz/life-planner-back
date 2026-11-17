@@ -215,7 +215,8 @@ describe('Method findById', () => {
 describe('Method createSeries (spec 098)', () => {
   const rule = {
     end_date: null,
-    frequency: 'MONTHLY' as const,
+    frequency_interval: 1,
+    frequency_unit: 'MONTH' as const,
     last_generated_number: 2,
     next_occurrence_date: new Date('2026-12-04T00:00:00.000Z'),
     status: 'ACTIVE' as const,

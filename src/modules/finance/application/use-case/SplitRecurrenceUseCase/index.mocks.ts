@@ -4,7 +4,7 @@ import { MaterializationGate } from '@finance/application/service/Materializatio
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
 import RecurrenceEntityFixture from '@finance/domain/entity/mocks/RecurrenceEntity.fixture';
-import { RecurrenceFrequency } from '@finance/domain/enum';
+import { RecurrenceUnit } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { SplitRecurrenceUseCase } from './index';
@@ -17,7 +17,7 @@ const cardMock = { ...new CreditCardEntityFixture().build(), closingDay: 10 };
 const seriesMock = new RecurrenceEntityFixture()
   .withFields({
     endDate: '2026-12-05',
-    frequency: RecurrenceFrequency.MONTHLY,
+    frequency: { interval: 1, unit: RecurrenceUnit.MONTH },
     id: 'series-1',
     lastGeneratedNumber: 10,
     nextOccurrenceDate: '2026-11-05',

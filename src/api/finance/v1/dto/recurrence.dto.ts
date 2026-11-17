@@ -5,6 +5,7 @@ import {
   CalendarDateApiSchema,
   CurrencyApiSchema,
   DescriptionApiSchema,
+  FrequencyApiSchema,
   hasAtLeastOneField,
   NotesApiSchema,
   OwnerIdApiSchema,
@@ -17,9 +18,7 @@ import { TagRefApiSchema } from '@api/finance/v1/dto/tag.dto';
 import { TransactionApiSchema } from '@api/finance/v1/dto/transaction.dto';
 import { IdListQuerySchema, SearchQuerySchema } from '@api/finance/v1/finance-query';
 import { InvoiceMonthSchema } from '@finance/application/dto/FinanceCommon';
-import { InstallmentEditScope, RecurrenceFrequency, RecurrenceStatus } from '@finance/domain/enum';
-
-const FrequencyApiSchema = z.enum(RecurrenceFrequency);
+import { InstallmentEditScope, RecurrenceStatus } from '@finance/domain/enum';
 
 // `today` is the caller's local day (query), `paid` applies to occurrence 1 of an account series only.
 export const CreateRecurrenceApiSchema = z

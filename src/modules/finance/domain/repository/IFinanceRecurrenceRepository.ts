@@ -1,8 +1,9 @@
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
-import { RecurrenceFrequency, RecurrenceStatus, TransactionType } from '@finance/domain/enum';
+import { RecurrenceStatus, TransactionType } from '@finance/domain/enum';
 import { CurrencyCode } from '@finance/domain/enum/Currency';
+import { RecurrenceFrequency } from '@finance/domain/service/RecurrenceInterval';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 // The scalars materialization needs: no relations, no template (spec 070).

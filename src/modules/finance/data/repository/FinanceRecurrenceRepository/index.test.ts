@@ -1,4 +1,4 @@
-import { RecurrenceFrequency, RecurrenceStatus, TransactionType } from '@finance/domain/enum';
+import { RecurrenceStatus, RecurrenceUnit, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { mocks, setup, spies } from './index.mocks';
@@ -13,7 +13,7 @@ describe('create', () => {
       currency: 'BRL' as const,
       description: 'Rent',
       endDate: '2027-09-05',
-      frequency: RecurrenceFrequency.MONTHLY,
+      frequency: { interval: 1, unit: RecurrenceUnit.MONTH },
       lastGeneratedNumber: 1,
       nextOccurrenceDate: '2026-11-05',
       owner: OwnerType.USER,
@@ -33,7 +33,8 @@ describe('create', () => {
       currency: 'BRL' as const,
       description: 'Rent',
       end_date: new Date('2027-09-05T00:00:00.000Z'),
-      frequency: 'MONTHLY',
+      frequency_interval: 1,
+      frequency_unit: 'MONTH',
       last_generated_number: 1,
       next_occurrence_date: new Date('2026-11-05T00:00:00.000Z'),
       owner: 'USER',
@@ -59,7 +60,7 @@ describe('create', () => {
       creditCardId: 'card-1',
       currency: 'BRL' as const,
       description: 'Gym',
-      frequency: RecurrenceFrequency.WEEKLY,
+      frequency: { interval: 1, unit: RecurrenceUnit.WEEK },
       lastGeneratedNumber: 0,
       nextOccurrenceDate: null,
       owner: OwnerType.USER,
@@ -115,7 +116,7 @@ describe('reads', () => {
         creditCardId: 'card-1',
         endDate: null,
         firstNumber: 1,
-        frequency: 'MONTHLY',
+        frequency: { interval: 1, unit: RecurrenceUnit.MONTH },
         id: 'recurrence-1',
         lastGeneratedNumber: 2,
         skippedNumbers: [3],
@@ -179,7 +180,7 @@ describe('applyChange', () => {
         description: 'Rent',
         endDate: null,
         firstNumber: 5,
-        frequency: RecurrenceFrequency.MONTHLY,
+        frequency: { interval: 1, unit: RecurrenceUnit.MONTH },
         lastGeneratedNumber: 0,
         nextOccurrenceDate: '2026-11-05',
         owner: OwnerType.USER,
@@ -348,7 +349,7 @@ describe('tags (spec 043)', () => {
       categoryId: 'cat-1',
       currency: 'BRL',
       description: 'Rent',
-      frequency: RecurrenceFrequency.MONTHLY,
+      frequency: { interval: 1, unit: RecurrenceUnit.MONTH },
       lastGeneratedNumber: 0,
       nextOccurrenceDate: null,
       owner: OwnerType.USER,

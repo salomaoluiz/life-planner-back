@@ -4,6 +4,7 @@ import { MaterializationGate } from '@finance/application/service/Materializatio
 import { GetTransferUseCase } from '@finance/application/use-case/GetTransferUseCase';
 import AccountEntityFixture from '@finance/domain/entity/mocks/AccountEntity.fixture';
 import TransferEntityFixture from '@finance/domain/entity/mocks/TransferEntity.fixture';
+import { RecurrenceUnit } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { DeleteTransferUseCase } from './index';
@@ -35,7 +36,7 @@ beforeEach(async () => {
   transferRepositoryMock.deleteTransfer.mockResolvedValue(undefined);
   transferRepositoryMock.deleteTransferSeriesFrom.mockResolvedValue(undefined);
   recurrenceRepositoryMock.findById.mockResolvedValue({
-    frequency: 'MONTHLY',
+    frequency: { interval: 1, unit: RecurrenceUnit.MONTH },
     id: 'series-1',
     ownerId: fromAccount.ownerId,
     startDate: '2026-09-04',

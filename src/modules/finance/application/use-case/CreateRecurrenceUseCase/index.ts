@@ -4,6 +4,7 @@ import {
   CreateRecurrenceInput,
   CreateRecurrenceSchema,
 } from '@finance/application/dto/CreateRecurrence';
+import { assertFrequencyAllowed } from '@finance/application/service/FrequencyGuard';
 import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import {
@@ -78,6 +79,8 @@ export class CreateRecurrenceUseCase implements UseCaseWithParams<
     if (input.projected === true && (!card || input.type !== TransactionType.EXPENSE)) {
       throw new UnprocessableEntityException(PROJECTED_ONLY_CARD_EXPENSES);
     }
+
+    assertFrequencyAllowed(input.frequency);
 
     const rule = { endDate: input.endDate, frequency: input.frequency, startDate: input.date };
     const plan = planMaterialization({

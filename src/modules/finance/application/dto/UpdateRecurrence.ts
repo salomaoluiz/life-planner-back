@@ -4,11 +4,11 @@ import {
   AccessibleOwnersSchema,
   CalendarDateSchema,
   DescriptionSchema,
+  FrequencySchema,
   NotesSchema,
   TagNamesSchema,
   ValueSchema,
 } from '@finance/application/dto/FinanceCommon';
-import { RecurrenceFrequency } from '@finance/domain/enum';
 
 // Scope ALL (spec 034 FR 20): description, category, value and end date of the whole series.
 export const UpdateRecurrenceSchema = z.object({
@@ -33,7 +33,7 @@ export const SplitRecurrenceSchema = z
     creditCardId: z.string().min(1).optional(),
     description: DescriptionSchema.optional(),
     endDate: CalendarDateSchema.nullable().optional(),
-    frequency: z.enum(RecurrenceFrequency).optional(),
+    frequency: FrequencySchema.optional(),
     id: z.string().min(1),
     notes: NotesSchema.optional(),
     occurrenceNumber: z.number().int().min(1),

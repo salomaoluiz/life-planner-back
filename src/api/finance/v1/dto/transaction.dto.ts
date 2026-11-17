@@ -5,6 +5,7 @@ import {
   CalendarDateApiSchema,
   CurrencyApiSchema,
   DescriptionApiSchema,
+  FrequencyApiSchema,
   hasAtLeastOneField,
   IconColorApiSchema,
   NotesApiSchema,
@@ -18,7 +19,6 @@ import { TagRefApiSchema } from '@api/finance/v1/dto/tag.dto';
 import { InvoiceMonthSchema } from '@finance/application/dto/FinanceCommon';
 import {
   InstallmentEditScope,
-  RecurrenceFrequency,
   SystemCategoryKey,
   TransactionExternalLock,
 } from '@finance/domain/enum';
@@ -117,7 +117,7 @@ export const TransactionApiSchema = z.object({
   // Stored for account rows; derived from the invoice for card rows.
   paid: z.boolean(),
   projected: z.boolean(),
-  recurrenceFrequency: z.enum(RecurrenceFrequency).nullable(),
+  recurrenceFrequency: FrequencyApiSchema.nullable(),
   recurrenceId: z.uuid().nullable(),
   tags: z.array(TagRefApiSchema),
   type: TransactionTypeApiSchema,
@@ -156,7 +156,7 @@ export const TransactionItemApiSchema = z.strictObject({
   ownerId: z.uuid(),
   paid: z.boolean(),
   projected: z.boolean().optional(),
-  recurrenceFrequency: z.enum(RecurrenceFrequency).optional(),
+  recurrenceFrequency: FrequencyApiSchema.optional(),
   recurrenceId: z.uuid().optional(),
   tagIds: z.array(z.uuid()).optional(),
   // Spec 098: out, in and fee rows of a transfer (`lookups.transfers[transferId]`).

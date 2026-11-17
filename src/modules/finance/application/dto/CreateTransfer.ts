@@ -4,10 +4,10 @@ import {
   AccessibleOwnersSchema,
   CalendarDateSchema,
   DescriptionSchema,
+  FrequencySchema,
   NotesSchema,
   ValueSchema,
 } from '@finance/application/dto/FinanceCommon';
-import { RecurrenceFrequency } from '@finance/domain/enum';
 
 // Spec 098 section 7. `amountIn` may be omitted for the same currency (filled) and for a series occurrence.
 export const CreateTransferSchema = z
@@ -26,7 +26,7 @@ export const CreateTransferSchema = z
     paid: z.boolean(),
     // Spec 098 FR 8: a transfer series; `dateOut` is the date of occurrence 1.
     recurrence: z
-      .object({ endDate: CalendarDateSchema.optional(), frequency: z.enum(RecurrenceFrequency) })
+      .object({ endDate: CalendarDateSchema.optional(), frequency: FrequencySchema })
       .optional(),
     recurrenceId: z.string().min(1).nullish(),
     requesterId: z.string().min(1),

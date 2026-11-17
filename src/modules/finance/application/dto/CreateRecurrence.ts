@@ -5,6 +5,7 @@ import {
   CalendarDateSchema,
   CurrencySchema,
   DescriptionSchema,
+  FrequencySchema,
   NotesSchema,
   OwnerIdSchema,
   OwnerTypeSchema,
@@ -12,7 +13,6 @@ import {
   TransactionTypeSchema,
   ValueSchema,
 } from '@finance/application/dto/FinanceCommon';
-import { RecurrenceFrequency } from '@finance/domain/enum';
 
 export const CreateRecurrenceSchema = z
   .object({
@@ -27,7 +27,7 @@ export const CreateRecurrenceSchema = z
     notes: NotesSchema.optional(),
     // Inclusive; omitted = runs until the user ends it.
     endDate: CalendarDateSchema.optional(),
-    frequency: z.enum(RecurrenceFrequency),
+    frequency: FrequencySchema,
     owner: OwnerTypeSchema,
     ownerId: OwnerIdSchema,
     // Occurrence 1 of an account series only; omitted → paid when dated up to `today` (spec 033 FR 4).

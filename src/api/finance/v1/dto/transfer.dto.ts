@@ -5,6 +5,7 @@ import {
   CalendarDateApiSchema,
   CurrencyApiSchema,
   DescriptionApiSchema,
+  FrequencyApiSchema,
   hasAtLeastOneField,
   NotesApiSchema,
   ValueApiSchema,
@@ -13,7 +14,7 @@ import {
   TransactionItemApiSchema,
   TransactionLookupsApiSchema,
 } from '@api/finance/v1/dto/transaction.dto';
-import { InstallmentEditScope, RecurrenceFrequency } from '@finance/domain/enum';
+import { InstallmentEditScope } from '@finance/domain/enum';
 
 // Spec 098 section 7. `amountIn` is optional for the same currency (the API fills it); `dateIn` defaults to `dateOut`.
 export const CreateTransferApiSchema = z.strictObject({
@@ -30,7 +31,7 @@ export const CreateTransferApiSchema = z.strictObject({
   recurrence: z
     .strictObject({
       endDate: CalendarDateApiSchema.optional(),
-      frequency: z.enum(RecurrenceFrequency),
+      frequency: FrequencyApiSchema,
     })
     .optional(),
   toAccountId: z.uuid(),

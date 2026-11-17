@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import { OwnerType, RecurrenceFrequency, RecurrenceStatus } from '@db/client';
+import { OwnerType, RecurrenceStatus } from '@db/client';
 import { fromCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
 import { FinanceTransferMapper } from '@finance/data/datasource/mapper/FinanceTransferMapper';
 import {
@@ -67,7 +67,8 @@ export class FinanceTransferRepository implements IFinanceTransferRepository {
     return FinanceTransferMapper.toDomain(
       await this.transferDatasource.createSeries({
         end_date: params.endDate ? fromCalendarDate(params.endDate) : null,
-        frequency: params.frequency as RecurrenceFrequency,
+        frequency_interval: params.frequency.interval,
+        frequency_unit: params.frequency.unit,
         last_generated_number: params.lastGeneratedNumber,
         next_occurrence_date: params.nextOccurrenceDate
           ? fromCalendarDate(params.nextOccurrenceDate)

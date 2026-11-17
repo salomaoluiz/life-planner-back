@@ -1,6 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 
-import { RecurrenceFrequency } from '@finance/domain/enum';
+import { RecurrenceUnit } from '@finance/domain/enum';
 
 import { mocks, setup } from './index.mocks';
 
@@ -22,7 +22,7 @@ describe('SplitRecurrenceUseCase', () => {
         accountId: mocks.series.accountId,
         endDate: '2026-12-05',
         firstNumber: 5,
-        frequency: 'MONTHLY',
+        frequency: { interval: 1, unit: RecurrenceUnit.MONTH },
         lastGeneratedNumber: 6,
         nextOccurrenceDate: '2026-11-05',
         skippedNumbers: [7],
@@ -88,7 +88,7 @@ describe('SplitRecurrenceUseCase', () => {
   });
 
   it('SHOULD regenerate the rows by the new frequency up to the horizon AND drop the skipped numbers', async () => {
-    await setup.execute({ ...base, frequency: RecurrenceFrequency.WEEKLY });
+    await setup.execute({ ...base, frequency: { interval: 1, unit: RecurrenceUnit.WEEK } });
 
     const params = mocks.recurrenceRepository.applyChange.mock.calls[0][0];
 
@@ -122,7 +122,7 @@ describe('SplitRecurrenceUseCase', () => {
     ]);
     expect(params.newSeries).toEqual(
       expect.objectContaining({
-        frequency: 'WEEKLY',
+        frequency: { interval: 1, unit: RecurrenceUnit.WEEK },
         nextOccurrenceDate: '2026-11-03',
         skippedNumbers: [],
         status: 'ACTIVE',
@@ -197,11 +197,40 @@ describe('SplitRecurrenceUseCase', () => {
     mocks.recurrenceRepository.findById.mockResolvedValue(cardSeries);
     mocks.ensureConsistency.execute.mockResolvedValue({ card: mocks.card });
 
-    await setup.execute({ ...base, frequency: RecurrenceFrequency.YEARLY });
+    await setup.execute({ ...base, frequency: { interval: 1, unit: RecurrenceUnit.YEAR } });
 
     expect(mocks.recurrenceRepository.applyChange.mock.calls[0][0].replaceRows).toEqual([
       { date: '2026-05-05', invoiceMonth: '2026-05', number: 5 },
     ]);
+  });
+
+  it('SHOULD regenerate the rows WHEN only the interval changes (2 months to 3 months)', async () => {
+    mocks.recurrenceRepository.findById.mockResolvedValue({
+      ...mocks.series,
+      frequency: { interval: 2, unit: RecurrenceUnit.MONTH },
+    });
+
+    await setup.execute({ ...base, frequency: { interval: 3, unit: RecurrenceUnit.MONTH } });
+
+    const change = mocks.recurrenceRepository.applyChange.mock.calls[0][0];
+
+    expect(change.newSeries.frequency).toEqual({ interval: 3, unit: RecurrenceUnit.MONTH });
+    expect(change.newSeries.startDate).toBe('2026-09-05');
+    expect(change.newSeries.firstNumber).toBe(5);
+    expect(change.replaceRows).not.toBeNull();
+  });
+
+  it('SHOULD keep the generated rows WHEN the same unit and interval are sent', async () => {
+    await setup.execute({ ...base, frequency: mocks.series.frequency });
+
+    expect(mocks.recurrenceRepository.applyChange.mock.calls[0][0].replaceRows).toBeNull();
+  });
+
+  it('SHOULD refuse an interval out of the range of its unit with 422 before any write', async () => {
+    await expect(
+      setup.execute({ ...base, frequency: { interval: 25, unit: RecurrenceUnit.MONTH } }),
+    ).rejects.toThrow('Interval must be between 1 and 24 for MONTH');
+    expect(mocks.recurrenceRepository.applyChange).not.toHaveBeenCalled();
   });
 
   it('SHOULD refuse to change between account and card', async () => {

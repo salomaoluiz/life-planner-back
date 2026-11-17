@@ -13,7 +13,7 @@ const base = {
   categoryId: id,
   date: '2026-10-05',
   description: 'Rent',
-  frequency: 'MONTHLY',
+  frequency: { interval: 2, unit: 'MONTH' },
   owner: 'USER',
   ownerId: id,
   type: 'EXPENSE',
@@ -36,7 +36,11 @@ describe('CreateRecurrenceApiSchema', () => {
 
   it.each([
     ['both sources', { creditCardId: id }],
-    ['an unknown frequency', { frequency: 'DAILY' }],
+    ['an unknown unit', { frequency: { interval: 1, unit: 'DAILY' } }],
+    ['the old frequency string (spec 114)', { frequency: 'MONTHLY' }],
+    ['an interval of 0', { frequency: { interval: 0, unit: 'DAY' } }],
+    ['a fractional interval', { frequency: { interval: 1.5, unit: 'DAY' } }],
+    ['an extra key in the frequency', { frequency: { extra: 1, interval: 1, unit: 'DAY' } }],
     ['an end date before the first date', { endDate: '2026-10-04' }],
     ['a zero value', { value: 0 }],
     ['an unknown field (installments)', { installments: 3 }],
@@ -56,20 +60,27 @@ describe('UpdateRecurrenceApiSchema', () => {
     expect(UpdateRecurrenceApiSchema.safeParse({ endDate: null }).success).toBe(true);
   });
 
-  it.each([[{}], [{ owner: 'USER' }], [{ type: 'INCOME' }], [{ frequency: 'WEEKLY' }]])(
-    'SHOULD reject %j',
-    (body) => {
-      expect(UpdateRecurrenceApiSchema.safeParse(body).success).toBe(false);
-    },
-  );
+  it.each([
+    [{}],
+    [{ owner: 'USER' }],
+    [{ type: 'INCOME' }],
+    [{ frequency: { interval: 1, unit: 'WEEK' } }],
+  ])('SHOULD reject %j', (body) => {
+    expect(UpdateRecurrenceApiSchema.safeParse(body).success).toBe(false);
+  });
 });
 
 describe('SplitRecurrenceApiSchema', () => {
   it('SHOULD require the occurrence number AND accept a frequency change', () => {
     expect(
-      SplitRecurrenceApiSchema.safeParse({ frequency: 'WEEKLY', occurrenceNumber: 5 }).success,
+      SplitRecurrenceApiSchema.safeParse({
+        frequency: { interval: 3, unit: 'MONTH' },
+        occurrenceNumber: 5,
+      }).success,
     ).toBe(true);
-    expect(SplitRecurrenceApiSchema.safeParse({ frequency: 'WEEKLY' }).success).toBe(false);
+    expect(
+      SplitRecurrenceApiSchema.safeParse({ frequency: { interval: 3, unit: 'MONTH' } }).success,
+    ).toBe(false);
   });
 
   it('SHOULD reject both sources, a zero number AND an unknown field', () => {

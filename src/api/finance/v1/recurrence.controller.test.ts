@@ -11,7 +11,7 @@ const body = {
   categoryId: id,
   date: '2026-10-05',
   description: 'Rent',
-  frequency: 'MONTHLY',
+  frequency: { interval: 2, unit: 'MONTH' },
   owner: 'USER',
   ownerId: id,
   type: 'EXPENSE',
@@ -33,7 +33,7 @@ describe('create', () => {
 
   it('SHOULD reject an invalid body without calling the service', async () => {
     await expect(
-      setup.create(mocks.request, { ...body, frequency: 'DAILY' } as never, {}),
+      setup.create(mocks.request, { ...body, frequency: 'MONTHLY' } as never, {}),
     ).rejects.toThrow(ValidationError);
     expect(mocks.service.create).not.toHaveBeenCalled();
   });

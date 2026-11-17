@@ -54,14 +54,14 @@ it('SHOULD update with the validated patch AND reject an empty patch', async () 
 it('SHOULD accept a recurrence on create AND pass the delete scope', async () => {
   await setup.create(
     mocks.request,
-    { ...mocks.body, recurrence: { frequency: 'MONTHLY' } } as never,
+    { ...mocks.body, recurrence: { frequency: { interval: 15, unit: 'DAY' } } } as never,
     {},
   );
   await setup.delete(mocks.request, id, { scope: 'THIS_AND_NEXT' });
 
   expect(mocks.transferService.create).toHaveBeenCalledWith(
     mocks.request.user.id,
-    { ...mocks.body, recurrence: { frequency: 'MONTHLY' } },
+    { ...mocks.body, recurrence: { frequency: { interval: 15, unit: 'DAY' } } },
     undefined,
   );
   expect(mocks.transferService.delete).toHaveBeenCalledWith(

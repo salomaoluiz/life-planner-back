@@ -1,6 +1,7 @@
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import TransferEntity from '@finance/domain/entity/TransferEntity';
-import { RecurrenceFrequency, RecurrenceStatus } from '@finance/domain/enum';
+import { RecurrenceStatus } from '@finance/domain/enum';
+import { RecurrenceFrequency } from '@finance/domain/service/RecurrenceInterval';
 
 export interface TransferSide extends OwnerAccess {
   accountId: string;

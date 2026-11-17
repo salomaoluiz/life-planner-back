@@ -1,4 +1,4 @@
-import { RecurrenceFrequency } from '@finance/domain/enum';
+import { RecurrenceUnit } from '@finance/domain/enum';
 
 import { mocks, setup } from './index.mocks';
 
@@ -110,7 +110,7 @@ describe('MaterializeRecurrencesUseCase', () => {
       {
         ...mocks.weeklySeries,
         creditCardId: mocks.card.id,
-        frequency: RecurrenceFrequency.MONTHLY,
+        frequency: { interval: 1, unit: RecurrenceUnit.MONTH },
         lastGeneratedNumber: 1,
         startDate: '2026-08-05',
       },
@@ -190,7 +190,7 @@ describe('transfer series (spec 098)', () => {
     creditCardId: null,
     endDate: null,
     firstNumber: 1,
-    frequency: RecurrenceFrequency.MONTHLY,
+    frequency: { interval: 1, unit: RecurrenceUnit.MONTH },
     id: 'series-t',
     lastGeneratedNumber: 1,
     skippedNumbers: [],

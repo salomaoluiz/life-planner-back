@@ -1,4 +1,4 @@
-import { RecurrenceFrequency, TransactionType } from '@finance/domain/enum';
+import { RecurrenceUnit, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { mocks, setup } from './index.mocks';
@@ -74,7 +74,7 @@ describe('CreateRecurrenceUseCase', () => {
     await setup.execute({
       ...mocks.input,
       date: '2026-10-01',
-      frequency: RecurrenceFrequency.WEEKLY,
+      frequency: { interval: 1, unit: RecurrenceUnit.WEEK },
       paid: true,
     });
 
@@ -87,6 +87,36 @@ describe('CreateRecurrenceUseCase', () => {
       false,
       false,
     ]);
+  });
+
+  it('SHOULD create every-2-months rows from the start date (spec 114)', async () => {
+    await setup.execute({
+      ...mocks.input,
+      date: '2026-08-31',
+      frequency: { interval: 2, unit: RecurrenceUnit.MONTH },
+      today: '2026-12-10',
+    });
+
+    const create = mocks.recurrenceRepository.create.mock.calls[0][0];
+
+    expect(create.rows.map((row: { date: string }) => row.date)).toEqual([
+      '2026-08-31',
+      '2026-10-31',
+      '2026-12-31',
+    ]);
+    expect(create.nextOccurrenceDate).toBe('2027-02-28');
+  });
+
+  it.each([
+    [RecurrenceUnit.DAY, 366],
+    [RecurrenceUnit.WEEK, 53],
+    [RecurrenceUnit.MONTH, 25],
+    [RecurrenceUnit.YEAR, 11],
+  ])('SHOULD refuse %s every %i with 422 before any write', async (unit, interval) => {
+    await expect(setup.execute({ ...mocks.input, frequency: { interval, unit } })).rejects.toThrow(
+      `for ${unit}`,
+    );
+    expect(mocks.recurrenceRepository.create).not.toHaveBeenCalled();
   });
 
   it('SHOULD create an ENDED series WHEN everything is already real', async () => {

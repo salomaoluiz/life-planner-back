@@ -109,7 +109,7 @@ export type FinancialTransactionWithRelations = {
   } | null;
   recurrence: null | Pick<
     FinancialRecurrence,
-    'end_date' | 'first_number' | 'frequency' | 'start_date'
+    'end_date' | 'first_number' | 'frequency_interval' | 'frequency_unit' | 'start_date'
   >;
   refunded_plan: null | Pick<FinancialInstallmentPlan, 'description'>;
   refunded_transaction: null | Pick<FinancialTransaction, 'description'>;

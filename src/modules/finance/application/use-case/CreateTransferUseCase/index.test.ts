@@ -1,6 +1,6 @@
 import { NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 
-import { AccountStatus } from '@finance/domain/enum';
+import { AccountStatus, RecurrenceUnit } from '@finance/domain/enum';
 
 import { mocks, setup, spies } from './index.mocks';
 
@@ -92,7 +92,7 @@ it('SHOULD throw 422 TRANSFER_ACCOUNT_ARCHIVED WHEN an account is archived AND 4
 });
 
 describe('recurrence (spec 098 FR 8)', () => {
-  const monthly = { endDate: undefined, frequency: 'MONTHLY' as never };
+  const monthly = { endDate: undefined, frequency: { interval: 1, unit: RecurrenceUnit.MONTH } };
 
   it('SHOULD create a monthly series whose only due occurrence is the first AND return that transfer', async () => {
     const result = await setup.execute({
@@ -105,7 +105,7 @@ describe('recurrence (spec 098 FR 8)', () => {
     expect(spies.transferRepository.createTransfer).not.toHaveBeenCalled();
     expect(spies.transferRepository.createTransferSeries).toHaveBeenCalledWith({
       endDate: null,
-      frequency: 'MONTHLY',
+      frequency: { interval: 1, unit: RecurrenceUnit.MONTH },
       lastGeneratedNumber: 1,
       nextOccurrenceDate: '2026-12-04',
       occurrences: [expect.objectContaining({ amountIn: 100000, occurrenceNumber: 1, paid: true })],
@@ -118,7 +118,7 @@ describe('recurrence (spec 098 FR 8)', () => {
       ...mocks.input,
       dateOut: '2026-11-02',
       fee: 500,
-      recurrence: { frequency: 'WEEKLY' as never },
+      recurrence: { frequency: { interval: 1, unit: RecurrenceUnit.WEEK } },
       today: '2026-11-09',
     });
 
@@ -151,7 +151,7 @@ describe('recurrence (spec 098 FR 8)', () => {
       ...mocks.input,
       amountIn: 20000,
       dateOut: '2026-11-02',
-      recurrence: { frequency: 'WEEKLY' as never },
+      recurrence: { frequency: { interval: 1, unit: RecurrenceUnit.WEEK } },
       today: '2026-11-09',
     });
 
@@ -164,7 +164,10 @@ describe('recurrence (spec 098 FR 8)', () => {
     await expect(
       setup.execute({
         ...mocks.input,
-        recurrence: { endDate: '2026-11-01', frequency: 'MONTHLY' as never },
+        recurrence: {
+          endDate: '2026-11-01',
+          frequency: { interval: 1, unit: RecurrenceUnit.MONTH },
+        },
       }),
     ).rejects.toThrow();
     expect(spies.transferRepository.createTransferSeries).not.toHaveBeenCalled();

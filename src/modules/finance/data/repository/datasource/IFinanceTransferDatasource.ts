@@ -1,4 +1,4 @@
-import { OwnerType, RecurrenceFrequency, RecurrenceStatus } from '@db/client';
+import { OwnerType, RecurrenceStatus, RecurrenceUnit } from '@db/client';
 
 export interface FinancialTransferRecord {
   amount_in: null | number;
@@ -47,7 +47,8 @@ export interface WriteTransferDatasourceParams {
 // user's) and where the series stands afterwards.
 export interface CreateTransferSeriesDatasourceParams {
   end_date: Date | null;
-  frequency: RecurrenceFrequency;
+  frequency_interval: number;
+  frequency_unit: RecurrenceUnit;
   last_generated_number: number;
   next_occurrence_date: Date | null;
   occurrences: WriteTransferDatasourceParams[];
