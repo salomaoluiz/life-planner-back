@@ -59,10 +59,12 @@ import { UpsertValuationUseCase } from '@investment/application/use-case/UpsertV
 import { CorporateEventDatasource } from '@investment/data/datasource/CorporateEventDatasource';
 import { IncomeDatasource } from '@investment/data/datasource/IncomeDatasource';
 import { InvestmentDatasource } from '@investment/data/datasource/InvestmentDatasource';
+import { MarketIndexDatasource } from '@investment/data/datasource/MarketIndexDatasource';
 import { QuoteDatasource } from '@investment/data/datasource/QuoteDatasource';
 import { CorporateEventRepository } from '@investment/data/repository/CorporateEventRepository';
 import { IncomeRepository } from '@investment/data/repository/IncomeRepository';
 import { InvestmentRepository } from '@investment/data/repository/InvestmentRepository';
+import { MarketIndexRepository } from '@investment/data/repository/MarketIndexRepository';
 import { QuoteRepository } from '@investment/data/repository/QuoteRepository';
 
 const services = [HistoryBackfill, QuoteContextLoader, QuoteFetcher, TickerValidator];
@@ -132,6 +134,8 @@ const useCases = [
     { provide: 'ICorporateEventDatasource', useClass: CorporateEventDatasource },
     { provide: 'IIncomeRepository', useClass: IncomeRepository },
     { provide: 'IIncomeDatasource', useClass: IncomeDatasource },
+    { provide: 'IMarketIndexRepository', useClass: MarketIndexRepository },
+    { provide: 'IMarketIndexDatasource', useClass: MarketIndexDatasource },
     { provide: 'IQuoteRepository', useClass: QuoteRepository },
     { provide: 'IQuoteDatasource', useClass: QuoteDatasource },
   ],
