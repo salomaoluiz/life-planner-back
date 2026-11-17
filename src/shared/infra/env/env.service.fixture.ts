@@ -39,6 +39,7 @@ class EnvServiceFixture {
       investmentQuotesMinIntervalMs: 0,
       jwtExpiresIn: faker.number.int({ max: 86400, min: 3600 }),
       jwtSecret: faker.string.alphanumeric(64),
+      marketIndexJobEnabled: true,
       perfCountQueries: false,
       port: faker.internet.port(),
       sentryDsn: undefined,

@@ -3,6 +3,17 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [4.0.0] - 2026-11-16
+
+### Added
+
+- CDI, Selic and IPCA come from the Central Bank every weekday at 19:00 (SGS series and the Focus expectation) and are stored once for everybody; `GET /investments/market-indexes` and `GET /investments/market-indexes/:index/history` show them with the titles that follow each one, and `POST /investments/market-indexes/refresh` fetches the stale ones (1 per minute) (spec 113).
+
+### Changed
+
+- **Breaking:** "% of CDI" and "IPCA + x" rate entries no longer take `indexRate`; they follow the stored daily CDI and monthly IPCA (the Focus expectation for unpublished months), so the value of existing indexed titles changes to the real index of each day. A redemption the new curve no longer covers is kept and flagged `needsReview` (spec 113).
+- `fixedIncome` carries `indexMissing` (no stored index yet: `today` and `atMaturity` are `null`) and `needsReview`; `currentEffectiveRate` follows the latest index (spec 113).
+
 ## [3.17.0] - 2026-11-16
 
 ### Added

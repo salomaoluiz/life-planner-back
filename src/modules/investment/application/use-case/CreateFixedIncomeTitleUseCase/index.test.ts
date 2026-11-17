@@ -22,7 +22,7 @@ const input = {
   name: 'CDB Example 2030',
   owner: OwnerType.USER,
   ownerId: 'user-1',
-  rate: { cdiPercent: '110', indexRate: '14.90', mode: 'CDI_PERCENT' as never },
+  rate: { cdiPercent: '110', mode: 'CDI_PERCENT' as never },
   terms: {
     liquidity: 'DAILY' as never,
     maturityDate: '2030-01-02',
@@ -39,6 +39,11 @@ beforeEach(() => {
     id: 'acc-1',
     owner: OwnerType.USER,
     ownerId: 'user-1',
+  });
+  quoteSpies.loadIndexes.mockResolvedValue({
+    cdiDaily: [{ date: '2026-01-02', value: 0.05 }],
+    ipcaExpected: [],
+    ipcaMonthly: [],
   });
   spies.createFixedIncomeTitle.mockResolvedValue({ assetId: 'asset-fi', operationId: 'lot-1' });
   spies.findAssetById.mockResolvedValue(fixedIncomeDetailFixture());
@@ -68,9 +73,10 @@ it('SHOULD create the asset, terms, first rate AND contribution in one call', as
       terms: expect.objectContaining({ liquidityDate: null, maturityDate: '2030-01-02' }),
     }),
   );
+  expect(quoteSpies.loadIndexes).toHaveBeenCalledWith('2026-01-02');
   expect(Number(spies.createFixedIncomeTitle.mock.calls[0][0].rate.effectiveRate)).toBeCloseTo(
-    16.51,
-    1,
+    (Math.pow(1 + (0.05 * 1.1) / 100, 252) - 1) * 100,
+    4,
   );
   expect(detail.fixedIncome?.product).toBe('CDB');
 });

@@ -29,12 +29,10 @@ function rateVariants<T extends z.ZodRawShape>(extra: T) {
     z.strictObject({
       ...extra,
       cdiPercent: PercentApiSchema,
-      indexRate: PercentApiSchema,
       mode: z.literal(InvestmentFixedIncomeRateMode.CDI_PERCENT),
     }),
     z.strictObject({
       ...extra,
-      indexRate: PercentApiSchema,
       mode: z.literal(InvestmentFixedIncomeRateMode.IPCA_PLUS),
       spread: PercentApiSchema,
     }),

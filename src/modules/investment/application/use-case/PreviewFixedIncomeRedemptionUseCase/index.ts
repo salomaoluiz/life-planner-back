@@ -6,6 +6,7 @@ import {
 } from '@investment/application/dto/FixedIncome';
 import { liquidityWarningOf } from '@investment/application/service/FixedIncomeRules';
 import { toCalcInput } from '@investment/application/service/FixedIncomeView';
+import { IndexSeriesLoader } from '@investment/application/service/IndexSeriesLoader';
 import { hasOwnerAccess } from '@investment/domain/entity/OwnerAccess';
 import { InvestmentFixedIncomeLiquidity } from '@investment/domain/enum';
 import { IInvestmentRepository } from '@investment/domain/repository';
@@ -33,6 +34,7 @@ export class PreviewFixedIncomeRedemptionUseCase implements UseCaseWithParams<
   constructor(
     @Inject('IInvestmentRepository')
     private readonly repository: IInvestmentRepository,
+    private readonly indexSeries: IndexSeriesLoader,
   ) {}
 
   async execute(params: PreviewFixedIncomeRedemptionInput): Promise<FixedIncomeRedemptionPreview> {
@@ -49,10 +51,12 @@ export class PreviewFixedIncomeRedemptionUseCase implements UseCaseWithParams<
       throw new UnprocessableEntityException('This asset is not a calculated title');
     }
 
+    const first = [...data.rates].map((rate) => rate.startDate).sort()[0] ?? input.date;
     const base = toCalcInput(
       { ...data, terms: data.terms },
       [...asset.operations].reverse(),
       input.date,
+      await this.indexSeries.load(first),
     );
     const result = calculateTitle({
       ...base,

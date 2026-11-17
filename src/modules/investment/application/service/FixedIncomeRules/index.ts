@@ -31,6 +31,7 @@ import {
 import { FixedIncomeRedemptionTooLargeError } from '@investment/domain/error/FixedIncomeRedemptionTooLargeError';
 import { IInvestmentRepository } from '@investment/domain/repository';
 import { effectiveRateOf } from '@investment/domain/service/FixedIncomeRate';
+import { IndexSeriesData } from '@investment/domain/service/IndexSeries';
 import { Decimal8 } from '@shared/infra/decimal';
 
 // A contribution or redemption: the refreshed detail, the operation as written and the liquidity warning (FR 23).
@@ -161,20 +162,21 @@ export async function mapFixedIncomeErrors<T>(work: () => Promise<T>): Promise<T
     throw toPositionException(error);
   }
 }
-// FR 7: the effective rate is derived and stored with the entry.
+// FR 7 and spec 113 FR 15: the effective rate is derived and stored with the entry as a snapshot (an indexed entry
+// follows the stored series; the calculator does not read the snapshot while they exist).
 export function toRateWrite(
   rate: Omit<RateInput, 'startDate'> | RateInput,
   startDate: string,
+  indexes?: IndexSeriesData,
 ): FixedIncomeRateWrite {
   const fields = {
     annualRate: 'annualRate' in rate ? rate.annualRate : null,
     cdiPercent: 'cdiPercent' in rate ? rate.cdiPercent : null,
-    indexRate: 'indexRate' in rate ? rate.indexRate : null,
     mode: rate.mode,
     spread: 'spread' in rate ? rate.spread : null,
   };
 
-  return { ...fields, effectiveRate: effectiveRateOf(fields), startDate };
+  return { ...fields, effectiveRate: effectiveRateOf(fields, indexes), startDate };
 }
 // FR 23: warn, never block.
 export function liquidityWarningOf(

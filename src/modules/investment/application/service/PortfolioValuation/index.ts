@@ -7,6 +7,7 @@ import { unitStepOf } from '@investment/domain/service/CorporateEventMath';
 import { latestOnOrBefore } from '@investment/domain/service/DatedSeries';
 import { calculateTitle } from '@investment/domain/service/FixedIncomeCalculator';
 import { averageFxCost, splitFxResult } from '@investment/domain/service/FxResultSplit';
+import { IndexSeriesData } from '@investment/domain/service/IndexSeries';
 import {
   calculatePosition,
   PositionResult,
@@ -43,6 +44,8 @@ export interface ValuationInput {
   // Ascending by date.
   closes: { close: Decimal8; date: string }[];
   fixedIncome: FixedIncomeData | undefined;
+  // Spec 113: the stored series calculated titles follow.
+  indexes?: IndexSeriesData;
   operations: OperationEntity[];
   // Ascending by date.
   valuations: ValuationEntity[];
@@ -63,7 +66,7 @@ const EMPTY: AssetValue = {
 export function valueAssetAt(input: ValuationInput, on: string, fx: FxCurve): AssetValue {
   const operations = input.operations.filter((operation) => operation.date <= on);
   const position = positionOf(operations, input.asset.assetClass);
-  const calculated = calculatedTotals(input.fixedIncome, operations, on);
+  const calculated = calculatedTotals(input.fixedIncome, operations, on, input.indexes);
 
   if (calculated) {
     return calculated.gross === 0
@@ -148,13 +151,14 @@ function calculatedTotals(
   data: FixedIncomeData | undefined,
   operations: OperationEntity[],
   on: string,
+  indexes?: IndexSeriesData,
 ): { gross: number; net: number } | null {
   if (!data?.terms) {
     return null;
   }
 
   const { totals } = calculateTitle(
-    toCalcInput({ ...data, terms: data.terms }, newestFirst(operations).reverse(), on),
+    toCalcInput({ ...data, terms: data.terms }, newestFirst(operations).reverse(), on, indexes),
   );
 
   return { gross: totals.gross, net: totals.net };

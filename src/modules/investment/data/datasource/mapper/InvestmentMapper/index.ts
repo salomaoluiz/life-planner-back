@@ -219,7 +219,6 @@ export class InvestmentMapper {
       cdiPercent: row.cdi_percent ? row.cdi_percent.toFixed(4) : null,
       effectiveRate: row.effective_rate.toFixed(6),
       id: row.id,
-      indexRate: row.index_rate ? row.index_rate.toFixed(4) : null,
       mode: InvestmentFixedIncomeRateMode[row.mode],
       spread: row.spread ? row.spread.toFixed(4) : null,
       startDate: InvestmentMapper.toCalendarDate(row.start_date),

@@ -18,6 +18,7 @@ describe('validateEnvironment', () => {
       INVESTMENT_QUOTES_JOB_ENABLED: true,
       INVESTMENT_QUOTES_MIN_INTERVAL_MS: 0,
       JWT_EXPIRES_IN: 7200, // Coerced
+      MARKET_INDEX_JOB_ENABLED: true,
       PERF_COUNT_QUERIES: false,
       PORT: 4000, // Coerced
       SENTRY_ENABLED: false,
@@ -36,6 +37,7 @@ describe('validateEnvironment', () => {
       INVESTMENT_QUOTES_BRAPI_BATCH_SIZE: '10',
       INVESTMENT_QUOTES_JOB_ENABLED: 'false',
       INVESTMENT_QUOTES_MIN_INTERVAL_MS: '14400000',
+      MARKET_INDEX_JOB_ENABLED: 'false',
     });
 
     expect(result).toMatchObject({
@@ -44,6 +46,7 @@ describe('validateEnvironment', () => {
       INVESTMENT_QUOTES_BRAPI_BATCH_SIZE: 10,
       INVESTMENT_QUOTES_JOB_ENABLED: false,
       INVESTMENT_QUOTES_MIN_INTERVAL_MS: 14400000,
+      MARKET_INDEX_JOB_ENABLED: false,
     });
   });
 

@@ -12,6 +12,7 @@ import {
   principalOf,
   toRateWrite,
 } from '@investment/application/service/FixedIncomeRules';
+import { IndexSeriesLoader } from '@investment/application/service/IndexSeriesLoader';
 import { resolveOperationAccount } from '@investment/application/service/OperationRules';
 import { ensureOwnerWritable } from '@investment/application/service/OwnerWritable';
 import { QuoteContextLoader } from '@investment/application/service/QuoteContext';
@@ -31,6 +32,7 @@ export class CreateFixedIncomeTitleUseCase implements UseCaseWithParams<
     @Inject('IInvestmentRepository')
     private readonly repository: IInvestmentRepository,
     private readonly quotes: QuoteContextLoader,
+    private readonly indexSeries: IndexSeriesLoader,
   ) {}
 
   async execute(params: CreateFixedIncomeTitleInput): Promise<AssetDetailView> {
@@ -84,7 +86,11 @@ export class CreateFixedIncomeTitleUseCase implements UseCaseWithParams<
           type: InvestmentOperationType.BUY,
           unitPrice: Decimal8.parse('1'),
         },
-        rate: toRateWrite(input.rate, contribution.date),
+        rate: toRateWrite(
+          input.rate,
+          contribution.date,
+          await this.indexSeries.load(contribution.date),
+        ),
         terms: { ...input.terms, liquidityDate: input.terms.liquidityDate ?? null },
       }),
     );

@@ -267,6 +267,7 @@ function toInput(row: AssetListRow, data: DashboardData): ValuationInput {
     asset,
     closes,
     fixedIncome: data.context.fixedIncome.get(asset.id),
+    indexes: data.context.indexes,
     operations,
     valuations: data.valuations.get(asset.id) ?? (latestValuation ? [latestValuation] : []),
   };

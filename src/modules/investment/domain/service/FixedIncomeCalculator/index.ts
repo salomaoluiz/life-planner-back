@@ -1,6 +1,15 @@
-import { InvestmentFixedIncomeRedemptionKind } from '@investment/domain/enum';
+import {
+  InvestmentFixedIncomeRateMode,
+  InvestmentFixedIncomeRedemptionKind,
+} from '@investment/domain/enum';
 import { businessDays } from '@investment/domain/service/BusinessDayCalendar';
 import { iofRate, irRate, lotTaxes } from '@investment/domain/service/FixedIncomeTaxes';
+import {
+  cdiGrowth,
+  hasIndexFor,
+  IndexSeriesData,
+  ipcaPlusGrowth,
+} from '@investment/domain/service/IndexSeries';
 
 export interface CalcAdjustment {
   date: string;
@@ -8,6 +17,8 @@ export interface CalcAdjustment {
 }
 export interface CalcInput {
   adjustments: CalcAdjustment[];
+  // Spec 113: the stored series indexed rates follow; without them an indexed rate uses its stored snapshot.
+  indexes?: IndexSeriesData;
   lots: CalcLot[];
   // The valuation date (today, or the maturity for the projection).
   on: string;
@@ -22,7 +33,10 @@ export interface CalcLot {
   principal: number;
 }
 export interface CalcRate {
+  cdiPercent?: number;
   effectiveRate: number;
+  mode?: InvestmentFixedIncomeRateMode;
+  spread?: number;
   startDate: string;
 }
 export interface CalcRedemption {
@@ -103,7 +117,7 @@ export function calculateTitle(input: CalcInput): TitleResult {
   const redemptions = new Map<string, RedemptionResult>();
   const rates = [...input.rates].sort((a, b) => a.startDate.localeCompare(b.startDate));
   function grossOf(state: LotState, on: string): number {
-    return grossAt(state, on, rates, input.terms);
+    return grossAt(state, on, rates, input.terms, input.indexes);
   }
 
   for (const event of eventsOf(input)) {
@@ -199,7 +213,7 @@ function finish(
   const lots = states
     .filter((state) => state.remaining > 0 && state.date <= input.on)
     .map((state) => {
-      const priced = price(state, input.on, rates, input.terms);
+      const priced = price(state, input.on, rates, input.terms, input.indexes);
 
       return {
         date: state.date,
@@ -228,8 +242,14 @@ function finish(
     },
   };
 }
-// FR 11: base x product of (1 + rate)^(business days / 252) over the rate periods in [baseDate, on), capped at maturity.
-function grossAt(state: LotState, on: string, rates: CalcRate[], terms: CalcTerms): number {
+// FR 11 (and spec 113 FR 10-11): base x product of (1 + rate)^(business days / 252) over the rate periods in [baseDate, on), capped at maturity.
+function grossAt(
+  state: LotState,
+  on: string,
+  rates: CalcRate[],
+  terms: CalcTerms,
+  indexes?: IndexSeriesData,
+): number {
   const to = on < terms.maturityDate ? on : terms.maturityDate;
   let growth = 1;
 
@@ -239,17 +259,34 @@ function grossAt(state: LotState, on: string, rates: CalcRate[], terms: CalcTerm
     const hi = next && next < to ? next : to;
 
     if (hi > lo) {
-      growth *= Math.pow(
-        1 + rate.effectiveRate / 100,
-        businessDays(lo, hi) / BUSINESS_DAYS_PER_YEAR,
-      );
+      growth *= growthOf(rate, lo, hi, indexes);
     }
   });
 
   return Math.round(state.base * growth);
 }
-function price(state: LotState, on: string, rates: CalcRate[], terms: CalcTerms): Priced {
-  const gross = grossAt(state, on, rates, terms);
+// One rate period: the per day product of the stored index for an indexed rate whose series exist, else the
+// effective annual rate over the business days.
+function growthOf(rate: CalcRate, lo: string, hi: string, indexes?: IndexSeriesData): number {
+  if (indexes && rate.mode && hasIndexFor(indexes, rate.mode)) {
+    if (rate.mode === InvestmentFixedIncomeRateMode.CDI_PERCENT) {
+      return cdiGrowth(indexes, lo, hi, rate.cdiPercent ?? 0);
+    }
+    if (rate.mode === InvestmentFixedIncomeRateMode.IPCA_PLUS) {
+      return ipcaPlusGrowth(indexes, lo, hi, rate.spread ?? 0);
+    }
+  }
+
+  return Math.pow(1 + rate.effectiveRate / 100, businessDays(lo, hi) / BUSINESS_DAYS_PER_YEAR);
+}
+function price(
+  state: LotState,
+  on: string,
+  rates: CalcRate[],
+  terms: CalcTerms,
+  indexes?: IndexSeriesData,
+): Priced {
+  const gross = grossAt(state, on, rates, terms, indexes);
   const days = calendarDays(state.date, on);
   const taxes = lotTaxes({ days, gross, principal: state.remaining, taxExempt: terms.taxExempt });
 

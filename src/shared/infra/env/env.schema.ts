@@ -52,6 +52,10 @@ export const envSchema = z.object({
     .optional()
     .transform((value) => value !== 'false'),
   INVESTMENT_QUOTES_MIN_INTERVAL_MS: optionalInt(0, 0),
+  MARKET_INDEX_JOB_ENABLED: z
+    .enum(['true', 'false', ''])
+    .optional()
+    .transform((value) => value !== 'false'),
 
   // JWT
   JWT_EXPIRES_IN: z.coerce.number().default(3600),

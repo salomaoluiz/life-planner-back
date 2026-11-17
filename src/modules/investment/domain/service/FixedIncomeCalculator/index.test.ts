@@ -1,4 +1,7 @@
-import { InvestmentFixedIncomeRedemptionKind } from '@investment/domain/enum';
+import {
+  InvestmentFixedIncomeRateMode,
+  InvestmentFixedIncomeRedemptionKind,
+} from '@investment/domain/enum';
 import { businessDays } from '@investment/domain/service/BusinessDayCalendar';
 import {
   CalcInput,
@@ -247,6 +250,72 @@ describe('FixedIncomeCalculator', () => {
 
       expect(result.totals.gross).toBe(1_700_001);
       expect(result.lots).toHaveLength(3);
+    });
+  });
+
+  describe('indexed rates (spec 113)', () => {
+    const CDI_RATE = {
+      cdiPercent: 100,
+      effectiveRate: 1,
+      mode: InvestmentFixedIncomeRateMode.CDI_PERCENT,
+      startDate: '2026-01-02',
+    };
+    const CDI_SERIES = {
+      cdiDaily: [{ date: '2026-01-02', value: 0.05 }],
+      ipcaExpected: [],
+      ipcaMonthly: [],
+    };
+
+    it('grows a CDI_PERCENT lot by the per day CDI AND ignores the stored snapshot', () => {
+      const on = dateAfterBusinessDays('2026-01-02', 252);
+      const result = calculateTitle(input({ indexes: CDI_SERIES, on, rates: [CDI_RATE] }));
+
+      expect(result.lots[0].gross).toBe(Math.round(1_000_000 * Math.pow(1.0005, 252)));
+    });
+
+    it('falls back to the stored effective rate WHEN no series is stored', () => {
+      const on = dateAfterBusinessDays('2026-01-02', 252);
+      const result = calculateTitle(input({ on, rates: [CDI_RATE] }));
+
+      expect(result.lots[0].gross).toBe(1_010_000);
+    });
+
+    it('projects the maturity with the latest stored CDI for every future day', () => {
+      const result = projectAtMaturity(input({ indexes: CDI_SERIES, rates: [CDI_RATE] }));
+      const days = businessDays('2026-01-02', TERMS.maturityDate);
+
+      expect(result.lots[0].gross).toBe(Math.round(1_000_000 * Math.pow(1.0005, days)));
+    });
+
+    it('keeps PREFIXED rates unchanged WHEN a series is given', () => {
+      const on = dateAfterBusinessDays('2026-01-02', 252);
+
+      expect(calculateTitle(input({ indexes: CDI_SERIES, on })).lots[0].gross).toBe(1_120_000);
+    });
+
+    it('grows an IPCA_PLUS lot by the month IPCA AND the spread', () => {
+      const result = calculateTitle(
+        input({
+          indexes: {
+            cdiDaily: [],
+            ipcaExpected: [],
+            ipcaMonthly: [{ date: '2026-01-01', value: 0.5 }],
+          },
+          lots: [{ date: '2026-01-01', operationId: 'lot-1', principal: 1_000_000 }],
+          on: '2026-02-01',
+          rates: [
+            {
+              effectiveRate: 0,
+              mode: InvestmentFixedIncomeRateMode.IPCA_PLUS,
+              spread: 6,
+              startDate: '2026-01-01',
+            },
+          ],
+        }),
+      );
+      const du = businessDays('2026-01-01', '2026-02-01');
+
+      expect(result.lots[0].gross).toBe(Math.round(1_000_000 * 1.005 * Math.pow(1.06, du / 252)));
     });
   });
 });

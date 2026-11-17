@@ -12,6 +12,7 @@ import {
   mapFixedIncomeErrors,
 } from '@investment/application/service/FixedIncomeRules';
 import { toCalcInput } from '@investment/application/service/FixedIncomeView';
+import { IndexSeriesLoader } from '@investment/application/service/IndexSeriesLoader';
 import { QuoteContextLoader } from '@investment/application/service/QuoteContext';
 import { IInvestmentRepository } from '@investment/domain/repository';
 import { calculateTitle } from '@investment/domain/service/FixedIncomeCalculator';
@@ -34,6 +35,7 @@ export class UpsertFixedIncomeAdjustmentUseCase implements UseCaseWithParams<
     @Inject('IInvestmentRepository')
     private readonly repository: IInvestmentRepository,
     private readonly quotes: QuoteContextLoader,
+    private readonly indexSeries: IndexSeriesLoader,
   ) {}
 
   async execute(
@@ -57,8 +59,9 @@ export class UpsertFixedIncomeAdjustmentUseCase implements UseCaseWithParams<
       ...data,
       adjustments: data.adjustments.filter((row) => row.date !== input.date),
     };
+    const indexes = await this.indexSeries.load(first);
     const computed = calculateTitle(
-      toCalcInput(others, [...asset.operations].reverse(), input.date),
+      toCalcInput(others, [...asset.operations].reverse(), input.date, indexes),
     );
 
     await mapFixedIncomeErrors(async () =>

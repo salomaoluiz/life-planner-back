@@ -115,6 +115,7 @@ export function toAssetDetailView(
     context.fixedIncome.get(asset.id),
     operations,
     todayInSaoPaulo(context.now),
+    context.indexes,
   );
 
   return {
@@ -144,6 +145,7 @@ export function toAssetView(row: AssetListRow, context: QuoteContext = emptyCont
     context.fixedIncome.get(asset.id),
     operations,
     todayInSaoPaulo(context.now),
+    context.indexes,
   );
 
   return {

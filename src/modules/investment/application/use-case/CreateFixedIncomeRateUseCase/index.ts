@@ -14,6 +14,7 @@ import {
   RATE_EXISTS_MESSAGE,
   toRateWrite,
 } from '@investment/application/service/FixedIncomeRules';
+import { IndexSeriesLoader } from '@investment/application/service/IndexSeriesLoader';
 import { QuoteContextLoader } from '@investment/application/service/QuoteContext';
 import { IInvestmentRepository } from '@investment/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -28,6 +29,7 @@ export class CreateFixedIncomeRateUseCase implements UseCaseWithParams<
     @Inject('IInvestmentRepository')
     private readonly repository: IInvestmentRepository,
     private readonly quotes: QuoteContextLoader,
+    private readonly indexSeries: IndexSeriesLoader,
   ) {}
 
   async execute(params: CreateFixedIncomeRateInput): Promise<AssetDetailView> {
@@ -47,10 +49,12 @@ export class CreateFixedIncomeRateUseCase implements UseCaseWithParams<
       contributionDatesOf(asset),
     );
 
+    const indexes = await this.indexSeries.load(input.rate.startDate);
+
     await mapFixedIncomeErrors(async () =>
       this.repository.createFixedIncomeRate(
         asset.id,
-        toRateWrite(input.rate, input.rate.startDate),
+        toRateWrite(input.rate, input.rate.startDate, indexes),
       ),
     );
 

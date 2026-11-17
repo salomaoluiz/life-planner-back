@@ -24,7 +24,6 @@ export interface FixedIncomeRateWrite {
   annualRate: null | string;
   cdiPercent: null | string;
   effectiveRate: string;
-  indexRate: null | string;
   mode: InvestmentFixedIncomeRateMode;
   spread: null | string;
   startDate: string;

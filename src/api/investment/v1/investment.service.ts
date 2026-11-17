@@ -113,15 +113,14 @@ export function toFixedIncomeDetail(
   return {
     ...toFixedIncomeSummary(view),
     adjustments: view.adjustments.map(({ date, grossAmount, id }) => ({ date, grossAmount, id })),
-    atMaturity: view.atMaturity,
+    atMaturity: view.indexMissing ? null : view.atMaturity,
     lots: view.lots,
     rates: view.rates.map(
-      ({ annualRate, cdiPercent, effectiveRate, id, indexRate, mode, spread, startDate }) => ({
+      ({ annualRate, cdiPercent, effectiveRate, id, mode, spread, startDate }) => ({
         annualRate,
         cdiPercent,
         effectiveRate,
         id,
-        indexRate,
         mode,
         spread,
         startDate,
@@ -132,13 +131,15 @@ export function toFixedIncomeDetail(
 export function toFixedIncomeSummary(view: FixedIncomeView) {
   return {
     currentEffectiveRate: view.currentEffectiveRate,
+    indexMissing: view.indexMissing,
     liquidity: view.liquidity,
     liquidityDate: view.liquidityDate,
     maturityDate: view.maturityDate,
     maturityPending: view.maturityPending,
+    needsReview: view.needsReview,
     product: view.product,
     taxExempt: view.taxExempt,
-    today: view.today,
+    today: view.indexMissing ? null : view.today,
   };
 }
 export function toOperation(view: OperationView): OperationOutputType {

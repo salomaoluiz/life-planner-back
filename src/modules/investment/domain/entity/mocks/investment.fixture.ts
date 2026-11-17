@@ -20,7 +20,11 @@ import {
   InvestmentValuationSource,
 } from '@investment/domain/enum';
 import { QuoteMarket, QuoteSource } from '@investment/domain/enum/QuoteMarket';
-import { IInvestmentRepository, IQuoteRepository } from '@investment/domain/repository';
+import {
+  IInvestmentRepository,
+  IMarketIndexRepository,
+  IQuoteRepository,
+} from '@investment/domain/repository';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { Decimal8 } from '@shared/infra/decimal';
 
@@ -158,6 +162,21 @@ export function valuationFixture(overrides: Partial<ValuationEntity> = {}): Valu
   };
 }
 // Every quote repository method as a jest spy.
+export function marketIndexRepositorySpies(): Record<keyof IMarketIndexRepository, jest.Mock> {
+  return {
+    findFetches: jest.fn(),
+    findFollowers: jest.fn(),
+    findFxPairs: jest.fn(),
+    findHistory: jest.fn(),
+    findLatest: jest.fn(),
+    findLatestDates: jest.fn(),
+    findSeriesData: jest.fn(),
+    recalculateIndexedTitles: jest.fn(),
+    recordFetch: jest.fn(),
+    upsertValues: jest.fn(),
+    versionStamp: jest.fn(),
+  };
+}
 export function quoteRepositorySpies(): Record<keyof IQuoteRepository, jest.Mock> {
   return {
     findFx: jest.fn(),
@@ -217,7 +236,6 @@ export function fixedIncomeRateFixture(
     cdiPercent: null,
     effectiveRate: '12.000000',
     id: faker.string.uuid(),
-    indexRate: null,
     mode: InvestmentFixedIncomeRateMode.PREFIXED,
     spread: null,
     startDate: '2026-01-02',

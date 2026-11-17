@@ -96,3 +96,4 @@ export function isConversionType(type: InvestmentOperationType): boolean {
     type === InvestmentOperationType.CONVERSION_IN
   );
 }
+export * from './MarketIndex';
