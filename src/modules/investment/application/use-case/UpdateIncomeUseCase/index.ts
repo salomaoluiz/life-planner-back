@@ -1,4 +1,4 @@
-import { Inject } from '@nestjs/common';
+import { BadRequestException, Inject } from '@nestjs/common';
 
 import { UpdateIncomeInput, UpdateIncomeSchema } from '@investment/application/dto/Income';
 import {
@@ -32,17 +32,22 @@ export class UpdateIncomeUseCase implements UseCaseWithParams<UpdateIncomeInput,
 
     await assertIncomeAccountChangeable(this.investment, input.accessibleOwners, income.accountId);
 
+    if (!(input.withFinance ?? income.withFinance) && (input.accountId || input.categoryId)) {
+      throw new BadRequestException('Send withFinance: true to add an account and a category');
+    }
+
     const current = draftFromIncome(income, input.userId, {
       accountId: input.accountId,
       categoryId: input.categoryId,
+      withFinance: input.withFinance,
     });
 
     return persistIncome(this.incomes, this.investment, input.accessibleOwners, asset, {
       ...current,
-      accountId: input.accountId ?? current.accountId,
+      accountId: current.accountId,
       amountPerUnit:
         input.amountPerUnit === undefined ? current.amountPerUnit : input.amountPerUnit,
-      categoryId: input.categoryId ?? current.categoryId,
+      categoryId: current.categoryId,
       exDate: input.exDate === undefined ? current.exDate : input.exDate,
       netAmount: input.netAmount ?? current.netAmount,
       notes: input.notes === undefined ? current.notes : input.notes,

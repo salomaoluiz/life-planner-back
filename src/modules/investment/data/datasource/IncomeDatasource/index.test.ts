@@ -121,6 +121,67 @@ describe('writeIncome', () => {
     });
   });
 
+  it('SHOULD write an income without finance: no row, no ledger, stored as received (spec 115)', async () => {
+    expect(
+      await setup.writeIncome({
+        ...mocks.params,
+        accountId: null,
+        categoryId: null,
+        withFinance: false,
+      }),
+    ).toBe('inc-1');
+
+    expect(spies.transactionCreate).not.toHaveBeenCalled();
+    expect(spies.accountUpdate).not.toHaveBeenCalled();
+    expect(spies.incomeCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ received: true, transaction_id: null }),
+    });
+  });
+
+  it('SHOULD delete the row and give a received amount back WHEN the income stops using finance (spec 115 FR 4)', async () => {
+    spies.incomeFindUnique.mockResolvedValue({
+      id: 'inc-1',
+      transaction: { account_id: 'acc-1', paid: true, type: 'INCOME', value: 7140 },
+      transaction_id: 'tx-1',
+    });
+    spies.incomeUpdate.mockResolvedValue({ id: 'inc-1' });
+
+    await setup.writeIncome({
+      ...mocks.params,
+      accountId: null,
+      categoryId: null,
+      incomeId: 'inc-1',
+      withFinance: false,
+    });
+
+    expect(spies.transactionDelete).toHaveBeenCalledWith({ where: { id: 'tx-1' } });
+    expect(spies.incomeUpdate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ received: true, transaction_id: null }),
+      where: { id: 'inc-1' },
+    });
+    expect(spies.accountUpdate).toHaveBeenCalledWith({
+      data: { ledger_balance: { increment: -7140 } },
+      where: { id: 'acc-1' },
+    });
+  });
+
+  it('SHOULD create the row of an income that had none WHEN it starts using finance (spec 115 FR 4)', async () => {
+    spies.incomeFindUnique.mockResolvedValue({
+      id: 'inc-1',
+      transaction: null,
+      transaction_id: null,
+    });
+    spies.incomeUpdate.mockResolvedValue({ id: 'inc-1' });
+
+    await setup.writeIncome({ ...mocks.params, incomeId: 'inc-1' });
+
+    expect(spies.transactionCreate).toHaveBeenCalledTimes(1);
+    expect(spies.incomeUpdate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ received: true, transaction_id: 'tx-1' }),
+      where: { id: 'inc-1' },
+    });
+  });
+
   it('SHOULD answer 404 for an unknown income OR account', async () => {
     spies.incomeFindUnique.mockResolvedValue(null);
     await expect(setup.writeIncome({ ...mocks.params, incomeId: 'x' })).rejects.toBeInstanceOf(
@@ -348,7 +409,7 @@ describe('home summary reads (spec 109)', () => {
       where: {
         asset: { OR: [{ owner: 'USER', owner_id: 'owner-1' }] },
         payment_date: { gte: from, lte: to },
-        transaction: { paid: true },
+        received: true,
       },
     });
   });
@@ -381,7 +442,7 @@ describe('dashboard reads (spec 110)', () => {
         currency: true,
         net_amount: true,
         payment_date: true,
-        transaction: { select: { paid: true } },
+        received: true,
         type: true,
       },
       where: {

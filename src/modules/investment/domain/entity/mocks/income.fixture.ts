@@ -56,12 +56,15 @@ export function incomeFixture(overrides: Partial<IncomeEntity> = {}): IncomeEnti
     id: faker.string.uuid(),
     netAmount: 7140,
     notes: null,
+    occurrenceNumber: null,
     paid: true,
     paymentDate: '2026-10-30',
     quantity: '300',
+    seriesId: null,
     suggestionId: null,
     transactionId: 'tx-1',
     type: InvestmentIncomeType.JCP,
+    withFinance: true,
     ...overrides,
   };
 }

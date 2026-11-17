@@ -70,7 +70,7 @@ export class IncomeRepository implements IIncomeRepository {
       assetId: row.asset_id,
       currency: row.currency,
       netAmount: row.net_amount,
-      paid: row.transaction?.paid === true,
+      paid: row.received,
       paymentDate: InvestmentMapper.toCalendarDate(row.payment_date),
       type: InvestmentIncomeType[row.type],
     }));

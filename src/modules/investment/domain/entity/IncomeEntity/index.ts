@@ -32,12 +32,17 @@ export interface IncomeEntity {
   id: string;
   netAmount: number;
   notes: null | string;
+  occurrenceNumber: null | number;
+  // Spec 115: the stored status (kept in step with the finance row `paid` for linked incomes).
   paid: boolean;
   paymentDate: string;
   quantity: null | string;
+  seriesId: null | string;
   suggestionId: null | string;
   transactionId: null | string;
   type: InvestmentIncomeType;
+  // Spec 115: false = lives only in investments (no finance row).
+  withFinance: boolean;
 }
 export interface IncomeEventEntity {
   amountPerUnit: string;
@@ -110,12 +115,12 @@ export interface NewSuggestionRow {
 }
 // One write path for create, edit, receive and approve: `incomeId` set means update.
 export interface WriteIncomeParams {
-  accountId: string;
+  accountId: null | string;
   amountPerUnit: null | string;
   assetId: string;
   // Description of the linked finance row: the ticker, or the name when there is none.
   assetLabel: string;
-  categoryId: string;
+  categoryId: null | string;
   createdBy: string;
   currency: string;
   exDate: null | string;
@@ -127,4 +132,6 @@ export interface WriteIncomeParams {
   quantity: null | string;
   suggestionId?: null | string;
   type: InvestmentIncomeType;
+  // Spec 115 FR 1, 4: false writes no finance row (and removes an existing one).
+  withFinance: boolean;
 }

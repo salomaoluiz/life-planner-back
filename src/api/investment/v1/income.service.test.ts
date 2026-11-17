@@ -18,13 +18,16 @@ describe('toIncomeOutput', () => {
       id,
       netAmount: 7140,
       notes: undefined,
+      occurrenceNumber: undefined,
       overdue: false,
       paymentDate: '2026-10-30',
       quantity: '300',
+      seriesId: undefined,
       status: 'RECEIVED',
       suggestionId: undefined,
       transactionId: view.income.transactionId,
       type: 'JCP',
+      withFinance: true,
       withholdingRate: '0.15',
     });
   });

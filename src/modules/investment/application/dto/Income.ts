@@ -28,20 +28,39 @@ const fields = {
   type: IncomeTypeSchema,
 };
 
-export const CreateIncomeSchema = z.object({
-  ...fields,
-  accessibleOwners: AccessibleOwnersSchema,
-  assetId: IdSchema,
-  userId: IdSchema,
-});
+// Spec 115 FR 1: `withFinance` (default true) decides whether account and category are required or forbidden.
+function financeIssue(data: { accountId?: string; categoryId?: string; withFinance?: boolean }) {
+  if (data.withFinance === false) {
+    return data.accountId === undefined && data.categoryId === undefined;
+  }
+
+  return true;
+}
+const FINANCE_ISSUE_MESSAGE = 'accountId and categoryId must be absent without withFinance';
+
+export const CreateIncomeSchema = z
+  .object({
+    ...z.object(fields).partial({ accountId: true, categoryId: true }).shape,
+    accessibleOwners: AccessibleOwnersSchema,
+    assetId: IdSchema,
+    userId: IdSchema,
+    withFinance: z.boolean().default(true),
+  })
+  .refine(financeIssue, { message: FINANCE_ISSUE_MESSAGE })
+  .refine((data) => !data.withFinance || (data.accountId && data.categoryId), {
+    message: 'accountId and categoryId are required with withFinance',
+  });
 export type CreateIncomeInput = z.input<typeof CreateIncomeSchema>;
 
-export const UpdateIncomeSchema = z.object({
-  ...z.object(fields).partial().shape,
-  accessibleOwners: AccessibleOwnersSchema,
-  id: IdSchema,
-  userId: IdSchema,
-});
+export const UpdateIncomeSchema = z
+  .object({
+    ...z.object(fields).partial().shape,
+    accessibleOwners: AccessibleOwnersSchema,
+    id: IdSchema,
+    userId: IdSchema,
+    withFinance: z.boolean().optional(),
+  })
+  .refine(financeIssue, { message: FINANCE_ISSUE_MESSAGE });
 export type UpdateIncomeInput = z.input<typeof UpdateIncomeSchema>;
 
 export const ReceiveIncomeSchema = z.object({

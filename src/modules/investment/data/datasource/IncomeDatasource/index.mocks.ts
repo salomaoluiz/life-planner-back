@@ -83,6 +83,7 @@ export const mocks = {
     paymentDate: '2026-10-30',
     quantity: '300',
     type: InvestmentIncomeType.JCP,
+    withFinance: true,
   },
 };
 

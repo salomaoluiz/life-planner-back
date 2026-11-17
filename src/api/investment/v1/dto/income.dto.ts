@@ -22,8 +22,24 @@ const fields = {
   type: IncomeTypeApiSchema,
 };
 
-export const CreateIncomeApiSchema = z.strictObject({ ...fields, assetId: z.uuid() });
-export const UpdateIncomeApiSchema = z.strictObject(z.object(fields).partial().shape);
+// Spec 115 FR 1: `withFinance` (default true); without it the account and the category must be absent.
+export const CreateIncomeApiSchema = z
+  .strictObject({
+    ...z.object(fields).partial({ accountId: true, categoryId: true }).shape,
+    assetId: z.uuid(),
+    withFinance: z.boolean().optional(),
+  })
+  .refine((data) => data.withFinance !== false || (!data.accountId && !data.categoryId), {
+    message: 'accountId and categoryId must be absent without withFinance',
+  })
+  .refine((data) => data.withFinance === false || (data.accountId && data.categoryId), {
+    message: 'accountId and categoryId are required with withFinance',
+  });
+export const UpdateIncomeApiSchema = z
+  .strictObject({ ...z.object(fields).partial().shape, withFinance: z.boolean().optional() })
+  .refine((data) => data.withFinance !== false || (!data.accountId && !data.categoryId), {
+    message: 'accountId and categoryId must be absent without withFinance',
+  });
 export const ReceiveIncomeApiSchema = z.strictObject({
   accountId: z.uuid().optional(),
   netAmount: z.number().int().positive().optional(),
@@ -64,13 +80,16 @@ export const IncomeApiSchema = z.strictObject({
   id: z.uuid(),
   netAmount: z.number().int(),
   notes: z.string().optional(),
+  occurrenceNumber: z.number().int().optional(),
   overdue: z.boolean(),
   paymentDate: z.string(),
   quantity: z.string().optional(),
+  seriesId: z.uuid().optional(),
   status: IncomeStatusApiSchema,
   suggestionId: z.uuid().optional(),
   transactionId: z.uuid().optional(),
   type: IncomeTypeApiSchema,
+  withFinance: z.boolean(),
   withholdingRate: z.string(),
 });
 export const IncomeWriteApiSchema = z.strictObject({ item: IncomeApiSchema });

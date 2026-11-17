@@ -41,6 +41,7 @@ it('SHOULD write a received income AND answer its view with the withholding esti
     quantity: '300',
     suggestionId: undefined,
     type: InvestmentIncomeType.JCP,
+    withFinance: true,
   });
   expect(view).toMatchObject({
     estimatedGross: 8400,

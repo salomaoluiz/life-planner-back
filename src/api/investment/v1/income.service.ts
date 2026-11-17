@@ -39,13 +39,16 @@ export function toIncomeOutput(view: IncomeView): IncomeOutputType {
     id: income.id,
     netAmount: income.netAmount,
     notes: income.notes ?? undefined,
+    occurrenceNumber: income.occurrenceNumber ?? undefined,
     overdue: view.overdue,
     paymentDate: income.paymentDate,
     quantity: income.quantity ?? undefined,
+    seriesId: income.seriesId ?? undefined,
     status: view.status,
     suggestionId: income.suggestionId ?? undefined,
     transactionId: income.transactionId ?? undefined,
     type: income.type,
+    withFinance: income.withFinance,
     withholdingRate: view.withholdingRate,
   };
 }

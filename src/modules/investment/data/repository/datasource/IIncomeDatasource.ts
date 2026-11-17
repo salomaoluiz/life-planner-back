@@ -16,9 +16,10 @@ import { OwnerAccess } from '@investment/domain/entity/OwnerAccess';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export type CategoryRow = { scopes: FinancialCategoryScope[] } & FinancialCategory;
-export type DashboardIncomeRow = {
-  transaction: { paid: boolean | null } | null;
-} & Pick<InvestmentIncome, 'asset_id' | 'currency' | 'net_amount' | 'payment_date' | 'type'>;
+export type DashboardIncomeRow = Pick<
+  InvestmentIncome,
+  'asset_id' | 'currency' | 'net_amount' | 'payment_date' | 'received' | 'type'
+>;
 export type IIncomeDatasource = {
   countPendingSuggestions(assetId: string): Promise<number>;
   countPendingSuggestionsByAssets(assetIds: string[]): Promise<number>;

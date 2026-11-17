@@ -432,7 +432,7 @@ enum RecurrenceUnit {
 // A recurring transaction series (spec 034): the template plus the schedule; real rows live in `financial_transactions`.
 // CHECKs in the migration: account XOR card, end_date >= start_date.
 model FinancialRecurrence {
-  id                    String              @id @default(uuid())
+  id                    String           @id @default(uuid())
   description           String
   // Spec 059: free text, trimmed, at most 1000 characters (CHECK in the migration); NULL when empty.
   notes                 String?
@@ -446,21 +446,21 @@ model FinancialRecurrence {
   amount_in             Int?
   // Spec 114: every `frequency_interval` `frequency_unit`s; the limits per unit are a CHECK in the migration.
   frequency_unit        RecurrenceUnit
-  frequency_interval    Int                 @default(1)
-  start_date            DateTime            @db.Date
-  end_date              DateTime?           @db.Date
-  first_number          Int                 @default(1)
-  last_generated_number Int                 @default(0)
-  next_occurrence_date  DateTime?           @db.Date
-  skipped_numbers       Int[]               @default([])
-  status                RecurrenceStatus    @default(ACTIVE)
+  frequency_interval    Int              @default(1)
+  start_date            DateTime         @db.Date
+  end_date              DateTime?        @db.Date
+  first_number          Int              @default(1)
+  last_generated_number Int              @default(0)
+  next_occurrence_date  DateTime?        @db.Date
+  skipped_numbers       Int[]            @default([])
+  status                RecurrenceStatus @default(ACTIVE)
   // Spec 096: every occurrence of a card EXPENSE series is born projected (CHECK in the migration).
-  projected             Boolean             @default(false)
-  currency              String              @default("BRL") @db.VarChar(3)
+  projected             Boolean          @default(false)
+  currency              String           @default("BRL") @db.VarChar(3)
   owner                 OwnerType
   owner_id              String
-  created_at            DateTime            @default(now()) @db.Timestamptz(6)
-  updated_at            DateTime            @updatedAt @db.Timestamptz(6)
+  created_at            DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime         @updatedAt @db.Timestamptz(6)
 
   category     FinancialCategory        @relation(fields: [category_id], references: [id], onDelete: Restrict)
   account      FinancialAccount?        @relation(fields: [account_id], references: [id], onDelete: Restrict)
@@ -849,6 +849,7 @@ model InvestmentAsset {
   fixed_income_rates       InvestmentFixedIncomeRate[]
   fixed_income_adjustments InvestmentFixedIncomeAdjustment[]
   incomes                  InvestmentIncome[]
+  income_series            InvestmentIncomeSeries[]
   income_suggestions       InvestmentIncomeSuggestion[]
   event_suggestions        InvestmentEventSuggestion[]
   conversion_out           InvestmentConversion?             @relation("ConversionFrom")
@@ -1003,29 +1004,76 @@ model InvestmentFixedIncomeAdjustment {
 
 // Spec 107: an income of an asset; its status is the `paid` flag of the linked finance row.
 model InvestmentIncome {
-  id              String               @id @default(uuid())
-  asset_id        String
-  type            InvestmentIncomeType
-  ex_date         DateTime?            @db.Date
-  payment_date    DateTime             @db.Date
-  quantity        Decimal?             @db.Decimal(20, 8)
-  amount_per_unit Decimal?             @db.Decimal(20, 8)
-  net_amount      Int
-  currency        String               @db.VarChar(3)
-  transaction_id  String?              @unique
-  suggestion_id   String?              @unique
-  notes           String?
-  created_by      String
-  created_at      DateTime             @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime             @updatedAt @db.Timestamptz(6)
+  id                String               @id @default(uuid())
+  asset_id          String
+  type              InvestmentIncomeType
+  ex_date           DateTime?            @db.Date
+  payment_date      DateTime             @db.Date
+  quantity          Decimal?             @db.Decimal(20, 8)
+  amount_per_unit   Decimal?             @db.Decimal(20, 8)
+  net_amount        Int
+  currency          String               @db.VarChar(3)
+  transaction_id    String?              @unique
+  suggestion_id     String?              @unique
+  notes             String?
+  // Spec 115: stored status (written with the row's `paid` for linked incomes) and the series it came from.
+  received          Boolean              @default(false)
+  series_id         String?
+  occurrence_number Int?
+  created_by        String
+  created_at        DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime             @updatedAt @db.Timestamptz(6)
 
   asset       InvestmentAsset             @relation(fields: [asset_id], references: [id], onDelete: Cascade)
   transaction FinancialTransaction?       @relation(fields: [transaction_id], references: [id], onDelete: SetNull)
   suggestion  InvestmentIncomeSuggestion? @relation(fields: [suggestion_id], references: [id], onDelete: SetNull)
+  series      InvestmentIncomeSeries?     @relation(fields: [series_id], references: [id], onDelete: Cascade)
 
+  @@unique([series_id, occurrence_number])
   @@index([asset_id, payment_date(sort: Desc), id(sort: Desc)])
   @@index([asset_id, type, ex_date])
   @@map("investment_incomes")
+}
+
+enum InvestmentIncomeSeriesEndReason {
+  END_DATE
+  POSITION_ZERO
+  MANUAL
+  SPLIT
+}
+
+// Spec 115: a recurring income of an asset. Occurrences up to the end of the current month are real
+// `investment_incomes` rows (with `series_id` + `occurrence_number`); later ones are projected on read.
+// CHECKs in the migration: frequency_interval per unit, ex_date_offset_days 0-90, amount_per_unit > 0, end_date >=
+// first_payment_date, account/category present iff with_finance, notes <= 1000, ended_at set with end_reason.
+model InvestmentIncomeSeries {
+  id                    String                           @id @default(uuid())
+  asset_id              String
+  type                  InvestmentIncomeType
+  first_payment_date    DateTime                         @db.Date
+  frequency_unit        RecurrenceUnit
+  frequency_interval    Int
+  end_date              DateTime?                        @db.Date
+  ex_date_offset_days   Int?
+  amount_per_unit       Decimal                          @db.Decimal(20, 8)
+  currency              String                           @db.VarChar(3)
+  with_finance          Boolean
+  account_id            String?
+  category_id           String?
+  notes                 String?
+  first_number          Int                              @default(1)
+  last_generated_number Int                              @default(0)
+  ended_at              DateTime?                        @db.Date
+  end_reason            InvestmentIncomeSeriesEndReason?
+  created_by            String
+  created_at            DateTime                         @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                         @updatedAt @db.Timestamptz(6)
+
+  asset   InvestmentAsset    @relation(fields: [asset_id], references: [id], onDelete: Cascade)
+  incomes InvestmentIncome[]
+
+  @@index([asset_id])
+  @@map("investment_income_series")
 }
 
 // Announced incomes: market data, no owner (like the quotes).
