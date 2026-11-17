@@ -6,6 +6,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { Database } from '@shared/infra/db/Database';
 
 import { BuildInfoReader } from './infra/build-info';
+import { Embeddings } from './infra/embeddings';
 import { EnvModule } from './infra/env/env.module';
 import { GithubReleases } from './infra/github';
 import { CacheControlInterceptor } from './infra/http/cache-control';
@@ -32,6 +33,7 @@ import { Scheduler } from './infra/scheduler';
     'IFinnhubQuotes',
     'IFxRates',
     'IBcbIndexes',
+    'IEmbeddings',
     'IScheduler',
     Database,
     EnvModule,
@@ -48,6 +50,7 @@ import { Scheduler } from './infra/scheduler';
     { provide: 'IFinnhubQuotes', useClass: FinnhubQuotes },
     { provide: 'IFxRates', useClass: FxRates },
     { provide: 'IBcbIndexes', useClass: BcbIndexes },
+    { provide: 'IEmbeddings', useClass: Embeddings },
     { provide: 'IScheduler', useClass: Scheduler },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_GUARD, useClass: JwtAuthGuard },

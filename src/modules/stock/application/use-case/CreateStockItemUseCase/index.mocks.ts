@@ -1,40 +1,45 @@
-import { Test } from '@nestjs/testing';
-
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
-import StockEntityFixture from '@stock/domain/entity/mocks/StockEntity.fixture';
+import {
+  accessibleOwners,
+  build,
+  catalogRepositoryMock,
+  item,
+  lot,
+  stockRepositoryMock,
+} from '@stock/application/mocks/stock.mocks';
+import { StockUnits } from '@stock/domain/entity/StockEntity';
 
+import { RefreshStockEmbeddingUseCase } from '../RefreshStockEmbeddingUseCase';
 import { CreateStockItemUseCase } from './index';
 
-// region Mocks
-
-const createdMock = new StockEntityFixture().build();
-const accessibleOwners = [
-  { owner: OwnerType.USER, ownerId: 'user-id' },
-  { owner: OwnerType.FAMILY, ownerId: 'family-id' },
-];
-const stockRepositoryMock = {
-  create: jest.fn(),
+const refresh = { execute: jest.fn() };
+const mocks = {
+  accessibleOwners,
+  catalog: catalogRepositoryMock(),
+  refresh,
+  stock: stockRepositoryMock(),
 };
-
-// endregion Mocks
-
+const base = {
+  accessibleOwners,
+  description: 'Milk',
+  owner: OwnerType.USER,
+  ownerId: 'user-id',
+  unit: StockUnits.UNIT,
+  userId: 'user-id',
+};
 let setup: CreateStockItemUseCase;
 
 beforeEach(async () => {
   jest.clearAllMocks();
-  stockRepositoryMock.create.mockResolvedValue(createdMock);
-
-  const module = await Test.createTestingModule({
-    providers: [
-      CreateStockItemUseCase,
-      { provide: 'IStockRepository', useValue: stockRepositoryMock },
-    ],
-  }).compile();
-
-  setup = module.get(CreateStockItemUseCase);
+  refresh.execute.mockResolvedValue(true);
+  mocks.catalog.findCategoryById.mockResolvedValue(undefined);
+  mocks.catalog.findLocationById.mockResolvedValue(undefined);
+  mocks.stock.create.mockResolvedValue(item([lot('lot', 2)]));
+  setup = await build(CreateStockItemUseCase, [
+    { provide: 'IStockRepository', useValue: mocks.stock },
+    { provide: 'IStockCatalogRepository', useValue: mocks.catalog },
+    { provide: RefreshStockEmbeddingUseCase, useValue: refresh },
+  ]);
 });
 
-const mocks = { accessibleOwners, created: createdMock, stockRepository: stockRepositoryMock };
-const spies = {};
-
-export { mocks, setup, spies };
+export { base, mocks, setup };

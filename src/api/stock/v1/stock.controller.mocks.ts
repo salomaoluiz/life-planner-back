@@ -1,55 +1,66 @@
-import { faker } from '@faker-js/faker';
 import { Test } from '@nestjs/testing';
 
-import { StockController } from '@api/stock/v1/stock.controller';
+import { StockController, StockSuggestionController } from '@api/stock/v1/stock.controller';
 import { StockService } from '@api/stock/v1/stock.service';
+import {
+  StockCategoryController,
+  StockLocationController,
+} from '@api/stock/v1/stockCatalog.controller';
 import { JwtPayload } from '@shared/infra/jwt/types';
 
-// region Mocks
+const userId = '5b6a1e7c-3f4d-4b2a-8c9d-1e2f3a4b5c6d';
+const id = '0b6a1e7c-3f4d-4b2a-8c9d-1e2f3a4b5c6d';
+const ownerId = '1b6a1e7c-3f4d-4b2a-8c9d-1e2f3a4b5c6d';
+const request = { user: { id: userId } } as JwtPayload & Request;
+const result = { ok: true };
 
-const userId = faker.string.uuid();
-const itemApiMock = {
-  barcode: null,
-  brand: null,
-  createdAt: '2026-10-04T12:00:00.000Z',
-  description: 'Rice',
-  expirationDate: null,
-  id: faker.string.uuid(),
-  notes: null,
-  openingDate: null,
-  owner: 'USER',
-  ownerId: userId,
-  purchaseDate: null,
-  quantity: 2,
-  unit: 'kilogram',
-  updatedAt: '2026-10-04T12:00:00.000Z',
-};
-const requestMock = { user: { id: userId } } as JwtPayload & Request;
+const methods = [
+  'create',
+  'createCategory',
+  'createCategorySuggestions',
+  'createLocation',
+  'createLocationSuggestions',
+  'createMovement',
+  'delete',
+  'deleteCategory',
+  'deleteLocation',
+  'findAll',
+  'findById',
+  'findCategories',
+  'findLocations',
+  'findMovements',
+  'ownerChangePreview',
+  'suggest',
+  'update',
+  'updateCategory',
+  'updateLocation',
+] as const;
+const stockService = Object.fromEntries(
+  methods.map((method) => [method, jest.fn().mockResolvedValue(result)]),
+) as Record<(typeof methods)[number], jest.Mock>;
 
-const stockServiceMock = {
-  create: jest.fn().mockResolvedValue(itemApiMock),
-  delete: jest.fn().mockResolvedValue(undefined),
-  findAll: jest.fn().mockResolvedValue([itemApiMock]),
-  findById: jest.fn().mockResolvedValue(itemApiMock),
-  update: jest.fn().mockResolvedValue(itemApiMock),
-};
-
-// endregion Mocks
-
-let setup: StockController;
-
-beforeEach(async () => {
+async function setup() {
   jest.clearAllMocks();
+  methods.forEach((method) => stockService[method].mockResolvedValue(result));
 
   const module = await Test.createTestingModule({
-    controllers: [StockController],
-    providers: [{ provide: StockService, useValue: stockServiceMock }],
+    controllers: [
+      StockController,
+      StockSuggestionController,
+      StockCategoryController,
+      StockLocationController,
+    ],
+    providers: [{ provide: StockService, useValue: stockService }],
   }).compile();
 
-  setup = module.get(StockController);
-});
+  return {
+    categories: module.get(StockCategoryController),
+    items: module.get(StockController),
+    locations: module.get(StockLocationController),
+    suggestions: module.get(StockSuggestionController),
+  };
+}
 
-const mocks = { item: itemApiMock, request: requestMock, stockService: stockServiceMock };
-const spies = {};
+const mocks = { id, ownerId, request, result, stockService, userId };
 
-export { mocks, setup, spies };
+export { mocks, setup };

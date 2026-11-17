@@ -1,103 +1,174 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
-import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { ValidationError } from '@shared/domain/error/ValidationError';
+import {
+  archivedOwners,
+  category,
+  item,
+  location,
+  lot,
+} from '@stock/application/mocks/stock.mocks';
+import { StockUnits } from '@stock/domain/entity/StockEntity';
 
-import { mocks, setup } from './index.mocks';
+import { mocks, OwnerType, setup } from './index.mocks';
 
-function base() {
-  return { accessibleOwners: mocks.accessibleOwners, id: mocks.item.id };
-}
+const input = { accessibleOwners: mocks.accessibleOwners, id: 'item' };
 
-it('SHOULD update only the sent fields AND return the entity', async () => {
-  const result = await setup.execute({
-    ...base(),
-    openingDate: '2026-10-04T08:00:00.000Z',
-    quantity: 1,
-  });
+it('SHOULD update the fields AND refresh the embedding WHEN the description changes', async () => {
+  const view = await setup.execute({ ...input, description: 'Oat milk', notes: '' });
 
-  expect(mocks.stockRepository.update).toHaveBeenCalledWith({
-    id: mocks.item.id,
-    openingDate: new Date('2026-10-04T08:00:00.000Z'),
-    quantity: 1,
-  });
-  expect(result).toBe(mocks.updated);
+  expect(mocks.stock.update).toHaveBeenCalledWith(
+    expect.objectContaining({ description: 'Oat milk', id: 'item', notes: null }),
+  );
+  expect(mocks.refresh.execute).toHaveBeenCalledWith({ id: 'item' });
+  expect(view.quantity).toBe(1);
 });
 
-it('SHOULD clear optional fields WHEN null or empty string is sent', async () => {
-  await setup.execute({ ...base(), brand: '', expirationDate: null, notes: null });
+it('SHOULD not refresh the embedding WHEN neither the description nor the brand changed', async () => {
+  await setup.execute({ ...input, notes: 'x' });
 
-  const [call] = mocks.stockRepository.update.mock.calls[0];
-  expect(call.notes).toBeNull();
-  expect(call.brand).toBeNull();
-  expect(call.expirationDate).toBeNull();
+  expect(mocks.refresh.execute).not.toHaveBeenCalled();
 });
 
-it('SHOULD move the item WHEN the caller can access both owners', async () => {
-  await setup.execute({ ...base(), owner: OwnerType.FAMILY, ownerId: 'family-id' });
+it('SHOULD answer 404 for an item the caller cannot see', async () => {
+  mocks.stock.findById.mockResolvedValue(undefined);
+  await expect(setup.execute({ ...input, notes: 'x' })).rejects.toThrow(NotFoundException);
 
-  expect(mocks.stockRepository.update).toHaveBeenCalledWith(
-    expect.objectContaining({ owner: OwnerType.FAMILY, ownerId: 'family-id' }),
+  mocks.stock.findById.mockResolvedValue(item([], (f) => f.withOwnerId('other')));
+  await expect(setup.execute({ ...input, notes: 'x' })).rejects.toThrow(NotFoundException);
+});
+
+it('SHOULD refuse changing the unit WHEN any lot has quantity', async () => {
+  mocks.stock.findById.mockResolvedValue(item([lot('a', 1)]));
+
+  await expect(setup.execute({ ...input, unit: StockUnits.LITER })).rejects.toThrow(
+    'Change the unit only when the item is empty',
   );
 });
 
-it('SHOULD accept "moving" to the owner the item already has', async () => {
-  await setup.execute({ ...base(), owner: OwnerType.USER, ownerId: 'user-id' });
+it('SHOULD allow changing the unit WHEN the item is empty', async () => {
+  await setup.execute({ ...input, unit: StockUnits.LITER });
 
-  expect(mocks.stockRepository.update).toHaveBeenCalled();
+  expect(mocks.stock.update).toHaveBeenCalledWith(expect.objectContaining({ unit: 'liter' }));
 });
 
-it('SHOULD throw Forbidden (403) AND change nothing WHEN moving to an owner without access', async () => {
-  await expect(
-    setup.execute({ ...base(), owner: OwnerType.FAMILY, ownerId: 'other-family' }),
-  ).rejects.toThrow(ForbiddenException);
-  expect(mocks.stockRepository.update).not.toHaveBeenCalled();
+it('SHOULD clear the minimum and ideal WHEN the item becomes stock-only', async () => {
+  mocks.stock.findById.mockResolvedValue(item([], (f) => f.withMinQuantity(1, 3)));
+
+  await setup.execute({ ...input, stockOnly: true });
+
+  expect(mocks.stock.update).toHaveBeenCalledWith(
+    expect.objectContaining({ idealQuantity: null, minQuantity: null, stockOnly: true }),
+  );
 });
 
-it.each([
-  ['missing', undefined],
-  ['owned by someone the caller cannot access', { ...mocks.item, ownerId: 'someone-else' }],
-])('SHOULD throw NotFound (404) AND change nothing WHEN the item is %s', async (_label, found) => {
-  mocks.stockRepository.findById.mockResolvedValueOnce(found);
+it('SHOULD keep the stored minimum WHEN only the ideal changes AND validate against it', async () => {
+  mocks.stock.findById.mockResolvedValue(item([], (f) => f.withMinQuantity(2)));
 
-  await expect(setup.execute({ ...base(), quantity: 1 })).rejects.toThrow(NotFoundException);
-  expect(mocks.stockRepository.update).not.toHaveBeenCalled();
+  await expect(setup.execute({ ...input, idealQuantity: 2 })).rejects.toThrow(
+    UnprocessableEntityException,
+  );
+  await setup.execute({ ...input, idealQuantity: 5 });
+  expect(mocks.stock.update).toHaveBeenCalledWith(
+    expect.objectContaining({ idealQuantity: 5, minQuantity: undefined }),
+  );
 });
 
-it('SHOULD answer 404 (not 403) WHEN the current owner is inaccessible even if the target is accessible', async () => {
-  mocks.stockRepository.findById.mockResolvedValueOnce({ ...mocks.item, ownerId: 'someone-else' });
+it('SHOULD allow clearing the minimum with null', async () => {
+  mocks.stock.findById.mockResolvedValue(item([], (f) => f.withMinQuantity(2, 5)));
 
-  await expect(
-    setup.execute({ ...base(), owner: OwnerType.USER, ownerId: 'user-id' }),
-  ).rejects.toThrow(NotFoundException);
+  await setup.execute({ ...input, idealQuantity: null, minQuantity: null });
+
+  expect(mocks.stock.update).toHaveBeenCalledWith(
+    expect.objectContaining({ idealQuantity: null, minQuantity: null }),
+  );
 });
 
-it.each([
-  ['an empty patch', {}],
-  ['only owner', { owner: OwnerType.FAMILY }],
-  ['only ownerId', { ownerId: 'family-id' }],
-  ['null description', { description: null }],
-  ['null quantity', { quantity: null }],
-  ['null unit', { unit: null }],
-  ['a negative quantity', { quantity: -1 }],
-  ['a fractional quantity', { quantity: 0.5 }],
-  ['quantity above 1,000,000', { quantity: 1_000_001 }],
-  ['a whitespace-only description', { description: '  ' }],
-  ['year 0000', { openingDate: '0000-01-01T00:00:00.000Z' }],
-])(
-  'SHOULD throw ValidationError AND change nothing WHEN the patch is %s',
-  async (_label, patch) => {
-    await expect(setup.execute({ ...base(), ...patch } as never)).rejects.toThrow(ValidationError);
-    expect(mocks.stockRepository.update).not.toHaveBeenCalled();
-  },
-);
+describe('owner change', () => {
+  const move = { ...input, owner: OwnerType.FAMILY, ownerId: mocks.familyId };
 
-it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)', async () => {
-  const input = { ...base(), quantity: 1 };
-  const accessibleOwners = input.accessibleOwners.map((access) => ({ ...access, archived: true }));
+  it('SHOULD replace the category and location by the same-name ones of the new owner', async () => {
+    mocks.stock.findById.mockResolvedValue(
+      item([], (f) => f.withCategoryId('src-cat').withLocationId('src-loc')),
+    );
+    mocks.catalog.findCatalogByOwners.mockImplementation(async (owners) =>
+      owners[0].owner === 'USER'
+        ? {
+            categories: [category('src-cat', { name: 'Dairy' })],
+            locations: [location('src-loc', { name: 'Fridge' })],
+          }
+        : {
+            categories: [
+              category('dst-cat', {
+                name: 'dairy',
+                owner: OwnerType.FAMILY,
+                ownerId: mocks.familyId,
+              }),
+            ],
+            locations: [
+              location('dst-loc', {
+                name: 'Fridge',
+                owner: OwnerType.FAMILY,
+                ownerId: mocks.familyId,
+              }),
+            ],
+          },
+    );
+    mocks.catalog.findCategoryById.mockResolvedValue(
+      category('dst-cat', { owner: OwnerType.FAMILY, ownerId: mocks.familyId }),
+    );
+    mocks.catalog.findLocationById.mockResolvedValue(
+      location('dst-loc', { owner: OwnerType.FAMILY, ownerId: mocks.familyId }),
+    );
 
-  await expect(setup.execute({ ...input, accessibleOwners })).rejects.toMatchObject({
-    message: 'Family is archived',
-    status: 422,
+    await setup.execute(move);
+
+    expect(mocks.stock.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        categoryId: 'dst-cat',
+        locationId: 'dst-loc',
+        owner: 'FAMILY',
+        ownerId: mocks.familyId,
+      }),
+    );
   });
+
+  it('SHOULD clear them WHEN the new owner has no match, and respect an explicit choice', async () => {
+    mocks.stock.findById.mockResolvedValue(item([], (f) => f.withCategoryId('src-cat')));
+    mocks.catalog.findCatalogByOwners.mockImplementation(async (owners) => ({
+      categories: owners[0].owner === 'USER' ? [category('src-cat')] : [],
+      locations: [],
+    }));
+
+    await setup.execute(move);
+    expect(mocks.stock.update).toHaveBeenCalledWith(
+      expect.objectContaining({ categoryId: null, locationId: null }),
+    );
+
+    mocks.catalog.findCategoryById.mockResolvedValue(
+      category('mine', { owner: OwnerType.FAMILY, ownerId: mocks.familyId }),
+    );
+    await setup.execute({ ...move, categoryId: 'mine' });
+    expect(mocks.stock.update).toHaveBeenLastCalledWith(
+      expect.objectContaining({ categoryId: 'mine' }),
+    );
+  });
+
+  it('SHOULD refuse an owner the caller cannot access (403) and an archived destination (422)', async () => {
+    await expect(setup.execute({ ...move, ownerId: 'other' })).rejects.toThrow(ForbiddenException);
+    await expect(setup.execute({ ...move, accessibleOwners: archivedOwners })).rejects.toThrow(
+      UnprocessableEntityException,
+    );
+  });
+});
+
+it('SHOULD throw ValidationError WHEN nothing is sent or only half of the owner', async () => {
+  await expect(setup.execute(input)).rejects.toThrow(ValidationError);
+  await expect(setup.execute({ ...input, owner: OwnerType.FAMILY })).rejects.toThrow(
+    ValidationError,
+  );
 });

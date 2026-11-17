@@ -1,34 +1,21 @@
-import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
-
 import StockEntity from './index';
 import { mocks, setup } from './index.mocks';
 
 describe('StockEntity', () => {
-  it('SHOULD create an instance of StockEntity with all properties', () => {
+  it('SHOULD keep every property', () => {
     const result = setup();
 
     expect(result).toBeInstanceOf(StockEntity);
     expect(result).toEqual(mocks.params);
-    expect(result.unit).toBe(mocks.params.unit);
-    expect(result.expirationDate).toBe(mocks.date);
-    expect(result.owner).toBe(OwnerType.FAMILY);
-    expect(result.createdAt).toBe(mocks.date);
-    expect(result.updatedAt).toBe(mocks.date);
   });
 
-  it('SHOULD create an instance with only mandatory properties AND optional properties undefined', () => {
+  it('SHOULD leave optional properties undefined and lots empty WHEN only the mandatory ones are given', () => {
     const result = setup(mocks.mandatoryParams);
 
-    expect(result).toBeInstanceOf(StockEntity);
-    expect(result.id).toBe(mocks.mandatoryParams.id);
-    expect(result.description).toBe(mocks.mandatoryParams.description);
-
-    // Validating optional properties are undefined
+    expect(result.lots).toEqual([]);
     expect(result.barcode).toBeUndefined();
-    expect(result.brand).toBeUndefined();
-    expect(result.expirationDate).toBeUndefined();
-    expect(result.notes).toBeUndefined();
-    expect(result.openingDate).toBeUndefined();
-    expect(result.purchaseDate).toBeUndefined();
+    expect(result.categoryId).toBeUndefined();
+    expect(result.minQuantity).toBeUndefined();
+    expect(result.openedShelfLifeDays).toBeUndefined();
   });
 });

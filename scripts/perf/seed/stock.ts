@@ -2,7 +2,8 @@ import { ApiClient } from './client';
 import { missingCount } from './diff';
 import { Rng } from './random';
 
-const UNITS = ['unit', 'gram', 'kilogram', 'liter', 'milliliter'] as const;
+// Spec 116: kg and L take decimals, units whole numbers; dates are calendar days.
+const UNITS = ['unit', 'kilogram', 'liter'] as const;
 const DAY_MS = 86_400_000;
 
 export interface StockRefs {
@@ -23,7 +24,7 @@ export interface StockPayload {
 }
 
 function isoDayOffset(today: string, days: number): string {
-  return new Date(Date.parse(`${today}T00:00:00Z`) + days * DAY_MS).toISOString();
+  return new Date(Date.parse(`${today}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
 }
 
 function expirationFor(index: number, today: string): null | string {
@@ -43,6 +44,8 @@ export function buildStockItems(
 ): StockPayload[] {
   return Array.from({ length: count }, (_, index) => {
     const inFamily = index % 3 === 2 && refs.familyIds.length > 0;
+    const unit = UNITS[index % UNITS.length];
+    const base = 1 + (index % 20);
 
     return {
       brand: rng.faker.company.name().slice(0, 100),
@@ -52,8 +55,8 @@ export function buildStockItems(
       owner: inFamily ? 'FAMILY' : 'USER',
       ownerId: inFamily ? refs.familyIds[index % refs.familyIds.length] : refs.personal,
       purchaseDate: isoDayOffset(today, -(index % 90)),
-      quantity: 1 + (index % 20),
-      unit: UNITS[index % UNITS.length],
+      quantity: unit === 'unit' ? base : base / 4,
+      unit,
     };
   });
 }

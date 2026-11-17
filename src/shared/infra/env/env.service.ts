@@ -24,6 +24,23 @@ export class EnvService {
     return this.nestConfigService.get('PORT');
   }
 
+  // Embeddings (spec 116)
+  get embeddingsApiKey(): Env['EMBEDDINGS_API_KEY'] {
+    return this.nestConfigService.get('EMBEDDINGS_API_KEY');
+  }
+
+  get embeddingsApiUrl(): Env['EMBEDDINGS_API_URL'] {
+    return this.nestConfigService.get('EMBEDDINGS_API_URL');
+  }
+
+  get embeddingsDimensions(): Env['EMBEDDINGS_DIMENSIONS'] {
+    return this.nestConfigService.get('EMBEDDINGS_DIMENSIONS');
+  }
+
+  get embeddingsModel(): Env['EMBEDDINGS_MODEL'] {
+    return this.nestConfigService.get('EMBEDDINGS_MODEL');
+  }
+
   // Investment quotes (spec 104)
   get brapiToken(): Env['BRAPI_TOKEN'] {
     return this.nestConfigService.get('BRAPI_TOKEN');

@@ -28,6 +28,7 @@ model User {
   family_members   FamilyMember[]
   sessions         UserSession[]
   account_favorite FinancialAccountFavorite?
+  stock_movements  StockMovement[]
 }
 
 model Family {
@@ -217,6 +218,7 @@ model FinancialCategory {
   updated_at          DateTime           @updatedAt @db.Timestamptz(6)
 
   scopes            FinancialCategoryScope[]
+  stock_categories  StockCategory[]
   parent            FinancialCategory?         @relation("CategoryTree", fields: [parent_id], references: [id], onDelete: Cascade)
   children          FinancialCategory[]        @relation("CategoryTree")
   transactions      FinancialTransaction[]
@@ -371,31 +373,132 @@ model FinanceOwnerVersion {
 // Lowercase members on purpose: the client validates against member names, so they must equal the DB/wire values.
 enum StockUnit {
   unit
-  gram
   kilogram
   liter
-  milliliter
+}
+
+enum StockMovementType {
+  ENTRY
+  CONSUME
+  OPEN
+  DISCARD
+  ADJUST
+  INITIAL
+}
+
+enum StockMovementReason {
+  PURCHASE
+  MANUAL
+  EXPIRED
+  SPOILED
+  OTHER
 }
 
 // `owner_id` points to a user or a family, so it has no FK. Unit values are lowercase in the DB and on the wire.
+// Spec 116: the quantity lives in lots; every change is an immutable movement. `name_embedding` (pgvector) is read and
+// written with raw SQL only (`Unsupported`), see StockEmbeddingDatasource.
 model StockItem {
+  id                     String                       @id @default(uuid())
+  owner                  OwnerType
+  owner_id               String
+  description            String
+  unit                   StockUnit
+  brand                  String?
+  barcode                String?
+  notes                  String?
+  category_id            String?
+  location_id            String?
+  min_quantity           Decimal?                     @db.Decimal(14, 3)
+  ideal_quantity         Decimal?                     @db.Decimal(14, 3)
+  opened_shelf_life_days Int?
+  warn_days_closed       Int                          @default(7)
+  warn_days_opened       Int                          @default(1)
+  stock_only             Boolean                      @default(false)
+  name_embedding         Unsupported("vector(1024)")?
+  created_at             DateTime                     @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime                     @updatedAt @db.Timestamptz(6)
+
+  category  StockCategory?  @relation(fields: [category_id], references: [id], onDelete: SetNull)
+  location  StockLocation?  @relation(fields: [location_id], references: [id], onDelete: SetNull)
+  lots      StockLot[]
+  movements StockMovement[]
+
+  @@index([owner, owner_id])
+  @@index([owner, owner_id, category_id])
+  @@index([owner, owner_id, location_id])
+  @@map("stock_items")
+}
+
+model StockLot {
   id              String    @id @default(uuid())
-  owner           OwnerType
-  owner_id        String
-  description     String
-  quantity        Int
-  unit            StockUnit
-  brand           String?
-  barcode         String?
-  notes           String?
-  purchase_date   DateTime? @db.Timestamptz(6)
-  opening_date    DateTime? @db.Timestamptz(6)
-  expiration_date DateTime? @db.Timestamptz(6)
+  item_id         String
+  quantity        Decimal   @db.Decimal(14, 3)
+  expiration_date DateTime? @db.Date
+  purchase_date   DateTime? @db.Date
+  opened_at       DateTime? @db.Date
   created_at      DateTime  @default(now()) @db.Timestamptz(6)
   updated_at      DateTime  @updatedAt @db.Timestamptz(6)
 
+  item      StockItem       @relation(fields: [item_id], references: [id], onDelete: Cascade)
+  movements StockMovement[]
+
+  @@index([item_id])
+  @@map("stock_lots")
+}
+
+// Immutable: no `updated_at`, no update or delete route.
+model StockMovement {
+  id         String               @id @default(uuid())
+  item_id    String
+  lot_id     String
+  type       StockMovementType
+  reason     StockMovementReason?
+  quantity   Decimal              @db.Decimal(14, 3)
+  note       String?              @db.VarChar(200)
+  user_id    String?
+  created_at DateTime             @default(now()) @db.Timestamptz(6)
+
+  item StockItem @relation(fields: [item_id], references: [id], onDelete: Cascade)
+  lot  StockLot  @relation(fields: [lot_id], references: [id], onDelete: Cascade)
+  user User?     @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([item_id, created_at(sort: Desc), id(sort: Desc)])
+  @@map("stock_movements")
+}
+
+model StockCategory {
+  id                  String        @id @default(uuid())
+  owner               OwnerType
+  owner_id            String
+  parent_id           String?
+  name                String        @db.VarChar(50)
+  finance_category_id String?
+  status              AccountStatus @default(ACTIVE)
+  created_at          DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime      @updatedAt @db.Timestamptz(6)
+
+  parent           StockCategory?     @relation("StockCategoryTree", fields: [parent_id], references: [id], onDelete: Cascade)
+  children         StockCategory[]    @relation("StockCategoryTree")
+  finance_category FinancialCategory? @relation(fields: [finance_category_id], references: [id], onDelete: SetNull)
+  items            StockItem[]
+
   @@index([owner, owner_id])
-  @@map("stock_items")
+  @@map("stock_categories")
+}
+
+model StockLocation {
+  id         String        @id @default(uuid())
+  owner      OwnerType
+  owner_id   String
+  name       String        @db.VarChar(50)
+  status     AccountStatus @default(ACTIVE)
+  created_at DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at DateTime      @updatedAt @db.Timestamptz(6)
+
+  items StockItem[]
+
+  @@index([owner, owner_id])
+  @@map("stock_locations")
 }
 
 model UserSession {

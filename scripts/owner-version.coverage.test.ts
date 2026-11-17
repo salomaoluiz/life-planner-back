@@ -19,6 +19,8 @@ const EXEMPT = new Set([
   'category_icons', // global static catalog
   'finance_owner_versions', // the version table itself
   'stock_items', // not finance
+  'stock_categories', // not finance: stock reads carry no ETag yet (spec 116 FR 36 follow-up)
+  'stock_locations', // not finance, same as stock_categories
   'investment_assets', // not finance: investment reads carry no ETag; the finance rows an operation writes are bumped
 ]);
 

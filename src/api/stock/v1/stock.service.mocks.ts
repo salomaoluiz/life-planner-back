@@ -1,104 +1,133 @@
-import { faker } from '@faker-js/faker';
 import { Test } from '@nestjs/testing';
 
 import { StockService } from '@api/stock/v1/stock.service';
+import { GetFamilyMembersUseCase } from '@family/application/use-case/GetFamilyMembersUseCase';
 import { GetUserFamilyAccessUseCase } from '@family/application/use-case/GetUserFamilyAccessUseCase';
+import { GetCategoriesUseCase } from '@finance/application/use-case/GetCategoriesUseCase';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
+import { category, day, item, location, lot } from '@stock/application/mocks/stock.mocks';
+import { toStockItemView } from '@stock/application/service/StockView';
+import { CreateStockCategorySuggestionsUseCase } from '@stock/application/use-case/CreateStockCategorySuggestionsUseCase';
+import { CreateStockCategoryUseCase } from '@stock/application/use-case/CreateStockCategoryUseCase';
 import { CreateStockItemUseCase } from '@stock/application/use-case/CreateStockItemUseCase';
+import { CreateStockLocationSuggestionsUseCase } from '@stock/application/use-case/CreateStockLocationSuggestionsUseCase';
+import { CreateStockLocationUseCase } from '@stock/application/use-case/CreateStockLocationUseCase';
+import { CreateStockMovementUseCase } from '@stock/application/use-case/CreateStockMovementUseCase';
+import { DeleteStockCategoryUseCase } from '@stock/application/use-case/DeleteStockCategoryUseCase';
 import { DeleteStockItemUseCase } from '@stock/application/use-case/DeleteStockItemUseCase';
+import { DeleteStockLocationUseCase } from '@stock/application/use-case/DeleteStockLocationUseCase';
+import { GetOwnerChangePreviewUseCase } from '@stock/application/use-case/GetOwnerChangePreviewUseCase';
+import { GetStockCategoriesUseCase } from '@stock/application/use-case/GetStockCategoriesUseCase';
 import { GetStockItemByIdUseCase } from '@stock/application/use-case/GetStockItemByIdUseCase';
 import { GetStockItemsUseCase } from '@stock/application/use-case/GetStockItemsUseCase';
+import { GetStockLocationsUseCase } from '@stock/application/use-case/GetStockLocationsUseCase';
+import { GetStockMovementsUseCase } from '@stock/application/use-case/GetStockMovementsUseCase';
+import { SuggestStockItemsUseCase } from '@stock/application/use-case/SuggestStockItemsUseCase';
+import { UpdateStockCategoryUseCase } from '@stock/application/use-case/UpdateStockCategoryUseCase';
 import { UpdateStockItemUseCase } from '@stock/application/use-case/UpdateStockItemUseCase';
-import { StockUnits } from '@stock/domain/entity/StockEntity';
+import { UpdateStockLocationUseCase } from '@stock/application/use-case/UpdateStockLocationUseCase';
+import StockMovementEntity, { StockMovementTypes } from '@stock/domain/entity/StockMovementEntity';
+import { FindUsersByIdsUseCase } from '@user/application/use-case/FindUsersByIdsUseCase';
 
-// region Mocks
-
-const userId = faker.string.uuid();
-const familyId = faker.string.uuid();
+const userId = 'user-id';
+const familyId = 'family-id';
 const accessibleOwners = [
   { owner: OwnerType.USER, ownerId: userId },
   { archived: false, owner: OwnerType.FAMILY, ownerId: familyId },
 ];
-const itemResultMock = {
-  barcode: '7890000000001',
-  brand: undefined,
-  createdAt: new Date('2026-09-30T12:01:00.000Z'),
-  description: 'Whole milk',
-  expirationDate: new Date('2026-10-20T00:00:00.000Z'),
-  id: faker.string.uuid(),
-  notes: undefined,
-  openingDate: undefined,
-  owner: OwnerType.FAMILY,
-  ownerId: familyId,
-  purchaseDate: undefined,
-  quantity: 6,
-  unit: StockUnits.LITER,
-  updatedAt: new Date('2026-09-30T13:00:00.000Z'),
+const uses = {
+  createStockCategory: CreateStockCategoryUseCase,
+  createStockCategorySuggestions: CreateStockCategorySuggestionsUseCase,
+  createStockItem: CreateStockItemUseCase,
+  createStockLocation: CreateStockLocationUseCase,
+  createStockLocationSuggestions: CreateStockLocationSuggestionsUseCase,
+  createStockMovement: CreateStockMovementUseCase,
+  deleteStockCategory: DeleteStockCategoryUseCase,
+  deleteStockItem: DeleteStockItemUseCase,
+  deleteStockLocation: DeleteStockLocationUseCase,
+  findUsersByIds: FindUsersByIdsUseCase,
+  getCategories: GetCategoriesUseCase,
+  getFamilyMembers: GetFamilyMembersUseCase,
+  getOwnerChangePreview: GetOwnerChangePreviewUseCase,
+  getStockCategories: GetStockCategoriesUseCase,
+  getStockItemById: GetStockItemByIdUseCase,
+  getStockItems: GetStockItemsUseCase,
+  getStockLocations: GetStockLocationsUseCase,
+  getStockMovements: GetStockMovementsUseCase,
+  getUserFamilyAccess: GetUserFamilyAccessUseCase,
+  suggestStockItems: SuggestStockItemsUseCase,
+  updateStockCategory: UpdateStockCategoryUseCase,
+  updateStockItem: UpdateStockItemUseCase,
+  updateStockLocation: UpdateStockLocationUseCase,
 };
-const itemApiMock = {
-  barcode: '7890000000001',
-  brand: null,
-  createdAt: '2026-09-30T12:01:00.000Z',
-  description: 'Whole milk',
-  expirationDate: '2026-10-20T00:00:00.000Z',
-  id: itemResultMock.id,
-  notes: null,
-  openingDate: null,
-  owner: 'FAMILY',
-  ownerId: familyId,
-  purchaseDate: null,
-  quantity: 6,
-  unit: 'liter',
-  updatedAt: '2026-09-30T13:00:00.000Z',
+const useCases = Object.fromEntries(
+  Object.keys(uses).map((name) => [name, { execute: jest.fn() }]),
+) as Record<keyof typeof uses, { execute: jest.Mock }>;
+
+const catalog = {
+  categories: [
+    category('dairy', { financeCategoryId: 'fin' }),
+    category('cheese', { parentId: 'dairy' }),
+  ],
+  locations: [location('fridge')],
 };
-
-const createUseCaseMock = { execute: jest.fn() };
-const deleteUseCaseMock = { execute: jest.fn() };
-const getByIdUseCaseMock = { execute: jest.fn() };
-const getListUseCaseMock = { execute: jest.fn() };
-const getUserFamilyAccessUseCaseMock = { execute: jest.fn() };
-const updateUseCaseMock = { execute: jest.fn() };
-
-// endregion Mocks
+const view = toStockItemView(
+  item(
+    [
+      lot('open', 1, {
+        expirationDate: day('2026-12-01'),
+        openedAt: day('2026-11-05'),
+        purchaseDate: day('2026-11-01'),
+      }),
+      lot('closed', 2),
+    ],
+    (f) =>
+      f
+        .withCategoryId('cheese')
+        .withLocationId('fridge')
+        .withMinQuantity(1, 4)
+        .withBrand('Brand')
+        .withOpenedShelfLifeDays(5),
+  ),
+  day('2026-11-10'),
+  catalog,
+);
+function movement(userIdOfAuthor?: string) {
+  return new StockMovementEntity({
+    createdAt: new Date('2026-11-10T12:00:00.000Z'),
+    id: 'mov',
+    itemId: 'item',
+    lotId: 'lot',
+    quantity: 1,
+    type: StockMovementTypes.ENTRY,
+    userId: userIdOfAuthor,
+  });
+}
 
 let setup: StockService;
 
 beforeEach(async () => {
   jest.clearAllMocks();
-  createUseCaseMock.execute.mockResolvedValue(itemResultMock);
-  deleteUseCaseMock.execute.mockResolvedValue(undefined);
-  getByIdUseCaseMock.execute.mockResolvedValue(itemResultMock);
-  getListUseCaseMock.execute.mockResolvedValue([itemResultMock]);
-  getUserFamilyAccessUseCaseMock.execute.mockResolvedValue([{ archived: false, familyId }]);
-  updateUseCaseMock.execute.mockResolvedValue(itemResultMock);
+  useCases.getUserFamilyAccess.execute.mockResolvedValue([{ archived: false, familyId }]);
+  useCases.findUsersByIds.execute.mockResolvedValue([{ id: 'author', name: 'Ana' }]);
+  useCases.getFamilyMembers.execute.mockResolvedValue([
+    { userId: 'author' },
+    { userId: undefined },
+  ]);
 
   const module = await Test.createTestingModule({
     providers: [
       StockService,
-      { provide: CreateStockItemUseCase, useValue: createUseCaseMock },
-      { provide: DeleteStockItemUseCase, useValue: deleteUseCaseMock },
-      { provide: GetStockItemByIdUseCase, useValue: getByIdUseCaseMock },
-      { provide: GetStockItemsUseCase, useValue: getListUseCaseMock },
-      { provide: GetUserFamilyAccessUseCase, useValue: getUserFamilyAccessUseCaseMock },
-      { provide: UpdateStockItemUseCase, useValue: updateUseCaseMock },
+      ...Object.entries(uses).map(([name, provide]) => ({
+        provide,
+        useValue: useCases[name as keyof typeof uses],
+      })),
     ],
   }).compile();
 
   setup = module.get(StockService);
 });
 
-const mocks = {
-  accessibleOwners,
-  createUseCase: createUseCaseMock,
-  deleteUseCase: deleteUseCaseMock,
-  familyId,
-  getByIdUseCase: getByIdUseCaseMock,
-  getListUseCase: getListUseCaseMock,
-  getUserFamilyAccessUseCase: getUserFamilyAccessUseCaseMock,
-  itemApi: itemApiMock,
-  updateUseCase: updateUseCaseMock,
-  userId,
-};
-const spies = {};
+const mocks = { accessibleOwners, catalog, familyId, movement, userId, view };
 
-export { mocks, setup, spies };
+export { mocks, setup, useCases };

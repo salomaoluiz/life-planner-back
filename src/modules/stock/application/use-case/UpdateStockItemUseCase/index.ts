@@ -1,4 +1,9 @@
-import { ForbiddenException, Inject, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Inject,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
@@ -6,21 +11,32 @@ import {
   UpdateStockItemInput,
   UpdateStockItemSchema,
 } from '@stock/application/dto/UpdateStockItem';
+import { planOwnerChange } from '@stock/application/service/OwnerChange';
 import { ensureOwnerWritable } from '@stock/application/service/OwnerWritable';
+import { assertStockLimits, loadCatalogRefs } from '@stock/application/service/StockRules';
+import {
+  loadCatalogLookup,
+  StockItemView,
+  todayUtc,
+  toStockItemView,
+} from '@stock/application/service/StockView';
+import { RefreshStockEmbeddingUseCase } from '@stock/application/use-case/RefreshStockEmbeddingUseCase';
 import { hasOwnerAccess } from '@stock/domain/entity/OwnerAccess';
-import StockEntity from '@stock/domain/entity/StockEntity';
-import { IStockRepository } from '@stock/domain/repository';
+import { IStockCatalogRepository, IStockRepository } from '@stock/domain/repository';
 
 export class UpdateStockItemUseCase implements UseCaseWithParams<
   UpdateStockItemInput,
-  StockEntity
+  StockItemView
 > {
   constructor(
     @Inject('IStockRepository')
     private readonly stockRepository: IStockRepository,
+    @Inject('IStockCatalogRepository')
+    private readonly catalogRepository: IStockCatalogRepository,
+    private readonly refreshEmbedding: RefreshStockEmbeddingUseCase,
   ) {}
 
-  async execute(params: UpdateStockItemInput): Promise<StockEntity> {
+  async execute(params: UpdateStockItemInput): Promise<StockItemView> {
     const input = validate(UpdateStockItemSchema, params);
 
     const item = await this.stockRepository.findById(input.id);
@@ -32,31 +48,81 @@ export class UpdateStockItemUseCase implements UseCaseWithParams<
 
     ensureOwnerWritable(input.accessibleOwners, item);
 
-    if (
-      input.owner !== undefined &&
-      input.ownerId !== undefined &&
-      !hasOwnerAccess(input.accessibleOwners, { owner: input.owner, ownerId: input.ownerId })
-    ) {
-      throw new ForbiddenException('Owner not accessible');
+    const target = {
+      owner: input.owner ?? item.owner,
+      ownerId: input.ownerId ?? item.ownerId,
+    };
+    const ownerChanged = target.owner !== item.owner || target.ownerId !== item.ownerId;
+
+    if (ownerChanged) {
+      if (!hasOwnerAccess(input.accessibleOwners, target)) {
+        throw new ForbiddenException('Owner not accessible');
+      }
+
+      ensureOwnerWritable(input.accessibleOwners, target);
     }
 
-    if (input.owner !== undefined && input.ownerId !== undefined) {
-      ensureOwnerWritable(input.accessibleOwners, { owner: input.owner, ownerId: input.ownerId });
+    const unit = input.unit ?? item.unit;
+
+    // FR 7: kg and L are not convertible into each other.
+    if (unit !== item.unit && item.lots.some((lot) => lot.quantity > 0)) {
+      throw new UnprocessableEntityException('Change the unit only when the item is empty');
     }
 
-    return this.stockRepository.update({
+    const stockOnly = input.stockOnly ?? item.stockOnly;
+    const clearLimits = input.stockOnly === true && !item.stockOnly;
+    // `undefined` keeps the stored value, `null` clears it; switching to stock-only clears both (FR 18).
+    function keep(provided: null | number | undefined, current: number | undefined) {
+      return provided === undefined ? (current ?? null) : provided;
+    }
+    const minQuantity = clearLimits ? null : keep(input.minQuantity, item.minQuantity);
+    const idealQuantity = clearLimits ? null : keep(input.idealQuantity, item.idealQuantity);
+
+    assertStockLimits({ idealQuantity, minQuantity, stockOnly, unit });
+
+    let categoryId = input.categoryId;
+    let locationId = input.locationId;
+
+    if (ownerChanged) {
+      const [source, destination] = await Promise.all([
+        loadCatalogLookup(this.catalogRepository, [item]),
+        loadCatalogLookup(this.catalogRepository, [target]),
+      ]);
+      const plan = planOwnerChange(item, source, destination);
+
+      categoryId = categoryId === undefined ? plan.categoryId : categoryId;
+      locationId = locationId === undefined ? plan.locationId : locationId;
+    }
+
+    await loadCatalogRefs(this.catalogRepository, target, { categoryId, locationId });
+
+    const updated = await this.stockRepository.update({
       barcode: input.barcode,
       brand: input.brand,
+      categoryId,
       description: input.description,
-      expirationDate: input.expirationDate,
       id: input.id,
+      idealQuantity: clearLimits || input.idealQuantity !== undefined ? idealQuantity : undefined,
+      locationId,
+      minQuantity: clearLimits || input.minQuantity !== undefined ? minQuantity : undefined,
       notes: input.notes,
-      openingDate: input.openingDate,
-      owner: input.owner,
-      ownerId: input.ownerId,
-      purchaseDate: input.purchaseDate,
-      quantity: input.quantity,
+      openedShelfLifeDays: input.openedShelfLifeDays,
+      owner: ownerChanged ? target.owner : undefined,
+      ownerId: ownerChanged ? target.ownerId : undefined,
+      stockOnly: input.stockOnly,
       unit: input.unit,
+      warnDaysClosed: input.warnDaysClosed,
+      warnDaysOpened: input.warnDaysOpened,
     });
+
+    if (input.description !== undefined || input.brand !== undefined) {
+      void this.refreshEmbedding.execute({ id: updated.id }).catch(() => undefined);
+    }
+
+    return toStockItemView(
+      updated,
+      todayUtc(),
+      await loadCatalogLookup(this.catalogRepository, [target]),
+    );
   }
 }

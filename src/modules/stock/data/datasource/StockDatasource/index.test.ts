@@ -1,115 +1,231 @@
 import { mocks, setup, spies } from './index.mocks';
 
+const base = {
+  description: 'Rice',
+  owner: 'USER' as const,
+  owner_id: 'owner',
+  stock_only: false,
+  unit: 'kilogram' as const,
+  user_id: 'user',
+  warn_days_closed: 7,
+  warn_days_opened: 1,
+};
+
 describe('Method create', () => {
-  it('SHOULD insert the row AND return it', async () => {
-    spies.create.mockResolvedValue(mocks.stock);
-    const params = {
-      description: 'Rice',
-      owner: 'USER' as const,
-      owner_id: mocks.stock.owner_id,
-      quantity: 2,
-      unit: 'kilogram' as const,
-    };
+  it('SHOULD insert the item, its first lot and an ENTRY (MANUAL) movement in one transaction', async () => {
+    spies.stockCreate.mockResolvedValue(mocks.stock);
+    spies.lotCreate.mockResolvedValue(mocks.lot);
 
-    expect(await setup.create(params)).toEqual(mocks.stock);
-    expect(spies.create).toHaveBeenCalledWith({ data: params });
+    const result = await setup.create({ ...base, first_lot: { quantity: 2 } });
+
+    expect(spies.stockCreate).toHaveBeenCalledWith({
+      data: expect.not.objectContaining({
+        first_lot: expect.anything(),
+        user_id: expect.anything(),
+      }),
+    });
+    expect(spies.lotCreate).toHaveBeenCalledWith({
+      data: { item_id: mocks.stock.id, quantity: 2 },
+    });
+    expect(spies.movementCreate).toHaveBeenCalledWith({
+      data: {
+        item_id: mocks.stock.id,
+        lot_id: 'lot',
+        quantity: 2,
+        reason: 'MANUAL',
+        type: 'ENTRY',
+        user_id: 'user',
+      },
+    });
+    expect(result.lots).toEqual([mocks.lot]);
+  });
+
+  it.each([
+    ['no first lot', undefined],
+    ['a zero first lot', { quantity: 0 }],
+  ])('SHOULD create only the item WHEN there is %s', async (_label, firstLot) => {
+    spies.stockCreate.mockResolvedValue(mocks.stock);
+
+    const result = await setup.create({ ...base, first_lot: firstLot });
+
+    expect(result.lots).toEqual([]);
+    expect(spies.lotCreate).not.toHaveBeenCalled();
   });
 });
 
-describe('Method delete', () => {
+describe('Method delete / deleteByOwner / exists', () => {
   it('SHOULD deleteMany by id so a row that is already gone does not throw', async () => {
-    spies.deleteMany.mockResolvedValue({ count: 0 });
+    spies.stockDeleteMany.mockResolvedValue({ count: 0 });
 
-    await expect(setup.delete(mocks.stock.id)).resolves.toBeUndefined();
-    expect(spies.deleteMany).toHaveBeenCalledWith({ where: { id: mocks.stock.id } });
+    await expect(setup.delete('x')).resolves.toBeUndefined();
+    expect(spies.stockDeleteMany).toHaveBeenCalledWith({ where: { id: 'x' } });
   });
-});
 
-describe('Method exists', () => {
-  const params = { owner: 'FAMILY' as const, owner_id: 'family-id' };
+  it('SHOULD return the rows deleted for an owner', async () => {
+    spies.stockDeleteMany.mockResolvedValue({ count: 4 });
 
-  it('SHOULD select only the id of the first row of the owner', async () => {
-    spies.findFirst.mockResolvedValue({ id: 'x' });
-
-    expect(await setup.exists(params)).toBe(true);
-    expect(spies.findFirst).toHaveBeenCalledWith({
-      select: { id: true },
-      where: { owner: 'FAMILY', owner_id: 'family-id' },
+    expect(await setup.deleteByOwner({ owner: 'FAMILY', owner_id: 'f' })).toBe(4);
+    expect(spies.stockDeleteMany).toHaveBeenCalledWith({
+      where: { owner: 'FAMILY', owner_id: 'f' },
     });
   });
 
-  it('SHOULD be false WHEN the owner has none', async () => {
-    spies.findFirst.mockResolvedValue(null);
+  it.each([
+    [{ id: 'x' }, true],
+    [null, false],
+  ])('SHOULD report existence for %j', async (found, expected) => {
+    spies.stockFindFirst.mockResolvedValue(found);
 
-    expect(await setup.exists(params)).toBe(false);
+    expect(await setup.exists({ owner: 'USER', owner_id: 'u' })).toBe(expected);
   });
 });
 
 describe('Method findById', () => {
-  it('SHOULD return the row or null', async () => {
-    spies.findUnique.mockResolvedValueOnce(mocks.stock).mockResolvedValueOnce(null);
+  it('SHOULD load the item with its lots that still have quantity', async () => {
+    spies.stockFindUnique.mockResolvedValue({ ...mocks.stock, lots: [] });
 
-    expect(await setup.findById(mocks.stock.id)).toEqual(mocks.stock);
-    expect(await setup.findById('missing')).toBeNull();
-    expect(spies.findUnique).toHaveBeenCalledWith({ where: { id: mocks.stock.id } });
+    await setup.findById('x');
+
+    expect(spies.stockFindUnique).toHaveBeenCalledWith({
+      include: { lots: { orderBy: { id: 'asc' }, where: { quantity: { gt: 0 } } } },
+      where: { id: 'x' },
+    });
   });
 });
 
 describe('Method findByOwners', () => {
-  it('SHOULD query every (owner, owner_id) pair in ONE findMany', async () => {
-    spies.findMany.mockResolvedValue([mocks.stock]);
+  it('SHOULD return [] WITHOUT reading lots WHEN there are no items', async () => {
+    spies.stockFindMany.mockResolvedValue([]);
 
-    expect(await setup.findByOwners(mocks.owners)).toEqual([mocks.stock]);
-    expect(spies.findMany).toHaveBeenCalledTimes(1);
-    expect(spies.findMany).toHaveBeenCalledWith({
-      where: {
-        OR: [
-          { owner: 'USER', owner_id: mocks.owners[0].ownerId },
-          { owner: 'FAMILY', owner_id: mocks.owners[1].ownerId },
-        ],
-      },
+    expect(await setup.findByOwners(mocks.owners)).toEqual([]);
+    expect(spies.lotFindMany).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD read the items, then the open lots of those items once, AND apply the filters', async () => {
+    spies.stockFindMany.mockResolvedValue([{ id: 'a' }, { id: 'b' }]);
+    spies.lotFindMany.mockResolvedValue([
+      { id: 'l1', item_id: 'a' },
+      { id: 'l2', item_id: 'a' },
+    ]);
+
+    const result = await setup.findByOwners(mocks.owners, {
+      category_ids: ['c'],
+      location_ids: ['l'],
+    });
+
+    expect(spies.stockFindMany).toHaveBeenCalledWith({
+      orderBy: { id: 'asc' },
+      where: expect.objectContaining({ category_id: { in: ['c'] }, location_id: { in: ['l'] } }),
+    });
+    expect(spies.lotFindMany).toHaveBeenCalledTimes(1);
+    expect(result.map((row) => row.lots.length)).toEqual([2, 0]);
+  });
+});
+
+describe('Method findMovements', () => {
+  it('SHOULD read newest first', async () => {
+    await setup.findMovements('item', 31);
+
+    expect(spies.movementFindMany).toHaveBeenCalledWith({
+      orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
+      take: 31,
+      where: { item_id: 'item' },
+    });
+  });
+
+  it('SHOULD continue strictly after the cursor (keyset)', async () => {
+    const createdAt = new Date('2026-11-10T00:00:00.000Z');
+
+    await setup.findMovements('item', 31, { createdAt, id: 'm' });
+
+    expect(spies.movementFindMany.mock.calls[0][0].where).toEqual({
+      item_id: 'item',
+      OR: [{ created_at: { lt: createdAt } }, { created_at: createdAt, id: { lt: 'm' } }],
     });
   });
 });
 
 describe('Method update', () => {
-  it('SHOULD forward only the given columns (null clears, undefined is a no-op)', async () => {
-    spies.update.mockResolvedValue(mocks.stock);
+  it('SHOULD pass the columns through (undefined = unchanged, null = clear) AND keep the lots', async () => {
+    spies.stockUpdate.mockResolvedValue({ ...mocks.stock, lots: [] });
 
-    await setup.update({ id: mocks.stock.id, notes: null, quantity: 3 });
+    await setup.update({ id: 'x', min_quantity: null, notes: 'n' });
 
-    expect(spies.update).toHaveBeenCalledWith({
-      data: {
-        barcode: undefined,
-        brand: undefined,
-        description: undefined,
-        expiration_date: undefined,
-        notes: null,
-        opening_date: undefined,
-        owner: undefined,
-        owner_id: undefined,
-        purchase_date: undefined,
-        quantity: 3,
-        unit: undefined,
-      },
-      where: { id: mocks.stock.id },
+    expect(spies.stockUpdate).toHaveBeenCalledWith({
+      data: { min_quantity: null, notes: 'n' },
+      include: expect.any(Object),
+      where: { id: 'x' },
     });
   });
 });
 
-describe('Method deleteByOwner', () => {
-  it('SHOULD delete every item of that owner AND return how many', async () => {
-    spies.deleteMany.mockResolvedValueOnce({ count: 3 });
-
-    expect(await setup.deleteByOwner({ owner: 'FAMILY', owner_id: 'family-id' })).toBe(3);
-    expect(spies.deleteMany).toHaveBeenCalledWith({
-      where: { owner: 'FAMILY', owner_id: 'family-id' },
-    });
+describe('Method applyMovement', () => {
+  beforeEach(() => {
+    spies.queryRaw.mockResolvedValue([{ id: 'item' }]);
+    spies.stockFindUniqueOrThrow.mockResolvedValue({ ...mocks.stock, lots: [] });
+    spies.lotFindMany.mockResolvedValue([mocks.lot]);
+    spies.lotCreate.mockResolvedValue({ id: 'new-lot' });
+    spies.movementCreate.mockImplementation(async ({ data }) => ({ ...mocks.movement, ...data }));
   });
 
-  it('SHOULD return 0 WHEN there is nothing left', async () => {
-    spies.deleteMany.mockResolvedValueOnce({ count: 0 });
+  it('SHOULD lock the item row FIRST and give the planner the item and every lot', async () => {
+    const planner = jest.fn().mockReturnValue([]);
 
-    expect(await setup.deleteByOwner({ owner: 'USER', owner_id: 'user-id' })).toBe(0);
+    await setup.applyMovement('item', 'user', planner);
+
+    expect(spies.queryRaw).toHaveBeenCalledTimes(1);
+    expect(spies.lotFindMany).toHaveBeenCalledWith({
+      orderBy: { id: 'asc' },
+      where: { item_id: 'item' },
+    });
+    expect(planner).toHaveBeenCalledWith(expect.objectContaining({ id: mocks.stock.id }), [
+      mocks.lot,
+    ]);
+  });
+
+  it('SHOULD return null WHEN the item no longer exists, without planning', async () => {
+    spies.queryRaw.mockResolvedValue([]);
+    const planner = jest.fn();
+
+    expect(await setup.applyMovement('item', 'user', planner)).toBeNull();
+    expect(planner).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD update lots, create lots and record movements with the author, in order', async () => {
+    const result = await setup.applyMovement('item', 'user', () => [
+      { lot: { id: 'lot' }, update: { quantity: 1 } },
+      {
+        lot: { create: { opened_at: new Date('2026-11-10'), quantity: 1 } },
+        movement: { quantity: 1, type: 'OPEN' },
+      },
+      { lot: { id: 'lot' }, movement: { quantity: -1, reason: 'EXPIRED', type: 'DISCARD' } },
+    ]);
+
+    expect(spies.lotUpdate).toHaveBeenCalledWith({ data: { quantity: 1 }, where: { id: 'lot' } });
+    expect(spies.lotCreate).toHaveBeenCalledWith({
+      data: { item_id: 'item', opened_at: new Date('2026-11-10'), quantity: 1 },
+    });
+    expect(spies.movementCreate.mock.calls.map((call) => call[0].data)).toEqual([
+      { item_id: 'item', lot_id: 'new-lot', quantity: 1, type: 'OPEN', user_id: 'user' },
+      {
+        item_id: 'item',
+        lot_id: 'lot',
+        quantity: -1,
+        reason: 'EXPIRED',
+        type: 'DISCARD',
+        user_id: 'user',
+      },
+    ]);
+    expect(result?.movements).toHaveLength(2);
+    expect(result?.item.id).toBe(mocks.stock.id);
+  });
+
+  it('SHOULD propagate a planner error so the transaction rolls back', async () => {
+    await expect(
+      setup.applyMovement('item', 'user', () => {
+        throw new Error('Not enough quantity');
+      }),
+    ).rejects.toThrow('Not enough quantity');
+    expect(spies.lotUpdate).not.toHaveBeenCalled();
   });
 });

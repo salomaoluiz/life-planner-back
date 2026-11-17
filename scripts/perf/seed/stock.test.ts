@@ -18,7 +18,7 @@ describe('buildStockItems', () => {
     expect(new Set(items.map((item) => item.description)).size).toBe(100);
   });
 
-  it('puts about a third in families and rotates the five units', () => {
+  it('puts about a third in families and rotates the three units', () => {
     const items = build(300);
     const family = items.filter((item) => item.owner === 'FAMILY');
 
@@ -27,7 +27,7 @@ describe('buildStockItems', () => {
     expect(
       items.filter((item) => item.owner === 'USER').every((item) => item.ownerId === 'u1'),
     ).toBe(true);
-    expect(new Set(items.map((item) => item.unit)).size).toBe(5);
+    expect(new Set(items.map((item) => item.unit)).size).toBe(3);
   });
 
   it('has expired and soon-to-expire items', () => {

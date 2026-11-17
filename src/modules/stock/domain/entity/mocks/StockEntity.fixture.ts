@@ -2,6 +2,7 @@ import { faker } from '@faker-js/faker';
 
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import StockEntity, { StockUnits } from '@stock/domain/entity/StockEntity';
+import StockLotEntity from '@stock/domain/entity/StockLotEntity';
 
 class StockEntityFixture {
   value = {} as StockEntity;
@@ -21,23 +22,33 @@ class StockEntityFixture {
       createdAt: faker.date.past(),
       description: faker.commerce.product(),
       id: faker.string.uuid(),
+      lots: [],
       owner: OwnerType.USER,
       ownerId: faker.string.uuid(),
-      quantity: faker.number.int({ max: 50, min: 1 }),
+      stockOnly: false,
       unit: StockUnits.UNIT,
       updatedAt: faker.date.recent(),
+      warnDaysClosed: 7,
+      warnDaysOpened: 1,
       // Optional properties
       barcode: undefined,
       brand: undefined,
-      expirationDate: undefined,
+      categoryId: undefined,
+      idealQuantity: undefined,
+      locationId: undefined,
+      minQuantity: undefined,
       notes: undefined,
-      openingDate: undefined,
-      purchaseDate: undefined,
+      openedShelfLifeDays: undefined,
     };
     return this;
   }
 
   // Builder methods
+
+  withCategoryId(categoryId: string) {
+    this.value.categoryId = categoryId;
+    return this;
+  }
 
   withDescription(description: string) {
     this.value.description = description;
@@ -46,6 +57,27 @@ class StockEntityFixture {
 
   withId(id: string) {
     this.value.id = id;
+    return this;
+  }
+
+  withLocationId(locationId: string) {
+    this.value.locationId = locationId;
+    return this;
+  }
+
+  withLots(lots: StockLotEntity[]) {
+    this.value.lots = lots;
+    return this;
+  }
+
+  withMinQuantity(minQuantity: number, idealQuantity?: number) {
+    this.value.minQuantity = minQuantity;
+    this.value.idealQuantity = idealQuantity;
+    return this;
+  }
+
+  withOpenedShelfLifeDays(days: number) {
+    this.value.openedShelfLifeDays = days;
     return this;
   }
 
@@ -59,8 +91,8 @@ class StockEntityFixture {
     return this;
   }
 
-  withQuantity(quantity: number) {
-    this.value.quantity = quantity;
+  withStockOnly(stockOnly = true) {
+    this.value.stockOnly = stockOnly;
     return this;
   }
 
@@ -81,23 +113,8 @@ class StockEntityFixture {
     return this;
   }
 
-  withExpirationDate(expirationDate: Date = faker.date.soon({ days: 60 })) {
-    this.value.expirationDate = expirationDate;
-    return this;
-  }
-
   withNotes(notes: string) {
     this.value.notes = notes;
-    return this;
-  }
-
-  withOpeningDate(openingDate: Date) {
-    this.value.openingDate = openingDate;
-    return this;
-  }
-
-  withPurchaseDate(purchaseDate: Date) {
-    this.value.purchaseDate = purchaseDate;
     return this;
   }
 }

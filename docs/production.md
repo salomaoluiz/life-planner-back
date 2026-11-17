@@ -136,3 +136,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer <staging-jwt>
 - **Release:** merge to `main` → wait for the `release` workflow (it tags `vX.Y.Z` and publishes the GitHub release; the API reports it as the latest version) → Portainer "Pull and redeploy" of the affected stack (API and web together when the API contract changes) → new APK only when the app changed. `main` must stay deployable: PRs merge green and migrations are additive.
 - **Rollback of code:** `git revert` the bad commit on `main` (or point the stack at a tag you created on the last good commit, Portainer takes `refs/heads/...` or `refs/tags/...`) and "Pull and redeploy". Because migrations are additive, the older code keeps working on the newer schema.
 - **Rollback of data:** restore from your backup automation.
+
+## 8. pgvector (spec 116)
+
+The stock name suggestions use the `vector` extension. Install it on every PostgreSQL server (production, staging and the local test database) **before** the release that carries migration `stock_item_base`, because `CREATE EXTENSION vector` needs it available (for example the `pgvector` package or an image that ships it). Then set `EMBEDDINGS_API_URL`, `EMBEDDINGS_API_KEY` and `EMBEDDINGS_MODEL` (an OpenAI-compatible embeddings endpoint, 1024 dimensions) and run `yarn stock:embeddings:backfill` once after the deploy; without a key the suggestions use trigram only. Take a backup first: the migration moves quantities into lots and drops the old columns, and it is not reversible.

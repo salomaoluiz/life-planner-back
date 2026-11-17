@@ -1,10 +1,9 @@
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
+import StockLotEntity from '@stock/domain/entity/StockLotEntity';
 
 export enum StockUnits {
-  GRAM = 'gram',
   KILOGRAM = 'kilogram',
   LITER = 'liter',
-  MILLILITER = 'milliliter',
   UNIT = 'unit',
 }
 
@@ -14,51 +13,66 @@ interface IStockEntity {
   id: string;
   owner: OwnerType;
   ownerId: string;
-  quantity: number;
+  stockOnly: boolean;
   unit: StockUnits;
   updatedAt: Date;
+  warnDaysClosed: number;
+  warnDaysOpened: number;
   // Optional properties
   barcode?: string;
   brand?: string;
-  expirationDate?: Date;
+  categoryId?: string;
+  idealQuantity?: number;
+  locationId?: string;
+  // Only the lots with quantity > 0 (spec 116 FR 6).
+  lots?: StockLotEntity[];
+  minQuantity?: number;
   notes?: string;
-  openingDate?: Date;
-  purchaseDate?: Date;
+  openedShelfLifeDays?: number;
 }
 
+// Spec 116: the quantity lives in the lots; the item only keeps its own attributes.
 class StockEntity {
+  barcode?: string;
+  brand?: string;
+  categoryId?: string;
   createdAt: Date;
   description: string;
   id: string;
+  idealQuantity?: number;
+  locationId?: string;
+  lots: StockLotEntity[];
+  minQuantity?: number;
+  notes?: string;
+  openedShelfLifeDays?: number;
   owner: OwnerType;
   ownerId: string;
-  quantity: number;
+  stockOnly: boolean;
   unit: StockUnits;
   updatedAt: Date;
-  // Optional properties
-  barcode?: string;
-  brand?: string;
-  expirationDate?: Date;
-  notes?: string;
-  openingDate?: Date;
-  purchaseDate?: Date;
+  warnDaysClosed: number;
+  warnDaysOpened: number;
 
   constructor(params: IStockEntity) {
+    this.barcode = params.barcode;
+    this.brand = params.brand;
+    this.categoryId = params.categoryId;
     this.createdAt = params.createdAt;
     this.description = params.description;
     this.id = params.id;
+    this.idealQuantity = params.idealQuantity;
+    this.locationId = params.locationId;
+    this.lots = params.lots ?? [];
+    this.minQuantity = params.minQuantity;
+    this.notes = params.notes;
+    this.openedShelfLifeDays = params.openedShelfLifeDays;
     this.owner = params.owner;
     this.ownerId = params.ownerId;
-    this.quantity = params.quantity;
+    this.stockOnly = params.stockOnly;
     this.unit = params.unit;
     this.updatedAt = params.updatedAt;
-    // Optional properties
-    this.barcode = params.barcode;
-    this.brand = params.brand;
-    this.expirationDate = params.expirationDate;
-    this.notes = params.notes;
-    this.openingDate = params.openingDate;
-    this.purchaseDate = params.purchaseDate;
+    this.warnDaysClosed = params.warnDaysClosed;
+    this.warnDaysOpened = params.warnDaysOpened;
   }
 }
 

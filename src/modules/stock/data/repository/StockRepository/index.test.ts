@@ -3,111 +3,152 @@ import { StockUnits } from '@stock/domain/entity/StockEntity';
 
 import { mocks, setup, spies } from './index.mocks';
 
-describe('create', () => {
-  it('SHOULD translate to snake_case columns, then map the result', async () => {
-    const expiration = new Date('2027-03-01T00:00:00.000Z');
+const owner = { owner: OwnerType.USER, ownerId: 'user' };
 
-    const result = await setup.create({
+it('SHOULD translate create params to columns (first lot included) AND map the result', async () => {
+  const result = await setup.create({
+    description: 'Rice',
+    firstLot: { expirationDate: new Date('2026-12-01'), quantity: 2 },
+    minQuantity: 1,
+    owner: OwnerType.USER,
+    ownerId: 'user',
+    stockOnly: false,
+    unit: StockUnits.KILOGRAM,
+    userId: 'u',
+    warnDaysClosed: 7,
+    warnDaysOpened: 1,
+  });
+
+  expect(mocks.datasource.create).toHaveBeenCalledWith(
+    expect.objectContaining({
       description: 'Rice',
-      expirationDate: expiration,
-      owner: OwnerType.USER,
-      ownerId: 'owner-id',
-      quantity: 2,
-      unit: StockUnits.KILOGRAM,
-    });
-
-    expect(mocks.stockDatasource.create).toHaveBeenCalledWith({
-      barcode: undefined,
-      brand: undefined,
-      description: 'Rice',
-      expiration_date: expiration,
-      notes: undefined,
-      opening_date: undefined,
-      owner: 'USER',
-      owner_id: 'owner-id',
-      purchase_date: undefined,
-      quantity: 2,
-      unit: 'kilogram',
-    });
-    expect(spies.mapper.toDomain).toHaveBeenCalledWith(mocks.stockPersistence);
-    expect(result).toBe(mocks.stockEntity);
-  });
+      first_lot: expect.objectContaining({ expiration_date: new Date('2026-12-01'), quantity: 2 }),
+      min_quantity: 1,
+      owner_id: 'user',
+      user_id: 'u',
+    }),
+  );
+  expect(result).toBe(mocks.entity);
 });
 
-describe('delete', () => {
-  it('SHOULD delegate', async () => {
-    await setup.delete('id-1');
-
-    expect(mocks.stockDatasource.delete).toHaveBeenCalledWith('id-1');
+it('SHOULD create without a first lot', async () => {
+  await setup.create({
+    description: 'Rice',
+    owner: OwnerType.USER,
+    ownerId: 'user',
+    stockOnly: true,
+    unit: StockUnits.UNIT,
+    userId: 'u',
+    warnDaysClosed: 7,
+    warnDaysOpened: 1,
   });
+
+  expect(mocks.datasource.create.mock.calls[0][0].first_lot).toBeUndefined();
 });
 
-describe('existsByOwner', () => {
-  it('SHOULD ask with snake_case columns', async () => {
-    expect(await setup.existsByOwner({ owner: OwnerType.FAMILY, ownerId: 'fam' })).toBe(true);
-    expect(mocks.stockDatasource.exists).toHaveBeenCalledWith({
-      owner: 'FAMILY',
-      owner_id: 'fam',
+it('SHOULD delegate delete, deleteByOwner and existsByOwner', async () => {
+  mocks.datasource.deleteByOwner.mockResolvedValue(4);
+  mocks.datasource.exists.mockResolvedValue(true);
+
+  await setup.delete('x');
+  expect(mocks.datasource.delete).toHaveBeenCalledWith('x');
+  expect(await setup.deleteByOwner(owner)).toBe(4);
+  expect(mocks.datasource.deleteByOwner).toHaveBeenCalledWith({ owner: 'USER', owner_id: 'user' });
+  expect(await setup.existsByOwner(owner)).toBe(true);
+});
+
+it('SHOULD map findById, returning undefined WHEN missing', async () => {
+  expect(await setup.findById('x')).toBe(mocks.entity);
+
+  mocks.datasource.findById.mockResolvedValue(null);
+  expect(await setup.findById('x')).toBeUndefined();
+});
+
+it('SHOULD map findByOwners AND translate the filter', async () => {
+  expect(await setup.findByOwners([owner], { categoryIds: ['c'], locationIds: ['l'] })).toEqual([
+    mocks.entity,
+  ]);
+  expect(mocks.datasource.findByOwners).toHaveBeenCalledWith([owner], {
+    category_ids: ['c'],
+    location_ids: ['l'],
+  });
+
+  await setup.findByOwners([owner]);
+  expect(mocks.datasource.findByOwners).toHaveBeenLastCalledWith([owner], undefined);
+});
+
+it('SHOULD map the movements page', async () => {
+  const cursor = { createdAt: new Date(), id: 'x' };
+
+  expect(await setup.findMovements('item', 31, cursor)).toEqual([{ id: 'movement' }]);
+  expect(mocks.datasource.findMovements).toHaveBeenCalledWith('item', 31, cursor);
+});
+
+it('SHOULD translate update params to columns', async () => {
+  await setup.update({
+    categoryId: null,
+    id: 'x',
+    openedShelfLifeDays: 5,
+    stockOnly: true,
+    warnDaysClosed: 3,
+  });
+
+  expect(mocks.datasource.update).toHaveBeenCalledWith(
+    expect.objectContaining({
+      category_id: null,
+      id: 'x',
+      opened_shelf_life_days: 5,
+      stock_only: true,
+      warn_days_closed: 3,
+    }),
+  );
+});
+
+describe('applyMovement', () => {
+  it('SHOULD return undefined WHEN the item is gone', async () => {
+    mocks.datasource.applyMovement.mockResolvedValue(null);
+
+    expect(await setup.applyMovement('item', 'user', () => [])).toBeUndefined();
+  });
+
+  it('SHOULD translate the plan of the domain to columns inside the lock AND map the result', async () => {
+    mocks.datasource.applyMovement.mockImplementation(async (_id, _user, planner) => {
+      const operations = planner({ id: 'item' }, [{ id: 'lot' }]);
+
+      expect(operations).toEqual([
+        {
+          lot: {
+            create: {
+              expiration_date: new Date('2026-12-01'),
+              opened_at: undefined,
+              purchase_date: undefined,
+              quantity: 1,
+            },
+          },
+          movement: { quantity: 1, type: 'ENTRY' },
+          update: undefined,
+        },
+        {
+          lot: { id: 'lot' },
+          movement: undefined,
+          update: { opened_at: new Date('2026-11-10'), quantity: 2 },
+        },
+      ]);
+
+      return { item: rawItemWithLots, movements: [{ id: 'm' }] };
     });
-  });
-});
+    const rawItemWithLots = { id: 'item', lots: [] };
+    const planner = jest.fn().mockReturnValue([
+      {
+        lot: { create: { expirationDate: new Date('2026-12-01'), quantity: 1 } },
+        movement: { quantity: 1, type: 'ENTRY' },
+      },
+      { lot: { id: 'lot' }, update: { openedAt: new Date('2026-11-10'), quantity: 2 } },
+    ]);
 
-describe('findById', () => {
-  it('SHOULD map the row WHEN found', async () => {
-    expect(await setup.findById('id-1')).toBe(mocks.stockEntity);
-  });
+    const result = await setup.applyMovement('item', 'user', planner);
 
-  it('SHOULD return undefined WHEN not found', async () => {
-    mocks.stockDatasource.findById.mockResolvedValueOnce(null);
-
-    expect(await setup.findById('id-1')).toBeUndefined();
-    expect(spies.mapper.toDomain).not.toHaveBeenCalled();
-  });
-});
-
-describe('findByOwners', () => {
-  it('SHOULD map every row', async () => {
-    const owners = [{ owner: OwnerType.USER, ownerId: 'u' }];
-
-    expect(await setup.findByOwners(owners)).toEqual([mocks.stockEntity]);
-    expect(mocks.stockDatasource.findByOwners).toHaveBeenCalledWith(owners);
-  });
-});
-
-describe('update', () => {
-  it('SHOULD forward only the given fields AND keep null', async () => {
-    const result = await setup.update({
-      id: 'id-1',
-      notes: null,
-      owner: OwnerType.FAMILY,
-      ownerId: 'fam',
-      unit: StockUnits.GRAM,
-    });
-
-    expect(mocks.stockDatasource.update).toHaveBeenCalledWith({
-      barcode: undefined,
-      brand: undefined,
-      description: undefined,
-      expiration_date: undefined,
-      id: 'id-1',
-      notes: null,
-      opening_date: undefined,
-      owner: 'FAMILY',
-      owner_id: 'fam',
-      purchase_date: undefined,
-      quantity: undefined,
-      unit: 'gram',
-    });
-    expect(result).toBe(mocks.stockEntity);
-  });
-});
-
-describe('deleteByOwner', () => {
-  it('SHOULD map the owner to snake_case columns AND return the count', async () => {
-    expect(await setup.deleteByOwner({ owner: OwnerType.FAMILY, ownerId: 'fam' })).toBe(4);
-    expect(mocks.stockDatasource.deleteByOwner).toHaveBeenCalledWith({
-      owner: 'FAMILY',
-      owner_id: 'fam',
-    });
+    expect(spies.toDomain).toHaveBeenCalledWith({ id: 'item', lots: [{ id: 'lot' }] });
+    expect(result).toEqual({ item: mocks.entity, movements: [{ id: 'movement' }] });
   });
 });

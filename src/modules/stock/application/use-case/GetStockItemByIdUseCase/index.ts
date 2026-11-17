@@ -6,20 +6,27 @@ import {
   GetStockItemByIdInput,
   GetStockItemByIdSchema,
 } from '@stock/application/dto/GetStockItemById';
+import {
+  loadCatalogLookup,
+  StockItemView,
+  todayUtc,
+  toStockItemView,
+} from '@stock/application/service/StockView';
 import { hasOwnerAccess } from '@stock/domain/entity/OwnerAccess';
-import StockEntity from '@stock/domain/entity/StockEntity';
-import { IStockRepository } from '@stock/domain/repository';
+import { IStockCatalogRepository, IStockRepository } from '@stock/domain/repository';
 
 export class GetStockItemByIdUseCase implements UseCaseWithParams<
   GetStockItemByIdInput,
-  StockEntity
+  StockItemView
 > {
   constructor(
     @Inject('IStockRepository')
     private readonly stockRepository: IStockRepository,
+    @Inject('IStockCatalogRepository')
+    private readonly catalogRepository: IStockCatalogRepository,
   ) {}
 
-  async execute(params: GetStockItemByIdInput): Promise<StockEntity> {
+  async execute(params: GetStockItemByIdInput): Promise<StockItemView> {
     const input = validate(GetStockItemByIdSchema, params);
 
     const item = await this.stockRepository.findById(input.id);
@@ -28,6 +35,10 @@ export class GetStockItemByIdUseCase implements UseCaseWithParams<
       throw new NotFoundException();
     }
 
-    return item;
+    return toStockItemView(
+      item,
+      input.today ?? todayUtc(),
+      await loadCatalogLookup(this.catalogRepository, [item]),
+    );
   }
 }
