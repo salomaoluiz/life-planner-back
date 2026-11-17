@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { GetUpcomingItemsUseCase } from '@finance/application/use-case/GetUpcomingItemsUseCase';
 import { MaterializeRecurrencesUseCase } from '@finance/application/use-case/MaterializeRecurrencesUseCase';
+import { UpcomingItem } from '@finance/domain/entity/UpcomingItem';
 
 @Injectable()
 export class UpcomingService {
@@ -25,6 +26,19 @@ export class UpcomingService {
       today: request.today,
     });
 
-    return this.getUpcomingItemsUseCase.execute({ ...request, accessibleOwners });
+    const result = await this.getUpcomingItemsUseCase.execute({ ...request, accessibleOwners });
+
+    return {
+      ...result,
+      next: result.next.map(toItemOutput),
+      overdue: result.overdue.map(toItemOutput),
+    };
   }
+}
+
+// Spec 115 FR 22: a projection of an investment series carries the series and the asset as flat ids.
+function toItemOutput({ investment, ...item }: UpcomingItem) {
+  return investment
+    ? { ...item, assetId: investment.assetId, investmentIncomeSeriesId: investment.seriesId }
+    : item;
 }

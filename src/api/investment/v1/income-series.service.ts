@@ -7,10 +7,12 @@ import {
 } from '@api/investment/v1/dto/income-series.dto';
 import { GetUserFamilyAccessUseCase } from '@family/application/use-case/GetUserFamilyAccessUseCase';
 import { IncomeSeriesView } from '@investment/application/service/IncomeSeriesRules';
+import { todayInSaoPaulo } from '@investment/application/service/Today';
 import { CreateIncomeSeriesUseCase } from '@investment/application/use-case/CreateIncomeSeriesUseCase';
 import { GetIncomeSeriesByIdUseCase } from '@investment/application/use-case/GetIncomeSeriesByIdUseCase';
 import { GetIncomeSeriesProjectionsUseCase } from '@investment/application/use-case/GetIncomeSeriesProjectionsUseCase';
 import { GetIncomeSeriesUseCase } from '@investment/application/use-case/GetIncomeSeriesUseCase';
+import { MaterializeIncomeSeriesUseCase } from '@investment/application/use-case/MaterializeIncomeSeriesUseCase';
 import { PreviewIncomeSeriesUseCase } from '@investment/application/use-case/PreviewIncomeSeriesUseCase';
 import { UpdateIncomeSeriesUseCase } from '@investment/application/use-case/UpdateIncomeSeriesUseCase';
 import { OwnerAccess } from '@investment/domain/entity/OwnerAccess';
@@ -49,6 +51,7 @@ export class IncomeSeriesService {
     private readonly getIncomeSeriesProjectionsUseCase: GetIncomeSeriesProjectionsUseCase,
     private readonly getIncomeSeriesUseCase: GetIncomeSeriesUseCase,
     private readonly getUserFamilyAccessUseCase: GetUserFamilyAccessUseCase,
+    private readonly materializeIncomeSeriesUseCase: MaterializeIncomeSeriesUseCase,
     private readonly previewIncomeSeriesUseCase: PreviewIncomeSeriesUseCase,
     private readonly updateIncomeSeriesUseCase: UpdateIncomeSeriesUseCase,
   ) {}
@@ -73,10 +76,14 @@ export class IncomeSeriesService {
   }
 
   async list(userId: string, assetId: string) {
-    const views = await this.getIncomeSeriesUseCase.execute({
-      accessibleOwners: await this.getAccessibleOwners(userId),
-      assetId,
+    const accessibleOwners = await this.getAccessibleOwners(userId);
+
+    await this.materializeIncomeSeriesUseCase.execute({
+      accessibleOwners,
+      today: todayInSaoPaulo(),
     });
+
+    const views = await this.getIncomeSeriesUseCase.execute({ accessibleOwners, assetId });
 
     return { items: views.map((view) => toIncomeSeriesOutput(view)) };
   }

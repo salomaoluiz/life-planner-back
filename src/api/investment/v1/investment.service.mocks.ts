@@ -15,6 +15,7 @@ import { GetAssetsUseCase } from '@investment/application/use-case/GetAssetsUseC
 import { GetInvestmentsDashboardUseCase } from '@investment/application/use-case/GetInvestmentsDashboardUseCase';
 import { GetInvestmentsHomeSummaryUseCase } from '@investment/application/use-case/GetInvestmentsHomeSummaryUseCase';
 import { GetPriceHistoryUseCase } from '@investment/application/use-case/GetPriceHistoryUseCase';
+import { MaterializeIncomeSeriesUseCase } from '@investment/application/use-case/MaterializeIncomeSeriesUseCase';
 import { RefreshQuotesNowUseCase } from '@investment/application/use-case/RefreshQuotesNowUseCase';
 import { SearchTickersUseCase } from '@investment/application/use-case/SearchTickersUseCase';
 import { UpdateAssetUseCase } from '@investment/application/use-case/UpdateAssetUseCase';
@@ -95,6 +96,7 @@ const useCaseMocks = {
   getInvestmentsHomeSummary: { execute: jest.fn() },
   getPriceHistory: { execute: jest.fn() },
   getUserFamilyAccess: { execute: jest.fn() },
+  materialize: { execute: jest.fn() },
   refreshQuotesNow: { execute: jest.fn() },
   searchTickers: { execute: jest.fn() },
   updateAsset: { execute: jest.fn() },
@@ -131,6 +133,7 @@ beforeEach(async () => {
       },
       { provide: GetPriceHistoryUseCase, useValue: useCaseMocks.getPriceHistory },
       { provide: GetUserFamilyAccessUseCase, useValue: useCaseMocks.getUserFamilyAccess },
+      { provide: MaterializeIncomeSeriesUseCase, useValue: useCaseMocks.materialize },
       { provide: RefreshQuotesNowUseCase, useValue: useCaseMocks.refreshQuotesNow },
       { provide: SearchTickersUseCase, useValue: useCaseMocks.searchTickers },
       { provide: UpdateAssetUseCase, useValue: useCaseMocks.updateAsset },

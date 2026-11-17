@@ -15,6 +15,8 @@ export interface UpcomingItem {
   // Transaction id, `<cardId>:<YYYY-MM>` for an invoice or `<recurrenceId>:<occurrence>` for a projection.
   id: string;
   invoiceMonth: null | string;
+  // Spec 115 FR 22: set on a projection that comes from an investment income series.
+  investment?: { assetId: string; seriesId: string };
   kind: UpcomingKind;
   occurrenceNumber: null | number;
   owner: OwnerType;

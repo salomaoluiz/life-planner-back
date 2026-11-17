@@ -4,6 +4,7 @@ import { AuthAPIModule } from '@api/auth/auth.module';
 import { UserExistsCheckModule } from '@api/auth/user-exists-check.module';
 import { FamilyMemberAPIModule } from '@api/family-member/family-member.module';
 import { FamilyAPIModule } from '@api/family/family.module';
+import { ExternalProjectionModule } from '@api/finance/external-projection.module';
 import { FinanceAPIModule } from '@api/finance/finance.module';
 import { InvestmentAPIModule } from '@api/investment/investment.module';
 import { StockAPIModule } from '@api/stock/stock.module';
@@ -15,6 +16,7 @@ import { HealthModule } from './health/health.module';
 @Module({
   imports: [
     HealthModule,
+    ExternalProjectionModule,
     AuthAPIModule,
     FamilyAPIModule,
     FamilyMemberAPIModule,

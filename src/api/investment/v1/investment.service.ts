@@ -26,6 +26,7 @@ import {
 import { FixedIncomeView } from '@investment/application/service/FixedIncomeView';
 import { OperationWriteResult } from '@investment/application/service/OperationRules';
 import { QuoteView } from '@investment/application/service/QuoteView';
+import { todayInSaoPaulo } from '@investment/application/service/Today';
 import { CreateAssetUseCase } from '@investment/application/use-case/CreateAssetUseCase';
 import { CreateEventUseCase } from '@investment/application/use-case/CreateEventUseCase';
 import { CreateOperationUseCase } from '@investment/application/use-case/CreateOperationUseCase';
@@ -37,6 +38,7 @@ import { GetAssetsUseCase } from '@investment/application/use-case/GetAssetsUseC
 import { GetInvestmentsDashboardUseCase } from '@investment/application/use-case/GetInvestmentsDashboardUseCase';
 import { GetInvestmentsHomeSummaryUseCase } from '@investment/application/use-case/GetInvestmentsHomeSummaryUseCase';
 import { GetPriceHistoryUseCase } from '@investment/application/use-case/GetPriceHistoryUseCase';
+import { MaterializeIncomeSeriesUseCase } from '@investment/application/use-case/MaterializeIncomeSeriesUseCase';
 import { RefreshQuotesNowUseCase } from '@investment/application/use-case/RefreshQuotesNowUseCase';
 import { SearchTickersUseCase } from '@investment/application/use-case/SearchTickersUseCase';
 import { UpdateAssetUseCase } from '@investment/application/use-case/UpdateAssetUseCase';
@@ -327,6 +329,7 @@ export class InvestmentService {
     private readonly getInvestmentsHomeSummaryUseCase: GetInvestmentsHomeSummaryUseCase,
     private readonly getPriceHistoryUseCase: GetPriceHistoryUseCase,
     private readonly getUserFamilyAccessUseCase: GetUserFamilyAccessUseCase,
+    private readonly materializeIncomeSeriesUseCase: MaterializeIncomeSeriesUseCase,
     private readonly refreshQuotesNowUseCase: RefreshQuotesNowUseCase,
     private readonly searchTickersUseCase: SearchTickersUseCase,
     private readonly updateAssetUseCase: UpdateAssetUseCase,
@@ -374,6 +377,13 @@ export class InvestmentService {
 
   async findAssetById(userId: string, id: string) {
     const accessibleOwners = await this.getAccessibleOwners(userId);
+
+    // Spec 115 FR 18: the planned occurrences of the month exist before the asset is read.
+    await this.materializeIncomeSeriesUseCase.execute({
+      accessibleOwners,
+      today: todayInSaoPaulo(),
+    });
+
     const view = await this.getAssetByIdUseCase.execute({ accessibleOwners, id });
     return toAssetDetail(view);
   }

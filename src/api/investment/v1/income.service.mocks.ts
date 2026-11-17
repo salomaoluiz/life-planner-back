@@ -11,6 +11,7 @@ import { GetIncomeByIdUseCase } from '@investment/application/use-case/GetIncome
 import { GetIncomeDefaultsUseCase } from '@investment/application/use-case/GetIncomeDefaultsUseCase';
 import { GetIncomeSuggestionsUseCase } from '@investment/application/use-case/GetIncomeSuggestionsUseCase';
 import { GetIncomesUseCase } from '@investment/application/use-case/GetIncomesUseCase';
+import { MaterializeIncomeSeriesUseCase } from '@investment/application/use-case/MaterializeIncomeSeriesUseCase';
 import { ReceiveIncomeUseCase } from '@investment/application/use-case/ReceiveIncomeUseCase';
 import { RejectIncomeSuggestionUseCase } from '@investment/application/use-case/RejectIncomeSuggestionUseCase';
 import { UpdateIncomeUseCase } from '@investment/application/use-case/UpdateIncomeUseCase';
@@ -71,6 +72,7 @@ const useCases = {
   findDefaults: { execute: jest.fn() },
   findIncomes: { execute: jest.fn() },
   findSuggestions: { execute: jest.fn() },
+  materialize: { execute: jest.fn() },
   receive: { execute: jest.fn() },
   reject: { execute: jest.fn() },
   update: { execute: jest.fn() },
@@ -95,6 +97,7 @@ beforeEach(async () => {
       { provide: GetIncomeSuggestionsUseCase, useValue: useCases.findSuggestions },
       { provide: GetIncomesUseCase, useValue: useCases.findIncomes },
       { provide: GetUserFamilyAccessUseCase, useValue: useCases.family },
+      { provide: MaterializeIncomeSeriesUseCase, useValue: useCases.materialize },
       { provide: ReceiveIncomeUseCase, useValue: useCases.receive },
       { provide: RejectIncomeSuggestionUseCase, useValue: useCases.reject },
       { provide: UpdateIncomeUseCase, useValue: useCases.update },
