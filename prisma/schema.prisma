@@ -416,16 +416,17 @@ model UserSession {
   @@map("user_sessions")
 }
 
-enum RecurrenceFrequency {
-  WEEKLY
-  BIWEEKLY
-  MONTHLY
-  YEARLY
-}
-
 enum RecurrenceStatus {
   ACTIVE
   ENDED
+}
+
+// Spec 114: the base unit of a series rule, stepped every `frequency_interval` units.
+enum RecurrenceUnit {
+  DAY
+  WEEK
+  MONTH
+  YEAR
 }
 
 // A recurring transaction series (spec 034): the template plus the schedule; real rows live in `financial_transactions`.
@@ -443,7 +444,9 @@ model FinancialRecurrence {
   // Spec 098: set = transfer series (`value` is the amount out); `amount_in` only when both currencies are equal.
   to_account_id         String?
   amount_in             Int?
-  frequency             RecurrenceFrequency
+  // Spec 114: every `frequency_interval` `frequency_unit`s; the limits per unit are a CHECK in the migration.
+  frequency_unit        RecurrenceUnit
+  frequency_interval    Int                 @default(1)
   start_date            DateTime            @db.Date
   end_date              DateTime?           @db.Date
   first_number          Int                 @default(1)
