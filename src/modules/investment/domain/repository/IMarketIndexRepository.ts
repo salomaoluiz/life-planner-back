@@ -20,6 +20,8 @@ export type IMarketIndexRepository = {
   findLatestDates(): Promise<Map<MarketIndexSeries, string>>;
   // The series calculated titles follow from `from` on, in at most 2 queries (spec 113 FR 13).
   findSeriesData(from: string): Promise<IndexSeriesData>;
+  // Recalculates, each in its own transaction, the titles whose rate follows an index (FR 16); returns how many.
+  recalculateIndexedTitles(): Promise<number>;
   recordFetch(
     series: MarketIndexSeries,
     outcome: { at: Date; error: null | string },

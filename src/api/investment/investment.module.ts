@@ -11,6 +11,7 @@ import { IncomeService } from '@api/investment/v1/income.service';
 import { InvestmentController } from '@api/investment/v1/investment.controller';
 import { InvestmentService } from '@api/investment/v1/investment.service';
 import { RefreshIncomeEventsJob } from '@api/investment/v1/job/RefreshIncomeEventsJob';
+import { RefreshMarketIndexesJob } from '@api/investment/v1/job/RefreshMarketIndexesJob';
 import { RefreshQuotesJob } from '@api/investment/v1/job/RefreshQuotesJob';
 import { FamilyModule } from '@family/family.module';
 import { InvestmentModule } from '@investment/investment.module';
@@ -31,6 +32,7 @@ import { InvestmentModule } from '@investment/investment.module';
     IncomeService,
     InvestmentService,
     RefreshIncomeEventsJob,
+    RefreshMarketIndexesJob,
     RefreshQuotesJob,
   ],
 })

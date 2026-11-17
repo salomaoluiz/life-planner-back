@@ -153,6 +153,20 @@ export class MarketIndexRepository implements IMarketIndexRepository {
     };
   }
 
+  // FR 16: a title whose redemption no longer fits stays as it is (the read flags it with `needsReview`).
+  async recalculateIndexedTitles(): Promise<number> {
+    const ids = await this.datasource.findIndexedAssetIds();
+    let done = 0;
+
+    for (const id of ids) {
+      if (await this.datasource.recalculateAsset(id)) {
+        done += 1;
+      }
+    }
+
+    return done;
+  }
+
   async recordFetch(
     series: MarketIndexSeries,
     outcome: { at: Date; error: null | string },

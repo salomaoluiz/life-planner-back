@@ -1,3 +1,5 @@
+import { FixedIncomeRedemptionTooLargeError } from '@investment/domain/error/FixedIncomeRedemptionTooLargeError';
+
 import { setup, spies } from './index.mocks';
 
 beforeEach(() => {
@@ -95,6 +97,30 @@ describe('MarketIndexDatasource', () => {
 
     expect(spies.executeRaw).toHaveBeenCalledTimes(3);
     expect(spies.executeRaw.mock.calls[0][0].sql).toContain('ON CONFLICT (series, date)');
+  });
+
+  it('SHOULD list the assets with an indexed rate entry', async () => {
+    spies.rateFindMany.mockResolvedValue([{ asset_id: 'a' }, { asset_id: 'b' }]);
+
+    expect(await (await setup()).findIndexedAssetIds()).toEqual(['a', 'b']);
+    expect(spies.rateFindMany.mock.calls[0][0].where).toEqual({
+      mode: { in: ['CDI_PERCENT', 'IPCA_PLUS'] },
+    });
+  });
+
+  it('SHOULD recalculate one asset in its own transaction AND report a redemption that no longer fits', async () => {
+    const datasource = await setup();
+
+    spies.transaction.mockResolvedValueOnce(undefined);
+    expect(await datasource.recalculateAsset('a')).toBe(true);
+
+    spies.transaction.mockRejectedValueOnce(
+      new FixedIncomeRedemptionTooLargeError('2026-05-01', 'op'),
+    );
+    expect(await datasource.recalculateAsset('b')).toBe(false);
+
+    spies.transaction.mockRejectedValueOnce(new Error('db down'));
+    await expect(datasource.recalculateAsset('c')).rejects.toThrow('db down');
   });
 
   it('SHOULD return null WHEN nothing was ever fetched', async () => {

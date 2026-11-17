@@ -10,6 +10,8 @@ const spies = {
   fetchFindMany: jest.fn(),
   fetchUpsert: jest.fn(),
   fxFindMany: jest.fn(),
+  rateFindMany: jest.fn(),
+  transaction: jest.fn(),
   valueAggregate: jest.fn(),
   valueFindFirst: jest.fn(),
   valueFindMany: jest.fn(),
@@ -19,8 +21,10 @@ const spies = {
 const databaseMock = {
   client: {
     $executeRaw: spies.executeRaw,
+    $transaction: spies.transaction,
     fxRate: { findMany: spies.fxFindMany },
     investmentAsset: { findMany: spies.assetFindMany },
+    investmentFixedIncomeRate: { findMany: spies.rateFindMany },
     marketIndexFetch: { findMany: spies.fetchFindMany, upsert: spies.fetchUpsert },
     marketIndexValue: {
       aggregate: spies.valueAggregate,

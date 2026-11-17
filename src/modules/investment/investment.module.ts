@@ -42,6 +42,7 @@ import { PreviewFixedIncomeRedemptionUseCase } from '@investment/application/use
 import { ReceiveIncomeUseCase } from '@investment/application/use-case/ReceiveIncomeUseCase';
 import { RefreshCorporateEventsUseCase } from '@investment/application/use-case/RefreshCorporateEventsUseCase';
 import { RefreshIncomeEventsUseCase } from '@investment/application/use-case/RefreshIncomeEventsUseCase';
+import { RefreshMarketIndexesUseCase } from '@investment/application/use-case/RefreshMarketIndexesUseCase';
 import { RefreshQuotesNowUseCase } from '@investment/application/use-case/RefreshQuotesNowUseCase';
 import { RefreshTrackedQuotesUseCase } from '@investment/application/use-case/RefreshTrackedQuotesUseCase';
 import { RejectEventSuggestionUseCase } from '@investment/application/use-case/RejectEventSuggestionUseCase';
@@ -90,6 +91,7 @@ const useCases = [
   ReceiveIncomeUseCase,
   RefreshCorporateEventsUseCase,
   RefreshIncomeEventsUseCase,
+  RefreshMarketIndexesUseCase,
   RejectEventSuggestionUseCase,
   RejectIncomeSuggestionUseCase,
   UpdateIncomeUseCase,

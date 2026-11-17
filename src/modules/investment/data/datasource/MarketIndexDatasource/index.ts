@@ -9,8 +9,10 @@ import {
   MarketIndexValue,
   Prisma,
 } from '@db/client';
+import { recalculateFixedIncome } from '@investment/data/datasource/fixedIncome';
 import { IMarketIndexDatasource } from '@investment/data/repository/datasource/IMarketIndexDatasource';
 import { InvestmentAssetStatus } from '@investment/domain/enum';
+import { FixedIncomeRedemptionTooLargeError } from '@investment/domain/error/FixedIncomeRedemptionTooLargeError';
 import { Database } from '@shared/infra/db/Database';
 
 const CHUNK = 1000;
@@ -42,6 +44,16 @@ export class MarketIndexDatasource implements IMarketIndexDatasource {
   }
 
   // One row per series: the latest by date.
+  async findIndexedAssetIds(): Promise<string[]> {
+    const rows = await this.db.client.investmentFixedIncomeRate.findMany({
+      distinct: ['asset_id'],
+      select: { asset_id: true },
+      where: { mode: { in: ['CDI_PERCENT', 'IPCA_PLUS'] } },
+    });
+
+    return rows.map((row) => row.asset_id);
+  }
+
   async findLatest(): Promise<MarketIndexValue[]> {
     return this.db.client.marketIndexValue.findMany({
       distinct: ['series'],
@@ -75,6 +87,22 @@ export class MarketIndexDatasource implements IMarketIndexDatasource {
         series: { in: series as MarketIndexSeries[] },
       },
     });
+  }
+
+  async recalculateAsset(assetId: string): Promise<boolean> {
+    try {
+      await this.db.client.$transaction(async (tx) => {
+        await recalculateFixedIncome(tx, assetId);
+      });
+
+      return true;
+    } catch (error) {
+      if (error instanceof FixedIncomeRedemptionTooLargeError) {
+        return false;
+      }
+
+      throw error;
+    }
   }
 
   async recordFetch(series: string, outcome: { at: Date; error: null | string }): Promise<void> {

@@ -133,6 +133,17 @@ describe('MarketIndexRepository', () => {
     expect(spies.findFollowers).toHaveBeenCalledWith([{ owner: 'USER', owner_id: 'user-id' }]);
   });
 
+  it('SHOULD recalculate every indexed title AND count the ones that fit', async () => {
+    spies.findIndexedAssetIds.mockResolvedValue(['a', 'b', 'c']);
+    spies.recalculateAsset
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
+
+    expect(await (await setup()).recalculateIndexedTitles()).toBe(2);
+    expect(spies.recalculateAsset).toHaveBeenCalledTimes(3);
+  });
+
   it('SHOULD map fx pairs, upsert only non empty rows, record fetches and stamp the version', async () => {
     spies.findFxPairs.mockResolvedValue([
       { pair: 'USD-BRL', quoted_at: new Date('2026-11-12T11:05:00Z'), rate: mocks.decimal('5.35') },
