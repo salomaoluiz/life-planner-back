@@ -69,7 +69,7 @@ export interface FinancePlan {
     date: string;
     description: string;
     endDate?: string;
-    frequency: 'MONTHLY' | 'WEEKLY';
+    frequency: { interval: number; unit: 'DAY' | 'MONTH' | 'WEEK' };
     type: TxType;
     value: number;
   }[];
@@ -228,6 +228,13 @@ export function buildFinancePlan(
   );
 
   const activeAccounts = Math.max(1, cfg.accounts - cfg.archivedAccounts);
+  // Spec 114: series 0 is daily and series 1 every 2 months; one in five is weekly, the rest monthly.
+  const frequencyOf = (i: number): FinancePlan['recurrences'][number]['frequency'] =>
+    i === 0
+      ? { interval: 1, unit: 'DAY' }
+      : i === 1
+        ? { interval: 2, unit: 'MONTH' }
+        : { interval: 1, unit: i % 5 === 4 ? 'WEEK' : 'MONTH' };
   const recurrences: FinancePlan['recurrences'] = Array.from(
     { length: cfg.recurrences },
     (_, i) => {
@@ -242,7 +249,7 @@ export function buildFinancePlan(
         description: `Perf rec ${pad(i, 2)}`,
         // Every series ends at the anchor: a read in a later month never materializes new rows (spec 093).
         endDate: today,
-        frequency: i % 5 === 4 ? 'WEEKLY' : 'MONTHLY',
+        frequency: frequencyOf(i),
         type,
         value: rng.faker.number.int({ max: 30_000, min: 500 }),
       };

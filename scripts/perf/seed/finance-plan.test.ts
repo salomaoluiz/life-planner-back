@@ -94,8 +94,15 @@ describe('buildFinancePlan', () => {
   });
 
   it('has due recurrences (monthly and weekly) and a prepaid plan', () => {
-    expect(plan.recurrences.some((r) => r.frequency === 'WEEKLY')).toBe(true);
-    expect(plan.recurrences.some((r) => r.frequency === 'MONTHLY')).toBe(true);
+    expect(plan.recurrences.some((r) => r.frequency.unit === 'WEEK')).toBe(true);
+    expect(plan.recurrences.some((r) => r.frequency.unit === 'MONTH')).toBe(true);
+    // Spec 114: a daily and an every-2-months series keep the projection loop honest.
+    expect(
+      plan.recurrences.some((r) => r.frequency.unit === 'DAY' && r.frequency.interval === 1),
+    ).toBe(true);
+    expect(
+      plan.recurrences.some((r) => r.frequency.unit === 'MONTH' && r.frequency.interval === 2),
+    ).toBe(true);
     expect(plan.recurrences.every((r) => r.date < today)).toBe(true);
     expect(plan.recurrences.every((r) => r.endDate !== undefined && r.endDate <= today)).toBe(true);
     expect(plan.installmentPlans[0].prepay).toBe(true);

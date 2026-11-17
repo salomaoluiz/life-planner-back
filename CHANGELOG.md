@@ -3,6 +3,13 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [5.0.0] - 2026-11-17
+
+### Changed
+
+- **Breaking:** a recurring transaction or transfer repeats every N days, weeks, months or years: `frequency` is now `{ unit: DAY | WEEK | MONTH | YEAR, interval }` (limits 365, 52, 24 and 10) in the recurrence, split, transfer and transaction payloads; the old `WEEKLY | BIWEEKLY | MONTHLY | YEARLY` strings are refused, so older app builds must be updated (spec 114).
+- Existing series migrate without changing any date: weekly is every 1 week, biweekly every 2 weeks, monthly every 1 month, yearly every 1 year.
+
 ## [4.0.0] - 2026-11-16
 
 ### Added

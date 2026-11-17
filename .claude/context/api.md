@@ -332,3 +332,5 @@ Event operations return `quantityBefore/After`, `averagePriceBefore/After`, `fra
 - Reads answer `private, no-cache` (global interceptor) and revalidate through Express' automatic ETag; no `max-age`.
 
 Changed in the fixed income routes: `rate` for `CDI_PERCENT` is `{ mode, cdiPercent }` and for `IPCA_PLUS` `{ mode, spread }` (strict: `indexRate` → 400, on create title, create/update rate and `simulate`); rate entries no longer carry `indexRate`; `fixedIncome` gains `indexMissing` (an indexed rate with no stored series: `today` and `atMaturity` are `null`) and `needsReview` (`{ date, operationId } | null`, a redemption the recalculated curve no longer covers); `currentEffectiveRate` follows the latest stored index.
+
+Spec 114: `frequency` (recurrence create/split/response, transfer `recurrence`, projected occurrence) and `recurrenceFrequency` (transaction item and nested transaction) are `{ unit: DAY|WEEK|MONTH|YEAR, interval }` (strict object; interval an integer, limits per unit answer 422 `Interval must be between 1 and {max} for {unit}`). The old enum strings are refused.
