@@ -27,6 +27,7 @@ const envVarsMock = {
   INVESTMENT_QUOTES_MIN_INTERVAL_MS: 0,
   JWT_EXPIRES_IN: '1d',
   JWT_SECRET: 'secret',
+  MARKET_INDEX_JOB_ENABLED: true,
   NODE_ENV: 'test',
   PERF_COUNT_QUERIES: false,
   PORT: 3000,

@@ -49,6 +49,10 @@ export class EnvService {
     return this.nestConfigService.get('INVESTMENT_QUOTES_MIN_INTERVAL_MS');
   }
 
+  get marketIndexJobEnabled(): Env['MARKET_INDEX_JOB_ENABLED'] {
+    return this.nestConfigService.get('MARKET_INDEX_JOB_ENABLED');
+  }
+
   // Database
 
   get dbHost(): Env['DB_HOST'] {

@@ -691,6 +691,16 @@ enum InvestmentFixedIncomeLiquidity {
   GRACE_PERIOD
 }
 
+enum MarketIndexSeries {
+  CDI_DAILY
+  CDI_ANNUAL
+  SELIC_DAILY
+  SELIC_TARGET
+  IPCA_MONTHLY
+  IPCA_12M
+  IPCA_EXPECTED_12M
+}
+
 enum InvestmentFixedIncomeRateMode {
   PREFIXED
   CDI_PERCENT
@@ -753,6 +763,28 @@ model InvestmentPriceHistory {
 
   @@unique([market, ticker, date])
   @@map("investment_price_history")
+}
+
+// Spec 113: global market data (no owner), filled ONLY by RefreshMarketIndexesUseCase.
+model MarketIndexValue {
+  id         String            @id @default(uuid())
+  series     MarketIndexSeries
+  date       DateTime          @db.Date
+  value      Decimal           @db.Decimal(14, 8)
+  source     String            @db.VarChar(20)
+  fetched_at DateTime          @db.Timestamptz(6)
+
+  @@unique([series, date])
+  @@map("market_index_values")
+}
+
+model MarketIndexFetch {
+  series          MarketIndexSeries @id
+  last_success_at DateTime?         @db.Timestamptz(6)
+  last_attempt_at DateTime?         @db.Timestamptz(6)
+  last_error      String?           @db.VarChar(30)
+
+  @@map("market_index_fetches")
 }
 
 model FxRate {
