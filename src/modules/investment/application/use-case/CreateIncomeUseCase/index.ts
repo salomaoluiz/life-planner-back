@@ -19,9 +19,9 @@ export class CreateIncomeUseCase implements UseCaseWithParams<CreateIncomeInput,
     const asset = await loadWritableAsset(this.investment, input.assetId, input.accessibleOwners);
 
     return persistIncome(this.incomes, this.investment, input.accessibleOwners, asset, {
-      accountId: input.accountId,
+      accountId: input.accountId ?? null,
       amountPerUnit: input.amountPerUnit ?? null,
-      categoryId: input.categoryId,
+      categoryId: input.categoryId ?? null,
       createdBy: input.userId,
       exDate: input.exDate ?? null,
       netAmount: input.netAmount,
@@ -30,6 +30,7 @@ export class CreateIncomeUseCase implements UseCaseWithParams<CreateIncomeInput,
       quantity: input.quantity ?? null,
       status: input.status,
       type: input.type,
+      withFinance: input.withFinance,
     });
   }
 }

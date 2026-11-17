@@ -9,6 +9,7 @@ import {
 } from '@api/investment/v1/dto/income.dto';
 import { GetUserFamilyAccessUseCase } from '@family/application/use-case/GetUserFamilyAccessUseCase';
 import { IncomeView } from '@investment/application/service/IncomeRules';
+import { todayInSaoPaulo } from '@investment/application/service/Today';
 import { ApproveIncomeSuggestionUseCase } from '@investment/application/use-case/ApproveIncomeSuggestionUseCase';
 import { CreateIncomeUseCase } from '@investment/application/use-case/CreateIncomeUseCase';
 import { DeleteIncomeUseCase } from '@investment/application/use-case/DeleteIncomeUseCase';
@@ -16,6 +17,7 @@ import { GetIncomeByIdUseCase } from '@investment/application/use-case/GetIncome
 import { GetIncomeDefaultsUseCase } from '@investment/application/use-case/GetIncomeDefaultsUseCase';
 import { GetIncomeSuggestionsUseCase } from '@investment/application/use-case/GetIncomeSuggestionsUseCase';
 import { GetIncomesUseCase } from '@investment/application/use-case/GetIncomesUseCase';
+import { MaterializeIncomeSeriesUseCase } from '@investment/application/use-case/MaterializeIncomeSeriesUseCase';
 import { ReceiveIncomeUseCase } from '@investment/application/use-case/ReceiveIncomeUseCase';
 import { RejectIncomeSuggestionUseCase } from '@investment/application/use-case/RejectIncomeSuggestionUseCase';
 import { UpdateIncomeUseCase } from '@investment/application/use-case/UpdateIncomeUseCase';
@@ -39,13 +41,16 @@ export function toIncomeOutput(view: IncomeView): IncomeOutputType {
     id: income.id,
     netAmount: income.netAmount,
     notes: income.notes ?? undefined,
+    occurrenceNumber: income.occurrenceNumber ?? undefined,
     overdue: view.overdue,
     paymentDate: income.paymentDate,
     quantity: income.quantity ?? undefined,
+    seriesId: income.seriesId ?? undefined,
     status: view.status,
     suggestionId: income.suggestionId ?? undefined,
     transactionId: income.transactionId ?? undefined,
     type: income.type,
+    withFinance: income.withFinance,
     withholdingRate: view.withholdingRate,
   };
 }
@@ -61,6 +66,7 @@ export class IncomeService {
     private readonly getIncomeSuggestionsUseCase: GetIncomeSuggestionsUseCase,
     private readonly getIncomesUseCase: GetIncomesUseCase,
     private readonly getUserFamilyAccessUseCase: GetUserFamilyAccessUseCase,
+    private readonly materializeIncomeSeriesUseCase: MaterializeIncomeSeriesUseCase,
     private readonly receiveIncomeUseCase: ReceiveIncomeUseCase,
     private readonly rejectIncomeSuggestionUseCase: RejectIncomeSuggestionUseCase,
     private readonly updateIncomeUseCase: UpdateIncomeUseCase,
@@ -88,10 +94,15 @@ export class IncomeService {
     };
   }
 
-  async deleteIncome(userId: string, id: string): Promise<void> {
+  async deleteIncome(
+    userId: string,
+    id: string,
+    scope?: 'ALL' | 'ONLY_THIS' | 'THIS_AND_NEXT',
+  ): Promise<void> {
     await this.deleteIncomeUseCase.execute({
       accessibleOwners: await this.getAccessibleOwners(userId),
       id,
+      scope,
     });
   }
 
@@ -138,10 +149,15 @@ export class IncomeService {
       type?: InvestmentIncomeType;
     },
   ) {
-    const result = await this.getIncomesUseCase.execute({
-      accessibleOwners: await this.getAccessibleOwners(userId),
-      ...query,
+    const accessibleOwners = await this.getAccessibleOwners(userId);
+
+    // Spec 115 FR 18: the planned occurrences of the month exist before the list is read.
+    await this.materializeIncomeSeriesUseCase.execute({
+      accessibleOwners,
+      today: todayInSaoPaulo(),
     });
+
+    const result = await this.getIncomesUseCase.execute({ accessibleOwners, ...query });
 
     return {
       items: result.items.map((view) => toIncomeOutput(view)),
@@ -186,7 +202,11 @@ export class IncomeService {
     });
   }
 
-  async updateIncome(userId: string, id: string, input: UpdateIncomeApiInput) {
+  async updateIncome(
+    userId: string,
+    id: string,
+    input: { scope?: 'ALL' | 'ONLY_THIS' | 'THIS_AND_NEXT' } & UpdateIncomeApiInput,
+  ) {
     const accessibleOwners = await this.getAccessibleOwners(userId);
 
     return {

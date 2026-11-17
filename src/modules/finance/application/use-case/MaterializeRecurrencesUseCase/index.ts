@@ -1,4 +1,4 @@
-import { Inject } from '@nestjs/common';
+import { Inject, Optional } from '@nestjs/common';
 
 import {
   MaterializeRecurrencesInput,
@@ -8,6 +8,8 @@ import { MaterializationGate } from '@finance/application/service/Materializatio
 import { narrowOwners, OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import {
   DueRecurrence,
+  EXTERNAL_PROJECTION_SOURCE,
+  IExternalProjectionSource,
   IFinanceCreditCardRepository,
   IFinanceInvoicePaymentRepository,
   IFinanceRecurrenceRepository,
@@ -38,6 +40,9 @@ export class MaterializeRecurrencesUseCase implements UseCaseWithParams<
     private readonly recurrenceRepository: IFinanceRecurrenceRepository,
     @Inject('IFinanceTransferRepository')
     private readonly transferRepository: IFinanceTransferRepository,
+    @Optional()
+    @Inject(EXTERNAL_PROJECTION_SOURCE)
+    private readonly externalSource?: IExternalProjectionSource,
   ) {}
 
   async execute(params: MaterializeRecurrencesInput): Promise<void> {
@@ -50,6 +55,9 @@ export class MaterializeRecurrencesUseCase implements UseCaseWithParams<
     if (owners.length === 0) {
       return;
     }
+
+    // Spec 115 FR 18: investment income series owe their own planned rows before any finance read (own gate).
+    await this.externalSource?.materialize({ owners, today: input.today });
 
     // Spec 081: skipped inside the owner TTL, shared between concurrent reads, reset by recurrence writes.
     await this.materializationGate.runOnce(

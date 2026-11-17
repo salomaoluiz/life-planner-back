@@ -60,6 +60,7 @@ export const mocks = {
     notes: null,
     payment_date: new Date('2026-10-30T00:00:00Z'),
     quantity: null,
+    received: true,
     suggestion_id: null,
     transaction: { account_id: 'acc-1', category_id: 'cat-1', paid: true },
     transaction_id: 'tx-1',

@@ -1,17 +1,21 @@
-import { BadRequestException, Inject } from '@nestjs/common';
+import { BadRequestException, Inject, Optional } from '@nestjs/common';
 
 import { GetProjectionsInput, GetProjectionsSchema } from '@finance/application/dto/GetRecurrences';
 import { ExpandCategoryIdsUseCase } from '@finance/application/use-case/ExpandCategoryIdsUseCase';
 import { LoadFilterCategoriesUseCase } from '@finance/application/use-case/LoadFilterCategoriesUseCase';
 import { ResolveSearchCategoryIdsUseCase } from '@finance/application/use-case/ResolveSearchCategoryIdsUseCase';
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
-import { narrowOwners } from '@finance/domain/entity/OwnerAccess';
+import { narrowOwners, OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { ProjectedOccurrence } from '@finance/domain/entity/ProjectedOccurrence';
 import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
 import { TRANSFER_IN_SUMMARY } from '@finance/domain/entity/SystemCategory';
 import { TransactionFilter } from '@finance/domain/entity/TransactionFilter';
-import { RecurrenceStatus, TransactionType } from '@finance/domain/enum';
+import { RecurrenceStatus, RecurrenceUnit, TransactionType } from '@finance/domain/enum';
 import {
+  EXTERNAL_PROJECTION_SOURCE,
+  IExternalProjectionSource,
+  IFinanceAccountRepository,
+  IFinanceCategoryRepository,
   IFinanceCreditCardRepository,
   IFinanceRecurrenceRepository,
 } from '@finance/domain/repository';
@@ -47,6 +51,13 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
     private readonly resolveSearchCategoryIdsUseCase: ResolveSearchCategoryIdsUseCase,
     @Inject('IFinanceRecurrenceRepository')
     private readonly recurrenceRepository: IFinanceRecurrenceRepository,
+    @Inject('IFinanceAccountRepository')
+    private readonly accountRepository: IFinanceAccountRepository,
+    @Inject('IFinanceCategoryRepository')
+    private readonly categoryRepository: IFinanceCategoryRepository,
+    @Optional()
+    @Inject(EXTERNAL_PROJECTION_SOURCE)
+    private readonly externalSource?: IExternalProjectionSource,
   ) {}
 
   async execute(params: GetProjectionsInput): Promise<ProjectedOccurrence[]> {
@@ -99,8 +110,17 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
       })
     ).filter((item) => matchesSeries(item, filter, categoryIds, searchCategoryIds));
 
-    if (series.length === 0 || from > to) {
+    if (from > to) {
       return [];
+    }
+
+    const external = await this.findExternal(owners, from, to, input.today, filter, {
+      categoryIds,
+      searchCategoryIds,
+    });
+
+    if (series.length === 0) {
+      return this.sortAndFilter(external, filter.currency);
     }
 
     const real = await this.recurrenceRepository.findFutureNumbers(
@@ -138,17 +158,103 @@ export class GetProjectionsUseCase implements UseCaseWithParams<
     }
 
     // Spec 103: each projected item (each leg of a transfer) carries its own currency.
-    if (filter.currency) {
-      return result
-        .filter((item) => item.currency === filter.currency)
-        .sort(
-          (a, b) => a.date.localeCompare(b.date) || a.recurrenceId.localeCompare(b.recurrenceId),
-        );
+    return this.sortAndFilter([...result, ...external], filter.currency);
+  }
+
+  private sortAndFilter(items: ProjectedOccurrence[], currency?: string): ProjectedOccurrence[] {
+    return items
+      .filter((item) => !currency || item.currency === currency)
+      .sort((a, b) => a.date.localeCompare(b.date) || a.recurrenceId.localeCompare(b.recurrenceId));
+  }
+
+  // Spec 115 FR 22: the incomes of investment series, as account income projections (never card ones, never tagged).
+  private async findExternal(
+    owners: OwnerAccess[],
+    from: string,
+    to: string,
+    today: string,
+    filter: TransactionFilter,
+    resolved: { categoryIds?: Set<string>; searchCategoryIds: Set<string> },
+  ): Promise<ProjectedOccurrence[]> {
+    if (!this.externalSource || filter.tagIds?.length || filter.creditCardIds?.length) {
+      return [];
     }
 
-    return result.sort(
-      (a, b) => a.date.localeCompare(b.date) || a.recurrenceId.localeCompare(b.recurrenceId),
+    const items = (await this.externalSource.findProjections({ from, owners, to, today })).filter(
+      (item) =>
+        (!resolved.categoryIds || resolved.categoryIds.has(item.categoryId)) &&
+        (!filter.accountIds?.length || filter.accountIds.includes(item.accountId)) &&
+        (!filter.q ||
+          matchesTransactionQuery(
+            {
+              categoryId: item.categoryId,
+              description: item.description,
+              notes: null,
+              valueCents: item.value,
+            },
+            filter.q,
+            resolved.searchCategoryIds,
+          )),
     );
+
+    if (items.length === 0) {
+      return [];
+    }
+
+    const accounts = new Map(
+      (
+        await this.accountRepository.findAccountsByIds([...new Set(items.map((i) => i.accountId))])
+      ).map((account) => [account.id, account]),
+    );
+    const categories = new Map<
+      string,
+      Awaited<ReturnType<IFinanceCategoryRepository['findCategoryById']>>
+    >();
+
+    for (const id of new Set(items.map((item) => item.categoryId))) {
+      categories.set(id, await this.categoryRepository.findCategoryById(id));
+    }
+
+    return items.flatMap((item) => {
+      const account = accounts.get(item.accountId);
+      const category = categories.get(item.categoryId);
+
+      if (!account || !category) {
+        return [];
+      }
+
+      return [
+        {
+          account: { icon: account.icon, id: account.id, name: account.name },
+          category: {
+            excludeFromTotals: false,
+            icon: category.icon,
+            iconColor: category.iconColor,
+            id: category.id,
+            name: category.name,
+            systemKey: null,
+          },
+          creditCard: null,
+          currency: item.currency,
+          date: item.date,
+          description: item.description,
+          frequency: { interval: 1, unit: RecurrenceUnit.MONTH },
+          investment: { assetId: item.assetId, seriesId: item.seriesId },
+          invoiceListDate: null,
+          invoiceMonth: null,
+          notes: null,
+          occurrenceCount: null,
+          occurrenceNumber: item.number,
+          owner: account.owner,
+          ownerId: account.ownerId,
+          projected: false,
+          recurrenceId: item.seriesId,
+          tags: [],
+          type: TransactionType.INCOME,
+          value: item.value,
+        },
+      ];
+    });
   }
 
   // Spec 053: the same projections over up to 24 months, in windows of `MAX_PROJECTION_MONTHS`.

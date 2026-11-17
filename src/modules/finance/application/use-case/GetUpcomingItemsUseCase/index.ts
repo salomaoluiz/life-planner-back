@@ -156,6 +156,7 @@ export class GetUpcomingItemsUseCase implements UseCaseWithParams<
         date: item.date,
         description: item.description,
         id: `${item.recurrenceId}:${item.occurrenceNumber}`,
+        ...(item.investment ? { investment: item.investment } : {}),
         invoiceMonth: null,
         kind: 'PROJECTION',
         occurrenceNumber: item.occurrenceNumber,

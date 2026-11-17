@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 
 import { incomeFixture } from '@investment/domain/entity/mocks/income.fixture';
 
@@ -54,4 +54,43 @@ it('SHOULD answer 409 ALREADY_RECEIVED for a received income', async () => {
     response: { code: 'ALREADY_RECEIVED' },
   });
   expect(spies.incomes.writeIncome).not.toHaveBeenCalled();
+});
+
+describe('income without finance (spec 115 FR 3)', () => {
+  const lone = incomeFixture({
+    accountId: null,
+    assetId: scenario.asset.id,
+    categoryId: null,
+    netAmount: 7140,
+    paid: false,
+    paymentDate: '2026-12-19',
+    transactionId: null,
+    withFinance: false,
+  });
+
+  beforeEach(() => {
+    spies.incomes.findIncomeById.mockReset();
+    spies.incomes.findIncomeById.mockResolvedValue(lone);
+  });
+
+  it('SHOULD receive with the amount and the date only, writing no row', async () => {
+    await setup.execute({ ...base, id: lone.id, netAmount: 7215, receivedOn: '2026-11-03' });
+
+    expect(spies.incomes.writeIncome).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId: null,
+        categoryId: null,
+        netAmount: 7215,
+        paid: true,
+        paymentDate: '2026-11-03',
+        withFinance: false,
+      }),
+    );
+  });
+
+  it('SHOULD answer 400 WHEN an account is sent', async () => {
+    await expect(
+      setup.execute({ ...base, accountId: 'acc-1', id: lone.id }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
 });

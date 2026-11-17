@@ -358,3 +358,77 @@ describe('transfer series (spec 098)', () => {
     expect(result.every((item) => item.transferSide === undefined)).toBe(true);
   });
 });
+
+describe('external projected incomes (spec 115)', () => {
+  const external = {
+    accountId: 'account-1',
+    assetId: 'asset-1',
+    categoryId: 'category-1',
+    currency: 'BRL',
+    date: '2026-11-15',
+    description: 'HGLG11',
+    number: 24,
+    seriesId: 'series-9',
+    value: 11000,
+  };
+
+  beforeEach(() => {
+    mocks.recurrenceRepository.findByOwners.mockResolvedValue([]);
+    mocks.externalSource.findProjections.mockResolvedValue([external]);
+    mocks.accountRepository.findAccountsByIds.mockResolvedValue([
+      { icon: 'bank', id: 'account-1', name: 'Main', owner: 'USER', ownerId: 'user-id' },
+    ]);
+    mocks.categoryRepository.findCategoryById.mockResolvedValue({
+      icon: 'cash',
+      iconColor: '#000000',
+      id: 'category-1',
+      name: 'Yields',
+    });
+  });
+
+  it('SHOULD add the income of a series as an account income projection that opens the series', async () => {
+    const result = await setup.execute(base);
+
+    expect(mocks.externalSource.findProjections).toHaveBeenCalledWith(
+      expect.objectContaining({ from: '2026-11-01', to: '2026-12-31', today: '2026-10-17' }),
+    );
+    expect(result).toEqual([
+      expect.objectContaining({
+        account: { icon: 'bank', id: 'account-1', name: 'Main' },
+        category: expect.objectContaining({ id: 'category-1', systemKey: null }),
+        creditCard: null,
+        investment: { assetId: 'asset-1', seriesId: 'series-9' },
+        occurrenceNumber: 24,
+        recurrenceId: 'series-9',
+        type: 'INCOME',
+        value: 11000,
+      }),
+    ]);
+  });
+
+  it('SHOULD follow the account, category and text filters AND leave out card or tag filters', async () => {
+    expect(await setup.execute({ ...base, filter: { accountIds: ['other'] } })).toEqual([]);
+    expect(await setup.execute({ ...base, filter: { categoryIds: ['other'] } })).toEqual([]);
+    expect(await setup.execute({ ...base, filter: { q: 'xyz' } })).toEqual([]);
+    expect(await setup.execute({ ...base, filter: { q: 'hglg' } })).toHaveLength(1);
+    expect(await setup.execute({ ...base, filter: { tagIds: ['tag-1'] } })).toEqual([]);
+    expect(await setup.execute({ ...base, filter: { creditCardIds: ['card-1'] } })).toEqual([]);
+  });
+
+  it('SHOULD follow the currency filter AND skip an item whose account or category is gone', async () => {
+    expect(await setup.execute({ ...base, filter: { currency: 'USD' } })).toEqual([]);
+
+    mocks.accountRepository.findAccountsByIds.mockResolvedValue([]);
+
+    expect(await setup.execute(base)).toEqual([]);
+  });
+
+  it('SHOULD not ask the source for anything WHEN no source is bound AND merge with real series', async () => {
+    mocks.recurrenceRepository.findByOwners.mockResolvedValue([mocks.series]);
+
+    const result = await setup.execute(base);
+
+    expect(result.some((item) => item.recurrenceId === 'series-9')).toBe(true);
+    expect(result.some((item) => item.recurrenceId === 'series-1')).toBe(true);
+  });
+});

@@ -56,6 +56,7 @@ it('SHOULD skip an asset with no BUY and an event before its position existed', 
     ],
     existing: [],
     incomes: [],
+    series: [],
   });
   spies.incomes.createSuggestions.mockResolvedValue(0);
 

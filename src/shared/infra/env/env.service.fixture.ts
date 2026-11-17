@@ -33,6 +33,7 @@ class EnvServiceFixture {
       financeMaterializationGateTtlMs: 60000,
       finnhubToken: undefined,
       githubToken: undefined,
+      investmentIncomeSeriesJobEnabled: true,
       investmentQuoteRefreshCooldownMs: 60000,
       investmentQuotesBrapiBatchSize: 20,
       investmentQuotesJobEnabled: true,

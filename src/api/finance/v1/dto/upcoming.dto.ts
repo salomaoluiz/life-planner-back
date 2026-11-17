@@ -18,6 +18,7 @@ export const UpcomingQuerySchema = z.object({
 
 const UpcomingItemApiSchema = z.object({
   accountId: z.uuid().nullable(),
+  assetId: z.uuid().optional(),
   categoryId: z.uuid().nullable(),
   creditCardId: z.uuid().nullable(),
   currency: z.enum(SUPPORTED_CURRENCIES),
@@ -25,6 +26,7 @@ const UpcomingItemApiSchema = z.object({
   description: z.string(),
   // A transaction id, `<cardId>:<YYYY-MM>` for an invoice or `<recurrenceId>:<occurrence>` for a projection.
   id: z.string(),
+  investmentIncomeSeriesId: z.uuid().optional(),
   invoiceMonth: z.string().nullable(),
   kind: z.enum(['INVOICE', 'PROJECTION', 'TRANSACTION']),
   occurrenceNumber: z.number().int().nullable(),

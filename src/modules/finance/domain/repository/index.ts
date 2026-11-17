@@ -1,3 +1,4 @@
+export * from './IExternalProjectionSource';
 export * from './IFinanceAccountFavoriteRepository';
 export * from './IFinanceAccountRepository';
 export * from './IFinanceCardCreditRepository';

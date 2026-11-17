@@ -44,9 +44,9 @@ export interface IncomeDefaults {
   withholdingRate: string;
 }
 export interface IncomeDraft {
-  accountId: string;
+  accountId: null | string;
   amountPerUnit: Decimal8 | null;
-  categoryId: string;
+  categoryId: null | string;
   createdBy: string;
   exDate: null | string;
   incomeId?: string;
@@ -57,6 +57,8 @@ export interface IncomeDraft {
   status: IncomeStatus;
   suggestionId?: null | string;
   type: InvestmentIncomeType;
+  // Spec 115: false = no finance row, no account, no category.
+  withFinance: boolean;
 }
 export interface IncomeView {
   estimatedGross: number;
@@ -152,12 +154,13 @@ export async function resolveIncomeAccount(
 export function draftFromIncome(
   income: IncomeEntity,
   userId: string,
-  pick: { accountId?: string; categoryId?: string } = {},
+  pick: { accountId?: string; categoryId?: string; withFinance?: boolean } = {},
 ): IncomeDraft {
-  const accountId = pick.accountId ?? income.accountId;
-  const categoryId = pick.categoryId ?? income.categoryId;
+  const withFinance = pick.withFinance ?? income.withFinance;
+  const accountId = withFinance ? (pick.accountId ?? income.accountId) : null;
+  const categoryId = withFinance ? (pick.categoryId ?? income.categoryId) : null;
 
-  if (!accountId || !categoryId) {
+  if (withFinance && (!accountId || !categoryId)) {
     throw incompleteError([
       ...(accountId ? [] : ['accountId']),
       ...(categoryId ? [] : ['categoryId']),
@@ -178,6 +181,7 @@ export function draftFromIncome(
     status: income.paid ? 'RECEIVED' : 'PLANNED',
     suggestionId: income.suggestionId,
     type: income.type,
+    withFinance,
   };
 }
 export function incompleteError(missing: string[]): UnprocessableEntityException {
@@ -291,9 +295,12 @@ export async function persistIncome(
   draft: IncomeDraft,
 ): Promise<IncomeView> {
   const notes = normalizeIncomeNotes(draft.notes);
-  const account = await resolveIncomeAccount(investment, owners, draft.accountId, asset.currency);
 
-  await resolveIncomeCategory(incomes, account, draft.categoryId);
+  if (draft.withFinance && draft.accountId && draft.categoryId) {
+    const account = await resolveIncomeAccount(investment, owners, draft.accountId, asset.currency);
+
+    await resolveIncomeCategory(incomes, account, draft.categoryId);
+  }
 
   const incomeId = await incomes.writeIncome({
     accountId: draft.accountId,
@@ -312,6 +319,7 @@ export async function persistIncome(
     quantity: draft.quantity?.toString() ?? null,
     suggestionId: draft.suggestionId,
     type: draft.type,
+    withFinance: draft.withFinance,
   });
   const saved = await incomes.findIncomeById(incomeId);
 

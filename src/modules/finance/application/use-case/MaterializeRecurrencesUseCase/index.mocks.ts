@@ -4,6 +4,7 @@ import { MaterializationGate } from '@finance/application/service/Materializatio
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
 import RecurrenceEntityFixture from '@finance/domain/entity/mocks/RecurrenceEntity.fixture';
 import { RecurrenceUnit } from '@finance/domain/enum';
+import { EXTERNAL_PROJECTION_SOURCE } from '@finance/domain/repository';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { MaterializeRecurrencesUseCase } from './index';
@@ -53,16 +54,19 @@ beforeEach(async () => {
       { provide: 'IFinanceInvoicePaymentRepository', useValue: invoicePaymentRepositoryMock },
       { provide: 'IFinanceRecurrenceRepository', useValue: recurrenceRepositoryMock },
       { provide: 'IFinanceTransferRepository', useValue: transferRepositoryMock },
+      { provide: EXTERNAL_PROJECTION_SOURCE, useValue: externalSourceMock },
     ],
   }).compile();
 
   setup = module.get(MaterializeRecurrencesUseCase);
 });
 
+const externalSourceMock = { findProjections: jest.fn(), materialize: jest.fn() };
 const mocks = {
   accessibleOwners,
   card: cardMock,
   creditCardRepository: creditCardRepositoryMock,
+  externalSource: externalSourceMock,
   gate: gateMock,
   invoicePaymentRepository: invoicePaymentRepositoryMock,
   recurrenceRepository: recurrenceRepositoryMock,

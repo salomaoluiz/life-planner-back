@@ -5,6 +5,15 @@ import { mocks, setup } from './index.mocks';
 const base = { accessibleOwners: mocks.accessibleOwners, today: '2026-10-17' };
 
 describe('MaterializeRecurrencesUseCase', () => {
+  it('SHOULD ask the external source (investment income series) to materialize first (spec 115)', async () => {
+    await setup.execute(base);
+
+    expect(mocks.externalSource.materialize).toHaveBeenCalledWith({
+      owners: mocks.accessibleOwners,
+      today: '2026-10-17',
+    });
+  });
+
   it('SHOULD run through the gate with the non-archived owner ids AND today (spec 081)', async () => {
     await setup.execute(base);
 

@@ -91,6 +91,7 @@ export class ApproveIncomeSuggestionUseCase implements UseCaseWithParams<
       status: input.status ?? 'PLANNED',
       suggestionId: suggestion.id,
       type,
+      withFinance: true,
     });
   }
 }

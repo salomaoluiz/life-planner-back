@@ -5,6 +5,7 @@ import { LoadFilterCategoriesUseCase } from '@finance/application/use-case/LoadF
 import { ResolveSearchCategoryIdsUseCase } from '@finance/application/use-case/ResolveSearchCategoryIdsUseCase';
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
 import RecurrenceEntityFixture from '@finance/domain/entity/mocks/RecurrenceEntity.fixture';
+import { EXTERNAL_PROJECTION_SOURCE } from '@finance/domain/repository';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { GetProjectionsUseCase } from './index';
@@ -27,6 +28,9 @@ const loadCategoriesMock = { execute: jest.fn() };
 const resolveSearchMock = { execute: jest.fn() };
 const creditCardRepositoryMock = { findCreditCardById: jest.fn(), findCreditCardsByIds: jest.fn() };
 const recurrenceRepositoryMock = { findByOwners: jest.fn(), findFutureNumbers: jest.fn() };
+const accountRepositoryMock = { findAccountsByIds: jest.fn() };
+const categoryRepositoryMock = { findCategoryById: jest.fn() };
+const externalSourceMock = { findProjections: jest.fn(), materialize: jest.fn() };
 
 // endregion Mocks
 
@@ -42,6 +46,7 @@ beforeEach(async () => {
   recurrenceRepositoryMock.findFutureNumbers.mockResolvedValue([]);
   expandMock.execute.mockImplementation(async ({ categoryIds }) => categoryIds);
   resolveSearchMock.execute.mockResolvedValue([]);
+  externalSourceMock.findProjections.mockResolvedValue([]);
 
   const module = await Test.createTestingModule({
     providers: [
@@ -51,6 +56,9 @@ beforeEach(async () => {
       { provide: ResolveSearchCategoryIdsUseCase, useValue: resolveSearchMock },
       { provide: 'IFinanceCreditCardRepository', useValue: creditCardRepositoryMock },
       { provide: 'IFinanceRecurrenceRepository', useValue: recurrenceRepositoryMock },
+      { provide: 'IFinanceAccountRepository', useValue: accountRepositoryMock },
+      { provide: 'IFinanceCategoryRepository', useValue: categoryRepositoryMock },
+      { provide: EXTERNAL_PROJECTION_SOURCE, useValue: externalSourceMock },
     ],
   }).compile();
 
@@ -59,9 +67,12 @@ beforeEach(async () => {
 
 const mocks = {
   accessibleOwners,
+  accountRepository: accountRepositoryMock,
   card: cardMock,
+  categoryRepository: categoryRepositoryMock,
   creditCardRepository: creditCardRepositoryMock,
   expand: expandMock,
+  externalSource: externalSourceMock,
   loadCategories: loadCategoriesMock,
   recurrenceRepository: recurrenceRepositoryMock,
   resolveSearch: resolveSearchMock,

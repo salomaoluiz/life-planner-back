@@ -23,6 +23,8 @@ export interface ProjectedOccurrence {
   notes: null | string;
   // Planned payment day (`YYYY-MM-DD`) of that invoice: the day the list shows it; null for account series.
   invoiceListDate: null | string;
+  // Spec 115 FR 22: set on an income projected by an investment income series (opens the series in the app).
+  investment?: { assetId: string; seriesId: string };
   // `YYYY-MM` of the invoice by the card's CURRENT closing rule; null for account series.
   invoiceMonth: null | string;
   occurrenceCount: null | number;

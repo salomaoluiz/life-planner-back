@@ -1,4 +1,4 @@
-import { ConflictException, Inject } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject } from '@nestjs/common';
 
 import { ReceiveIncomeInput, ReceiveIncomeSchema } from '@investment/application/dto/Income';
 import {
@@ -35,13 +35,18 @@ export class ReceiveIncomeUseCase implements UseCaseWithParams<ReceiveIncomeInpu
       throw new ConflictException({ code: 'ALREADY_RECEIVED', message: 'Income already received' });
     }
 
+    // Spec 115 FR 3: an income without finance is received with the amount and the date only.
+    if (!income.withFinance && input.accountId) {
+      throw new BadRequestException('An income without finance has no account');
+    }
+
     await assertIncomeAccountChangeable(this.investment, input.accessibleOwners, income.accountId);
 
     const current = draftFromIncome(income, input.userId, { accountId: input.accountId });
 
     return persistIncome(this.incomes, this.investment, input.accessibleOwners, asset, {
       ...current,
-      accountId: input.accountId ?? current.accountId,
+      accountId: current.accountId,
       netAmount: input.netAmount ?? current.netAmount,
       paymentDate: input.receivedOn ?? todayInSaoPaulo(),
       status: 'RECEIVED',

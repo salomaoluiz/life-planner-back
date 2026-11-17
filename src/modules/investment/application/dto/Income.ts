@@ -8,7 +8,7 @@ import {
   PositiveDecimalSchema,
   QuantitySchema,
 } from '@investment/application/dto/InvestmentCommon';
-import { InvestmentIncomeType } from '@investment/domain/enum';
+import { IncomeSeriesUnit, InvestmentIncomeType } from '@investment/domain/enum';
 
 export const IncomeTypeSchema = z.enum(InvestmentIncomeType);
 export const IncomeStatusSchema = z.enum(['PLANNED', 'RECEIVED']);
@@ -28,21 +28,49 @@ const fields = {
   type: IncomeTypeSchema,
 };
 
-export const CreateIncomeSchema = z.object({
-  ...fields,
-  accessibleOwners: AccessibleOwnersSchema,
-  assetId: IdSchema,
-  userId: IdSchema,
-});
+// Spec 115 FR 1: `withFinance` (default true) decides whether account and category are required or forbidden.
+function financeIssue(data: { accountId?: string; categoryId?: string; withFinance?: boolean }) {
+  if (data.withFinance === false) {
+    return data.accountId === undefined && data.categoryId === undefined;
+  }
+
+  return true;
+}
+const FINANCE_ISSUE_MESSAGE = 'accountId and categoryId must be absent without withFinance';
+
+export const CreateIncomeSchema = z
+  .object({
+    ...z.object(fields).partial({ accountId: true, categoryId: true }).shape,
+    accessibleOwners: AccessibleOwnersSchema,
+    assetId: IdSchema,
+    userId: IdSchema,
+    withFinance: z.boolean().default(true),
+  })
+  .refine(financeIssue, { message: FINANCE_ISSUE_MESSAGE })
+  .refine((data) => !data.withFinance || (data.accountId && data.categoryId), {
+    message: 'accountId and categoryId are required with withFinance',
+  });
 export type CreateIncomeInput = z.input<typeof CreateIncomeSchema>;
 
-export const UpdateIncomeSchema = z.object({
-  ...z.object(fields).partial().shape,
-  accessibleOwners: AccessibleOwnersSchema,
-  id: IdSchema,
-  userId: IdSchema,
-});
+// Spec 115 FR 24: a series income takes `scope`; `THIS_AND_NEXT` also takes the series rule fields.
+export const IncomeScopeSchema = z.enum(['ALL', 'ONLY_THIS', 'THIS_AND_NEXT']);
+export type IncomeScope = z.infer<typeof IncomeScopeSchema>;
+
+export const UpdateIncomeSchema = z
+  .object({
+    ...z.object(fields).partial().shape,
+    accessibleOwners: AccessibleOwnersSchema,
+    endDate: CalendarDateSchema.nullish(),
+    exDateOffsetDays: z.number().int().min(0).max(90).nullish(),
+    frequency: z.object({ interval: z.number().int(), unit: z.enum(IncomeSeriesUnit) }).optional(),
+    id: IdSchema,
+    scope: IncomeScopeSchema.optional(),
+    userId: IdSchema,
+    withFinance: z.boolean().optional(),
+  })
+  .refine(financeIssue, { message: FINANCE_ISSUE_MESSAGE });
 export type UpdateIncomeInput = z.input<typeof UpdateIncomeSchema>;
+export type UpdateIncomeParsed = z.output<typeof UpdateIncomeSchema>;
 
 export const ReceiveIncomeSchema = z.object({
   accessibleOwners: AccessibleOwnersSchema,
@@ -57,6 +85,7 @@ export type ReceiveIncomeInput = z.input<typeof ReceiveIncomeSchema>;
 export const IncomeAccessSchema = z.object({
   accessibleOwners: AccessibleOwnersSchema,
   id: IdSchema,
+  scope: IncomeScopeSchema.optional(),
 });
 export type IncomeAccessInput = z.input<typeof IncomeAccessSchema>;
 

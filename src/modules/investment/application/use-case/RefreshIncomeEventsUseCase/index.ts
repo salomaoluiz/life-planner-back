@@ -133,6 +133,17 @@ export class RefreshIncomeEventsUseCase implements UseCase<RefreshIncomeEventsRe
       events,
       existing: new Set(inputs.existing),
       incomes: inputs.incomes,
+      series: inputs.series.map((series) => ({
+        assetId: series.assetId,
+        rule: {
+          endDate: series.endDate,
+          exDateOffsetDays: series.exDateOffsetDays,
+          firstNumber: series.firstNumber,
+          firstPaymentDate: series.firstPaymentDate,
+          frequency: series.frequency,
+        },
+        type: series.type,
+      })),
       today,
     });
     return this.incomes.createSuggestions(

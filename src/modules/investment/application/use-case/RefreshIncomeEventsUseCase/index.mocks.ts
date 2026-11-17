@@ -64,6 +64,7 @@ beforeEach(async () => {
     ],
     existing: [],
     incomes: [],
+    series: [],
   });
   spies.incomes.createSuggestions.mockResolvedValue(1);
 

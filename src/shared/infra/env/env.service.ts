@@ -33,6 +33,10 @@ export class EnvService {
     return this.nestConfigService.get('FINNHUB_TOKEN');
   }
 
+  get investmentIncomeSeriesJobEnabled(): Env['INVESTMENT_INCOME_SERIES_JOB_ENABLED'] {
+    return this.nestConfigService.get('INVESTMENT_INCOME_SERIES_JOB_ENABLED');
+  }
+
   get investmentQuoteRefreshCooldownMs(): Env['INVESTMENT_QUOTE_REFRESH_COOLDOWN_MS'] {
     return this.nestConfigService.get('INVESTMENT_QUOTE_REFRESH_COOLDOWN_MS');
   }

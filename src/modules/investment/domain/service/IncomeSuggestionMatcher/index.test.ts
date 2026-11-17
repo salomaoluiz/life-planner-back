@@ -110,3 +110,58 @@ describe('matchSuggestions', () => {
     expect(run({ events: [event({ market: QuoteMarket.US })] })).toEqual([]);
   });
 });
+
+describe('series (spec 115 FR 28)', () => {
+  const series = {
+    assetId: 'asset-1',
+    rule: {
+      firstPaymentDate: '2026-01-15',
+      frequency: { interval: 1, unit: 'MONTH' as never },
+    },
+    type: InvestmentIncomeType.DIVIDEND,
+  };
+
+  function runWithSeries(parts: Parameters<typeof run>[0] = {}, items = [series]) {
+    return matchSuggestions({
+      assets: parts.assets ?? [asset()],
+      events: parts.events ?? [event()],
+      existing: new Set(),
+      incomes: parts.incomes ?? [],
+      series: items,
+      today: TODAY,
+    });
+  }
+
+  it('SHOULD not suggest an event paid within 3 days of an occurrence of an active series', () => {
+    expect(runWithSeries({ events: [event({ paymentDate: '2026-12-18' })] })).toEqual([]);
+    expect(runWithSeries({ events: [event({ paymentDate: '2026-12-12' })] })).toEqual([]);
+  });
+
+  it('SHOULD still suggest an event farther than 3 days, of another type, asset OR without a payment date', () => {
+    expect(runWithSeries({ events: [event({ paymentDate: '2026-12-19' })] })).toHaveLength(1);
+    expect(
+      runWithSeries({
+        events: [event({ paymentDate: '2026-12-15', type: InvestmentIncomeType.JCP })],
+      }),
+    ).toHaveLength(1);
+    expect(
+      runWithSeries({ events: [event({ paymentDate: '2026-12-15' })] }, [
+        { ...series, assetId: 'x' },
+      ]),
+    ).toHaveLength(1);
+    expect(runWithSeries({ events: [event({ paymentDate: null })] })).toHaveLength(1);
+  });
+
+  it('SHOULD match an occurrence of an ended series by its payment date, not by its ex-date', () => {
+    const income: MatcherIncome = {
+      assetId: 'asset-1',
+      exDate: '2026-12-01',
+      paymentDate: '2026-12-17',
+      seriesId: 'series-1',
+      type: InvestmentIncomeType.DIVIDEND,
+    };
+
+    expect(run({ incomes: [income] })).toEqual([]);
+    expect(run({ incomes: [{ ...income, paymentDate: '2026-12-01' }] })).toHaveLength(1);
+  });
+});

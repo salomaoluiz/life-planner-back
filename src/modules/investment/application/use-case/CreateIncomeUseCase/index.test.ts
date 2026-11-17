@@ -3,6 +3,7 @@ import { NotFoundException, UnprocessableEntityException } from '@nestjs/common'
 import { incomeCategoryFixture } from '@investment/domain/entity/mocks/income.fixture';
 import { InvestmentAssetStatus, InvestmentIncomeType } from '@investment/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
+import { ValidationError } from '@shared/domain/error/ValidationError';
 
 import { scenario, setup, spies } from './index.mocks';
 
@@ -41,6 +42,7 @@ it('SHOULD write a received income AND answer its view with the withholding esti
     quantity: '300',
     suggestionId: undefined,
     type: InvestmentIncomeType.JCP,
+    withFinance: true,
   });
   expect(view).toMatchObject({
     estimatedGross: 8400,
@@ -170,4 +172,27 @@ it('SHOULD answer 404 WHEN the saved income cannot be read back', async () => {
   spies.incomes.findIncomeById.mockResolvedValueOnce(undefined);
 
   await expect(setup.execute(base)).rejects.toBeInstanceOf(NotFoundException);
+});
+
+it('SHOULD create an income without finance: no account, no category, no lookups (spec 115 FR 1)', async () => {
+  const { accountId, categoryId, ...rest } = base;
+
+  void accountId;
+  void categoryId;
+
+  await setup.execute({ ...rest, withFinance: false });
+
+  expect(spies.investment.findAccountForOperation).not.toHaveBeenCalled();
+  expect(spies.incomes.writeIncome).toHaveBeenCalledWith(
+    expect.objectContaining({ accountId: null, categoryId: null, withFinance: false }),
+  );
+});
+
+it('SHOULD answer 400 WHEN the account does not match withFinance', async () => {
+  await expect(setup.execute({ ...base, withFinance: false })).rejects.toBeInstanceOf(
+    ValidationError,
+  );
+  await expect(setup.execute({ ...base, accountId: undefined })).rejects.toBeInstanceOf(
+    ValidationError,
+  );
 });

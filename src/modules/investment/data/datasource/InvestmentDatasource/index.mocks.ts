@@ -41,6 +41,7 @@ const spies = {
   rateFindMany: jest.fn(),
   rateFindUnique: jest.fn(),
   rateUpdate: jest.fn(),
+  seriesFindMany: jest.fn(),
   suggestionDelete: jest.fn(),
   suggestionFindMany: jest.fn(),
   suggestionUpdate: jest.fn(),
@@ -109,6 +110,7 @@ const tx = {
     upsert: spies.termsUpsert,
   },
   investmentIncome: { findMany: spies.incomeFindMany },
+  investmentIncomeSeries: { findMany: spies.seriesFindMany },
   investmentIncomeSuggestion: {
     delete: spies.suggestionDelete,
     findMany: spies.suggestionFindMany,
@@ -143,6 +145,7 @@ export let setup: InvestmentDatasource;
 beforeEach(async () => {
   jest.resetAllMocks();
   spies.incomeFindMany.mockResolvedValue([]);
+  spies.seriesFindMany.mockResolvedValue([]);
   spies.eventSuggestionFindMany.mockResolvedValue([]);
   spies.suggestionFindMany.mockResolvedValue([]);
 

@@ -1,7 +1,7 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-import { InvestmentIncomeType } from '@investment/domain/enum';
+import { IncomeSeriesUnit, InvestmentIncomeType } from '@investment/domain/enum';
 
 const DecimalApiSchema = z.string().regex(/^\d+(\.\d{1,8})?$/);
 const CalendarDateApiSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -22,8 +22,35 @@ const fields = {
   type: IncomeTypeApiSchema,
 };
 
-export const CreateIncomeApiSchema = z.strictObject({ ...fields, assetId: z.uuid() });
-export const UpdateIncomeApiSchema = z.strictObject(z.object(fields).partial().shape);
+// Spec 115 FR 1: `withFinance` (default true); without it the account and the category must be absent.
+export const CreateIncomeApiSchema = z
+  .strictObject({
+    ...z.object(fields).partial({ accountId: true, categoryId: true }).shape,
+    assetId: z.uuid(),
+    withFinance: z.boolean().optional(),
+  })
+  .refine((data) => data.withFinance !== false || (!data.accountId && !data.categoryId), {
+    message: 'accountId and categoryId must be absent without withFinance',
+  })
+  .refine((data) => data.withFinance === false || (data.accountId && data.categoryId), {
+    message: 'accountId and categoryId are required with withFinance',
+  });
+export const ScopeQuerySchema = z.object({
+  scope: z.enum(['ALL', 'ONLY_THIS', 'THIS_AND_NEXT']).optional(),
+});
+export const UpdateIncomeApiSchema = z
+  .strictObject({
+    ...z.object(fields).partial().shape,
+    endDate: CalendarDateApiSchema.nullish(),
+    exDateOffsetDays: z.number().int().min(0).max(90).nullish(),
+    frequency: z
+      .strictObject({ interval: z.number().int(), unit: z.enum(IncomeSeriesUnit) })
+      .optional(),
+    withFinance: z.boolean().optional(),
+  })
+  .refine((data) => data.withFinance !== false || (!data.accountId && !data.categoryId), {
+    message: 'accountId and categoryId must be absent without withFinance',
+  });
 export const ReceiveIncomeApiSchema = z.strictObject({
   accountId: z.uuid().optional(),
   netAmount: z.number().int().positive().optional(),
@@ -64,13 +91,16 @@ export const IncomeApiSchema = z.strictObject({
   id: z.uuid(),
   netAmount: z.number().int(),
   notes: z.string().optional(),
+  occurrenceNumber: z.number().int().optional(),
   overdue: z.boolean(),
   paymentDate: z.string(),
   quantity: z.string().optional(),
+  seriesId: z.uuid().optional(),
   status: IncomeStatusApiSchema,
   suggestionId: z.uuid().optional(),
   transactionId: z.uuid().optional(),
   type: IncomeTypeApiSchema,
+  withFinance: z.boolean(),
   withholdingRate: z.string(),
 });
 export const IncomeWriteApiSchema = z.strictObject({ item: IncomeApiSchema });

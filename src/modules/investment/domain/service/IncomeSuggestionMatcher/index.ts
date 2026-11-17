@@ -1,5 +1,9 @@
 import { InvestmentIncomeType } from '@investment/domain/enum';
 import { QuoteMarket } from '@investment/domain/enum/QuoteMarket';
+import {
+  IncomeSeriesRule,
+  occurrencesBetween,
+} from '@investment/domain/service/IncomeSeriesSchedule';
 import { addDays } from '@investment/domain/service/MarketDate';
 import { Decimal8 } from '@shared/infra/decimal';
 
@@ -26,15 +30,24 @@ export interface MatcherIncome {
   assetId: string;
   exDate: null | string;
   paymentDate: string;
+  // Spec 115 FR 28: an occurrence of a series matches by payment date, not by ex-date.
+  seriesId?: null | string;
   type: InvestmentIncomeType;
 }
+// Spec 115 FR 28: an active series blocks the events it already covers (real or projected occurrences).
 export interface MatcherInput {
   assets: MatcherAsset[];
   events: MatcherEvent[];
   incomes: MatcherIncome[];
   // `${assetId}:${eventId}` of every suggestion in any state.
   existing: Set<string>;
+  series?: MatcherSeries[];
   today: string;
+}
+export interface MatcherSeries {
+  assetId: string;
+  rule: IncomeSeriesRule;
+  type: InvestmentIncomeType;
 }
 export interface NewSuggestion {
   assetId: string;
@@ -69,6 +82,9 @@ export function matchSuggestions(input: MatcherInput): NewSuggestion[] {
       if (alreadyEntered(input.incomes, asset.id, event)) {
         continue;
       }
+      if (coveredBySeries(input.series ?? [], asset.id, event)) {
+        continue;
+      }
 
       const quantity = asset.positionAt(event.exDate);
 
@@ -93,7 +109,7 @@ function alreadyEntered(incomes: MatcherIncome[], assetId: string, event: Matche
     if (income.assetId !== assetId || income.type !== event.type) {
       return false;
     }
-    if (income.exDate) {
+    if (income.exDate && !income.seriesId) {
       return income.exDate === event.exDate;
     }
 
@@ -103,4 +119,19 @@ function alreadyEntered(incomes: MatcherIncome[], assetId: string, event: Matche
       income.paymentDate <= addDays(event.paymentDate, PAYMENT_WINDOW_DAYS)
     );
   });
+}
+function coveredBySeries(series: MatcherSeries[], assetId: string, event: MatcherEvent): boolean {
+  if (event.paymentDate === null) {
+    return false;
+  }
+
+  const from = addDays(event.paymentDate, -PAYMENT_WINDOW_DAYS);
+  const to = addDays(event.paymentDate, PAYMENT_WINDOW_DAYS);
+
+  return series.some(
+    (item) =>
+      item.assetId === assetId &&
+      item.type === event.type &&
+      occurrencesBetween(item.rule, from, to, 1).length > 0,
+  );
 }

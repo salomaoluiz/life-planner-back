@@ -37,6 +37,7 @@ import {
   saveTerms,
 } from '@investment/data/datasource/fixedIncome';
 import { recomputeSuggestions } from '@investment/data/datasource/income';
+import { syncIncomeSeries } from '@investment/data/datasource/incomeSeries';
 import { toOwnerWhere } from '@investment/data/datasource/mapper/OwnerWhere';
 import {
   ConversionRow,
@@ -206,6 +207,7 @@ export class InvestmentDatasource implements IInvestmentDatasource {
       await recalculateFixedIncome(tx, existing.asset_id);
       await assertPositionValid(tx, existing.asset_id);
       await recomputeSuggestions(tx, existing.asset_id);
+      await syncIncomeSeries(tx, existing.asset_id);
       await recomputeEventSuggestions(tx, existing.asset_id);
     });
   }
@@ -464,6 +466,7 @@ export class InvestmentDatasource implements IInvestmentDatasource {
 
       await assertPositionValid(tx, params.asset_id);
       await recomputeSuggestions(tx, params.asset_id);
+      await syncIncomeSeries(tx, params.asset_id);
       await recomputeEventSuggestions(tx, params.asset_id);
 
       return operationId;
@@ -582,6 +585,7 @@ async function writeOperationIn(
   await recalculateFixedIncome(tx, params.asset_id);
   await assertPositionValid(tx, params.asset_id);
   await recomputeSuggestions(tx, params.asset_id);
+  await syncIncomeSeries(tx, params.asset_id);
   await recomputeEventSuggestions(tx, params.asset_id);
 
   return operation.id;

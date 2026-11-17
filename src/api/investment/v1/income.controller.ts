@@ -29,6 +29,7 @@ import {
   ListSuggestionsQuerySchema,
   ReceiveIncomeApiSchema,
   ReceiveIncomeBody,
+  ScopeQuerySchema,
   UpdateIncomeApiSchema,
   UpdateIncomeBody,
 } from '@api/investment/v1/dto/income.dto';
@@ -68,8 +69,12 @@ export class IncomeController {
   @ApiNoContentResponse()
   @Delete('incomes/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteIncome(@Request() req: JwtPayload & Request, @Param('id', ParseUUIDPipe) id: string) {
-    await this.incomeService.deleteIncome(req.user.id, id);
+  async deleteIncome(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: Record<string, unknown>,
+  ) {
+    await this.incomeService.deleteIncome(req.user.id, id, validate(ScopeQuerySchema, query).scope);
   }
 
   @Get('assets/:id/income-defaults')
@@ -144,7 +149,11 @@ export class IncomeController {
     @Request() req: JwtPayload & Request,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: UpdateIncomeBody,
+    @Query() query: Record<string, unknown>,
   ) {
-    return this.incomeService.updateIncome(req.user.id, id, validate(UpdateIncomeApiSchema, body));
+    return this.incomeService.updateIncome(req.user.id, id, {
+      ...validate(UpdateIncomeApiSchema, body),
+      ...validate(ScopeQuerySchema, query),
+    });
   }
 }

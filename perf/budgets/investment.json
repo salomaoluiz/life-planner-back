@@ -123,6 +123,33 @@
     "reason": "Needs event suggestions in the pinned perf dataset (spec 093); reads stored rows only, never a provider, one operations read for the listed assets, capped at 200 with a cursor (spec 108).",
     "scenario": ""
   },
+  "GET /api/v1/investments/income-series": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Needs income series in the pinned perf dataset (spec 093); the seed gets a monthly series later (spec 115)."
+  },
+  "GET /api/v1/investments/income-series/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Needs income series in the pinned perf dataset (spec 093); the seed gets a monthly series later (spec 115)."
+  },
+  "GET /api/v1/investments/income-series/projections": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Needs income series in the pinned perf dataset (spec 093); the seed gets a monthly series later (spec 115). Computed on read, one query per request."
+  },
   "GET /api/v1/investments/income-suggestions": {
     "indexes": null,
     "kind": "unmeasured",
@@ -210,6 +237,15 @@
     "p50Ms": null,
     "reason": "Writes are not measured: perf tests only read (spec 093).",
     "scenario": ""
+  },
+  "PATCH /api/v1/investments/income-series/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "PATCH /api/v1/investments/incomes/:id": {
     "indexes": null,
@@ -327,6 +363,24 @@
     "p50Ms": null,
     "reason": "Spec 105 FR 34: a POST that only computes; perf tests only read (spec 093). Simulate reads nothing; the preview reads the asset, its operations and its fixed income rows (4 queries).",
     "scenario": ""
+  },
+  "POST /api/v1/investments/income-series": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
+  "POST /api/v1/investments/income-series/preview": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Spec 115: a POST that only computes; perf tests only read (spec 093). Reads the asset with its operations, no write."
   },
   "POST /api/v1/investments/income-suggestions/:id/approve": {
     "indexes": null,

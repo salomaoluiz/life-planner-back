@@ -45,6 +45,10 @@ export const envSchema = z.object({
   // Investment quotes (spec 104): tokens are optional, a missing one disables that source
   BRAPI_TOKEN: emptyToUndefined,
   FINNHUB_TOKEN: emptyToUndefined,
+  INVESTMENT_INCOME_SERIES_JOB_ENABLED: z
+    .enum(['true', 'false', ''])
+    .optional()
+    .transform((value) => value !== 'false'),
   INVESTMENT_QUOTE_REFRESH_COOLDOWN_MS: optionalInt(0, 60000),
   INVESTMENT_QUOTES_BRAPI_BATCH_SIZE: optionalInt(1, 20),
   INVESTMENT_QUOTES_JOB_ENABLED: z

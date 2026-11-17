@@ -86,9 +86,11 @@ it('SHOULD map the matcher inputs to domain keys AND dates', async () => {
         asset_id: 'asset-1',
         ex_date: new Date('2026-09-10T00:00:00Z'),
         payment_date: new Date('2026-10-30T00:00:00Z'),
+        series_id: null,
         type: 'JCP',
       },
     ],
+    series: [],
   });
 
   expect(await setup.findSuggestionInputs([])).toMatchObject({
@@ -163,7 +165,7 @@ it('SHOULD map the dashboard incomes with the paid flag of the finance row (spec
       currency: 'BRL',
       net_amount: 7140,
       payment_date: new Date('2026-10-30T00:00:00Z'),
-      transaction: { paid: true },
+      received: true,
       type: 'JCP',
     },
     {
@@ -171,7 +173,7 @@ it('SHOULD map the dashboard incomes with the paid flag of the finance row (spec
       currency: 'USD',
       net_amount: 500,
       payment_date: new Date('2026-11-20T00:00:00Z'),
-      transaction: null,
+      received: false,
       type: 'DIVIDEND',
     },
   ]);

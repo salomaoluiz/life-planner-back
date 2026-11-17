@@ -167,7 +167,7 @@ export class IncomeDatasource implements IIncomeDatasource {
         currency: true,
         net_amount: true,
         payment_date: true,
-        transaction: { select: { paid: true } },
+        received: true,
         type: true,
       },
       where: { asset: toOwnerWhere(owners), payment_date: { gte: from, lte: to } },
@@ -185,7 +185,7 @@ export class IncomeDatasource implements IIncomeDatasource {
       });
     }
     if (filter.status) {
-      and.push({ transaction: { paid: filter.status === 'RECEIVED' } });
+      and.push({ received: filter.status === 'RECEIVED' });
     }
 
     return this.db.client.investmentIncome.findMany({
@@ -240,7 +240,7 @@ export class IncomeDatasource implements IIncomeDatasource {
       where: {
         asset: toOwnerWhere(owners),
         payment_date: { gte: from, lte: to },
-        transaction: { paid: true },
+        received: true,
       },
     });
   }
@@ -287,18 +287,27 @@ export class IncomeDatasource implements IIncomeDatasource {
         : [];
     });
     const ids = matched.map((asset) => asset.asset_id);
-    const [existing, incomes] = await Promise.all([
+    const [existing, incomes, series] = await Promise.all([
       this.db.client.investmentIncomeSuggestion.findMany({
         select: { asset_id: true, event_id: true },
         where: { asset_id: { in: ids } },
       }),
       this.db.client.investmentIncome.findMany({
-        select: { asset_id: true, ex_date: true, payment_date: true, type: true },
+        select: {
+          asset_id: true,
+          ex_date: true,
+          payment_date: true,
+          series_id: true,
+          type: true,
+        },
         where: { asset_id: { in: ids } },
+      }),
+      this.db.client.investmentIncomeSeries.findMany({
+        where: { asset_id: { in: ids }, ended_at: null },
       }),
     ]);
 
-    return { assets: matched, existing, incomes };
+    return { assets: matched, existing, incomes, series };
   }
 
   async incomeTotals(assetId: string, yearFrom: Date, yearTo: Date) {
@@ -308,12 +317,12 @@ export class IncomeDatasource implements IIncomeDatasource {
         where: {
           asset_id: assetId,
           payment_date: { gte: yearFrom, lte: yearTo },
-          transaction: { paid: true },
+          received: true,
         },
       }),
       this.db.client.investmentIncome.aggregate({
         _sum: { net_amount: true },
-        where: { asset_id: assetId, transaction: { paid: false } },
+        where: { asset_id: assetId, received: false },
       }),
     ]);
 
@@ -383,7 +392,7 @@ export class IncomeDatasource implements IIncomeDatasource {
   }
 }
 
-function toLinkedRow(
+export function toLinkedRow(
   row: { account_id: null | string; type: string; value: number } | null,
 ): LinkedRow | undefined {
   if (!row || !row.account_id) {
@@ -396,7 +405,7 @@ function toLinkedRow(
     value: row.value,
   };
 }
-async function writeIncomeIn(
+export async function writeIncomeIn(
   tx: Prisma.TransactionClient,
   params: WriteIncomeParams,
 ): Promise<string> {
@@ -418,29 +427,6 @@ async function writeIncomeIn(
     [existing?.transaction?.account_id, params.accountId].filter((id): id is string => !!id),
   );
 
-  const account = await tx.financialAccount.findUnique({
-    select: { owner: true, owner_id: true },
-    where: { id: params.accountId },
-  });
-
-  if (!account) {
-    throw new NotFoundException('Account not found');
-  }
-
-  const row = {
-    account_id: params.accountId,
-    category_id: params.categoryId,
-    currency: params.currency,
-    date: InvestmentMapper.fromCalendarDate(params.paymentDate),
-    description: params.assetLabel,
-    external_lock: 'INVESTMENT',
-    notes: params.notes,
-    owner: account.owner,
-    owner_id: account.owner_id,
-    paid: params.paid,
-    type: 'INCOME',
-    value: params.netAmount,
-  } as const;
   const fields = {
     amount_per_unit: params.amountPerUnit,
     ex_date: params.exDate ? InvestmentMapper.fromCalendarDate(params.exDate) : null,
@@ -448,15 +434,51 @@ async function writeIncomeIn(
     notes: params.notes,
     payment_date: InvestmentMapper.fromCalendarDate(params.paymentDate),
     quantity: params.quantity,
+    received: params.paid,
     type: params.type,
   };
-
+  const before = existing?.transaction?.paid ? toLinkedRow(existing.transaction) : undefined;
   let transactionId = existing?.transaction_id ?? null;
+  let after: LinkedRow | undefined;
 
-  if (transactionId) {
-    await tx.financialTransaction.update({ data: row, where: { id: transactionId } });
-  } else {
-    transactionId = (await tx.financialTransaction.create({ data: row })).id;
+  if (params.withFinance && params.accountId && params.categoryId) {
+    const account = await tx.financialAccount.findUnique({
+      select: { owner: true, owner_id: true },
+      where: { id: params.accountId },
+    });
+
+    if (!account) {
+      throw new NotFoundException('Account not found');
+    }
+
+    const row = {
+      account_id: params.accountId,
+      category_id: params.categoryId,
+      currency: params.currency,
+      date: InvestmentMapper.fromCalendarDate(params.paymentDate),
+      description: params.assetLabel,
+      external_lock: 'INVESTMENT',
+      notes: params.notes,
+      owner: account.owner,
+      owner_id: account.owner_id,
+      paid: params.paid,
+      type: 'INCOME',
+      value: params.netAmount,
+    } as const;
+
+    if (transactionId) {
+      await tx.financialTransaction.update({ data: row, where: { id: transactionId } });
+    } else {
+      transactionId = (await tx.financialTransaction.create({ data: row })).id;
+    }
+
+    after = params.paid
+      ? { accountId: params.accountId, type: 'INCOME' as const, value: params.netAmount }
+      : undefined;
+  } else if (transactionId) {
+    // Spec 115 FR 4: `true -> false` removes the linked row; the ledger is adjusted below when it was paid.
+    await tx.financialTransaction.delete({ where: { id: transactionId } });
+    transactionId = null;
   }
 
   const income = existing
@@ -483,11 +505,6 @@ async function writeIncomeIn(
   }
 
   // Only a received row moves the ledger (spec 033): the reversal of the old one, then the new one.
-  const before = existing?.transaction?.paid ? toLinkedRow(existing.transaction) : undefined;
-  const after = params.paid
-    ? { accountId: params.accountId, type: 'INCOME' as const, value: params.netAmount }
-    : undefined;
-
   await applyDeltas(tx, ledgerDeltasFor(before, after));
 
   return income.id;

@@ -29,6 +29,20 @@ export enum InvestmentIncomeType {
   OTHER = 'OTHER',
   YIELD = 'YIELD',
 }
+// Spec 115: why a series stopped producing occurrences.
+export enum IncomeSeriesEndReason {
+  END_DATE = 'END_DATE',
+  MANUAL = 'MANUAL',
+  POSITION_ZERO = 'POSITION_ZERO',
+  SPLIT = 'SPLIT',
+}
+// Spec 114/115: the base unit of a series rule, mirrored from finance (modules never import each other).
+export enum IncomeSeriesUnit {
+  DAY = 'DAY',
+  MONTH = 'MONTH',
+  WEEK = 'WEEK',
+  YEAR = 'YEAR',
+}
 export enum InvestmentOperationType {
   BONUS = 'BONUS',
   BUY = 'BUY',

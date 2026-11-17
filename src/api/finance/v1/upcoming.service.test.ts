@@ -15,11 +15,21 @@ const materializeMock = {
     calls.push('materialize');
   }),
 };
+const item = {
+  id: 'series-1:3',
+  investment: { assetId: 'asset-1', seriesId: 'series-1' },
+  kind: 'PROJECTION',
+};
 const upcomingMock = {
   execute: jest.fn().mockImplementation(async () => {
     calls.push('upcoming');
 
-    return { next: [] };
+    return {
+      next: [item],
+      nextTotal: 0,
+      overdue: [],
+      overdueTotals: { expenseCents: 0, incomeCents: 0 },
+    };
   }),
 };
 
@@ -42,5 +52,12 @@ it('SHOULD materialize the due recurrences BEFORE reading the upcoming items', a
     today: '2026-11-12',
   });
   expect(upcomingMock.execute).toHaveBeenCalledWith({ ...request, accessibleOwners });
-  expect(result).toEqual({ next: [] });
+  expect(result.next).toEqual([
+    {
+      assetId: 'asset-1',
+      id: 'series-1:3',
+      investmentIncomeSeriesId: 'series-1',
+      kind: 'PROJECTION',
+    },
+  ]);
 });

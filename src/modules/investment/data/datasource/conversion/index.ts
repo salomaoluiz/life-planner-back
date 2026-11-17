@@ -14,6 +14,7 @@ import {
   toLinkedRow,
 } from '@investment/data/datasource/financeLink';
 import { recomputeSuggestions } from '@investment/data/datasource/income';
+import { syncIncomeSeries } from '@investment/data/datasource/incomeSeries';
 import {
   InvestmentMapper,
   POSITION_SELECT,
@@ -195,6 +196,8 @@ export async function writeConversionIn(
   await assertPositionValid(tx, fromId);
   await assertPositionValid(tx, toId);
   await recomputeSuggestions(tx, toId);
+  await syncIncomeSeries(tx, fromId);
+  await syncIncomeSeries(tx, toId);
   await recomputeEventSuggestions(tx, toId);
 
   return conversionId;
@@ -250,6 +253,8 @@ export async function deleteConversionIn(tx: Prisma.TransactionClient, id: strin
   await assertPositionValid(tx, conversion.from_asset_id);
   await assertPositionValid(tx, conversion.to_asset_id);
   await recomputeSuggestions(tx, conversion.to_asset_id);
+  await syncIncomeSeries(tx, conversion.from_asset_id);
+  await syncIncomeSeries(tx, conversion.to_asset_id);
   await recomputeEventSuggestions(tx, conversion.to_asset_id);
 }
 

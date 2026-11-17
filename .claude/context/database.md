@@ -129,3 +129,9 @@ Two migrations (PostgreSQL cannot use a new enum value in the transaction that a
 - `investment_fixed_income_rates.index_rate` stays nullable but is never written or read; the CHECK `investment_fixed_income_rates_mode_check` no longer mentions it. `effective_rate` is a snapshot for indexed modes. A later spec drops the column.
 
 - Migration `20261117120000_recurrence_unit_interval` (spec 114): enum `RecurrenceUnit`; `financial_recurrences.frequency_unit` + `frequency_interval` (CHECK `financial_recurrences_frequency_interval_check`: DAY 1–365, WEEK 1–52, MONTH 1–24, YEAR 1–10) replace `frequency` and the dropped enum `RecurrenceFrequency`. Backfill: WEEKLY→WEEK/1, BIWEEKLY→WEEK/2, MONTHLY→MONTH/1, YEARLY→YEAR/1, no date or counter changes. Rollback (manual, in the migration footer) refuses rules without a legacy equivalent.
+
+## Income series (spec 115)
+
+Migration `investment_income_series`: enum `InvestmentIncomeSeriesEndReason` (`END_DATE|POSITION_ZERO|MANUAL|SPLIT`), table `investment_income_series` (asset FK cascade, `frequency_unit` reuses `RecurrenceUnit`, CHECKs: interval per unit, offset 0-90, amount > 0, end date >= first, account/category present iff `with_finance`, notes <= 1000, `ended_at` iff `end_reason`; partial index on `asset_id WHERE ended_at IS NULL`) and on `investment_incomes`: `received` (NOT NULL, backfilled from the row's `paid`, `false` when the row is gone), `series_id` (FK cascade), `occurrence_number`, unique `(series_id, occurrence_number)`, CHECK that both are set together. An income without a finance row has `transaction_id` null.
+
+The same migration adds deferred triggers `investment_income_series_bump_version` (any series write) and `investment_operations_bump_version` (an operation write on an asset that has a series in finance) that bump `finance_owner_versions` of the asset's owner, because finance reads merge the projected incomes of the series (spec 092/115).

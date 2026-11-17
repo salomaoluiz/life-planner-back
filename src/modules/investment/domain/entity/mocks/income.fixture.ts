@@ -6,13 +6,15 @@ import {
   IncomeEventEntity,
   IncomeSuggestionEntity,
 } from '@investment/domain/entity/IncomeEntity';
+import { IncomeSeriesEntity } from '@investment/domain/entity/IncomeSeriesEntity';
 import {
+  IncomeSeriesUnit,
   InvestmentAssetClass,
   InvestmentIncomeType,
   InvestmentSuggestionStatus,
 } from '@investment/domain/enum';
 import { QuoteMarket } from '@investment/domain/enum/QuoteMarket';
-import { IIncomeRepository } from '@investment/domain/repository';
+import { IIncomeRepository, IIncomeSeriesRepository } from '@investment/domain/repository';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export function incomeCategoryFixture(overrides: Partial<IncomeCategory> = {}): IncomeCategory {
@@ -56,12 +58,15 @@ export function incomeFixture(overrides: Partial<IncomeEntity> = {}): IncomeEnti
     id: faker.string.uuid(),
     netAmount: 7140,
     notes: null,
+    occurrenceNumber: null,
     paid: true,
     paymentDate: '2026-10-30',
     quantity: '300',
+    seriesId: null,
     suggestionId: null,
     transactionId: 'tx-1',
     type: InvestmentIncomeType.JCP,
+    withFinance: true,
     ...overrides,
   };
 }
@@ -88,6 +93,47 @@ export function incomeRepositorySpies(): Record<keyof IIncomeRepository, jest.Mo
     runExclusive: jest.fn(),
     upsertEvents: jest.fn(),
     writeIncome: jest.fn(),
+  };
+}
+export function incomeSeriesFixture(
+  overrides: Partial<IncomeSeriesEntity> = {},
+): IncomeSeriesEntity {
+  return {
+    accountId: 'acc-1',
+    amountPerUnit: '1.1',
+    assetId: faker.string.uuid(),
+    categoryId: 'cat-1',
+    createdBy: 'user-1',
+    currency: 'BRL',
+    endDate: null,
+    endedAt: null,
+    endReason: null,
+    exDateOffsetDays: 8,
+    firstNumber: 1,
+    firstPaymentDate: '2025-01-15',
+    frequency: { interval: 1, unit: IncomeSeriesUnit.MONTH },
+    id: faker.string.uuid(),
+    lastGeneratedNumber: 23,
+    notes: null,
+    type: InvestmentIncomeType.YIELD,
+    withFinance: true,
+    ...overrides,
+  };
+}
+export function incomeSeriesRepositorySpies(): Record<keyof IIncomeSeriesRepository, jest.Mock> {
+  return {
+    countOccurrences: jest.fn(),
+    createSeries: jest.fn(),
+    deleteSeries: jest.fn(),
+    endSeries: jest.fn(),
+    findActiveByOwners: jest.fn(),
+    findAllActive: jest.fn(),
+    findByAsset: jest.fn(),
+    findById: jest.fn(),
+    findPlannedFrom: jest.fn(),
+    materialize: jest.fn(),
+    splitSeries: jest.fn(),
+    updateSeries: jest.fn(),
   };
 }
 export function incomeSuggestionFixture(

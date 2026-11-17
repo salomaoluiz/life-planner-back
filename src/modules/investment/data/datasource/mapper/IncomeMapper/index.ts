@@ -68,12 +68,15 @@ export class IncomeMapper {
       id: row.id,
       netAmount: row.net_amount,
       notes: row.notes,
-      paid: row.transaction?.paid === true,
+      occurrenceNumber: row.occurrence_number,
+      paid: row.received,
       paymentDate: InvestmentMapper.toCalendarDate(row.payment_date),
       quantity: row.quantity ? toDecimalString(row.quantity) : null,
+      seriesId: row.series_id,
       suggestionId: row.suggestion_id,
       transactionId: row.transaction_id,
       type: InvestmentIncomeType[row.type],
+      withFinance: row.transaction_id !== null,
     };
   }
 
