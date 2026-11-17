@@ -4,8 +4,8 @@ import {
   FinancialCreditCard,
   FinancialRecurrence,
   OwnerType,
-  RecurrenceFrequency,
   RecurrenceStatus,
+  RecurrenceUnit,
   TransactionType,
 } from '@db/client';
 import { FinancialTransactionWithRelations } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
@@ -44,7 +44,8 @@ export interface CreateRecurrenceDatasourceParams {
   currency: CurrencyCode;
   description: string;
   end_date: Date | null;
-  frequency: RecurrenceFrequency;
+  frequency_interval: number;
+  frequency_unit: RecurrenceUnit;
   last_generated_number: number;
   next_occurrence_date: Date | null;
   notes?: null | string;
@@ -63,7 +64,8 @@ export type DueRecurrenceRow = Pick<
   | 'credit_card_id'
   | 'end_date'
   | 'first_number'
-  | 'frequency'
+  | 'frequency_interval'
+  | 'frequency_unit'
   | 'id'
   | 'last_generated_number'
   | 'skipped_numbers'
@@ -131,7 +133,8 @@ export interface NewSeriesDatasourceParams {
   description: string;
   end_date: Date | null;
   first_number: number;
-  frequency: RecurrenceFrequency;
+  frequency_interval: number;
+  frequency_unit: RecurrenceUnit;
   last_generated_number: number;
   next_occurrence_date: Date | null;
   notes?: null | string;
@@ -177,7 +180,8 @@ export interface SeriesPatchDatasourceParams {
   credit_card_id?: string;
   description?: string;
   end_date?: Date | null;
-  frequency?: RecurrenceFrequency;
+  frequency_interval?: number;
+  frequency_unit?: RecurrenceUnit;
   last_generated_number?: number;
   next_occurrence_date?: Date | null;
   notes?: null | string;

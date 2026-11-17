@@ -1,10 +1,10 @@
 import { toCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
+import { toFrequency } from '@finance/data/datasource/mapper/Frequency';
 import { toTagRefs } from '@finance/data/datasource/tags';
 import { FinancialTransactionWithRelations } from '@finance/data/repository/datasource/IFinanceTransactionDatasource';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import {
   InvoicePaymentMethod,
-  RecurrenceFrequency,
   SystemCategoryKey,
   TransactionExternalLock,
   TransactionType,
@@ -60,7 +60,7 @@ export class FinanceTransactionMapper {
         ? totalOccurrences(
             {
               endDate: raw.recurrence.end_date ? toCalendarDate(raw.recurrence.end_date) : null,
-              frequency: RecurrenceFrequency[raw.recurrence.frequency],
+              frequency: toFrequency(raw.recurrence),
               startDate: toCalendarDate(raw.recurrence.start_date),
             },
             raw.recurrence.first_number,
@@ -76,7 +76,7 @@ export class FinanceTransactionMapper {
       paymentMethod: raw.payment_method ? InvoicePaymentMethod[raw.payment_method] : null,
       prepaymentId: raw.prepayment_id,
       projected: raw.projected,
-      recurrenceFrequency: raw.recurrence ? RecurrenceFrequency[raw.recurrence.frequency] : null,
+      recurrenceFrequency: raw.recurrence ? toFrequency(raw.recurrence) : null,
       recurrenceId: raw.recurrence_id,
       refundedName: raw.refunded_transaction?.description ?? raw.refunded_plan?.description ?? null,
       refundedPlanId: raw.refunded_plan_id,

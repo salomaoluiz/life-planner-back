@@ -3,6 +3,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { fromCalendarDate, toCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
 import { FinanceRecurrenceMapper } from '@finance/data/datasource/mapper/FinanceRecurrenceMapper';
 import { FinanceTransactionMapper } from '@finance/data/datasource/mapper/FinanceTransactionMapper';
+import { toFrequency } from '@finance/data/datasource/mapper/Frequency';
 import {
   IFinanceRecurrenceDatasource,
   NewSeriesDatasourceParams,
@@ -12,7 +13,6 @@ import {
 import { OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
-import { RecurrenceFrequency } from '@finance/domain/enum';
 import {
   ApplyRecurrenceChangeRepositoryParams,
   CreateOccurrenceRepositoryParams,
@@ -77,7 +77,8 @@ export class FinanceRecurrenceRepository implements IFinanceRecurrenceRepository
       currency: params.currency,
       description: params.description,
       end_date: params.endDate ? fromCalendarDate(params.endDate) : null,
-      frequency: params.frequency,
+      frequency_interval: params.frequency.interval,
+      frequency_unit: params.frequency.unit,
       last_generated_number: params.lastGeneratedNumber,
       next_occurrence_date: toNullableDate(params.nextOccurrenceDate),
       notes: params.notes,
@@ -141,7 +142,7 @@ export class FinanceRecurrenceRepository implements IFinanceRecurrenceRepository
       creditCardId: row.credit_card_id,
       endDate: row.end_date ? toCalendarDate(row.end_date) : null,
       firstNumber: row.first_number,
-      frequency: row.frequency as RecurrenceFrequency,
+      frequency: toFrequency(row),
       id: row.id,
       lastGeneratedNumber: row.last_generated_number,
       skippedNumbers: row.skipped_numbers,
@@ -206,7 +207,8 @@ function toNewSeries(series: NewSeriesRepositoryParams): NewSeriesDatasourcePara
     description: series.description,
     end_date: toNullableDate(series.endDate),
     first_number: series.firstNumber,
-    frequency: series.frequency,
+    frequency_interval: series.frequency.interval,
+    frequency_unit: series.frequency.unit,
     last_generated_number: series.lastGeneratedNumber,
     next_occurrence_date: toNullableDate(series.nextOccurrenceDate),
     notes: series.notes,
@@ -241,7 +243,8 @@ function toSeriesPatch(patch: SeriesPatchRepositoryParams): SeriesPatchDatasourc
     credit_card_id: patch.creditCardId,
     description: patch.description,
     end_date: toOptionalDate(patch.endDate),
-    frequency: patch.frequency,
+    frequency_interval: patch.frequency?.interval,
+    frequency_unit: patch.frequency?.unit,
     last_generated_number: patch.lastGeneratedNumber,
     next_occurrence_date: toOptionalDate(patch.nextOccurrenceDate),
     notes: patch.notes,

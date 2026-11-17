@@ -96,7 +96,7 @@ function createCard(title: string, closingDay: number): Promise<{ id: string }> 
         creditCardId: from.id,
         date: dateOf(OCCURRENCES - 1, 15),
         description: `batch-perf ${randomUUID()}`,
-        frequency: 'MONTHLY',
+        frequency: { interval: 1, unit: 'MONTH' },
         owner: 'USER',
         ownerId: userId,
         type: 'EXPENSE',

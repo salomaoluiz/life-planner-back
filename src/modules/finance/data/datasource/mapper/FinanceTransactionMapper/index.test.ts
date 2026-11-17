@@ -1,4 +1,4 @@
-import { SystemCategoryKey } from '@finance/domain/enum';
+import { RecurrenceUnit, SystemCategoryKey } from '@finance/domain/enum';
 
 import { FinanceTransactionMapper } from './index';
 import { mocks } from './index.mocks';
@@ -174,7 +174,8 @@ describe('FinanceTransactionMapper.toDomain recurrence', () => {
       recurrence: {
         end_date: new Date('2027-09-05T00:00:00.000Z'),
         first_number: 1,
-        frequency: 'MONTHLY' as const,
+        frequency_interval: 1,
+        frequency_unit: 'MONTH' as const,
         start_date: new Date('2026-10-05T00:00:00.000Z'),
       },
       recurrence_id: recurrenceId,
@@ -183,7 +184,7 @@ describe('FinanceTransactionMapper.toDomain recurrence', () => {
     expect(FinanceTransactionMapper.toDomain(raw)).toMatchObject({
       occurrenceCount: 12,
       occurrenceNumber: 3,
-      recurrenceFrequency: 'MONTHLY',
+      recurrenceFrequency: { interval: 1, unit: RecurrenceUnit.MONTH },
       recurrenceId,
     });
   });
@@ -195,7 +196,8 @@ describe('FinanceTransactionMapper.toDomain recurrence', () => {
       recurrence: {
         end_date: null,
         first_number: 1,
-        frequency: 'WEEKLY' as const,
+        frequency_interval: 1,
+        frequency_unit: 'WEEK' as const,
         start_date: new Date('2026-10-05T00:00:00.000Z'),
       },
       recurrence_id: 'recurrence-id',

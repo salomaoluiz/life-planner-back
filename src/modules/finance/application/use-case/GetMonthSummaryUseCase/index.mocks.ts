@@ -2,7 +2,7 @@ import { Test } from '@nestjs/testing';
 
 import TransactionEntityFixture from '@finance/domain/entity/mocks/TransactionEntity.fixture';
 import { ProjectedOccurrence } from '@finance/domain/entity/ProjectedOccurrence';
-import { InvoiceStatus, RecurrenceFrequency, TransactionType } from '@finance/domain/enum';
+import { InvoiceStatus, RecurrenceUnit, TransactionType } from '@finance/domain/enum';
 
 import { GetMonthSummaryUseCase } from './index';
 
@@ -25,7 +25,7 @@ function projection(overrides: Partial<ProjectedOccurrence>): ProjectedOccurrenc
     account: null,
     creditCard: null,
     date: '2026-11-12',
-    frequency: RecurrenceFrequency.MONTHLY,
+    frequency: { interval: 1, unit: RecurrenceUnit.MONTH },
     invoiceListDate: null,
     invoiceMonth: null,
     occurrenceCount: null,

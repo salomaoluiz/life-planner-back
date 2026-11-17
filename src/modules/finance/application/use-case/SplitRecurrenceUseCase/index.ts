@@ -9,6 +9,7 @@ import {
   SplitRecurrenceInput,
   SplitRecurrenceSchema,
 } from '@finance/application/dto/UpdateRecurrence';
+import { assertFrequencyAllowed } from '@finance/application/service/FrequencyGuard';
 import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
@@ -82,6 +83,10 @@ export class SplitRecurrenceUseCase implements UseCaseWithParams<
       throw new BadRequestException('occurrenceNumber is not part of the series');
     }
 
+    if (input.frequency !== undefined) {
+      assertFrequencyAllowed(input.frequency);
+    }
+
     const target = {
       accountId: input.accountId ?? series.accountId ?? undefined,
       categoryId: input.categoryId ?? series.categoryId,
@@ -114,7 +119,9 @@ export class SplitRecurrenceUseCase implements UseCaseWithParams<
     });
 
     const rule = { endDate: target.endDate, frequency: target.frequency, startDate: splitDate };
-    const frequencyChanged = target.frequency !== series.frequency;
+    const frequencyChanged =
+      target.frequency.unit !== series.frequency.unit ||
+      target.frequency.interval !== series.frequency.interval;
     const inPlace = k === 1;
     // Rows of the series from the split on, in the position of the new series.
     const generated = Math.max(0, series.lastGeneratedNumber - k + 1);

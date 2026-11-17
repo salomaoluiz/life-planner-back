@@ -1,13 +1,9 @@
 import { toCalendarDate } from '@finance/data/datasource/mapper/CalendarDate';
+import { toFrequency } from '@finance/data/datasource/mapper/Frequency';
 import { toTagRefs } from '@finance/data/datasource/tags';
 import { FinancialRecurrenceWithRelations } from '@finance/data/repository/datasource/IFinanceRecurrenceDatasource';
 import RecurrenceEntity from '@finance/domain/entity/RecurrenceEntity';
-import {
-  RecurrenceFrequency,
-  RecurrenceStatus,
-  SystemCategoryKey,
-  TransactionType,
-} from '@finance/domain/enum';
+import { RecurrenceStatus, SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 import { CurrencyCode } from '@finance/domain/enum/Currency';
 import { totalOccurrences } from '@finance/domain/service/RecurrenceSchedule';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -15,7 +11,7 @@ import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 export class FinanceRecurrenceMapper {
   static toDomain(raw: FinancialRecurrenceWithRelations): RecurrenceEntity {
     const endDate = raw.end_date ? toCalendarDate(raw.end_date) : null;
-    const frequency = RecurrenceFrequency[raw.frequency];
+    const frequency = toFrequency(raw);
     const startDate = toCalendarDate(raw.start_date);
 
     return new RecurrenceEntity({

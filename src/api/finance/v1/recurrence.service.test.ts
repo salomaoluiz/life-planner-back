@@ -245,7 +245,7 @@ describe('toProjectedOutput (spec 098)', () => {
       currency: 'USD',
       date: '2026-12-04',
       description: 'Monthly',
-      frequency: 'MONTHLY',
+      frequency: { interval: 1, unit: 'MONTH' },
       invoiceListDate: null,
       invoiceMonth: null,
       notes: null,

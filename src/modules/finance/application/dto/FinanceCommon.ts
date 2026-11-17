@@ -4,7 +4,7 @@ import AccountEntity from '@finance/domain/entity/AccountEntity';
 import CategoryEntity from '@finance/domain/entity/CategoryEntity';
 import CreditCardEntity from '@finance/domain/entity/CreditCardEntity';
 import { isPeriodValid } from '@finance/domain/entity/TransactionFilter';
-import { TransactionType } from '@finance/domain/enum';
+import { RecurrenceUnit, TransactionType } from '@finance/domain/enum';
 import { SUPPORTED_CURRENCIES } from '@finance/domain/enum/Currency';
 import { normalizeNotes, NOTES_MAX } from '@finance/domain/service/Notes';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
@@ -30,6 +30,11 @@ export const AccessibleOwnersSchema = z.array(
 export const ALL_SCOPES = 'ALL';
 export const BalanceSchema = z.number().int().min(INT4_MIN).max(INT4_MAX);
 export const CurrencySchema = z.enum(SUPPORTED_CURRENCIES);
+// Spec 114: "every `interval` `unit`s"; the range of `interval` per unit is checked by the use cases (422).
+export const FrequencySchema = z.strictObject({
+  interval: z.number().int().min(1),
+  unit: z.enum(RecurrenceUnit),
+});
 export const IconSchema = z.string().trim().min(1).max(50);
 export const NameSchema = z.string().trim().min(1).max(60);
 export const OwnerIdSchema = z.string().min(1);

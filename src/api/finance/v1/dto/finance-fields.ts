@@ -4,6 +4,7 @@ import {
   CalendarDateSchema,
   CurrencySchema,
   DescriptionSchema,
+  FrequencySchema,
   INT4_MAX,
   INT4_MIN,
   NotesSchema,
@@ -18,6 +19,8 @@ export const BalanceApiSchema = z.number().int().min(INT4_MIN).max(INT4_MAX);
 export const CalendarDateApiSchema = CalendarDateSchema;
 export const CurrencyApiSchema = CurrencySchema;
 export const DescriptionApiSchema = DescriptionSchema;
+// Spec 114: request and response shape of a series rule.
+export const FrequencyApiSchema = FrequencySchema;
 export const IconApiSchema = z.string().trim().min(1).max(50);
 export const IconColorApiSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
 export const NameApiSchema = z.string().trim().min(1).max(60);

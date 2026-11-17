@@ -1,12 +1,12 @@
 import { TagRef } from '@finance/domain/entity/TagEntity';
 import {
   InvoicePaymentMethod,
-  RecurrenceFrequency,
   SystemCategoryKey,
   TransactionExternalLock,
   TransactionType,
 } from '@finance/domain/enum';
 import { CurrencyCode, DEFAULT_CURRENCY } from '@finance/domain/enum/Currency';
+import { RecurrenceFrequency } from '@finance/domain/service/RecurrenceInterval';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export interface TransactionAccountSummary {

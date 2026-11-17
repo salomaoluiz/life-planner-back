@@ -3,7 +3,7 @@ import { Test } from '@nestjs/testing';
 import { MaterializationGate } from '@finance/application/service/MaterializationGate';
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
 import RecurrenceEntityFixture from '@finance/domain/entity/mocks/RecurrenceEntity.fixture';
-import { RecurrenceFrequency } from '@finance/domain/enum';
+import { RecurrenceUnit } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { MaterializeRecurrencesUseCase } from './index';
@@ -14,7 +14,7 @@ const accessibleOwners = [{ owner: OwnerType.USER, ownerId: 'user-id' }];
 const cardMock = new CreditCardEntityFixture().build();
 const weeklySeries = new RecurrenceEntityFixture()
   .withFields({
-    frequency: RecurrenceFrequency.WEEKLY,
+    frequency: { interval: 1, unit: RecurrenceUnit.WEEK },
     id: 'series-1',
     lastGeneratedNumber: 1,
     nextOccurrenceDate: '2026-10-08',

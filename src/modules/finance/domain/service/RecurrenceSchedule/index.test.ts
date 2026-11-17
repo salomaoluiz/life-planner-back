@@ -1,4 +1,4 @@
-import { RecurrenceFrequency } from '@finance/domain/enum';
+import { RecurrenceUnit } from '@finance/domain/enum';
 import {
   addDays,
   countUntil,
@@ -13,7 +13,7 @@ import {
 } from '@finance/domain/service/RecurrenceSchedule';
 
 function monthly(startDate: string, endDate?: string): RecurrenceRule {
-  return { endDate, frequency: RecurrenceFrequency.MONTHLY, startDate };
+  return { endDate, frequency: { interval: 1, unit: RecurrenceUnit.MONTH }, startDate };
 }
 
 describe('occurrenceDate', () => {
@@ -35,7 +35,7 @@ describe('occurrenceDate', () => {
   });
 
   it('moves a yearly 29 February to the 28th in non-leap years', () => {
-    const rule = { frequency: RecurrenceFrequency.YEARLY, startDate: '2028-02-29' };
+    const rule = { frequency: { interval: 1, unit: RecurrenceUnit.YEAR }, startDate: '2028-02-29' };
 
     expect(occurrenceDate(rule, 2)).toBe('2029-02-28');
     expect(occurrenceDate(rule, 5)).toBe('2032-02-29');
@@ -43,17 +43,23 @@ describe('occurrenceDate', () => {
 
   it('adds 7 days for weekly and 14 for biweekly', () => {
     expect(
-      occurrenceDate({ frequency: RecurrenceFrequency.WEEKLY, startDate: '2026-10-01' }, 5),
+      occurrenceDate(
+        { frequency: { interval: 1, unit: RecurrenceUnit.WEEK }, startDate: '2026-10-01' },
+        5,
+      ),
     ).toBe('2026-10-29');
     expect(
-      occurrenceDate({ frequency: RecurrenceFrequency.BIWEEKLY, startDate: '2026-10-01' }, 3),
+      occurrenceDate(
+        { frequency: { interval: 2, unit: RecurrenceUnit.WEEK }, startDate: '2026-10-01' },
+        3,
+      ),
     ).toBe('2026-10-29');
   });
 });
 
 describe('occurrencesBetween', () => {
   it('lists every weekly occurrence of the month with its position', () => {
-    const rule = { frequency: RecurrenceFrequency.WEEKLY, startDate: '2026-10-01' };
+    const rule = { frequency: { interval: 1, unit: RecurrenceUnit.WEEK }, startDate: '2026-10-01' };
 
     expect(occurrencesBetween(rule, '2026-10-01', '2026-10-31')).toEqual([
       { date: '2026-10-01', k: 1 },
@@ -113,7 +119,10 @@ describe('totalOccurrences', () => {
 });
 
 describe('planMaterialization', () => {
-  const weekly: RecurrenceRule = { frequency: RecurrenceFrequency.WEEKLY, startDate: '2026-10-01' };
+  const weekly: RecurrenceRule = {
+    frequency: { interval: 1, unit: RecurrenceUnit.WEEK },
+    startDate: '2026-10-01',
+  };
 
   it('creates the rest of the month AND moves the series to the next occurrence', () => {
     const plan = planMaterialization({
@@ -259,5 +268,69 @@ describe('upcomingOccurrences', () => {
 describe('addDays', () => {
   it('crosses month and year boundaries', () => {
     expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
+  });
+});
+
+describe('flexible interval (spec 114)', () => {
+  function rule(unit: RecurrenceUnit, interval: number, startDate: string, endDate?: string) {
+    return { endDate, frequency: { interval, unit }, startDate };
+  }
+
+  it('steps every N days from the start date', () => {
+    expect(occurrenceDate(rule(RecurrenceUnit.DAY, 15, '2026-11-12'), 3)).toBe('2026-12-12');
+  });
+
+  it('steps every 3 weeks', () => {
+    const weekly = rule(RecurrenceUnit.WEEK, 3, '2026-11-12');
+
+    expect([2, 3, 4].map((k) => occurrenceDate(weekly, k))).toEqual([
+      '2026-12-03',
+      '2026-12-24',
+      '2027-01-14',
+    ]);
+  });
+
+  it('steps every 2 months and clamps the 31st', () => {
+    const bimonthly = rule(RecurrenceUnit.MONTH, 2, '2027-01-31');
+
+    expect([2, 3, 4].map((k) => occurrenceDate(bimonthly, k))).toEqual([
+      '2027-03-31',
+      '2027-05-31',
+      '2027-07-31',
+    ]);
+  });
+
+  it('keeps clamping monthly from the 31st', () => {
+    const monthly31 = rule(RecurrenceUnit.MONTH, 1, '2027-01-31');
+
+    expect([2, 3].map((k) => occurrenceDate(monthly31, k))).toEqual(['2027-02-28', '2027-03-31']);
+  });
+
+  it('steps every 2 years from 29 February', () => {
+    const biennial = rule(RecurrenceUnit.YEAR, 2, '2028-02-29');
+
+    expect([2, 3].map((k) => occurrenceDate(biennial, k))).toEqual(['2030-02-28', '2032-02-29']);
+  });
+
+  it('uses the maximum interval of each unit', () => {
+    expect(occurrenceDate(rule(RecurrenceUnit.DAY, 365, '2026-01-01'), 2)).toBe('2027-01-01');
+    expect(occurrenceDate(rule(RecurrenceUnit.WEEK, 52, '2026-01-01'), 2)).toBe('2026-12-31');
+    expect(occurrenceDate(rule(RecurrenceUnit.MONTH, 24, '2026-01-15'), 2)).toBe('2028-01-15');
+    expect(occurrenceDate(rule(RecurrenceUnit.YEAR, 10, '2026-01-15'), 2)).toBe('2036-01-15');
+  });
+
+  it('counts 7 occurrences every 2 months for a year (AC 1)', () => {
+    const series = rule(RecurrenceUnit.MONTH, 2, '2026-11-12', '2027-11-12');
+
+    expect(countUntil(series, '2027-11-12')).toBe(7);
+    expect(totalOccurrences(series, 1)).toBe(7);
+  });
+
+  it('counts 6 occurrences every 15 days, the last on 2027-01-26 (AC 5)', () => {
+    const series = rule(RecurrenceUnit.DAY, 15, '2026-11-12', '2027-01-26');
+    const all = occurrencesBetween(series, '2026-11-12', '2027-01-26');
+
+    expect(all).toHaveLength(6);
+    expect(all[5].date).toBe('2027-01-26');
   });
 });

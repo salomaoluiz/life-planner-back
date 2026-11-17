@@ -7,7 +7,7 @@ import AccountEntityFixture from '@finance/domain/entity/mocks/AccountEntity.fix
 import CreditCardEntityFixture from '@finance/domain/entity/mocks/CreditCardEntity.fixture';
 import RecurrenceEntityFixture from '@finance/domain/entity/mocks/RecurrenceEntity.fixture';
 import TransactionEntityFixture from '@finance/domain/entity/mocks/TransactionEntity.fixture';
-import { RecurrenceFrequency, TransactionType } from '@finance/domain/enum';
+import { RecurrenceUnit, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 import { CreateRecurrenceUseCase } from './index';
@@ -33,7 +33,7 @@ const inputMock = {
   categoryId: 'category-1',
   date: '2026-10-05',
   description: 'Rent',
-  frequency: RecurrenceFrequency.MONTHLY,
+  frequency: { interval: 1, unit: RecurrenceUnit.MONTH },
   owner: OwnerType.USER,
   ownerId: 'user-id',
   today: '2026-10-17',

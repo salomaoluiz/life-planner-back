@@ -1,3 +1,5 @@
+import { RecurrenceUnit } from '@finance/domain/enum';
+
 import { mocks, setup, spies } from './index.mocks';
 
 it('SHOULD create through the datasource with calendar dates as Date AND map the result', async () => {
@@ -42,7 +44,7 @@ it('SHOULD create a series with Date fields AND the occurrences as datasource pa
 
   const result = await setup.createTransferSeries({
     endDate: '2027-11-04',
-    frequency: 'MONTHLY' as never,
+    frequency: { interval: 1, unit: RecurrenceUnit.MONTH },
     lastGeneratedNumber: 1,
     nextOccurrenceDate: '2026-12-04',
     occurrences: [{ ...mocks.params, occurrenceNumber: 1 }],
@@ -52,7 +54,8 @@ it('SHOULD create a series with Date fields AND the occurrences as datasource pa
   expect(result.id).toBe('transfer-1');
   expect(spies.createSeries).toHaveBeenCalledWith({
     end_date: new Date('2027-11-04T00:00:00.000Z'),
-    frequency: 'MONTHLY',
+    frequency_interval: 1,
+    frequency_unit: 'MONTH',
     last_generated_number: 1,
     next_occurrence_date: new Date('2026-12-04T00:00:00.000Z'),
     occurrences: [expect.objectContaining({ occurrence_number: 1 })],
@@ -65,7 +68,7 @@ it('SHOULD keep empty series dates null', async () => {
 
   await setup.createTransferSeries({
     endDate: null,
-    frequency: 'MONTHLY' as never,
+    frequency: { interval: 1, unit: RecurrenceUnit.MONTH },
     lastGeneratedNumber: 1,
     nextOccurrenceDate: null,
     occurrences: [mocks.params],
