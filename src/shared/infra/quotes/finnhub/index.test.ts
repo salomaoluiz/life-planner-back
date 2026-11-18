@@ -71,6 +71,35 @@ describe('FinnhubQuotes.search', () => {
     expect(results[0]).toMatchObject({ name: 'APPLE INC', ticker: 'AAPL' });
   });
 
+  it('SHOULD keep a share-class dot AND drop a foreign listing suffix', async () => {
+    getSpy
+      .mockResolvedValueOnce({
+        data: {
+          result: [
+            { description: 'BERKSHIRE HATHAWAY INC-CL B', symbol: 'BRK.B' },
+            { description: 'BERKSHIRE HATHAWAY INC-CL A', symbol: 'BRK.A' },
+            { description: 'APPLE INC', symbol: 'AAPL.SW' },
+            { description: 'BROOKS MACDONALD GROUP PLC', symbol: 'BRK.L' },
+          ],
+        },
+      })
+      .mockResolvedValueOnce({ data: mocks.rawQuote })
+      .mockResolvedValueOnce({ data: mocks.rawQuote });
+
+    const results = await new FinnhubQuotes(envWith('your-token')).search('BRK');
+
+    expect(getSpy).toHaveBeenCalledTimes(3);
+    expect(getSpy.mock.calls[1][1]).toEqual({
+      params: { symbol: 'BRK.B', token: 'your-token' },
+      timeout: 5000,
+    });
+    expect(getSpy.mock.calls[2][1]).toEqual({
+      params: { symbol: 'BRK.A', token: 'your-token' },
+      timeout: 5000,
+    });
+    expect(results.map((result) => result.ticker)).toEqual(['BRK.B', 'BRK.A']);
+  });
+
   it('SHOULD return [] WHEN the search finds nothing', async () => {
     getSpy.mockResolvedValueOnce({ data: {} });
 
