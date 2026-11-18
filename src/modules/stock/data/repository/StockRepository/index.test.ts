@@ -152,3 +152,74 @@ describe('applyMovement', () => {
     expect(result).toEqual({ item: mocks.entity, movements: [{ id: 'movement' }] });
   });
 });
+
+describe('spec 117', () => {
+  it('SHOULD pass the key and gesture of a movement to the datasource and return `replayed`', async () => {
+    mocks.datasource.applyMovement.mockResolvedValue({
+      item: mocks.raw,
+      movements: [],
+      replayed: true,
+    });
+
+    const result = await setup.applyMovement('item', 'user', () => [], {
+      clientId: 'key',
+      gestureId: 'g',
+    });
+
+    expect(mocks.datasource.applyMovement).toHaveBeenCalledWith(
+      'item',
+      'user',
+      expect.any(Function),
+      {
+        client_id: 'key',
+        gesture_id: 'g',
+      },
+    );
+    expect(result?.replayed).toBe(true);
+  });
+
+  it('SHOULD translate a gesture plan to columns and map the item', async () => {
+    mocks.datasource.applyGestureChange.mockImplementation(async (_g, _u, planner) => {
+      planner({
+        foreign_lot_ids: ['a'],
+        item: mocks.raw,
+        later_lot_ids: [],
+        lots: [],
+        movements: [{ id: 'm' }],
+      });
+
+      return mocks.raw;
+    });
+
+    const planner = jest.fn().mockReturnValue({
+      create: [{ lot: { create: { expirationDate: new Date('2026-12-05'), quantity: 2 } } }],
+      deleteLotIds: ['gone'],
+      lotUpdates: [{ id: 'a', quantity: 1 }],
+    });
+    const result = await setup.applyGestureChange('g', 'user', planner);
+
+    expect(planner).toHaveBeenCalledWith(
+      expect.objectContaining({ foreignLotIds: ['a'], laterLotIds: [] }),
+    );
+    expect(result?.item).toBe(mocks.entity);
+  });
+
+  it('SHOULD answer undefined WHEN the gesture is not found', async () => {
+    mocks.datasource.applyGestureChange.mockResolvedValue(null);
+
+    expect(await setup.applyGestureChange('g', 'user', jest.fn())).toBeUndefined();
+  });
+
+  it('SHOULD keep the order of the ids and skip unknown ones in findByIds, and pass frequent through', async () => {
+    mocks.datasource.findByIds.mockResolvedValue([{ id: 'b' }, { id: 'a' }]);
+    mocks.datasource.findFrequentItemIds.mockResolvedValue(['a']);
+
+    await setup.findByIds(['a', 'x', 'b']);
+
+    expect(spies.toDomain.mock.calls.map((call) => (call[0] as { id: string }).id)).toEqual([
+      'a',
+      'b',
+    ]);
+    expect(await setup.findFrequentItemIds([owner], new Date(), 5)).toEqual(['a']);
+  });
+});

@@ -92,3 +92,17 @@ export function planOpen(
 
   return { openedQuantity, split: toMilli(openedQuantity) < toMilli(lot.quantity) };
 }
+
+// Spec 117 FR 9: the closed lot with the latest expiration; lots without a date count only when no dated one exists.
+export function latestClosedLot<T extends AllocationLot>(lots: T[]): T | undefined {
+  const closed = lots.filter((lot) => !lot.openedAt && lot.quantity > 0);
+  const dated = closed.filter((lot) => lot.expirationDate);
+
+  if (dated.length === 0) {
+    return [...closed].sort(byId)[0];
+  }
+
+  return dated.sort(
+    (a, b) => (b.expirationDate?.getTime() ?? 0) - (a.expirationDate?.getTime() ?? 0) || byId(a, b),
+  )[0];
+}

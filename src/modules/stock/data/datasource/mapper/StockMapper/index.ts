@@ -44,6 +44,7 @@ export class StockMapper {
       openedShelfLifeDays: raw.opened_shelf_life_days ?? undefined,
       owner: OwnerType[raw.owner],
       ownerId: raw.owner_id,
+      quickStep: raw.quick_step === null ? undefined : toNumber(raw.quick_step),
       stockOnly: raw.stock_only,
       // Prisma's generated StockUnit already carries the lowercase wire values.
       unit: raw.unit as StockUnits,
@@ -80,6 +81,7 @@ export class StockMapper {
   static toMovement(raw: StockMovement): StockMovementEntity {
     return new StockMovementEntity({
       createdAt: raw.created_at,
+      gestureId: raw.gesture_id ?? undefined,
       id: raw.id,
       itemId: raw.item_id,
       lotId: raw.lot_id,

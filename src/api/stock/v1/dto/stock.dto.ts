@@ -8,6 +8,7 @@ import {
   OpenedShelfLifeDaysSchema,
   PositiveQuantitySchema,
   QuantitySchema,
+  StepSchema as StepApiSchema,
   WarnDaysSchema,
 } from '@stock/application/dto/StockCommon';
 import { StockCatalogStatus } from '@stock/domain/entity/StockCategoryEntity';
@@ -39,6 +40,7 @@ export const CreateStockItemApiSchema = z
     ownerId: z.uuid(),
     purchaseDate: DayApiSchema.nullish(),
     quantity: QuantitySchema.optional(),
+    quickStep: StepApiSchema.nullish(),
     stockOnly: z.boolean().optional(),
     unit: StockUnitApiSchema,
     warnDaysClosed: WarnDaysSchema.optional(),
@@ -61,6 +63,7 @@ export const UpdateStockItemApiSchema = z
     openedShelfLifeDays: OpenedShelfLifeDaysSchema.nullable(),
     owner: OwnerTypeApiSchema,
     ownerId: z.uuid(),
+    quickStep: StepApiSchema.nullable(),
     stockOnly: z.boolean(),
     unit: StockUnitApiSchema,
     warnDaysClosed: WarnDaysSchema,
@@ -75,6 +78,13 @@ export const UpdateStockItemApiSchema = z
     message: 'owner and ownerId must be sent together',
   });
 
+// Spec 117 FR 25: optional on every body; `expiredLots` on a non-CONSUME movement is a 422 of the use case.
+const QuickFields = {
+  expiredLots: z.enum(['DISCARD_THEN_VALID', 'EXPIRED_FIRST', 'VALID_ONLY']).optional(),
+  gestureId: z.uuid().optional(),
+};
+// Spec 117 FR 21: the client-generated key of a write; optional for 116 clients.
+export const IdempotencyKeySchema = z.uuid().optional();
 const MovementBase = {
   lotId: z.uuid().nullish(),
   note: z.string().trim().max(200).nullish(),
@@ -84,11 +94,13 @@ const MovementBase = {
 export const CreateStockMovementApiSchema = z.discriminatedUnion('type', [
   z
     .object({
+      ...QuickFields,
       expirationDate: DayApiSchema.nullish(),
       note: MovementBase.note,
       purchaseDate: DayApiSchema.nullish(),
       quantity: PositiveQuantitySchema,
       reason: z.enum([StockMovementReasons.PURCHASE, StockMovementReasons.MANUAL]).optional(),
+      target: z.literal('LATEST_CLOSED').optional(),
       today: MovementBase.today,
       type: z.literal(StockMovementTypes.ENTRY),
     })
@@ -96,6 +108,7 @@ export const CreateStockMovementApiSchema = z.discriminatedUnion('type', [
   z
     .object({
       ...MovementBase,
+      ...QuickFields,
       quantity: PositiveQuantitySchema,
       type: z.literal(StockMovementTypes.CONSUME),
     })
@@ -103,12 +116,14 @@ export const CreateStockMovementApiSchema = z.discriminatedUnion('type', [
   z
     .object({
       ...MovementBase,
+      ...QuickFields,
       quantity: PositiveQuantitySchema.optional(),
       type: z.literal(StockMovementTypes.OPEN),
     })
     .strict(),
   z
     .object({
+      ...QuickFields,
       lotId: z.uuid(),
       note: MovementBase.note,
       quantity: PositiveQuantitySchema.optional(),
@@ -124,6 +139,7 @@ export const CreateStockMovementApiSchema = z.discriminatedUnion('type', [
   z
     .object({
       ...MovementBase,
+      ...QuickFields,
       countedQuantity: QuantitySchema,
       type: z.literal(StockMovementTypes.ADJUST),
     })
@@ -156,6 +172,7 @@ const ItemFields = {
   createdAt: z.iso.datetime(),
   description: z.string(),
   expirationStatus: LotStatusSchema,
+  hasExpiredLot: z.boolean(),
   hasOpenLot: z.boolean(),
   id: z.uuid(),
   idealQuantity: z.number().nullable(),
@@ -169,6 +186,7 @@ const ItemFields = {
   owner: OwnerTypeApiSchema,
   ownerId: z.uuid(),
   quantity: z.number(),
+  quickStep: z.number().nullable(),
   restockQuantity: z.number(),
   stockOnly: z.boolean(),
   unit: StockUnitApiSchema,
@@ -240,11 +258,20 @@ export const ListStockItemsQuerySchema = z.object({
 });
 export const DayQuerySchema = z.object({ today: DayApiSchema.optional() });
 export const MovementsQuerySchema = z.object({ cursor: z.string().min(1).max(200).optional() });
+// Spec 117 FR 29: without owner the search covers every owner the requester can write.
 export const SuggestionsQuerySchema = z.object({
-  owner: OwnerTypeApiSchema,
-  ownerId: z.uuid(),
+  owner: OwnerTypeApiSchema.optional(),
+  ownerId: z.uuid().optional(),
   q: z.string().trim().min(2).max(100),
 });
+export const FrequentQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(10).optional(),
+  today: DayApiSchema.optional(),
+});
+export const UndoGestureApiSchema = z.object({ gestureId: z.uuid() }).strict();
+export const GestureExpirationApiSchema = z
+  .object({ expirationDate: DayApiSchema, today: DayApiSchema.optional() })
+  .strict();
 export const OwnerChangePreviewQuerySchema = z.object({
   owner: OwnerTypeApiSchema,
   ownerId: z.uuid(),
@@ -334,6 +361,8 @@ export const StockLocationApiSchema = z.object({
   ownerId: z.uuid(),
   status: z.enum(StockCatalogStatus),
 });
+export const StockItemResultApiSchema = z.object({ item: StockItemApiSchema });
+export const StockFrequentApiSchema = z.object({ items: z.array(StockListItemApiSchema) });
 export const StockLocationListApiSchema = z.object({ items: z.array(StockLocationApiSchema) });
 
 export type CreateStockCategoryApiInput = z.infer<typeof CreateStockCategoryApiSchema>;
@@ -353,17 +382,23 @@ export class CreateStockLocationBody extends createZodDto(CreateStockLocationApi
 export class CreateStockMovementBody extends createZodDto(
   z.looseObject({ type: z.enum(StockMovementTypes) }),
 ) {}
+export class GestureExpirationBody extends createZodDto(
+  z.looseObject({ expirationDate: z.string() }),
+) {}
 export class OwnerChangePreviewOutput extends createZodDto(OwnerChangePreviewApiSchema) {}
 export class StockCategoryListOutput extends createZodDto(StockCategoryListApiSchema) {}
 export class StockCategoryOutput extends createZodDto(StockCategoryApiSchema) {}
 export class StockCategoryTreeOutput extends createZodDto(StockCategoryTreeApiSchema) {}
+export class StockFrequentOutput extends createZodDto(StockFrequentApiSchema) {}
 export class StockItemOutput extends createZodDto(StockItemApiSchema) {}
+export class StockItemResultOutput extends createZodDto(StockItemResultApiSchema) {}
 export class StockListItemOutput extends createZodDto(StockListItemApiSchema) {}
 export class StockLocationListOutput extends createZodDto(StockLocationListApiSchema) {}
 export class StockLocationOutput extends createZodDto(StockLocationApiSchema) {}
 export class StockMovementPageOutput extends createZodDto(StockMovementPageApiSchema) {}
 export class StockMovementResultOutput extends createZodDto(StockMovementResultApiSchema) {}
 export class StockSuggestionOutput extends createZodDto(StockSuggestionApiSchema) {}
+export class UndoGestureBody extends createZodDto(z.looseObject({ gestureId: z.string() })) {}
 export class UpdateStockCategoryBody extends createZodDto(UpdateStockCategoryApiSchema) {}
 export class UpdateStockItemBody extends createZodDto(UpdateStockItemApiSchema) {}
 export class UpdateStockLocationBody extends createZodDto(UpdateStockLocationApiSchema) {}

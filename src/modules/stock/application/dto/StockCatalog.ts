@@ -82,3 +82,10 @@ export type DeleteStockCatalogInput = z.input<typeof DeleteStockCatalogSchema>;
 export type GetStockCatalogInput = z.input<typeof GetStockCatalogSchema>;
 export type UpdateStockCategoryInput = z.input<typeof UpdateStockCategorySchema>;
 export type UpdateStockLocationInput = z.input<typeof UpdateStockLocationSchema>;
+
+export const GetStockLocationByIdSchema = z.object({
+  accessibleOwners: AccessibleOwnersSchema,
+  id: z.string().min(1),
+});
+
+export type GetStockLocationByIdInput = z.input<typeof GetStockLocationByIdSchema>;

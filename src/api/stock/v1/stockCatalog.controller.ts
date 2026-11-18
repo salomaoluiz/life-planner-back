@@ -139,6 +139,13 @@ export class StockLocationController {
     return this.stockService.findLocations(req.user.id, validate(CatalogOwnerQuerySchema, query));
   }
 
+  // Spec 117 FR 30: the QR route header; registered after the fixed routes.
+  @Get(':id')
+  @ZodResponse({ status: 200, type: StockLocationOutput })
+  async findById(@Request() req: JwtPayload & Request, @Param('id', ParseUUIDPipe) id: string) {
+    return this.stockService.findLocationById(req.user.id, id);
+  }
+
   @Patch(':id')
   @ZodResponse({ status: 200, type: StockLocationOutput })
   async update(

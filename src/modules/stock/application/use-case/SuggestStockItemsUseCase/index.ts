@@ -8,7 +8,7 @@ import {
   SuggestStockItemsInput,
   SuggestStockItemsSchema,
 } from '@stock/application/dto/SuggestStockItems';
-import { hasOwnerAccess } from '@stock/domain/entity/OwnerAccess';
+import { hasOwnerAccess, narrowOwners } from '@stock/domain/entity/OwnerAccess';
 import { StockUnits } from '@stock/domain/entity/StockEntity';
 import { IStockSuggestionRepository } from '@stock/domain/repository';
 import { passesThreshold, suggestionScore } from '@stock/domain/service/StockSuggestionScore';
@@ -37,20 +37,31 @@ export class SuggestStockItemsUseCase implements UseCaseWithParams<
 
   async execute(params: SuggestStockItemsInput): Promise<StockSuggestion[]> {
     const input = validate(SuggestStockItemsSchema, params);
-    const ownerAccess = { owner: input.owner, ownerId: input.ownerId };
-
     // Never another owner's items: an owner the caller cannot access has none to suggest.
-    if (!hasOwnerAccess(input.accessibleOwners, ownerAccess)) {
+    const owners =
+      input.owner === undefined || input.ownerId === undefined
+        ? narrowOwners(input.accessibleOwners).map(({ owner, ownerId }) => ({ owner, ownerId }))
+        : [{ owner: input.owner, ownerId: input.ownerId }].filter((target) =>
+            hasOwnerAccess(input.accessibleOwners, target),
+          );
+
+    if (owners.length === 0) {
       return [];
     }
 
     const embedding = (await this.embeddings.embed(input.q)) ?? undefined;
-    const rows = await this.suggestionRepository.findSuggestions({
-      embedding,
-      limit: SUGGESTION_LIMIT,
-      ownerAccess,
-      query: input.q,
-    });
+    const rows = (
+      await Promise.all(
+        owners.map(async (ownerAccess) =>
+          this.suggestionRepository.findSuggestions({
+            embedding,
+            limit: SUGGESTION_LIMIT,
+            ownerAccess,
+            query: input.q,
+          }),
+        ),
+      )
+    ).flat();
 
     return rows
       .filter((row) => passesThreshold(row))

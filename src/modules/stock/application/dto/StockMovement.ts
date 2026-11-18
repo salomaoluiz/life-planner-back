@@ -21,8 +21,12 @@ const LotIdSchema = z
   .nullish()
   .transform((value) => value ?? undefined);
 
+const ExpiredLotsSchema = z.enum(['DISCARD_THEN_VALID', 'EXPIRED_FIRST', 'VALID_ONLY']).optional();
 const base = {
   accessibleOwners: AccessibleOwnersSchema,
+  clientId: z.uuid().optional(),
+  expiredLots: ExpiredLotsSchema,
+  gestureId: z.uuid().optional(),
   itemId: z.string().min(1),
   note: NoteSchema,
   today: OptionalTodaySchema,
@@ -39,6 +43,7 @@ export const CreateStockMovementSchema = z.discriminatedUnion('type', [
     reason: z
       .enum([StockMovementReasons.PURCHASE, StockMovementReasons.MANUAL])
       .default(StockMovementReasons.PURCHASE),
+    target: z.literal('LATEST_CLOSED').optional(),
     type: z.literal('ENTRY'),
   }),
   z.object({

@@ -3,6 +3,15 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [6.1.0] - 2026-11-18
+
+### Added
+
+- Quick stock movements: movements accept a `gestureId`, an `expiredLots` choice and an `Idempotency-Key`; `+` goes to the latest closed lot (spec 117).
+- `POST /stock/movements/undo` and `POST /stock/movements/:gestureId/expiration` undo or re-date a gesture (spec 117).
+- `GET /stock/items/frequent`, `GET /stock/locations/:id` and item search without an owner for the quick add (spec 117).
+- Items carry a per-item `quickStep`; the list carries `hasExpiredLot` (spec 117).
+
 ## [6.0.0] - 2026-11-17
 
 ### Changed

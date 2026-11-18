@@ -334,3 +334,42 @@ describe('locations', () => {
     });
   });
 });
+
+describe('spec 117', () => {
+  it('SHOULD read frequent items for the requester owners and return list items', async () => {
+    useCases.getFrequentStockItems.execute.mockResolvedValue([mocks.view]);
+
+    const result = await setup.findFrequent(userId, { limit: 3 });
+
+    expect(useCases.getFrequentStockItems.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ accessibleOwners: mocks.accessibleOwners, limit: 3 }),
+    );
+    expect(result.items[0]).toMatchObject({ hasExpiredLot: false, id: 'item', quickStep: null });
+    expect(result.items[0]).not.toHaveProperty('lots');
+  });
+
+  it('SHOULD undo a gesture and change its expiration returning the item', async () => {
+    useCases.undoStockGesture.execute.mockResolvedValue(mocks.view);
+    useCases.setGestureExpiration.execute.mockResolvedValue(mocks.view);
+
+    expect((await setup.undoGesture(userId, 'g')).item.id).toBe('item');
+    expect(
+      (await setup.setGestureExpiration(userId, 'g', { expirationDate: '2026-12-05' })).item.lots,
+    ).toHaveLength(2);
+    expect(useCases.setGestureExpiration.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ gestureId: 'g', userId }),
+    );
+  });
+
+  it('SHOULD return the location with its item count', async () => {
+    useCases.getStockLocationById.execute.mockResolvedValue({
+      itemCount: 4,
+      location: mocks.catalog.locations[0],
+    });
+
+    expect(await setup.findLocationById(userId, 'fridge')).toMatchObject({
+      id: 'fridge',
+      itemCount: 4,
+    });
+  });
+});

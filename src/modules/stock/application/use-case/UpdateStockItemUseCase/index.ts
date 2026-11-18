@@ -23,6 +23,7 @@ import {
 import { RefreshStockEmbeddingUseCase } from '@stock/application/use-case/RefreshStockEmbeddingUseCase';
 import { hasOwnerAccess } from '@stock/domain/entity/OwnerAccess';
 import { IStockCatalogRepository, IStockRepository } from '@stock/domain/repository';
+import { quantityError } from '@stock/domain/service/StockQuantity';
 
 export class UpdateStockItemUseCase implements UseCaseWithParams<
   UpdateStockItemInput,
@@ -80,6 +81,14 @@ export class UpdateStockItemUseCase implements UseCaseWithParams<
 
     assertStockLimits({ idealQuantity, minQuantity, stockOnly, unit });
 
+    // Spec 117 FR 10: the step follows the unit rules (whole numbers for `unit`).
+    const stepError =
+      typeof input.quickStep === 'number' ? quantityError(unit, input.quickStep) : undefined;
+
+    if (stepError) {
+      throw new UnprocessableEntityException(stepError);
+    }
+
     let categoryId = input.categoryId;
     let locationId = input.locationId;
 
@@ -109,6 +118,7 @@ export class UpdateStockItemUseCase implements UseCaseWithParams<
       openedShelfLifeDays: input.openedShelfLifeDays,
       owner: ownerChanged ? target.owner : undefined,
       ownerId: ownerChanged ? target.ownerId : undefined,
+      quickStep: input.quickStep,
       stockOnly: input.stockOnly,
       unit: input.unit,
       warnDaysClosed: input.warnDaysClosed,

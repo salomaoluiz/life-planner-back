@@ -66,3 +66,26 @@ it('SHOULD return nothing for an owner the caller cannot access, without reading
 it('SHOULD throw ValidationError WHEN the query is shorter than 2 characters', async () => {
   await expect(setup.execute({ ...input, q: 'a' })).rejects.toThrow(ValidationError);
 });
+
+describe('without an owner (quick add, spec 117 FR 29)', () => {
+  it('SHOULD search every writable owner, skip archived families and merge the results', async () => {
+    mocks.suggestions.findSuggestions
+      .mockResolvedValueOnce([row('a', 'Leite integral', 0.7)])
+      .mockResolvedValueOnce([row('b', 'Leite de coco', 0.8)]);
+
+    const result = await setup.execute({
+      accessibleOwners: [
+        ...mocks.accessibleOwners,
+        { archived: true, owner: OwnerType.FAMILY, ownerId: 'archived-family' },
+      ],
+      q: 'leite',
+    });
+
+    expect(mocks.suggestions.findSuggestions).toHaveBeenCalledTimes(2);
+    expect(result.map((suggestion) => suggestion.id)).toEqual(['b', 'a']);
+  });
+
+  it('SHOULD answer an empty list WHEN the user has no owner to search', async () => {
+    expect(await setup.execute({ accessibleOwners: [], q: 'leite' })).toEqual([]);
+  });
+});

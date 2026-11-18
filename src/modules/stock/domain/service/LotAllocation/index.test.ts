@@ -1,4 +1,4 @@
-import { defaultOpenLot, findEntryLot, planConsume, planOpen } from './index';
+import { defaultOpenLot, findEntryLot, latestClosedLot, planConsume, planOpen } from './index';
 
 function day(value: string) {
   return new Date(`${value}T00:00:00.000Z`);
@@ -87,5 +87,30 @@ describe('defaultOpenLot / planOpen', () => {
     expect(planOpen({ id: 'a', quantity: 3 }, 1)).toEqual({ openedQuantity: 1, split: true });
     expect(planOpen({ id: 'a', quantity: 3 }, 3)).toEqual({ openedQuantity: 3, split: false });
     expect(planOpen({ id: 'a', quantity: 3 }, 9)).toEqual({ openedQuantity: 3, split: false });
+  });
+});
+
+describe('latestClosedLot', () => {
+  const d1 = { expirationDate: day('2026-11-20'), id: 'a', quantity: 1 };
+  const d2 = { expirationDate: day('2026-11-30'), id: 'b', quantity: 1 };
+  const open = {
+    expirationDate: day('2027-01-01'),
+    id: 'o',
+    openedAt: day('2026-11-01'),
+    quantity: 1,
+  };
+  const noDate = { id: 'n', quantity: 1 };
+
+  it('SHOULD pick the closed lot with the latest expiration and never an open lot', () => {
+    expect(latestClosedLot([d1, open, d2])?.id).toBe('b');
+  });
+
+  it('SHOULD pick a lot without expiration only WHEN no dated closed lot exists', () => {
+    expect(latestClosedLot([noDate, d1])?.id).toBe('a');
+    expect(latestClosedLot([noDate, open])?.id).toBe('n');
+  });
+
+  it('SHOULD ignore empty lots and return undefined without candidates', () => {
+    expect(latestClosedLot([{ ...d2, quantity: 0 }, open])).toBeUndefined();
   });
 });

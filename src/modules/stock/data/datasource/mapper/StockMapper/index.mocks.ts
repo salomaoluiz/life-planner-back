@@ -22,6 +22,7 @@ const rawFull = {
   opened_shelf_life_days: 5,
   owner: 'FAMILY',
   owner_id: faker.string.uuid(),
+  quick_step: decimal(0.5),
   stock_only: false,
   unit: 'liter',
   updated_at: faker.date.recent(),
@@ -38,6 +39,7 @@ const rawMinimal = {
   min_quantity: null,
   notes: null,
   opened_shelf_life_days: null,
+  quick_step: null,
 } as unknown as StockItem;
 const rawLot = {
   created_at: date,

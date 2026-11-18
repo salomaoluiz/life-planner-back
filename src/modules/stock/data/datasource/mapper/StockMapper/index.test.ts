@@ -13,6 +13,7 @@ describe('toDomain', () => {
       minQuantity: 1.5,
       openedShelfLifeDays: 5,
       owner: 'FAMILY',
+      quickStep: 0.5,
       stockOnly: false,
       unit: 'liter',
       warnDaysClosed: 7,
@@ -28,6 +29,7 @@ describe('toDomain', () => {
     expect(result.categoryId).toBeUndefined();
     expect(result.idealQuantity).toBeUndefined();
     expect(result.minQuantity).toBeUndefined();
+    expect(result.quickStep).toBeUndefined();
     expect(result.openedShelfLifeDays).toBeUndefined();
     expect(result.lots).toEqual([]);
   });

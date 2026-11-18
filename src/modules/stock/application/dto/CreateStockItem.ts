@@ -13,6 +13,7 @@ import {
   OwnerIdSchema,
   OwnerTypeSchema,
   QuantitySchema,
+  StepSchema,
   UnitSchema,
   WarnDaysSchema,
 } from '@stock/application/dto/StockCommon';
@@ -21,6 +22,8 @@ const OptionalQuantitySchema = QuantitySchema.nullish().transform((value) => val
 const OptionalShelfLifeSchema = OpenedShelfLifeDaysSchema.nullish().transform(
   (value) => value ?? undefined,
 );
+
+const OptionalStepSchema = StepSchema.nullish().transform((value) => value ?? undefined);
 
 export const CreateStockItemSchema = z.object({
   accessibleOwners: AccessibleOwnersSchema,
@@ -38,6 +41,7 @@ export const CreateStockItemSchema = z.object({
   ownerId: OwnerIdSchema,
   purchaseDate: OptionalDaySchema,
   quantity: QuantitySchema.default(0),
+  quickStep: OptionalStepSchema,
   stockOnly: z.boolean().default(false),
   today: OptionalTodaySchema,
   unit: UnitSchema,

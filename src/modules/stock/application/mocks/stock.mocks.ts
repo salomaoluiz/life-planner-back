@@ -95,13 +95,16 @@ export function lot(id: string, quantity: number, extra: Partial<StockLotEntity>
 }
 export function stockRepositoryMock() {
   return {
+    applyGestureChange: jest.fn(),
     applyMovement: jest.fn(),
     create: jest.fn(),
     delete: jest.fn().mockResolvedValue(undefined),
     deleteByOwner: jest.fn().mockResolvedValue(0),
     existsByOwner: jest.fn().mockResolvedValue(false),
     findById: jest.fn(),
+    findByIds: jest.fn().mockResolvedValue([]),
     findByOwners: jest.fn().mockResolvedValue([]),
+    findFrequentItemIds: jest.fn().mockResolvedValue([]),
     findMovements: jest.fn().mockResolvedValue([]),
     update: jest.fn(),
   };

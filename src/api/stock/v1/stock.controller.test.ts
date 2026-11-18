@@ -160,7 +160,27 @@ describe('createMovement', () => {
   ])('SHOULD accept %j', async (body) => {
     await items.createMovement(request, id, body as never);
 
-    expect(stockService.createMovement).toHaveBeenCalledWith(userId, id, body);
+    expect(stockService.createMovement).toHaveBeenCalledWith(userId, id, body, undefined);
+  });
+
+  it('SHOULD pass the gesture fields and the Idempotency-Key to the service', async () => {
+    const key = '3f0e0000-0000-4000-8000-000000000002';
+    const body = {
+      expiredLots: 'DISCARD_THEN_VALID',
+      gestureId: '9b1c0000-0000-4000-8000-000000000001',
+      quantity: 3,
+      type: 'CONSUME',
+    };
+
+    await items.createMovement(request, id, body as never, key);
+
+    expect(stockService.createMovement).toHaveBeenCalledWith(userId, id, body, key);
+  });
+
+  it('SHOULD refuse a key that is not a uuid (400)', async () => {
+    await expect(
+      items.createMovement(request, id, { quantity: 1, type: 'CONSUME' } as never, 'nope'),
+    ).rejects.toThrow(ValidationError);
   });
 
   it.each([
@@ -171,5 +191,40 @@ describe('createMovement', () => {
     [{ extra: true, quantity: 1, type: 'CONSUME' }],
   ])('SHOULD refuse %j (400)', async (body) => {
     await expect(items.createMovement(request, id, body as never)).rejects.toThrow(ValidationError);
+  });
+});
+
+describe('spec 117 routes', () => {
+  it('SHOULD list frequent items with a validated limit', async () => {
+    const { frequent } = await setup();
+
+    await frequent.frequent(request, { limit: '5' });
+    expect(stockService.findFrequent).toHaveBeenCalledWith(userId, { limit: 5 });
+    await expect(frequent.frequent(request, { limit: '11' })).rejects.toThrow(ValidationError);
+  });
+
+  it('SHOULD undo a gesture and change its expiration for the requester', async () => {
+    const { gestures } = await setup();
+    const gestureId = '9b1c0000-0000-4000-8000-000000000001';
+
+    await gestures.undo(request, { gestureId } as never);
+    expect(stockService.undoGesture).toHaveBeenCalledWith(userId, gestureId);
+
+    await gestures.expiration(request, gestureId, { expirationDate: '2026-12-05' } as never);
+    expect(stockService.setGestureExpiration).toHaveBeenCalledWith(userId, gestureId, {
+      expirationDate: '2026-12-05',
+    });
+    await expect(gestures.undo(request, { gestureId: 'nope' } as never)).rejects.toThrow(
+      ValidationError,
+    );
+    await expect(
+      gestures.expiration(request, gestureId, { expirationDate: 'x' } as never),
+    ).rejects.toThrow(ValidationError);
+  });
+
+  it('SHOULD accept suggestions without an owner', async () => {
+    await suggestions.suggest(request, { q: 'leite' });
+
+    expect(stockService.suggest).toHaveBeenCalledWith(userId, { q: 'leite' });
   });
 });

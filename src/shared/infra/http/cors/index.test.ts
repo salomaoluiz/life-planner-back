@@ -39,6 +39,7 @@ describe('GIVEN buildCorsOptions', () => {
       'Content-Type',
       'sentry-trace',
       'baggage',
+      'Idempotency-Key',
     ]);
     expect(options.credentials).toBe(false);
   });

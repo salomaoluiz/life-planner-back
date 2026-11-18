@@ -274,7 +274,15 @@ describe('execute', () => {
 
     expect(result.item.quantity).toBe(2);
     expect(result.movements).toBe(written);
-    expect(mocks.stock.applyMovement).toHaveBeenCalledWith('item', 'user-id', expect.any(Function));
+    expect(mocks.stock.applyMovement).toHaveBeenCalledWith(
+      'item',
+      'user-id',
+      expect.any(Function),
+      {
+        clientId: undefined,
+        gestureId: undefined,
+      },
+    );
   });
 
   it('SHOULD answer 404 WHEN the item is not visible or vanished during the write', async () => {
@@ -319,6 +327,106 @@ describe('execute', () => {
     expect(await operationsOf(kg, { quantity: 0.25, type: 'CONSUME' })).toHaveLength(1);
     await expect(operationsOf(kg, { quantity: 0.0001, type: 'CONSUME' })).rejects.toThrow(
       UnprocessableEntityException,
+    );
+  });
+});
+
+describe('quick movement (spec 117)', () => {
+  const expired = lot('old', 2, { expirationDate: day('2026-11-01') });
+  const valid = lot('new', 3, { expirationDate: day('2026-12-20') });
+
+  it('SHOULD record a DISCARD/EXPIRED and a CONSUME WHEN DISCARD_THEN_VALID', async () => {
+    const operations = await operationsOf(item([expired, valid]), {
+      expiredLots: 'DISCARD_THEN_VALID',
+      quantity: 1,
+      type: 'CONSUME',
+    });
+
+    expect(operations).toEqual([
+      expect.objectContaining({
+        lot: { id: 'old' },
+        movement: expect.objectContaining({ quantity: -2, reason: 'EXPIRED', type: 'DISCARD' }),
+        update: { quantity: 0 },
+      }),
+      expect.objectContaining({
+        lot: { id: 'new' },
+        movement: expect.objectContaining({ quantity: -1, type: 'CONSUME' }),
+        update: { quantity: 2 },
+      }),
+    ]);
+  });
+
+  it('SHOULD skip expired lots WHEN VALID_ONLY and answer 409 WHEN only expired lots hold stock', async () => {
+    expect(
+      (
+        await operationsOf(item([expired, valid]), {
+          expiredLots: 'VALID_ONLY',
+          quantity: 1,
+          type: 'CONSUME',
+        })
+      )[0],
+    ).toMatchObject({ lot: { id: 'new' } });
+    await expect(
+      operationsOf(item([expired]), { expiredLots: 'VALID_ONLY', quantity: 1, type: 'CONSUME' }),
+    ).rejects.toThrow(ConflictException);
+  });
+
+  it('SHOULD keep the 116 order (expired lots included) WHEN expiredLots is omitted', async () => {
+    expect(
+      (await operationsOf(item([expired, valid]), { quantity: 1, type: 'CONSUME' }))[0],
+    ).toMatchObject({ lot: { id: 'old' }, update: { quantity: 1 } });
+    expect(
+      (await operationsOf(item([expired]), { quantity: 1, type: 'CONSUME' }))[0],
+    ).toMatchObject({ lot: { id: 'old' } });
+  });
+
+  it('SHOULD consume the expired lot first WHEN EXPIRED_FIRST', async () => {
+    expect(
+      (
+        await operationsOf(item([valid, expired]), {
+          expiredLots: 'EXPIRED_FIRST',
+          quantity: 3,
+          type: 'CONSUME',
+        })
+      ).map((operation) => operation.lot),
+    ).toEqual([{ id: 'old' }, { id: 'new' }]);
+  });
+
+  it('SHOULD add an ENTRY to the closed lot with the latest expiration WHEN target is LATEST_CLOSED', async () => {
+    const early = lot('early', 1, { expirationDate: day('2026-11-20') });
+    const late = lot('late', 1, { expirationDate: day('2026-11-30') });
+    const open = lot('open', 1, { expirationDate: day('2027-01-01'), openedAt: day('2026-11-01') });
+
+    expect(
+      (
+        await operationsOf(item([early, late, open]), {
+          quantity: 2,
+          reason: 'MANUAL',
+          target: 'LATEST_CLOSED',
+          type: 'ENTRY',
+        })
+      )[0],
+    ).toMatchObject({ lot: { id: 'late' }, update: { quantity: 3 } });
+  });
+
+  it('SHOULD refuse expiredLots on a non-CONSUME movement with 422', async () => {
+    mocks.stock.findById.mockResolvedValue(item([expired]));
+    await expect(
+      setup.execute({ ...base, expiredLots: 'VALID_ONLY', quantity: 1, type: 'ENTRY' } as never),
+    ).rejects.toThrow(UnprocessableEntityException);
+  });
+
+  it('SHOULD pass gestureId and clientId to the repository', async () => {
+    const gestureId = '9b1c0000-0000-4000-8000-000000000001';
+    const clientId = '3f0e0000-0000-4000-8000-000000000002';
+
+    await setup.execute({ ...base, clientId, gestureId, quantity: 1, type: 'CONSUME' } as never);
+
+    expect(mocks.stock.applyMovement).toHaveBeenLastCalledWith(
+      'item',
+      'user-id',
+      expect.any(Function),
+      { clientId, gestureId },
     );
   });
 });
