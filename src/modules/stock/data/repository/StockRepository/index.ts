@@ -9,6 +9,7 @@ import StockMovementEntity from '@stock/domain/entity/StockMovementEntity';
 import {
   CreateStockRepositoryParams,
   IStockRepository,
+  MovementOptions,
   MovementPlanner,
   StockFilter,
   UpdateStockRepositoryParams,
@@ -25,26 +26,33 @@ export class StockRepository implements IStockRepository {
     itemId: string,
     userId: string,
     planner: MovementPlanner,
-  ): Promise<{ item: StockEntity; movements: StockMovementEntity[] } | undefined> {
-    const result = await this.stockDatasource.applyMovement(itemId, userId, (item, lots) =>
-      planner(StockMapper.toDomain({ ...item, lots })).map((operation) => ({
-        lot:
-          'create' in operation.lot
-            ? {
-                create: {
-                  expiration_date: operation.lot.create.expirationDate,
-                  opened_at: operation.lot.create.openedAt,
-                  purchase_date: operation.lot.create.purchaseDate,
-                  quantity: operation.lot.create.quantity,
-                },
-              }
-            : operation.lot,
-        movement: operation.movement,
-        update: operation.update && {
-          opened_at: operation.update.openedAt,
-          quantity: operation.update.quantity,
-        },
-      })),
+    options?: MovementOptions,
+  ): Promise<
+    { item: StockEntity; movements: StockMovementEntity[]; replayed: boolean } | undefined
+  > {
+    const result = await this.stockDatasource.applyMovement(
+      itemId,
+      userId,
+      (item, lots) =>
+        planner(StockMapper.toDomain({ ...item, lots })).map((operation) => ({
+          lot:
+            'create' in operation.lot
+              ? {
+                  create: {
+                    expiration_date: operation.lot.create.expirationDate,
+                    opened_at: operation.lot.create.openedAt,
+                    purchase_date: operation.lot.create.purchaseDate,
+                    quantity: operation.lot.create.quantity,
+                  },
+                }
+              : operation.lot,
+          movement: operation.movement,
+          update: operation.update && {
+            opened_at: operation.update.openedAt,
+            quantity: operation.update.quantity,
+          },
+        })),
+      options && { client_id: options.clientId, gesture_id: options.gestureId },
     );
 
     if (!result) {
@@ -54,6 +62,7 @@ export class StockRepository implements IStockRepository {
     return {
       item: StockMapper.toDomain(result.item),
       movements: result.movements.map((movement) => StockMapper.toMovement(movement)),
+      replayed: result.replayed,
     };
   }
 
@@ -76,6 +85,7 @@ export class StockRepository implements IStockRepository {
       opened_shelf_life_days: params.openedShelfLifeDays,
       owner: params.owner,
       owner_id: params.ownerId,
+      quick_step: params.quickStep,
       stock_only: params.stockOnly,
       unit: params.unit as StockUnit,
       user_id: params.userId,
@@ -137,6 +147,7 @@ export class StockRepository implements IStockRepository {
       opened_shelf_life_days: params.openedShelfLifeDays,
       owner: params.owner,
       owner_id: params.ownerId,
+      quick_step: params.quickStep,
       stock_only: params.stockOnly,
       unit: params.unit as StockUnit | undefined,
       warn_days_closed: params.warnDaysClosed,

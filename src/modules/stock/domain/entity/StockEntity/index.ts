@@ -29,6 +29,7 @@ interface IStockEntity {
   minQuantity?: number;
   notes?: string;
   openedShelfLifeDays?: number;
+  quickStep?: number;
 }
 
 // Spec 116: the quantity lives in the lots; the item only keeps its own attributes.
@@ -47,6 +48,7 @@ class StockEntity {
   openedShelfLifeDays?: number;
   owner: OwnerType;
   ownerId: string;
+  quickStep?: number;
   stockOnly: boolean;
   unit: StockUnits;
   updatedAt: Date;
@@ -68,6 +70,7 @@ class StockEntity {
     this.openedShelfLifeDays = params.openedShelfLifeDays;
     this.owner = params.owner;
     this.ownerId = params.ownerId;
+    this.quickStep = params.quickStep;
     this.stockOnly = params.stockOnly;
     this.unit = params.unit;
     this.updatedAt = params.updatedAt;

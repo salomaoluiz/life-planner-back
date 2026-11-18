@@ -22,6 +22,8 @@ export interface CatalogLookup {
 }
 export interface StockItemView {
   expirationStatus: LotStatus;
+  // Spec 117 FR 15: any lot (with stock) whose effective expiration is before today.
+  hasExpiredLot: boolean;
   hasOpenLot: boolean;
   item: StockEntity;
   // Open lots first, then by effective expiration (nulls last).
@@ -79,6 +81,7 @@ export function toStockItemView(
       path: pathOf(catalog.categories, category.id),
     },
     expirationStatus: worstStatus(lotViews.map((view) => view.expirationStatus)),
+    hasExpiredLot: lotViews.some((view) => view.expirationStatus === 'EXPIRED'),
     hasOpenLot: lots.some((lot) => lot.openedAt),
     item,
     location: location && {

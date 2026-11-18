@@ -8,6 +8,7 @@ import {
   OpenedShelfLifeDaysSchema,
   PositiveQuantitySchema,
   QuantitySchema,
+  StepSchema as StepApiSchema,
   WarnDaysSchema,
 } from '@stock/application/dto/StockCommon';
 import { StockCatalogStatus } from '@stock/domain/entity/StockCategoryEntity';
@@ -39,6 +40,7 @@ export const CreateStockItemApiSchema = z
     ownerId: z.uuid(),
     purchaseDate: DayApiSchema.nullish(),
     quantity: QuantitySchema.optional(),
+    quickStep: StepApiSchema.nullish(),
     stockOnly: z.boolean().optional(),
     unit: StockUnitApiSchema,
     warnDaysClosed: WarnDaysSchema.optional(),
@@ -61,6 +63,7 @@ export const UpdateStockItemApiSchema = z
     openedShelfLifeDays: OpenedShelfLifeDaysSchema.nullable(),
     owner: OwnerTypeApiSchema,
     ownerId: z.uuid(),
+    quickStep: StepApiSchema.nullable(),
     stockOnly: z.boolean(),
     unit: StockUnitApiSchema,
     warnDaysClosed: WarnDaysSchema,
@@ -75,6 +78,13 @@ export const UpdateStockItemApiSchema = z
     message: 'owner and ownerId must be sent together',
   });
 
+// Spec 117 FR 25: optional on every body; `expiredLots` on a non-CONSUME movement is a 422 of the use case.
+const QuickFields = {
+  expiredLots: z.enum(['DISCARD_THEN_VALID', 'EXPIRED_FIRST', 'VALID_ONLY']).optional(),
+  gestureId: z.uuid().optional(),
+};
+// Spec 117 FR 21: the client-generated key of a write; optional for 116 clients.
+export const IdempotencyKeySchema = z.uuid().optional();
 const MovementBase = {
   lotId: z.uuid().nullish(),
   note: z.string().trim().max(200).nullish(),
@@ -84,11 +94,13 @@ const MovementBase = {
 export const CreateStockMovementApiSchema = z.discriminatedUnion('type', [
   z
     .object({
+      ...QuickFields,
       expirationDate: DayApiSchema.nullish(),
       note: MovementBase.note,
       purchaseDate: DayApiSchema.nullish(),
       quantity: PositiveQuantitySchema,
       reason: z.enum([StockMovementReasons.PURCHASE, StockMovementReasons.MANUAL]).optional(),
+      target: z.literal('LATEST_CLOSED').optional(),
       today: MovementBase.today,
       type: z.literal(StockMovementTypes.ENTRY),
     })
@@ -96,6 +108,7 @@ export const CreateStockMovementApiSchema = z.discriminatedUnion('type', [
   z
     .object({
       ...MovementBase,
+      ...QuickFields,
       quantity: PositiveQuantitySchema,
       type: z.literal(StockMovementTypes.CONSUME),
     })
@@ -103,12 +116,14 @@ export const CreateStockMovementApiSchema = z.discriminatedUnion('type', [
   z
     .object({
       ...MovementBase,
+      ...QuickFields,
       quantity: PositiveQuantitySchema.optional(),
       type: z.literal(StockMovementTypes.OPEN),
     })
     .strict(),
   z
     .object({
+      ...QuickFields,
       lotId: z.uuid(),
       note: MovementBase.note,
       quantity: PositiveQuantitySchema.optional(),
@@ -124,6 +139,7 @@ export const CreateStockMovementApiSchema = z.discriminatedUnion('type', [
   z
     .object({
       ...MovementBase,
+      ...QuickFields,
       countedQuantity: QuantitySchema,
       type: z.literal(StockMovementTypes.ADJUST),
     })
@@ -156,6 +172,7 @@ const ItemFields = {
   createdAt: z.iso.datetime(),
   description: z.string(),
   expirationStatus: LotStatusSchema,
+  hasExpiredLot: z.boolean(),
   hasOpenLot: z.boolean(),
   id: z.uuid(),
   idealQuantity: z.number().nullable(),
@@ -169,6 +186,7 @@ const ItemFields = {
   owner: OwnerTypeApiSchema,
   ownerId: z.uuid(),
   quantity: z.number(),
+  quickStep: z.number().nullable(),
   restockQuantity: z.number(),
   stockOnly: z.boolean(),
   unit: StockUnitApiSchema,

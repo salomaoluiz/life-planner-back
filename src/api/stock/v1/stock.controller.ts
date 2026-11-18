@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Param,
@@ -21,6 +22,7 @@ import {
   CreateStockMovementApiSchema,
   CreateStockMovementBody,
   DayQuerySchema,
+  IdempotencyKeySchema,
   ListStockItemsQuerySchema,
   MovementsQuerySchema,
   OwnerChangePreviewOutput,
@@ -60,10 +62,12 @@ export class StockController {
     @Request() req: JwtPayload & Request,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: CreateStockMovementBody,
+    @Headers('idempotency-key') idempotencyKey?: string,
   ) {
     const input = validate(CreateStockMovementApiSchema, body);
+    const clientId = validate(IdempotencyKeySchema, idempotencyKey);
 
-    return this.stockService.createMovement(req.user.id, id, input);
+    return this.stockService.createMovement(req.user.id, id, input, clientId);
   }
 
   @ApiNoContentResponse()

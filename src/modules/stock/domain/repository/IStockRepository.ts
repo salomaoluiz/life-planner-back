@@ -28,11 +28,15 @@ export interface MovementOperation {
 // Runs inside the item lock with EVERY lot of the item (quantity 0 included). Throwing aborts without writing.
 export type IStockRepository = {
   // The item with all lots (quantity > 0) after the commit; `undefined` when the item no longer exists.
+  // `replayed`: the `clientId` was already applied (spec 117 FR 21): nothing was written, the stored result is returned.
   applyMovement(
     itemId: string,
     userId: string,
     planner: MovementPlanner,
-  ): Promise<{ item: StockEntity; movements: StockMovementEntity[] } | undefined>;
+    options?: MovementOptions,
+  ): Promise<
+    { item: StockEntity; movements: StockMovementEntity[]; replayed: boolean } | undefined
+  >;
   // Item, first lot and ENTRY movement in one transaction.
   create(params: CreateStockRepositoryParams): Promise<StockEntity>;
   delete(id: string): Promise<void>;
@@ -49,6 +53,10 @@ export type IStockRepository = {
   ): Promise<StockMovementEntity[]>;
   update(params: UpdateStockRepositoryParams): Promise<StockEntity>;
 };
+export interface MovementOptions {
+  clientId?: string;
+  gestureId?: string;
+}
 export type MovementPlanner = (item: StockEntity) => MovementOperation[];
 export interface StockFilter {
   categoryIds?: string[];
@@ -68,6 +76,7 @@ interface CreateStockRepositoryParams {
   openedShelfLifeDays?: number;
   owner: OwnerType;
   ownerId: string;
+  quickStep?: number;
   stockOnly: boolean;
   unit: StockUnits;
   userId: string;
@@ -88,6 +97,7 @@ interface UpdateStockRepositoryParams {
   openedShelfLifeDays?: null | number;
   owner?: OwnerType;
   ownerId?: string;
+  quickStep?: null | number;
   stockOnly?: boolean;
   unit?: StockUnits;
   warnDaysClosed?: number;

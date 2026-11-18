@@ -85,6 +85,7 @@ function toListItemOutput(view: StockItemView): StockListItemApiOutput {
     createdAt: item.createdAt.toISOString(),
     description: item.description,
     expirationStatus: view.expirationStatus,
+    hasExpiredLot: view.hasExpiredLot,
     hasOpenLot: view.hasOpenLot,
     id: item.id,
     idealQuantity: item.idealQuantity ?? null,
@@ -98,6 +99,7 @@ function toListItemOutput(view: StockItemView): StockListItemApiOutput {
     owner: item.owner,
     ownerId: item.ownerId,
     quantity: view.quantity,
+    quickStep: item.quickStep ?? null,
     restockQuantity: view.restockQuantity,
     stockOnly: item.stockOnly,
     unit: item.unit,
@@ -206,11 +208,17 @@ export class StockService {
     return { items: locations.map((location) => toLocationOutput(location)) };
   }
 
-  async createMovement(userId: string, itemId: string, input: CreateStockMovementApiInput) {
+  async createMovement(
+    userId: string,
+    itemId: string,
+    input: CreateStockMovementApiInput,
+    clientId?: string,
+  ) {
     const accessibleOwners = await this.getAccessibleOwners(userId);
     const result = await this.createStockMovementUseCase.execute({
       ...input,
       accessibleOwners,
+      clientId,
       itemId,
       userId,
     });

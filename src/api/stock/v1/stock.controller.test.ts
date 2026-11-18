@@ -160,7 +160,27 @@ describe('createMovement', () => {
   ])('SHOULD accept %j', async (body) => {
     await items.createMovement(request, id, body as never);
 
-    expect(stockService.createMovement).toHaveBeenCalledWith(userId, id, body);
+    expect(stockService.createMovement).toHaveBeenCalledWith(userId, id, body, undefined);
+  });
+
+  it('SHOULD pass the gesture fields and the Idempotency-Key to the service', async () => {
+    const key = '3f0e0000-0000-4000-8000-000000000002';
+    const body = {
+      expiredLots: 'DISCARD_THEN_VALID',
+      gestureId: '9b1c0000-0000-4000-8000-000000000001',
+      quantity: 3,
+      type: 'CONSUME',
+    };
+
+    await items.createMovement(request, id, body as never, key);
+
+    expect(stockService.createMovement).toHaveBeenCalledWith(userId, id, body, key);
+  });
+
+  it('SHOULD refuse a key that is not a uuid (400)', async () => {
+    await expect(
+      items.createMovement(request, id, { quantity: 1, type: 'CONSUME' } as never, 'nope'),
+    ).rejects.toThrow(ValidationError);
   });
 
   it.each([

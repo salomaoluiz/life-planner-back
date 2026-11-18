@@ -22,6 +22,7 @@ export interface CreateStockDatasourceParams {
   opened_shelf_life_days?: number;
   owner: OwnerType;
   owner_id: string;
+  quick_step?: number;
   stock_only: boolean;
   unit: StockUnit;
   user_id: string;
@@ -68,7 +69,8 @@ export interface IStockDatasource {
     itemId: string,
     userId: string,
     planner: MovementPlannerDatasource,
-  ): Promise<{ item: StockItemWithLots; movements: StockMovement[] } | null>;
+    options?: { client_id?: string; gesture_id?: string },
+  ): Promise<{ item: StockItemWithLots; movements: StockMovement[]; replayed: boolean } | null>;
   create(params: CreateStockDatasourceParams): Promise<StockItemWithLots>;
   delete(id: string): Promise<void>;
   // Rows deleted; idempotent.
@@ -99,6 +101,7 @@ export interface UpdateStockDatasourceParams {
   opened_shelf_life_days?: null | number;
   owner?: OwnerType;
   owner_id?: string;
+  quick_step?: null | number;
   stock_only?: boolean;
   unit?: StockUnit;
   warn_days_closed?: number;

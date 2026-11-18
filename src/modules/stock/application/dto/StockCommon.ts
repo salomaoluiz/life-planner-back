@@ -19,6 +19,7 @@ export const OwnerTypeSchema = z.enum(OwnerType);
 // Non-negative; the per-unit precision (whole units, 3 decimals) is a 422 checked by the use cases.
 export const QuantitySchema = z.number().min(0).max(MAX_QUANTITY);
 export const PositiveQuantitySchema = z.number().gt(0).max(MAX_QUANTITY);
+export const StepSchema = z.number().gt(0).max(MAX_QUANTITY);
 export const UnitSchema = z.enum(StockUnits);
 export const WarnDaysSchema = z.number().int().min(0).max(365);
 export const OpenedShelfLifeDaysSchema = z.number().int().min(1).max(3650);
@@ -77,4 +78,5 @@ export const NullableNotesSchema = z
   .optional()
   .transform(blankToNull);
 export const NullableQuantitySchema = QuantitySchema.nullable().optional();
+export const NullableStepSchema = StepSchema.nullable().optional();
 export const NullableShelfLifeSchema = OpenedShelfLifeDaysSchema.nullable().optional();

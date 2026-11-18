@@ -220,6 +220,41 @@ describe('Method applyMovement', () => {
     expect(result?.item.id).toBe(mocks.stock.id);
   });
 
+  it('SHOULD store the gesture on every movement and the idempotency key on the first one only', async () => {
+    spies.movementFindFirst.mockResolvedValue(null);
+
+    await setup.applyMovement(
+      'item',
+      'user',
+      () => [
+        { lot: { id: 'lot' }, movement: { quantity: -1, type: 'CONSUME' } },
+        { lot: { id: 'lot' }, movement: { quantity: -1, type: 'CONSUME' } },
+      ],
+      { client_id: 'key', gesture_id: 'gesture' },
+    );
+
+    expect(spies.movementCreate.mock.calls.map((call) => call[0].data)).toEqual([
+      expect.objectContaining({ client_id: 'key', gesture_id: 'gesture' }),
+      expect.objectContaining({ client_id: undefined, gesture_id: 'gesture' }),
+    ]);
+  });
+
+  it('SHOULD replay the stored movements WHEN the key was already applied, without planning', async () => {
+    spies.movementFindFirst.mockResolvedValue({ gesture_id: 'gesture', id: 'first' });
+    spies.movementFindMany.mockResolvedValue([{ id: 'first' }, { id: 'second' }]);
+    const planner = jest.fn();
+
+    const result = await setup.applyMovement('item', 'user', planner, {
+      client_id: 'key',
+      gesture_id: 'gesture',
+    });
+
+    expect(planner).not.toHaveBeenCalled();
+    expect(result?.replayed).toBe(true);
+    expect(result?.movements).toHaveLength(2);
+    expect(spies.movementCreate).not.toHaveBeenCalled();
+  });
+
   it('SHOULD propagate a planner error so the transaction rolls back', async () => {
     await expect(
       setup.applyMovement('item', 'user', () => {

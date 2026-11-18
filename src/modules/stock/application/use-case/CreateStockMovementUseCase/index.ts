@@ -21,16 +21,20 @@ import {
 import { hasOwnerAccess } from '@stock/domain/entity/OwnerAccess';
 import StockEntity from '@stock/domain/entity/StockEntity';
 import StockLotEntity from '@stock/domain/entity/StockLotEntity';
-import StockMovementEntity, { StockMovementTypes } from '@stock/domain/entity/StockMovementEntity';
+import StockMovementEntity, {
+  StockMovementReasons,
+  StockMovementTypes,
+} from '@stock/domain/entity/StockMovementEntity';
 import {
   IStockCatalogRepository,
   IStockRepository,
   MovementOperation,
 } from '@stock/domain/repository';
+import { planConsumeWithChoice } from '@stock/domain/service/ExpiredLotChoice';
 import {
   defaultOpenLot,
   findEntryLot,
-  planConsume,
+  latestClosedLot,
   planOpen,
 } from '@stock/domain/service/LotAllocation';
 import { fromMilli, quantityError, toMilli } from '@stock/domain/service/StockQuantity';
@@ -84,10 +88,17 @@ export class CreateStockMovementUseCase implements UseCaseWithParams<
 
     ensureOwnerWritable(input.accessibleOwners, found);
 
+    if (input.expiredLots !== undefined && input.type !== 'CONSUME') {
+      throw new UnprocessableEntityException('expiredLots only applies to CONSUME');
+    }
+
     const today = input.today ?? todayUtc();
     // Throwing inside the planner aborts the transaction: a refused movement writes nothing.
-    const result = await this.stockRepository.applyMovement(input.itemId, input.userId, (item) =>
-      plan(input, item, today),
+    const result = await this.stockRepository.applyMovement(
+      input.itemId,
+      input.userId,
+      (item) => plan(input, item, today),
+      { clientId: input.clientId, gestureId: input.gestureId },
     );
 
     if (!result) {
@@ -140,17 +151,36 @@ function plan(movement: Movement, item: StockEntity, today: Date): MovementOpera
       assertPrecision(item, movement.quantity);
 
       const lots = movement.lotId ? [lotOf(item, movement.lotId)] : item.lots;
-      const steps = planConsume(lots, movement.quantity, item.openedShelfLifeDays);
+      // Spec 117 FR 25: 116 clients (no `expiredLots`) skip expired lots, which is what the quick clients default to.
+      const steps = planConsumeWithChoice(
+        lots,
+        movement.quantity,
+        movement.expiredLots ?? 'VALID_ONLY',
+        item,
+        today,
+      );
 
       if (!steps) {
         throw new ConflictException('Not enough quantity');
       }
 
-      return steps.map((step) => ({
-        lot: { id: step.lotId },
-        movement: { note, quantity: -step.quantity, type: StockMovementTypes.CONSUME },
-        update: { quantity: minus(lotOf(item, step.lotId).quantity, step.quantity) },
-      }));
+      return [
+        ...steps.discards.map((step) => ({
+          lot: { id: step.lotId },
+          movement: {
+            note,
+            quantity: -step.quantity,
+            reason: StockMovementReasons.EXPIRED,
+            type: StockMovementTypes.DISCARD,
+          },
+          update: { quantity: minus(lotOf(item, step.lotId).quantity, step.quantity) },
+        })),
+        ...steps.consumes.map((step) => ({
+          lot: { id: step.lotId },
+          movement: { note, quantity: -step.quantity, type: StockMovementTypes.CONSUME },
+          update: { quantity: minus(lotOf(item, step.lotId).quantity, step.quantity) },
+        })),
+      ];
     }
     case 'DISCARD': {
       const lot = lotOf(item, movement.lotId);
@@ -178,7 +208,10 @@ function plan(movement: Movement, item: StockEntity, today: Date): MovementOpera
     case 'ENTRY': {
       assertPrecision(item, movement.quantity);
 
-      const lot = findEntryLot(item.lots, movement.expirationDate);
+      const lot =
+        movement.expirationDate === undefined && movement.target === 'LATEST_CLOSED'
+          ? latestClosedLot(item.lots)
+          : findEntryLot(item.lots, movement.expirationDate);
       const entry = {
         note,
         quantity: movement.quantity,

@@ -27,7 +27,8 @@ export class StockDatasource implements IStockDatasource {
     itemId: string,
     userId: string,
     planner: MovementPlannerDatasource,
-  ): Promise<{ item: StockItemWithLots; movements: StockMovement[] } | null> {
+    options?: { client_id?: string; gesture_id?: string },
+  ): Promise<{ item: StockItemWithLots; movements: StockMovement[]; replayed: boolean } | null> {
     return this.db.client.$transaction(async (tx) => {
       const locked = await tx.$queryRaw<{ id: string }[]>(
         Prisma.sql`SELECT "id" FROM "stock_items" WHERE "id" = ${itemId} FOR UPDATE`,
@@ -37,12 +38,37 @@ export class StockDatasource implements IStockDatasource {
         return null;
       }
 
+      // Spec 117 FR 21: a key already applied by this user answers with the stored result (the item is locked,
+      // so two requests with one key never run the planner twice).
+      if (options?.client_id) {
+        const first = await tx.stockMovement.findFirst({
+          where: { client_id: options.client_id, user_id: userId },
+        });
+
+        if (first) {
+          const stored = await tx.stockMovement.findMany({
+            orderBy: [{ created_at: 'asc' }, { id: 'asc' }],
+            where: first.gesture_id
+              ? { gesture_id: first.gesture_id, user_id: userId }
+              : { id: first.id },
+          });
+          const current = await tx.stockItem.findUniqueOrThrow({
+            include: OPEN_LOTS,
+            where: { id: itemId },
+          });
+
+          return { item: current, movements: stored, replayed: true };
+        }
+      }
+
       const item = await tx.stockItem.findUniqueOrThrow({ where: { id: itemId } });
       const lots = await tx.stockLot.findMany({
         orderBy: { id: 'asc' },
         where: { item_id: itemId },
       });
       const movements: StockMovement[] = [];
+
+      let clientId = options?.client_id;
 
       for (const operation of planner(item, lots)) {
         let lotId: string;
@@ -64,9 +90,18 @@ export class StockDatasource implements IStockDatasource {
         if (operation.movement) {
           movements.push(
             await tx.stockMovement.create({
-              data: { ...operation.movement, item_id: itemId, lot_id: lotId, user_id: userId },
+              data: {
+                ...operation.movement,
+                client_id: clientId,
+                gesture_id: options?.gesture_id,
+                item_id: itemId,
+                lot_id: lotId,
+                user_id: userId,
+              },
             }),
           );
+          // The key lives on the first movement only: it is unique per user.
+          clientId = undefined;
         }
       }
 
@@ -75,7 +110,7 @@ export class StockDatasource implements IStockDatasource {
         where: { id: itemId },
       });
 
-      return { item: after, movements };
+      return { item: after, movements, replayed: false };
     });
   }
 

@@ -23,6 +23,7 @@ interface IStockMovementEntity {
   quantity: number;
   type: StockMovementTypes;
   // Optional properties
+  gestureId?: string;
   note?: string;
   reason?: StockMovementReasons;
   userId?: string;
@@ -30,6 +31,7 @@ interface IStockMovementEntity {
 
 class StockMovementEntity {
   createdAt: Date;
+  gestureId?: string;
   id: string;
   itemId: string;
   lotId: string;
@@ -41,6 +43,7 @@ class StockMovementEntity {
 
   constructor(params: IStockMovementEntity) {
     this.createdAt = params.createdAt;
+    this.gestureId = params.gestureId;
     this.id = params.id;
     this.itemId = params.itemId;
     this.lotId = params.lotId;

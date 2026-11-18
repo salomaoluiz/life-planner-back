@@ -41,7 +41,9 @@ export class CreateStockItemUseCase implements UseCaseWithParams<
 
     ensureOwnerWritable(input.accessibleOwners, target);
 
-    const precision = quantityError(input.unit, input.quantity);
+    const precision =
+      quantityError(input.unit, input.quantity) ??
+      (input.quickStep === undefined ? undefined : quantityError(input.unit, input.quickStep));
 
     if (precision) {
       throw new UnprocessableEntityException(precision);
@@ -71,6 +73,7 @@ export class CreateStockItemUseCase implements UseCaseWithParams<
       openedShelfLifeDays: input.openedShelfLifeDays,
       owner: input.owner,
       ownerId: input.ownerId,
+      quickStep: input.quickStep,
       stockOnly: input.stockOnly,
       unit: input.unit,
       userId: input.userId,

@@ -25,6 +25,7 @@ const spies = {
   lotFindMany: jest.fn(),
   lotUpdate: jest.fn(),
   movementCreate: jest.fn(),
+  movementFindFirst: jest.fn(),
   movementFindMany: jest.fn(),
   queryRaw: jest.fn(),
   stockCreate: jest.fn(),
@@ -49,7 +50,11 @@ const client = {
     update: spies.stockUpdate,
   },
   stockLot: { create: spies.lotCreate, findMany: spies.lotFindMany, update: spies.lotUpdate },
-  stockMovement: { create: spies.movementCreate, findMany: spies.movementFindMany },
+  stockMovement: {
+    create: spies.movementCreate,
+    findFirst: spies.movementFindFirst,
+    findMany: spies.movementFindMany,
+  },
 };
 // A transaction runs the callback against the same client.
 client.$transaction.mockImplementation(async (callback: (tx: unknown) => unknown) =>
