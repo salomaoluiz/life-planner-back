@@ -1,48 +1,37 @@
-import { Test } from '@nestjs/testing';
-
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
-import StockEntityFixture from '@stock/domain/entity/mocks/StockEntity.fixture';
+import {
+  accessibleOwners,
+  build,
+  catalogRepositoryMock,
+  familyId,
+  item,
+  lot,
+  stockRepositoryMock,
+} from '@stock/application/mocks/stock.mocks';
 
+import { RefreshStockEmbeddingUseCase } from '../RefreshStockEmbeddingUseCase';
 import { UpdateStockItemUseCase } from './index';
 
-// region Mocks
-
-const itemMock = new StockEntityFixture().withOwnerId('user-id').build();
-const updatedMock = { ...itemMock, quantity: 1 };
-const accessibleOwners = [
-  { owner: OwnerType.USER, ownerId: 'user-id' },
-  { owner: OwnerType.FAMILY, ownerId: 'family-id' },
-];
-const stockRepositoryMock = {
-  findById: jest.fn(),
-  update: jest.fn(),
+const refresh = { execute: jest.fn() };
+const mocks = {
+  accessibleOwners,
+  catalog: catalogRepositoryMock(),
+  familyId,
+  refresh,
+  stock: stockRepositoryMock(),
 };
-
-// endregion Mocks
-
 let setup: UpdateStockItemUseCase;
 
 beforeEach(async () => {
   jest.clearAllMocks();
-  stockRepositoryMock.findById.mockResolvedValue(itemMock);
-  stockRepositoryMock.update.mockResolvedValue(updatedMock);
-
-  const module = await Test.createTestingModule({
-    providers: [
-      UpdateStockItemUseCase,
-      { provide: 'IStockRepository', useValue: stockRepositoryMock },
-    ],
-  }).compile();
-
-  setup = module.get(UpdateStockItemUseCase);
+  refresh.execute.mockResolvedValue(true);
+  mocks.stock.findById.mockResolvedValue(item([]));
+  mocks.stock.update.mockImplementation(async () => item([lot('lot', 1)]));
+  setup = await build(UpdateStockItemUseCase, [
+    { provide: 'IStockRepository', useValue: mocks.stock },
+    { provide: 'IStockCatalogRepository', useValue: mocks.catalog },
+    { provide: RefreshStockEmbeddingUseCase, useValue: refresh },
+  ]);
 });
 
-const mocks = {
-  accessibleOwners,
-  item: itemMock,
-  stockRepository: stockRepositoryMock,
-  updated: updatedMock,
-};
-const spies = {};
-
-export { mocks, setup, spies };
+export { mocks, OwnerType, setup };

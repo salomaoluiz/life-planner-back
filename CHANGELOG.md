@@ -3,6 +3,19 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [6.0.0] - 2026-11-17
+
+### Changed
+
+- **Breaking:** a stock item no longer has its own quantity or dates: they live in lots, and `GET /stock/items/:id` returns them. Units are now `unit`, `kilogram` and `liter` with up to 3 decimals; every date is `YYYY-MM-DD` (spec 116).
+
+### Added
+
+- Stock lots and an immutable movement history: entry, consume (open lots first), open (splits a lot), discard and adjust, at `POST/GET /stock/items/:id/movements` (spec 116).
+- Minimum and ideal quantity with `needsRestock`, expiration warnings per lot (`warnDaysClosed`, `warnDaysOpened`, `openedShelfLifeDays`) and "stock only" items (spec 116).
+- Stock categories (tree, optional finance mapping) and locations per owner, with archive, default suggestions and the owner-change preview (spec 116).
+- Name suggestions while typing, tolerant to typos (pg*trgm) and to similar words (pgvector embeddings, optional `EMBEDDINGS*\*`); `yarn stock:embeddings:backfill` fills existing items (spec 116).
+
 ## [5.1.0] - 2026-11-17
 
 ### Added

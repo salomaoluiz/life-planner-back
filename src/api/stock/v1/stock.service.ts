@@ -1,56 +1,224 @@
 import { Injectable } from '@nestjs/common';
 
 import {
+  CreateStockCategoryApiInput,
   CreateStockItemApiInput,
-  StockItemOutput,
+  CreateStockLocationApiInput,
+  CreateStockMovementApiInput,
+  StockCategoryNodeOutput,
+  StockItemApiOutput,
+  StockListItemApiOutput,
+  UpdateStockCategoryApiInput,
   UpdateStockItemApiInput,
+  UpdateStockLocationApiInput,
 } from '@api/stock/v1/dto/stock.dto';
+import { GetFamilyMembersUseCase } from '@family/application/use-case/GetFamilyMembersUseCase';
 import { GetUserFamilyAccessUseCase } from '@family/application/use-case/GetUserFamilyAccessUseCase';
+import { GetCategoriesUseCase } from '@finance/application/use-case/GetCategoriesUseCase';
+import { AccountStatus, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
+import { StockItemView } from '@stock/application/service/StockView';
+import { CreateStockCategorySuggestionsUseCase } from '@stock/application/use-case/CreateStockCategorySuggestionsUseCase';
+import { CreateStockCategoryUseCase } from '@stock/application/use-case/CreateStockCategoryUseCase';
 import { CreateStockItemUseCase } from '@stock/application/use-case/CreateStockItemUseCase';
+import { CreateStockLocationSuggestionsUseCase } from '@stock/application/use-case/CreateStockLocationSuggestionsUseCase';
+import { CreateStockLocationUseCase } from '@stock/application/use-case/CreateStockLocationUseCase';
+import { CreateStockMovementUseCase } from '@stock/application/use-case/CreateStockMovementUseCase';
+import { DeleteStockCategoryUseCase } from '@stock/application/use-case/DeleteStockCategoryUseCase';
 import { DeleteStockItemUseCase } from '@stock/application/use-case/DeleteStockItemUseCase';
+import { DeleteStockLocationUseCase } from '@stock/application/use-case/DeleteStockLocationUseCase';
+import { GetOwnerChangePreviewUseCase } from '@stock/application/use-case/GetOwnerChangePreviewUseCase';
+import { GetStockCategoriesUseCase } from '@stock/application/use-case/GetStockCategoriesUseCase';
 import { GetStockItemByIdUseCase } from '@stock/application/use-case/GetStockItemByIdUseCase';
 import { GetStockItemsUseCase } from '@stock/application/use-case/GetStockItemsUseCase';
+import { GetStockLocationsUseCase } from '@stock/application/use-case/GetStockLocationsUseCase';
+import { GetStockMovementsUseCase } from '@stock/application/use-case/GetStockMovementsUseCase';
+import { SuggestStockItemsUseCase } from '@stock/application/use-case/SuggestStockItemsUseCase';
+import { UpdateStockCategoryUseCase } from '@stock/application/use-case/UpdateStockCategoryUseCase';
 import { UpdateStockItemUseCase } from '@stock/application/use-case/UpdateStockItemUseCase';
+import { UpdateStockLocationUseCase } from '@stock/application/use-case/UpdateStockLocationUseCase';
 import { OwnerAccess } from '@stock/domain/entity/OwnerAccess';
-import StockEntity from '@stock/domain/entity/StockEntity';
+import StockCategoryEntity from '@stock/domain/entity/StockCategoryEntity';
+import StockLocationEntity from '@stock/domain/entity/StockLocationEntity';
+import StockMovementEntity from '@stock/domain/entity/StockMovementEntity';
+import { FindUsersByIdsUseCase } from '@user/application/use-case/FindUsersByIdsUseCase';
 
-function toStockItemOutput(item: StockEntity): StockItemOutput {
+function day(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+function dayOrNull(date?: Date) {
+  return date ? day(date) : null;
+}
+function toCategoryOutput(category: StockCategoryEntity) {
+  return {
+    financeCategoryId: category.financeCategoryId ?? null,
+    id: category.id,
+    name: category.name,
+    owner: category.owner,
+    ownerId: category.ownerId,
+    parentId: category.parentId ?? null,
+    status: category.status,
+  };
+}
+function toItemOutput(view: StockItemView): StockItemApiOutput {
+  return {
+    ...toListItemOutput(view),
+    lots: view.lots.map(({ effectiveExpiration, expirationStatus, lot }) => ({
+      effectiveExpiration: dayOrNull(effectiveExpiration),
+      expirationDate: dayOrNull(lot.expirationDate),
+      expirationStatus,
+      id: lot.id,
+      openedAt: dayOrNull(lot.openedAt),
+      purchaseDate: dayOrNull(lot.purchaseDate),
+      quantity: lot.quantity,
+    })),
+  };
+}
+function toListItemOutput(view: StockItemView): StockListItemApiOutput {
+  const { item } = view;
+
   return {
     barcode: item.barcode ?? null,
     brand: item.brand ?? null,
+    category: view.category ?? null,
+    categoryId: item.categoryId ?? null,
     createdAt: item.createdAt.toISOString(),
     description: item.description,
-    expirationDate: item.expirationDate?.toISOString() ?? null,
+    expirationStatus: view.expirationStatus,
+    hasOpenLot: view.hasOpenLot,
     id: item.id,
+    idealQuantity: item.idealQuantity ?? null,
+    location: view.location ?? null,
+    locationId: item.locationId ?? null,
+    minQuantity: item.minQuantity ?? null,
+    nearestExpiration: dayOrNull(view.nearestExpiration),
+    needsRestock: view.needsRestock,
     notes: item.notes ?? null,
-    openingDate: item.openingDate?.toISOString() ?? null,
+    openedShelfLifeDays: item.openedShelfLifeDays ?? null,
     owner: item.owner,
     ownerId: item.ownerId,
-    purchaseDate: item.purchaseDate?.toISOString() ?? null,
-    quantity: item.quantity,
+    quantity: view.quantity,
+    restockQuantity: view.restockQuantity,
+    stockOnly: item.stockOnly,
     unit: item.unit,
     updatedAt: item.updatedAt.toISOString(),
+    warnDaysClosed: item.warnDaysClosed,
+    warnDaysOpened: item.warnDaysOpened,
+  };
+}
+function toLocationOutput(location: StockLocationEntity, itemCount?: number) {
+  return {
+    id: location.id,
+    ...(itemCount === undefined ? {} : { itemCount }),
+    name: location.name,
+    owner: location.owner,
+    ownerId: location.ownerId,
+    status: location.status,
   };
 }
 
 @Injectable()
 export class StockService {
   constructor(
+    private readonly createStockCategorySuggestionsUseCase: CreateStockCategorySuggestionsUseCase,
+    private readonly createStockCategoryUseCase: CreateStockCategoryUseCase,
     private readonly createStockItemUseCase: CreateStockItemUseCase,
+    private readonly createStockLocationSuggestionsUseCase: CreateStockLocationSuggestionsUseCase,
+    private readonly createStockLocationUseCase: CreateStockLocationUseCase,
+    private readonly createStockMovementUseCase: CreateStockMovementUseCase,
+    private readonly deleteStockCategoryUseCase: DeleteStockCategoryUseCase,
     private readonly deleteStockItemUseCase: DeleteStockItemUseCase,
+    private readonly deleteStockLocationUseCase: DeleteStockLocationUseCase,
+    private readonly findUsersByIdsUseCase: FindUsersByIdsUseCase,
+    private readonly getCategoriesUseCase: GetCategoriesUseCase,
+    private readonly getFamilyMembersUseCase: GetFamilyMembersUseCase,
+    private readonly getOwnerChangePreviewUseCase: GetOwnerChangePreviewUseCase,
+    private readonly getStockCategoriesUseCase: GetStockCategoriesUseCase,
     private readonly getStockItemByIdUseCase: GetStockItemByIdUseCase,
     private readonly getStockItemsUseCase: GetStockItemsUseCase,
+    private readonly getStockLocationsUseCase: GetStockLocationsUseCase,
+    private readonly getStockMovementsUseCase: GetStockMovementsUseCase,
     private readonly getUserFamilyAccessUseCase: GetUserFamilyAccessUseCase,
+    private readonly suggestStockItemsUseCase: SuggestStockItemsUseCase,
+    private readonly updateStockCategoryUseCase: UpdateStockCategoryUseCase,
     private readonly updateStockItemUseCase: UpdateStockItemUseCase,
+    private readonly updateStockLocationUseCase: UpdateStockLocationUseCase,
   ) {}
 
-  async create(userId: string, input: CreateStockItemApiInput): Promise<StockItemOutput> {
+  async create(userId: string, input: CreateStockItemApiInput): Promise<StockItemApiOutput> {
     const accessibleOwners = await this.getAccessibleOwners(userId);
 
-    const item = await this.createStockItemUseCase.execute({ ...input, accessibleOwners });
+    return toItemOutput(
+      await this.createStockItemUseCase.execute({ ...input, accessibleOwners, userId }),
+    );
+  }
 
-    return toStockItemOutput(item);
+  async createCategory(userId: string, input: CreateStockCategoryApiInput) {
+    const accessibleOwners = await this.getAccessibleOwners(userId);
+    const financeCategories = input.financeCategoryId
+      ? await this.getFinanceCategories(accessibleOwners, input.ownerId)
+      : undefined;
+
+    return toCategoryOutput(
+      await this.createStockCategoryUseCase.execute({
+        ...input,
+        accessibleOwners,
+        financeCategories,
+      }),
+    );
+  }
+
+  async createCategorySuggestions(
+    userId: string,
+    input: { owner: OwnerType; ownerId: string },
+    language: 'en-US' | 'pt-BR',
+  ) {
+    const accessibleOwners = await this.getAccessibleOwners(userId);
+    const categories = await this.createStockCategorySuggestionsUseCase.execute({
+      ...input,
+      accessibleOwners,
+      language,
+    });
+
+    return { items: categories.map((category) => toCategoryOutput(category)) };
+  }
+
+  async createLocation(userId: string, input: CreateStockLocationApiInput) {
+    const accessibleOwners = await this.getAccessibleOwners(userId);
+
+    return toLocationOutput(
+      await this.createStockLocationUseCase.execute({ ...input, accessibleOwners }),
+    );
+  }
+
+  async createLocationSuggestions(
+    userId: string,
+    input: { owner: OwnerType; ownerId: string },
+    language: 'en-US' | 'pt-BR',
+  ) {
+    const accessibleOwners = await this.getAccessibleOwners(userId);
+    const locations = await this.createStockLocationSuggestionsUseCase.execute({
+      ...input,
+      accessibleOwners,
+      language,
+    });
+
+    return { items: locations.map((location) => toLocationOutput(location)) };
+  }
+
+  async createMovement(userId: string, itemId: string, input: CreateStockMovementApiInput) {
+    const accessibleOwners = await this.getAccessibleOwners(userId);
+    const result = await this.createStockMovementUseCase.execute({
+      ...input,
+      accessibleOwners,
+      itemId,
+      userId,
+    });
+
+    return {
+      item: toItemOutput(result.item),
+      movements: await this.toMovementOutputs(userId, result.item.item, result.movements),
+    };
   }
 
   async delete(userId: string, id: string): Promise<void> {
@@ -59,32 +227,159 @@ export class StockService {
     await this.deleteStockItemUseCase.execute({ accessibleOwners, id });
   }
 
-  async findAll(userId: string, ownerId?: string): Promise<StockItemOutput[]> {
-    const accessibleOwners = await this.getAccessibleOwners(userId);
-
-    const items = await this.getStockItemsUseCase.execute({ accessibleOwners, ownerId });
-
-    return items.map((item) => toStockItemOutput(item));
+  async deleteCategory(userId: string, id: string): Promise<void> {
+    await this.deleteStockCategoryUseCase.execute({
+      accessibleOwners: await this.getAccessibleOwners(userId),
+      id,
+    });
   }
 
-  async findById(userId: string, id: string): Promise<StockItemOutput> {
+  async deleteLocation(userId: string, id: string): Promise<void> {
+    await this.deleteStockLocationUseCase.execute({
+      accessibleOwners: await this.getAccessibleOwners(userId),
+      id,
+    });
+  }
+
+  async findAll(
+    userId: string,
+    query: { categoryId?: string[]; locationId?: string[]; ownerId?: string; today?: string },
+  ): Promise<StockListItemApiOutput[]> {
+    const accessibleOwners = await this.getAccessibleOwners(userId);
+    const views = await this.getStockItemsUseCase.execute({
+      accessibleOwners,
+      categoryIds: query.categoryId,
+      locationIds: query.locationId,
+      ownerId: query.ownerId,
+      today: query.today,
+    });
+
+    return views.map((view) => toListItemOutput(view));
+  }
+
+  async findById(userId: string, id: string, today?: string): Promise<StockItemApiOutput> {
     const accessibleOwners = await this.getAccessibleOwners(userId);
 
-    const item = await this.getStockItemByIdUseCase.execute({ accessibleOwners, id });
+    return toItemOutput(
+      await this.getStockItemByIdUseCase.execute({ accessibleOwners, id, today }),
+    );
+  }
 
-    return toStockItemOutput(item);
+  async findCategories(
+    userId: string,
+    query: { includeArchived: boolean; owner: OwnerType; ownerId: string },
+  ) {
+    const rows = await this.getStockCategoriesUseCase.execute({
+      ...query,
+      accessibleOwners: await this.getAccessibleOwners(userId),
+    });
+    const nodes = new Map<string, StockCategoryNodeOutput>(
+      rows.map(({ category, effectiveFinanceCategoryId, itemCount }) => [
+        category.id,
+        {
+          children: [],
+          effectiveFinanceCategoryId: effectiveFinanceCategoryId ?? null,
+          financeCategoryId: category.financeCategoryId ?? null,
+          id: category.id,
+          itemCount,
+          name: category.name,
+          parentId: category.parentId ?? null,
+          status: category.status,
+        },
+      ]),
+    );
+    const roots: StockCategoryNodeOutput[] = [];
+
+    for (const node of nodes.values()) {
+      const parent = node.parentId ? nodes.get(node.parentId) : undefined;
+
+      (parent ? parent.children : roots).push(node);
+    }
+
+    return { items: roots };
+  }
+
+  async findLocations(
+    userId: string,
+    query: { includeArchived: boolean; owner: OwnerType; ownerId: string },
+  ) {
+    const rows = await this.getStockLocationsUseCase.execute({
+      ...query,
+      accessibleOwners: await this.getAccessibleOwners(userId),
+    });
+
+    return { items: rows.map(({ itemCount, location }) => toLocationOutput(location, itemCount)) };
+  }
+
+  async findMovements(userId: string, itemId: string, cursor?: string) {
+    const accessibleOwners = await this.getAccessibleOwners(userId);
+    const page = await this.getStockMovementsUseCase.execute({ accessibleOwners, cursor, itemId });
+
+    return {
+      items: await this.toMovementOutputs(userId, page.owner, page.items),
+      nextCursor: page.nextCursor,
+    };
+  }
+
+  async ownerChangePreview(userId: string, id: string, owner: OwnerType, ownerId: string) {
+    return this.getOwnerChangePreviewUseCase.execute({
+      accessibleOwners: await this.getAccessibleOwners(userId),
+      id,
+      owner,
+      ownerId,
+    });
+  }
+
+  async suggest(userId: string, query: { owner: OwnerType; ownerId: string; q: string }) {
+    const suggestions = await this.suggestStockItemsUseCase.execute({
+      ...query,
+      accessibleOwners: await this.getAccessibleOwners(userId),
+    });
+
+    return {
+      items: suggestions.map((suggestion) => ({ ...suggestion, brand: suggestion.brand ?? null })),
+    };
   }
 
   async update(
     userId: string,
     id: string,
     input: UpdateStockItemApiInput,
-  ): Promise<StockItemOutput> {
+  ): Promise<StockItemApiOutput> {
     const accessibleOwners = await this.getAccessibleOwners(userId);
 
-    const item = await this.updateStockItemUseCase.execute({ ...input, accessibleOwners, id });
+    return toItemOutput(
+      await this.updateStockItemUseCase.execute({ ...input, accessibleOwners, id }),
+    );
+  }
 
-    return toStockItemOutput(item);
+  async updateCategory(userId: string, id: string, input: UpdateStockCategoryApiInput) {
+    const accessibleOwners = await this.getAccessibleOwners(userId);
+    const financeCategories = input.financeCategoryId
+      ? await this.getFinanceCategories(
+          accessibleOwners,
+          await this.ownerIdOfCategory(accessibleOwners, id),
+        )
+      : undefined;
+
+    return toCategoryOutput(
+      await this.updateStockCategoryUseCase.execute({
+        ...input,
+        accessibleOwners,
+        financeCategories,
+        id,
+      }),
+    );
+  }
+
+  async updateLocation(userId: string, id: string, input: UpdateStockLocationApiInput) {
+    return toLocationOutput(
+      await this.updateStockLocationUseCase.execute({
+        ...input,
+        accessibleOwners: await this.getAccessibleOwners(userId),
+        id,
+      }),
+    );
   }
 
   // Resolved on every request: the caller plus every family they own or joined (spec 005, C1).
@@ -99,5 +394,89 @@ export class StockService {
         ownerId: familyId,
       })),
     ];
+  }
+
+  // The finance categories the owner can use, as the rules need them (type and archived flag).
+  private async getFinanceCategories(accessibleOwners: OwnerAccess[], ownerId: string) {
+    const categories = await this.getCategoriesUseCase.execute({
+      accessibleOwners,
+      ownerIds: [ownerId],
+    });
+
+    return categories.map((category) => ({
+      archived: category.status === AccountStatus.ARCHIVED,
+      id: category.id,
+      isExpense: category.type === TransactionType.EXPENSE,
+    }));
+  }
+
+  // The owner of a stock category, to scope the finance categories of an update (404 stays the use case's job).
+  private async ownerIdOfCategory(accessibleOwners: OwnerAccess[], id: string): Promise<string> {
+    for (const owner of accessibleOwners) {
+      const rows = await this.getStockCategoriesUseCase.execute({
+        accessibleOwners,
+        includeArchived: true,
+        owner: owner.owner,
+        ownerId: owner.ownerId,
+      });
+
+      if (rows.some((row) => row.category.id === id)) {
+        return owner.ownerId;
+      }
+    }
+
+    return accessibleOwners[0].ownerId;
+  }
+
+  // FR "Ownership": a movement's author shows only while still a member of the item's owner ("Ex-membro" otherwise).
+  private async currentMemberIds(
+    userId: string,
+    item: { owner: OwnerType; ownerId: string },
+  ): Promise<Set<string>> {
+    if (item.owner === OwnerType.USER) {
+      return new Set([item.ownerId]);
+    }
+
+    try {
+      const members = await this.getFamilyMembersUseCase.execute({
+        familyId: item.ownerId,
+        userId,
+      });
+
+      return new Set(members.flatMap((member) => (member.userId ? [member.userId] : [])));
+    } catch {
+      return new Set();
+    }
+  }
+
+  private async toMovementOutputs(
+    userId: string,
+    item: { owner: OwnerType; ownerId: string },
+    movements: StockMovementEntity[],
+  ) {
+    const authorIds = [...new Set(movements.flatMap((movement) => movement.userId ?? []))];
+    const [users, memberIds] = await Promise.all([
+      this.findUsersByIdsUseCase.execute({ ids: authorIds }),
+      this.currentMemberIds(userId, item),
+    ]);
+    const names = new Map(users.map((user) => [user.id, user.name]));
+
+    return movements.map((movement) => {
+      const name = movement.userId ? names.get(movement.userId) : undefined;
+
+      return {
+        createdAt: movement.createdAt.toISOString(),
+        id: movement.id,
+        lotId: movement.lotId,
+        note: movement.note ?? null,
+        quantity: movement.quantity,
+        reason: movement.reason ?? null,
+        type: movement.type,
+        user:
+          movement.userId && name !== undefined && memberIds.has(movement.userId)
+            ? { id: movement.userId, name }
+            : null,
+      };
+    });
   }
 }

@@ -3,18 +3,30 @@ import { Inject } from '@nestjs/common';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 import { GetStockItemsInput, GetStockItemsSchema } from '@stock/application/dto/GetStockItems';
+import {
+  loadCatalogLookup,
+  StockItemView,
+  todayUtc,
+  toStockItemView,
+} from '@stock/application/service/StockView';
 import { narrowOwners } from '@stock/domain/entity/OwnerAccess';
-import StockEntity from '@stock/domain/entity/StockEntity';
-import { IStockRepository } from '@stock/domain/repository';
+import { IStockCatalogRepository, IStockRepository } from '@stock/domain/repository';
+import { descendantIds } from '@stock/domain/service/CategoryTree';
+import { compareNullsLast } from '@stock/domain/service/NullsLast';
 
-// expirationDate ascending (nulls last), then description case-insensitive, then id.
-export class GetStockItemsUseCase implements UseCaseWithParams<GetStockItemsInput, StockEntity[]> {
+// Spec 116 FR 34: nearest effective expiration ascending (nulls last), then description case-insensitive, then id.
+export class GetStockItemsUseCase implements UseCaseWithParams<
+  GetStockItemsInput,
+  StockItemView[]
+> {
   constructor(
     @Inject('IStockRepository')
     private readonly stockRepository: IStockRepository,
+    @Inject('IStockCatalogRepository')
+    private readonly catalogRepository: IStockCatalogRepository,
   ) {}
 
-  async execute(params: GetStockItemsInput): Promise<StockEntity[]> {
+  async execute(params: GetStockItemsInput): Promise<StockItemView[]> {
     const input = validate(GetStockItemsSchema, params);
     const owners = narrowOwners(input.accessibleOwners, input.ownerId);
 
@@ -22,26 +34,25 @@ export class GetStockItemsUseCase implements UseCaseWithParams<GetStockItemsInpu
       return [];
     }
 
-    const items = await this.stockRepository.findByOwners(owners);
+    const catalog = await loadCatalogLookup(this.catalogRepository, owners);
+    // FR 25: a category filter includes its subcategories; an id nobody knows is kept and matches nothing.
+    const categoryIds = input.categoryIds && [
+      ...new Set(input.categoryIds.flatMap((id) => descendantIds(catalog.categories, id))),
+    ];
+    const items = await this.stockRepository.findByOwners(owners, {
+      categoryIds,
+      locationIds: input.locationIds,
+    });
+    const today = input.today ?? todayUtc();
 
-    return [...items].sort(compareStockItems);
+    return items.map((item) => toStockItemView(item, today, catalog)).sort(compareViews);
   }
 }
 
-function compareExpiration(a: StockEntity, b: StockEntity): number {
-  if (a.expirationDate && b.expirationDate) {
-    return a.expirationDate.getTime() - b.expirationDate.getTime();
-  }
-  if (a.expirationDate) {
-    return -1;
-  }
-
-  return b.expirationDate ? 1 : 0;
-}
-function compareStockItems(a: StockEntity, b: StockEntity): number {
+function compareViews(a: StockItemView, b: StockItemView): number {
   return (
-    compareExpiration(a, b) ||
-    a.description.toLowerCase().localeCompare(b.description.toLowerCase()) ||
-    a.id.localeCompare(b.id)
+    compareNullsLast(a.nearestExpiration?.getTime(), b.nearestExpiration?.getTime()) ||
+    a.item.description.toLowerCase().localeCompare(b.item.description.toLowerCase()) ||
+    a.item.id.localeCompare(b.item.id)
   );
 }

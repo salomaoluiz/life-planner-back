@@ -42,6 +42,12 @@ export const envSchema = z.object({
   // Finance (spec 081): seconds-scale cache of the recurrence materialization check, 0 disables it
   FINANCE_MATERIALIZATION_GATE_TTL_MS: optionalInt(0, 60000),
 
+  // Name embeddings for the stock suggestions (spec 116): an empty key disables them (trigram only)
+  EMBEDDINGS_API_KEY: emptyToUndefined,
+  EMBEDDINGS_API_URL: emptyToUndefined,
+  EMBEDDINGS_DIMENSIONS: optionalInt(1, 1024),
+  EMBEDDINGS_MODEL: emptyToUndefined,
+
   // Investment quotes (spec 104): tokens are optional, a missing one disables that source
   BRAPI_TOKEN: emptyToUndefined,
   FINNHUB_TOKEN: emptyToUndefined,

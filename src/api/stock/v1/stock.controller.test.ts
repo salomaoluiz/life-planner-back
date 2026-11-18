@@ -1,12 +1,18 @@
 import { HTTP_CODE_METADATA, PATH_METADATA, VERSION_METADATA } from '@nestjs/common/constants';
 
+import { StockAPIModule } from '@api/stock/stock.module';
 import { ValidationError } from '@shared/domain/error/ValidationError';
 
-import { StockController } from './stock.controller';
+import { StockController, StockSuggestionController } from './stock.controller';
 import { mocks, setup } from './stock.controller.mocks';
 
-const ownerId = '0b6a1e7c-3f4d-4b2a-8c9d-1e2f3a4b5c6d';
-const validBody = { description: 'Rice', owner: 'USER', ownerId, quantity: 2, unit: 'kilogram' };
+const { id, ownerId, request, stockService, userId } = mocks;
+let items: Awaited<ReturnType<typeof setup>>['items'];
+let suggestions: Awaited<ReturnType<typeof setup>>['suggestions'];
+
+beforeEach(async () => {
+  ({ items, suggestions } = await setup());
+});
 
 it('SHOULD be served at /stock/items under URI version 1', () => {
   expect(Reflect.getMetadata(PATH_METADATA, StockController)).toBe('stock/items');
@@ -14,82 +20,156 @@ it('SHOULD be served at /stock/items under URI version 1', () => {
 });
 
 describe('findAll', () => {
-  it('SHOULD list WITHOUT a filter', async () => {
-    expect(await setup.findAll(mocks.request, {})).toEqual([mocks.item]);
-    expect(mocks.stockService.findAll).toHaveBeenCalledWith(mocks.request.user.id, undefined);
+  it('SHOULD list WITHOUT filters', async () => {
+    expect(await items.findAll(request, {})).toBe(mocks.result);
+    expect(stockService.findAll).toHaveBeenCalledWith(userId, {});
   });
 
-  it('SHOULD pass a single ownerId to the service', async () => {
-    await setup.findAll(mocks.request, { ownerId });
+  it('SHOULD pass owner, category and location filters, turning one id into a list', async () => {
+    await items.findAll(request, {
+      categoryId: id,
+      locationId: [id, ownerId],
+      ownerId,
+      today: '2026-11-10',
+    });
 
-    expect(mocks.stockService.findAll).toHaveBeenCalledWith(mocks.request.user.id, ownerId);
-  });
-
-  it.each([
-    ['a non-uuid ownerId', 'abc'],
-    ['a repeated ownerId', [ownerId, ownerId]],
-  ])('SHOULD throw ValidationError (400) WHEN there is %s', async (_label, value) => {
-    await expect(setup.findAll(mocks.request, { ownerId: value })).rejects.toThrow(ValidationError);
-    expect(mocks.stockService.findAll).not.toHaveBeenCalled();
-  });
-});
-
-describe('findById', () => {
-  it('SHOULD return the item for the JWT user', async () => {
-    expect(await setup.findById(mocks.request, mocks.item.id)).toEqual(mocks.item);
-    expect(mocks.stockService.findById).toHaveBeenCalledWith(mocks.request.user.id, mocks.item.id);
-  });
-});
-
-describe('create', () => {
-  it('SHOULD validate the body AND call the service with the JWT user', async () => {
-    const result = await setup.create(mocks.request, validBody as never);
-
-    expect(mocks.stockService.create).toHaveBeenCalledWith(mocks.request.user.id, validBody);
-    expect(result).toEqual(mocks.item);
-  });
-
-  it.each([
-    ['a missing body', undefined],
-    ['an unknown field', { ...validBody, id: ownerId }],
-    ['a fractional quantity', { ...validBody, quantity: 1.5 }],
-    ['a missing owner', { ...validBody, owner: undefined }],
-  ])('SHOULD throw ValidationError (400) WHEN the body has %s', async (_label, body) => {
-    await expect(setup.create(mocks.request, body as never)).rejects.toThrow(ValidationError);
-    expect(mocks.stockService.create).not.toHaveBeenCalled();
-  });
-});
-
-describe('update', () => {
-  it('SHOULD validate the patch AND call the service', async () => {
-    await setup.update(mocks.request, mocks.item.id, { notes: null } as never);
-
-    expect(mocks.stockService.update).toHaveBeenCalledWith(mocks.request.user.id, mocks.item.id, {
-      notes: null,
+    expect(stockService.findAll).toHaveBeenCalledWith(userId, {
+      categoryId: [id],
+      locationId: [id, ownerId],
+      ownerId,
+      today: '2026-11-10',
     });
   });
 
   it.each([
-    ['an empty body', {}],
-    ['only owner', { owner: 'FAMILY' }],
-    ['only ownerId', { ownerId }],
-    ['null on a required field', { description: null }],
-  ])(
-    'SHOULD throw ValidationError (400) AND change nothing WHEN the body has %s',
-    async (_label, body) => {
-      await expect(setup.update(mocks.request, mocks.item.id, body as never)).rejects.toThrow(
-        ValidationError,
-      );
-      expect(mocks.stockService.update).not.toHaveBeenCalled();
-    },
-  );
+    ['a non-uuid ownerId', { ownerId: 'abc' }],
+    ['a bad category id', { categoryId: 'abc' }],
+    ['a bad today', { today: '10/11/2026' }],
+  ])('SHOULD throw ValidationError (400) WHEN there is %s', async (_label, query) => {
+    await expect(items.findAll(request, query)).rejects.toThrow(ValidationError);
+  });
 });
 
-describe('delete', () => {
-  it('SHOULD delete by id for the JWT user AND answer 204', async () => {
-    await setup.delete(mocks.request, mocks.item.id);
+describe('suggest', () => {
+  it('SHOULD pass q and the owner', async () => {
+    await suggestions.suggest(request, { owner: 'USER', ownerId, q: 'musarela' });
 
-    expect(mocks.stockService.delete).toHaveBeenCalledWith(mocks.request.user.id, mocks.item.id);
+    expect(stockService.suggest).toHaveBeenCalledWith(userId, {
+      owner: 'USER',
+      ownerId,
+      q: 'musarela',
+    });
+  });
+
+  it('SHOULD refuse a q shorter than 2 characters (400)', async () => {
+    await expect(suggestions.suggest(request, { owner: 'USER', ownerId, q: 'm' })).rejects.toThrow(
+      ValidationError,
+    );
+  });
+
+  it('SHOULD be its own controller, registered before StockController, so :id never swallows it', () => {
+    const controllers = Reflect.getMetadata('controllers', StockAPIModule) as unknown[];
+
+    expect(Reflect.getMetadata(PATH_METADATA, StockSuggestionController)).toBe(
+      'stock/items/suggestions',
+    );
+    expect(controllers.indexOf(StockSuggestionController)).toBeLessThan(
+      controllers.indexOf(StockController),
+    );
+  });
+});
+
+describe('findById / delete / findMovements / ownerChangePreview', () => {
+  it('SHOULD read the item with the optional day', async () => {
+    await items.findById(request, id, { today: '2026-11-10' });
+
+    expect(stockService.findById).toHaveBeenCalledWith(userId, id, '2026-11-10');
+  });
+
+  it('SHOULD delete with 204', async () => {
+    await items.delete(request, id);
+
+    expect(stockService.delete).toHaveBeenCalledWith(userId, id);
     expect(Reflect.getMetadata(HTTP_CODE_METADATA, StockController.prototype.delete)).toBe(204);
+  });
+
+  it('SHOULD page the movements with the cursor', async () => {
+    await items.findMovements(request, id, { cursor: 'abc' });
+
+    expect(stockService.findMovements).toHaveBeenCalledWith(userId, id, 'abc');
+  });
+
+  it('SHOULD preview an owner change AND require both owner and ownerId', async () => {
+    await items.ownerChangePreview(request, id, { owner: 'FAMILY', ownerId });
+
+    expect(stockService.ownerChangePreview).toHaveBeenCalledWith(userId, id, 'FAMILY', ownerId);
+    await expect(items.ownerChangePreview(request, id, { owner: 'FAMILY' })).rejects.toThrow(
+      ValidationError,
+    );
+  });
+});
+
+describe('create / update', () => {
+  const body = {
+    description: 'Rice',
+    owner: 'USER',
+    ownerId,
+    quantity: 1.5,
+    unit: 'kilogram',
+  } as never;
+
+  it('SHOULD create validating the strict body (kg decimals accepted)', async () => {
+    await items.create(request, body);
+
+    expect(stockService.create).toHaveBeenCalledWith(userId, body);
+  });
+
+  it.each([
+    ['an unknown field', { ...(body as object), extra: 1 }],
+    ['a removed unit', { ...(body as object), unit: 'gram' }],
+    ['a negative quantity', { ...(body as object), quantity: -1 }],
+    ['a bad day', { ...(body as object), expirationDate: '2026-13-45' }],
+  ])('SHOULD refuse %s on create (400)', async (_label, bad) => {
+    await expect(items.create(request, bad as never)).rejects.toThrow(ValidationError);
+  });
+
+  it('SHOULD update item fields only: quantity is not editable (400)', async () => {
+    await items.update(request, id, { minQuantity: 2, stockOnly: false } as never);
+    expect(stockService.update).toHaveBeenCalledWith(userId, id, {
+      minQuantity: 2,
+      stockOnly: false,
+    });
+
+    await expect(items.update(request, id, { quantity: 3 } as never)).rejects.toThrow(
+      ValidationError,
+    );
+    await expect(items.update(request, id, {} as never)).rejects.toThrow(ValidationError);
+    await expect(items.update(request, id, { owner: 'FAMILY' } as never)).rejects.toThrow(
+      ValidationError,
+    );
+  });
+});
+
+describe('createMovement', () => {
+  it.each([
+    [{ expirationDate: '2026-12-01', quantity: 1, type: 'ENTRY' }],
+    [{ quantity: 1, type: 'CONSUME' }],
+    [{ type: 'OPEN' }],
+    [{ lotId: id, reason: 'EXPIRED', type: 'DISCARD' }],
+    [{ countedQuantity: 2, type: 'ADJUST' }],
+  ])('SHOULD accept %j', async (body) => {
+    await items.createMovement(request, id, body as never);
+
+    expect(stockService.createMovement).toHaveBeenCalledWith(userId, id, body);
+  });
+
+  it.each([
+    [{ quantity: 1, type: 'INITIAL' }],
+    [{ type: 'CONSUME' }],
+    [{ lotId: id, type: 'DISCARD' }],
+    [{ countedQuantity: -1, type: 'ADJUST' }],
+    [{ extra: true, quantity: 1, type: 'CONSUME' }],
+  ])('SHOULD refuse %j (400)', async (body) => {
+    await expect(items.createMovement(request, id, body as never)).rejects.toThrow(ValidationError);
   });
 });

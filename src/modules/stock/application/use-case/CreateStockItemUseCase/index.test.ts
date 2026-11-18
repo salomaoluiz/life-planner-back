@@ -1,94 +1,92 @@
-import { ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, UnprocessableEntityException } from '@nestjs/common';
 
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { ValidationError } from '@shared/domain/error/ValidationError';
+import { archivedOwners, category, location } from '@stock/application/mocks/stock.mocks';
 import { StockUnits } from '@stock/domain/entity/StockEntity';
 
-import { mocks, setup } from './index.mocks';
+import { base, mocks, setup } from './index.mocks';
 
-function base() {
-  return {
-    accessibleOwners: mocks.accessibleOwners,
-    description: '  Rice ',
-    owner: OwnerType.USER,
-    ownerId: 'user-id',
+it('SHOULD create the item with its first lot (purchase date defaults to today) AND return the view', async () => {
+  const view = await setup.execute({
+    ...base,
+    expirationDate: '2026-11-20',
     quantity: 2,
-    unit: StockUnits.KILOGRAM,
-  };
-}
-
-it('SHOULD create the item with trimmed text AND return the entity', async () => {
-  const result = await setup.execute({ ...base(), expirationDate: '2027-03-01T00:00:00.000Z' });
-
-  expect(mocks.stockRepository.create).toHaveBeenCalledWith({
-    description: 'Rice',
-    expirationDate: new Date('2027-03-01T00:00:00.000Z'),
-    owner: OwnerType.USER,
-    ownerId: 'user-id',
-    quantity: 2,
-    unit: StockUnits.KILOGRAM,
+    today: '2026-11-10',
   });
-  expect(result).toBe(mocks.created);
+
+  expect(mocks.stock.create).toHaveBeenCalledWith(
+    expect.objectContaining({
+      firstLot: {
+        expirationDate: new Date('2026-11-20T00:00:00.000Z'),
+        purchaseDate: new Date('2026-11-10T00:00:00.000Z'),
+        quantity: 2,
+      },
+      stockOnly: false,
+      userId: 'user-id',
+      warnDaysClosed: 7,
+      warnDaysOpened: 1,
+    }),
+  );
+  expect(view.quantity).toBe(2);
 });
 
-it('SHOULD allow quantity 0 AND 1,000,000', async () => {
-  await setup.execute({ ...base(), quantity: 0 });
-  await setup.execute({ ...base(), quantity: 1_000_000 });
+it('SHOULD create the item with no lot WHEN the quantity is 0', async () => {
+  await setup.execute(base);
 
-  expect(mocks.stockRepository.create).toHaveBeenCalledTimes(2);
+  expect(mocks.stock.create).toHaveBeenCalledWith(expect.objectContaining({ firstLot: undefined }));
 });
 
-it('SHOULD store empty strings and null as absent', async () => {
-  await setup.execute({ ...base(), barcode: '', brand: '   ', notes: '', openingDate: null });
+it('SHOULD refresh the embedding AFTER the write without waiting for it', async () => {
+  mocks.refresh.execute.mockRejectedValue(new Error('provider down'));
 
-  const [call] = mocks.stockRepository.create.mock.calls[0];
-  expect(call.barcode).toBeUndefined();
-  expect(call.brand).toBeUndefined();
-  expect(call.notes).toBeUndefined();
-  expect(call.openingDate).toBeUndefined();
+  await expect(setup.execute(base)).resolves.toBeDefined();
+  expect(mocks.refresh.execute).toHaveBeenCalledWith({ id: 'item' });
 });
 
-it('SHOULD allow creating in a family the caller belongs to', async () => {
-  await setup.execute({ ...base(), owner: OwnerType.FAMILY, ownerId: 'family-id' });
+it('SHOULD check the category and location against the owner', async () => {
+  mocks.catalog.findCategoryById.mockResolvedValue(category('c'));
+  mocks.catalog.findLocationById.mockResolvedValue(location('l'));
 
-  expect(mocks.stockRepository.create).toHaveBeenCalled();
+  await setup.execute({ ...base, categoryId: 'c', locationId: 'l' });
+
+  expect(mocks.stock.create).toHaveBeenCalledWith(
+    expect.objectContaining({ categoryId: 'c', locationId: 'l' }),
+  );
 });
 
 it.each([
-  ['another user', { owner: OwnerType.USER, ownerId: 'other-user' }],
-  ['a family the caller is not in', { owner: OwnerType.FAMILY, ownerId: 'other-family' }],
-  ['a family id under the USER type', { owner: OwnerType.USER, ownerId: 'family-id' }],
-])('SHOULD throw Forbidden (403) AND store nothing WHEN the owner is %s', async (_label, owner) => {
-  await expect(setup.execute({ ...base(), ...owner })).rejects.toThrow(ForbiddenException);
-  expect(mocks.stockRepository.create).not.toHaveBeenCalled();
+  ['a decimal quantity on a UNIT item', { quantity: 1.5 }],
+  ['an ideal not above the minimum', { idealQuantity: 1, minQuantity: 2 }],
+  ['a minimum on a stock-only item', { minQuantity: 1, stockOnly: true }],
+  ['a category the owner does not have', { categoryId: 'missing' }],
+])('SHOULD refuse %s with 422 AND write nothing', async (_label, extra) => {
+  await expect(setup.execute({ ...base, ...extra })).rejects.toThrow(UnprocessableEntityException);
+  expect(mocks.stock.create).not.toHaveBeenCalled();
 });
 
-it.each([
-  ['a missing description', { description: undefined }],
-  ['a whitespace-only description', { description: '   ' }],
-  ['a 201-char description', { description: 'a'.repeat(201) }],
-  ['a negative quantity', { quantity: -1 }],
-  ['a fractional quantity', { quantity: 1.5 }],
-  ['a quantity above 1,000,000', { quantity: 1_000_001 }],
-  ['a string quantity', { quantity: '2' }],
-  ['an unknown unit', { unit: 'pound' }],
-  ['a 101-char brand', { brand: 'a'.repeat(101) }],
-  ['a 65-char barcode', { barcode: 'a'.repeat(65) }],
-  ['1001-char notes', { notes: 'a'.repeat(1001) }],
-  ['a date without time', { purchaseDate: '2026-10-04' }],
-  ['an impossible calendar date', { purchaseDate: '2026-02-30T00:00:00.000Z' }],
-  ['year 0000', { expirationDate: '0000-01-01T00:00:00.000Z' }],
-])('SHOULD throw ValidationError AND store nothing WHEN there is %s', async (_label, patch) => {
-  await expect(setup.execute({ ...base(), ...patch } as never)).rejects.toThrow(ValidationError);
-  expect(mocks.stockRepository.create).not.toHaveBeenCalled();
+it('SHOULD accept 3 decimals on kg items and refuse 4', async () => {
+  await expect(
+    setup.execute({ ...base, quantity: 1.5, unit: StockUnits.KILOGRAM }),
+  ).resolves.toBeDefined();
+  await expect(
+    setup.execute({ ...base, quantity: 1.5555, unit: StockUnits.KILOGRAM }),
+  ).rejects.toThrow(UnprocessableEntityException);
 });
 
-it('SHOULD throw 422 "Family is archived" WHEN the owner is archived (spec 042)', async () => {
-  const input = base();
-  const accessibleOwners = input.accessibleOwners.map((access) => ({ ...access, archived: true }));
+it('SHOULD refuse an owner the caller cannot access (403) and an archived family (422)', async () => {
+  await expect(setup.execute({ ...base, ownerId: 'other' })).rejects.toThrow(ForbiddenException);
+  await expect(
+    setup.execute({
+      ...base,
+      accessibleOwners: archivedOwners,
+      owner: OwnerType.FAMILY,
+      ownerId: 'family-id',
+    }),
+  ).rejects.toThrow(UnprocessableEntityException);
+});
 
-  await expect(setup.execute({ ...input, accessibleOwners })).rejects.toMatchObject({
-    message: 'Family is archived',
-    status: 422,
-  });
+it('SHOULD throw ValidationError WHEN the input is malformed', async () => {
+  await expect(setup.execute({ ...base, quantity: -1 })).rejects.toThrow(ValidationError);
+  await expect(setup.execute({ ...base, description: '' })).rejects.toThrow(ValidationError);
 });

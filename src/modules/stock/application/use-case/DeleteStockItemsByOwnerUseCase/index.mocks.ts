@@ -1,33 +1,26 @@
-import { Test } from '@nestjs/testing';
-
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
+import {
+  build,
+  catalogRepositoryMock,
+  stockRepositoryMock,
+} from '@stock/application/mocks/stock.mocks';
 
 import { DeleteStockItemsByOwnerUseCase } from './index';
 
-// region Mocks
-
-const inputMock = { owner: OwnerType.FAMILY, ownerId: 'family-id' };
-const stockRepositoryMock = { deleteByOwner: jest.fn() };
-
-// endregion Mocks
-
+const mocks = {
+  catalog: catalogRepositoryMock(),
+  owner: OwnerType.FAMILY,
+  stock: stockRepositoryMock(),
+};
 let setup: DeleteStockItemsByOwnerUseCase;
 
 beforeEach(async () => {
   jest.clearAllMocks();
-  stockRepositoryMock.deleteByOwner.mockResolvedValue(2);
-
-  const module = await Test.createTestingModule({
-    providers: [
-      DeleteStockItemsByOwnerUseCase,
-      { provide: 'IStockRepository', useValue: stockRepositoryMock },
-    ],
-  }).compile();
-
-  setup = module.get(DeleteStockItemsByOwnerUseCase);
+  mocks.stock.deleteByOwner.mockResolvedValue(3);
+  setup = await build(DeleteStockItemsByOwnerUseCase, [
+    { provide: 'IStockRepository', useValue: mocks.stock },
+    { provide: 'IStockCatalogRepository', useValue: mocks.catalog },
+  ]);
 });
 
-const mocks = { input: inputMock, stockRepository: stockRepositoryMock };
-const spies = {};
-
-export { mocks, setup, spies };
+export { mocks, setup };

@@ -1,38 +1,24 @@
-import { Test } from '@nestjs/testing';
-
-import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
-import StockEntityFixture from '@stock/domain/entity/mocks/StockEntity.fixture';
+import {
+  accessibleOwners,
+  build,
+  catalogRepositoryMock,
+  item,
+  lot,
+  stockRepositoryMock,
+} from '@stock/application/mocks/stock.mocks';
 
 import { GetStockItemByIdUseCase } from './index';
 
-// region Mocks
-
-const itemMock = new StockEntityFixture()
-  .withOwner(OwnerType.FAMILY)
-  .withOwnerId('family-id')
-  .build();
-const accessibleOwners = [{ owner: OwnerType.FAMILY, ownerId: 'family-id' }];
-const stockRepositoryMock = { findById: jest.fn() };
-
-// endregion Mocks
-
+const mocks = { accessibleOwners, catalog: catalogRepositoryMock(), stock: stockRepositoryMock() };
 let setup: GetStockItemByIdUseCase;
 
 beforeEach(async () => {
   jest.clearAllMocks();
-  stockRepositoryMock.findById.mockResolvedValue(itemMock);
-
-  const module = await Test.createTestingModule({
-    providers: [
-      GetStockItemByIdUseCase,
-      { provide: 'IStockRepository', useValue: stockRepositoryMock },
-    ],
-  }).compile();
-
-  setup = module.get(GetStockItemByIdUseCase);
+  mocks.stock.findById.mockResolvedValue(item([lot('a', 2)]));
+  setup = await build(GetStockItemByIdUseCase, [
+    { provide: 'IStockRepository', useValue: mocks.stock },
+    { provide: 'IStockCatalogRepository', useValue: mocks.catalog },
+  ]);
 });
 
-const mocks = { accessibleOwners, item: itemMock, stockRepository: stockRepositoryMock };
-const spies = {};
-
-export { mocks, setup, spies };
+export { mocks, setup };

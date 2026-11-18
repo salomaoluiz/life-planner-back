@@ -1,48 +1,71 @@
 import { ValidationError } from '@shared/domain/error/ValidationError';
+import { category, day, item, lot } from '@stock/application/mocks/stock.mocks';
 
 import { mocks, setup } from './index.mocks';
 
-it('SHOULD query every accessible owner in one repository call', async () => {
+it('SHOULD query every accessible owner in one repository call AND read the catalogs of all owners at once', async () => {
   await setup.execute({ accessibleOwners: mocks.accessibleOwners });
 
-  expect(mocks.stockRepository.findByOwners).toHaveBeenCalledTimes(1);
-  expect(mocks.stockRepository.findByOwners).toHaveBeenCalledWith(mocks.accessibleOwners);
+  expect(mocks.stock.findByOwners).toHaveBeenCalledTimes(1);
+  expect(mocks.stock.findByOwners).toHaveBeenCalledWith(mocks.accessibleOwners, {
+    categoryIds: undefined,
+    locationIds: undefined,
+  });
+  expect(mocks.catalog.findCatalogByOwners).toHaveBeenCalledTimes(1);
+  expect(mocks.catalog.findCatalogByOwners).toHaveBeenCalledWith(mocks.accessibleOwners);
 });
 
-it('SHOULD sort by expiration ascending (nulls last), then description case-insensitive, then id', async () => {
-  const noDateB = mocks.item('banana', 'b');
-  const noDateA = mocks.item('Apple', 'z');
-  const late = mocks.item('zucchini', 'c', '2027-01-01T00:00:00.000Z');
-  const soonB = mocks.item('Beta', 'd', '2026-10-20T00:00:00.000Z');
-  const soonA = mocks.item('alpha', 'e', '2026-10-20T00:00:00.000Z');
-  const twinB = mocks.item('same', 'y');
-  const twinA = mocks.item('SAME', 'x');
-  mocks.stockRepository.findByOwners.mockResolvedValueOnce([
-    noDateB,
-    late,
-    twinB,
-    noDateA,
-    soonB,
-    twinA,
-    soonA,
+it('SHOULD sort by nearest expiration (nulls last), then description case-insensitive, then id', async () => {
+  function withLot(description: string, id: string, expiration?: string) {
+    return item([lot(`l-${id}`, 1, expiration ? { expirationDate: day(expiration) } : {})], (f) =>
+      f.withDescription(description).withId(id),
+    );
+  }
+
+  mocks.stock.findByOwners.mockResolvedValueOnce([
+    withLot('banana', 'b'),
+    withLot('zucchini', 'c', '2027-01-01'),
+    withLot('same', 'y'),
+    withLot('Apple', 'z'),
+    withLot('Beta', 'd', '2026-10-20'),
+    withLot('SAME', 'x'),
+    withLot('alpha', 'e', '2026-10-20'),
   ]);
 
   const result = await setup.execute({ accessibleOwners: mocks.accessibleOwners });
 
-  expect(result.map((entity) => entity.id)).toEqual(['e', 'd', 'c', 'z', 'b', 'x', 'y']);
+  expect(result.map((view) => view.item.id)).toEqual(['e', 'd', 'c', 'z', 'b', 'x', 'y']);
+});
+
+it('SHOULD expand a category filter to its descendants and keep unknown ids', async () => {
+  mocks.catalog.findCatalogByOwners.mockResolvedValue({
+    categories: [category('dairy'), category('cheese', { parentId: 'dairy' })],
+    locations: [],
+  });
+
+  await setup.execute({
+    accessibleOwners: mocks.accessibleOwners,
+    categoryIds: ['dairy', 'ghost'],
+    locationIds: ['fridge'],
+  });
+
+  expect(mocks.stock.findByOwners).toHaveBeenCalledWith(mocks.accessibleOwners, {
+    categoryIds: ['dairy', 'cheese', 'ghost'],
+    locationIds: ['fridge'],
+  });
 });
 
 it('SHOULD narrow to one owner WHEN ownerId is given', async () => {
   await setup.execute({ accessibleOwners: mocks.accessibleOwners, ownerId: mocks.familyId });
 
-  expect(mocks.stockRepository.findByOwners).toHaveBeenCalledWith([mocks.accessibleOwners[1]]);
+  expect(mocks.stock.findByOwners.mock.calls[0][0]).toEqual([mocks.accessibleOwners[1]]);
 });
 
 it('SHOULD return [] WITHOUT touching the repository WHEN the ownerId is not accessible', async () => {
-  const result = await setup.execute({ accessibleOwners: mocks.accessibleOwners, ownerId: 'x' });
-
-  expect(result).toEqual([]);
-  expect(mocks.stockRepository.findByOwners).not.toHaveBeenCalled();
+  expect(await setup.execute({ accessibleOwners: mocks.accessibleOwners, ownerId: 'x' })).toEqual(
+    [],
+  );
+  expect(mocks.stock.findByOwners).not.toHaveBeenCalled();
 });
 
 it('SHOULD throw ValidationError WHEN the input is malformed', async () => {

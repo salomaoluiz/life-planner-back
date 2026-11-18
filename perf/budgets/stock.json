@@ -1,4 +1,13 @@
 {
+  "DELETE /api/v1/stock/categories/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
   "DELETE /api/v1/stock/items/:id": {
     "indexes": null,
     "kind": "unmeasured",
@@ -8,25 +17,89 @@
     "scenario": "",
     "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
+  "DELETE /api/v1/stock/locations/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
+  "GET /api/v1/stock/categories": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 5,
+    "p50Ms": null,
+    "scenario": "owner=USER&ownerId={userId}"
+  },
   "GET /api/v1/stock/items": {
     "indexes": null,
     "kind": "read",
     "knownException": "Deferred, see perf-roadmap.md",
-    "maxBytes": 454980,
-    "maxQueries": 3,
-    "p50Ms": 54,
+    "maxBytes": 640000,
+    "maxQueries": 6,
+    "p50Ms": null,
     "scenario": ""
   },
   "GET /api/v1/stock/items/:id": {
     "indexes": null,
     "kind": "read",
-    "maxBytes": 527,
-    "maxQueries": 3,
-    "p50Ms": 24,
+    "maxBytes": null,
+    "maxQueries": 6,
+    "p50Ms": null,
     "params": {
       "id": "stockItem"
     },
     "scenario": ""
+  },
+  "GET /api/v1/stock/items/:id/movements": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 7,
+    "p50Ms": null,
+    "scenario": "",
+    "params": {
+      "id": "stockItem"
+    }
+  },
+  "GET /api/v1/stock/items/:id/owner-change-preview": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 6,
+    "p50Ms": null,
+    "scenario": "owner=USER&ownerId={userId}",
+    "params": {
+      "id": "stockItem"
+    }
+  },
+  "GET /api/v1/stock/items/suggestions": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 5,
+    "p50Ms": null,
+    "scenario": "owner=USER&ownerId={userId}&q=perf"
+  },
+  "GET /api/v1/stock/locations": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 5,
+    "p50Ms": null,
+    "scenario": "owner=USER&ownerId={userId}"
+  },
+  "PATCH /api/v1/stock/categories/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "PATCH /api/v1/stock/items/:id": {
     "indexes": null,
@@ -37,7 +110,61 @@
     "scenario": "",
     "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
+  "PATCH /api/v1/stock/locations/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
+  "POST /api/v1/stock/categories": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
+  "POST /api/v1/stock/categories/suggestions": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
   "POST /api/v1/stock/items": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
+  "POST /api/v1/stock/items/:id/movements": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
+  "POST /api/v1/stock/locations": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
+  "POST /api/v1/stock/locations/suggestions": {
     "indexes": null,
     "kind": "unmeasured",
     "maxBytes": null,

@@ -14,20 +14,29 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
-import { z } from 'zod';
 
 import {
   CreateStockItemApiSchema,
   CreateStockItemBody,
+  CreateStockMovementApiSchema,
+  CreateStockMovementBody,
+  DayQuerySchema,
+  ListStockItemsQuerySchema,
+  MovementsQuerySchema,
+  OwnerChangePreviewOutput,
+  OwnerChangePreviewQuerySchema,
   StockItemOutput,
+  StockListItemOutput,
+  StockMovementPageOutput,
+  StockMovementResultOutput,
+  StockSuggestionOutput,
+  SuggestionsQuerySchema,
   UpdateStockItemApiSchema,
   UpdateStockItemBody,
 } from '@api/stock/v1/dto/stock.dto';
 import { StockService } from '@api/stock/v1/stock.service';
 import { JwtPayload } from '@shared/infra/jwt/types';
 import { validate } from '@shared/infra/validation';
-
-const ListStockItemsQuerySchema = z.object({ ownerId: z.uuid().optional() });
 
 @ApiBearerAuth('JWT')
 @Controller({
@@ -45,6 +54,18 @@ export class StockController {
     return this.stockService.create(req.user.id, input);
   }
 
+  @Post(':id/movements')
+  @ZodResponse({ status: 201, type: StockMovementResultOutput })
+  async createMovement(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: CreateStockMovementBody,
+  ) {
+    const input = validate(CreateStockMovementApiSchema, body);
+
+    return this.stockService.createMovement(req.user.id, id, input);
+  }
+
   @ApiNoContentResponse()
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -53,17 +74,47 @@ export class StockController {
   }
 
   @Get()
-  @ZodResponse({ status: 200, type: [StockItemOutput] })
+  @ZodResponse({ status: 200, type: [StockListItemOutput] })
   async findAll(@Request() req: JwtPayload & Request, @Query() query: Record<string, unknown>) {
-    const { ownerId } = validate(ListStockItemsQuerySchema, query);
+    const filters = validate(ListStockItemsQuerySchema, query);
 
-    return this.stockService.findAll(req.user.id, ownerId);
+    return this.stockService.findAll(req.user.id, filters);
   }
 
   @Get(':id')
   @ZodResponse({ status: 200, type: StockItemOutput })
-  async findById(@Request() req: JwtPayload & Request, @Param('id', ParseUUIDPipe) id: string) {
-    return this.stockService.findById(req.user.id, id);
+  async findById(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: Record<string, unknown>,
+  ) {
+    const { today } = validate(DayQuerySchema, query);
+
+    return this.stockService.findById(req.user.id, id, today);
+  }
+
+  @Get(':id/movements')
+  @ZodResponse({ status: 200, type: StockMovementPageOutput })
+  async findMovements(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: Record<string, unknown>,
+  ) {
+    const { cursor } = validate(MovementsQuerySchema, query);
+
+    return this.stockService.findMovements(req.user.id, id, cursor);
+  }
+
+  @Get(':id/owner-change-preview')
+  @ZodResponse({ status: 200, type: OwnerChangePreviewOutput })
+  async ownerChangePreview(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: Record<string, unknown>,
+  ) {
+    const { owner, ownerId } = validate(OwnerChangePreviewQuerySchema, query);
+
+    return this.stockService.ownerChangePreview(req.user.id, id, owner, ownerId);
   }
 
   @Patch(':id')
@@ -76,5 +127,21 @@ export class StockController {
     const input = validate(UpdateStockItemApiSchema, body);
 
     return this.stockService.update(req.user.id, id, input);
+  }
+}
+
+// Its own controller, registered before StockController: "suggestions" must never be read as an item id.
+@ApiBearerAuth('JWT')
+@Controller({
+  path: 'stock/items/suggestions',
+  version: '1',
+})
+export class StockSuggestionController {
+  constructor(private readonly stockService: StockService) {}
+
+  @Get()
+  @ZodResponse({ status: 200, type: StockSuggestionOutput })
+  async suggest(@Request() req: JwtPayload & Request, @Query() query: Record<string, unknown>) {
+    return this.stockService.suggest(req.user.id, validate(SuggestionsQuerySchema, query));
   }
 }
