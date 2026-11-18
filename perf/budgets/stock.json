@@ -80,7 +80,7 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": null,
-    "maxQueries": 4,
+    "maxQueries": 7,
     "p50Ms": null,
     "scenario": ""
   },
