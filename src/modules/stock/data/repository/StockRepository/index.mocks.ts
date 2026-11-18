@@ -10,13 +10,16 @@ jest.mock('@stock/data/datasource/mapper/StockMapper');
 const stockEntityMock = new StockEntityFixture().build();
 const rawItem = { id: stockEntityMock.id };
 const datasource = {
+  applyGestureChange: jest.fn(),
   applyMovement: jest.fn(),
   create: jest.fn(),
   delete: jest.fn(),
   deleteByOwner: jest.fn(),
   exists: jest.fn(),
   findById: jest.fn(),
+  findByIds: jest.fn(),
   findByOwners: jest.fn(),
+  findFrequentItemIds: jest.fn(),
   findMovements: jest.fn(),
   update: jest.fn(),
 };

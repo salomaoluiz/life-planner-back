@@ -37,6 +37,18 @@ export interface ExistsStockDatasourceParams {
   owner: OwnerType;
   owner_id: string;
 }
+export interface GesturePlanDatasource {
+  create: MovementOperationDatasource[];
+  delete_lot_ids: string[];
+  lot_updates: { id: string; opened_at?: null; quantity?: number }[];
+}
+export type GesturePlannerDatasource = (context: {
+  foreign_lot_ids: string[];
+  item: StockItem;
+  later_lot_ids: string[];
+  lots: StockLot[];
+  movements: StockMovement[];
+}) => GesturePlanDatasource;
 export interface MovementOperationDatasource {
   lot: { create: NewLotDatasourceParams } | { id: string };
   movement?: {
@@ -45,7 +57,7 @@ export interface MovementOperationDatasource {
     reason?: StockMovementReason;
     type: StockMovementType;
   };
-  update?: { opened_at?: Date; quantity?: number };
+  update?: { opened_at?: Date | null; quantity?: number };
 }
 export interface NewLotDatasourceParams {
   expiration_date?: Date;
@@ -65,6 +77,11 @@ export type MovementPlannerDatasource = (
 ) => MovementOperationDatasource[];
 // `undefined` = unchanged (Prisma no-op), `null` = set NULL.
 export interface IStockDatasource {
+  applyGestureChange(
+    gestureId: string,
+    userId: string,
+    planner: GesturePlannerDatasource,
+  ): Promise<null | StockItemWithLots>;
   applyMovement(
     itemId: string,
     userId: string,
@@ -77,10 +94,12 @@ export interface IStockDatasource {
   deleteByOwner(params: DeleteByOwnerStockDatasourceParams): Promise<number>;
   exists(params: ExistsStockDatasourceParams): Promise<boolean>;
   findById(id: string): Promise<null | StockItemWithLots>;
+  findByIds(ids: string[]): Promise<StockItemWithLots[]>;
   findByOwners(
     owners: OwnerAccess[],
     filter?: StockFilterDatasourceParams,
   ): Promise<StockItemWithLots[]>;
+  findFrequentItemIds(owners: OwnerAccess[], since: Date, limit: number): Promise<string[]>;
   findMovements(
     itemId: string,
     limit: number,

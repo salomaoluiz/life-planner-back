@@ -264,3 +264,82 @@ describe('Method applyMovement', () => {
     expect(spies.lotUpdate).not.toHaveBeenCalled();
   });
 });
+
+describe('Method applyGestureChange', () => {
+  const started = new Date('2026-11-18T10:00:00.000Z');
+  const gestureMovement = { created_at: started, gesture_id: 'g', item_id: 'item', lot_id: 'lot' };
+
+  beforeEach(() => {
+    spies.movementFindFirst.mockResolvedValue(gestureMovement);
+    spies.movementFindMany.mockResolvedValueOnce([gestureMovement]).mockResolvedValueOnce([
+      { created_at: new Date('2026-11-18T10:05:00.000Z'), lot_id: 'lot' },
+      { created_at: new Date('2026-11-17T10:00:00.000Z'), lot_id: 'other' },
+    ]);
+    spies.queryRaw.mockResolvedValue([{ id: 'item' }]);
+    spies.stockFindUniqueOrThrow.mockResolvedValue({ ...mocks.stock, lots: [] });
+    spies.lotFindMany.mockResolvedValue([mocks.lot]);
+  });
+
+  it('SHOULD return null WHEN the user has no such gesture, without locking', async () => {
+    spies.movementFindFirst.mockResolvedValue(null);
+
+    expect(await setup.applyGestureChange('g', 'user', jest.fn())).toBeNull();
+    expect(spies.queryRaw).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD tell the planner which lots had other or later movements, then apply its plan', async () => {
+    const planner = jest.fn().mockReturnValue({
+      create: [{ lot: { id: 'lot' }, movement: { quantity: 2, type: 'ENTRY' } }],
+      delete_lot_ids: ['gone'],
+      lot_updates: [{ id: 'lot', quantity: 5 }],
+    });
+
+    await setup.applyGestureChange('g', 'user', planner);
+
+    expect(planner).toHaveBeenCalledWith(
+      expect.objectContaining({ foreign_lot_ids: ['lot', 'other'], later_lot_ids: ['lot'] }),
+    );
+    expect(spies.movementDeleteMany).toHaveBeenCalledWith({
+      where: { gesture_id: 'g', user_id: 'user' },
+    });
+    expect(spies.lotUpdate).toHaveBeenCalledWith({
+      data: { opened_at: undefined, quantity: 5 },
+      where: { id: 'lot' },
+    });
+    expect(spies.movementCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ gesture_id: 'g', lot_id: 'lot', user_id: 'user' }),
+    });
+    expect(spies.lotDeleteMany).toHaveBeenCalledWith({ where: { id: { in: ['gone'] } } });
+  });
+
+  it('SHOULD write nothing WHEN the planner refuses', async () => {
+    await expect(
+      setup.applyGestureChange('g', 'user', () => {
+        throw new Error('409');
+      }),
+    ).rejects.toThrow('409');
+    expect(spies.movementDeleteMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('Method findFrequentItemIds / findByIds', () => {
+  it('SHOULD rank in one grouped statement and skip the query without owners', async () => {
+    spies.queryRaw.mockResolvedValue([{ item_id: 'a' }, { item_id: 'b' }]);
+
+    expect(await setup.findFrequentItemIds([], new Date(), 5)).toEqual([]);
+    expect(spies.queryRaw).not.toHaveBeenCalled();
+    expect(await setup.findFrequentItemIds(mocks.owners, new Date(), 5)).toEqual(['a', 'b']);
+    expect(spies.queryRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('SHOULD read the items and their open lots in two statements', async () => {
+    spies.stockFindMany.mockResolvedValue([mocks.stock]);
+    spies.lotFindMany.mockResolvedValue([mocks.lot]);
+
+    expect(await setup.findByIds([])).toEqual([]);
+
+    const rows = await setup.findByIds([mocks.stock.id]);
+
+    expect(rows[0].lots).toEqual([mocks.lot]);
+  });
+});

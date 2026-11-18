@@ -193,3 +193,38 @@ describe('createMovement', () => {
     await expect(items.createMovement(request, id, body as never)).rejects.toThrow(ValidationError);
   });
 });
+
+describe('spec 117 routes', () => {
+  it('SHOULD list frequent items with a validated limit', async () => {
+    const { frequent } = await setup();
+
+    await frequent.frequent(request, { limit: '5' });
+    expect(stockService.findFrequent).toHaveBeenCalledWith(userId, { limit: 5 });
+    await expect(frequent.frequent(request, { limit: '11' })).rejects.toThrow(ValidationError);
+  });
+
+  it('SHOULD undo a gesture and change its expiration for the requester', async () => {
+    const { gestures } = await setup();
+    const gestureId = '9b1c0000-0000-4000-8000-000000000001';
+
+    await gestures.undo(request, { gestureId } as never);
+    expect(stockService.undoGesture).toHaveBeenCalledWith(userId, gestureId);
+
+    await gestures.expiration(request, gestureId, { expirationDate: '2026-12-05' } as never);
+    expect(stockService.setGestureExpiration).toHaveBeenCalledWith(userId, gestureId, {
+      expirationDate: '2026-12-05',
+    });
+    await expect(gestures.undo(request, { gestureId: 'nope' } as never)).rejects.toThrow(
+      ValidationError,
+    );
+    await expect(
+      gestures.expiration(request, gestureId, { expirationDate: 'x' } as never),
+    ).rejects.toThrow(ValidationError);
+  });
+
+  it('SHOULD accept suggestions without an owner', async () => {
+    await suggestions.suggest(request, { q: 'leite' });
+
+    expect(stockService.suggest).toHaveBeenCalledWith(userId, { q: 'leite' });
+  });
+});

@@ -10,8 +10,9 @@ export const SUGGESTION_LIMIT = 8;
 
 export const SuggestStockItemsSchema = z.object({
   accessibleOwners: AccessibleOwnersSchema,
-  owner: OwnerTypeSchema,
-  ownerId: OwnerIdSchema,
+  // Spec 117 FR 29: both absent = every owner the requester can write (quick add).
+  owner: OwnerTypeSchema.optional(),
+  ownerId: OwnerIdSchema.optional(),
   q: z.string().trim().min(2).max(100),
 });
 

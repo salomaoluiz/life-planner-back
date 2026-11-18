@@ -27,13 +27,17 @@ import { CreateStockMovementUseCase } from '@stock/application/use-case/CreateSt
 import { DeleteStockCategoryUseCase } from '@stock/application/use-case/DeleteStockCategoryUseCase';
 import { DeleteStockItemUseCase } from '@stock/application/use-case/DeleteStockItemUseCase';
 import { DeleteStockLocationUseCase } from '@stock/application/use-case/DeleteStockLocationUseCase';
+import { GetFrequentStockItemsUseCase } from '@stock/application/use-case/GetFrequentStockItemsUseCase';
 import { GetOwnerChangePreviewUseCase } from '@stock/application/use-case/GetOwnerChangePreviewUseCase';
 import { GetStockCategoriesUseCase } from '@stock/application/use-case/GetStockCategoriesUseCase';
 import { GetStockItemByIdUseCase } from '@stock/application/use-case/GetStockItemByIdUseCase';
 import { GetStockItemsUseCase } from '@stock/application/use-case/GetStockItemsUseCase';
+import { GetStockLocationByIdUseCase } from '@stock/application/use-case/GetStockLocationByIdUseCase';
 import { GetStockLocationsUseCase } from '@stock/application/use-case/GetStockLocationsUseCase';
 import { GetStockMovementsUseCase } from '@stock/application/use-case/GetStockMovementsUseCase';
+import { SetGestureExpirationUseCase } from '@stock/application/use-case/SetGestureExpirationUseCase';
 import { SuggestStockItemsUseCase } from '@stock/application/use-case/SuggestStockItemsUseCase';
+import { UndoStockGestureUseCase } from '@stock/application/use-case/UndoStockGestureUseCase';
 import { UpdateStockCategoryUseCase } from '@stock/application/use-case/UpdateStockCategoryUseCase';
 import { UpdateStockItemUseCase } from '@stock/application/use-case/UpdateStockItemUseCase';
 import { UpdateStockLocationUseCase } from '@stock/application/use-case/UpdateStockLocationUseCase';
@@ -134,14 +138,18 @@ export class StockService {
     private readonly findUsersByIdsUseCase: FindUsersByIdsUseCase,
     private readonly getCategoriesUseCase: GetCategoriesUseCase,
     private readonly getFamilyMembersUseCase: GetFamilyMembersUseCase,
+    private readonly getFrequentStockItemsUseCase: GetFrequentStockItemsUseCase,
     private readonly getOwnerChangePreviewUseCase: GetOwnerChangePreviewUseCase,
     private readonly getStockCategoriesUseCase: GetStockCategoriesUseCase,
     private readonly getStockItemByIdUseCase: GetStockItemByIdUseCase,
     private readonly getStockItemsUseCase: GetStockItemsUseCase,
+    private readonly getStockLocationByIdUseCase: GetStockLocationByIdUseCase,
     private readonly getStockLocationsUseCase: GetStockLocationsUseCase,
     private readonly getStockMovementsUseCase: GetStockMovementsUseCase,
     private readonly getUserFamilyAccessUseCase: GetUserFamilyAccessUseCase,
+    private readonly setGestureExpirationUseCase: SetGestureExpirationUseCase,
     private readonly suggestStockItemsUseCase: SuggestStockItemsUseCase,
+    private readonly undoStockGestureUseCase: UndoStockGestureUseCase,
     private readonly updateStockCategoryUseCase: UpdateStockCategoryUseCase,
     private readonly updateStockItemUseCase: UpdateStockItemUseCase,
     private readonly updateStockLocationUseCase: UpdateStockLocationUseCase,
@@ -307,6 +315,25 @@ export class StockService {
     return { items: roots };
   }
 
+  async findFrequent(userId: string, query: { limit?: number; today?: string }) {
+    const views = await this.getFrequentStockItemsUseCase.execute({
+      accessibleOwners: await this.getAccessibleOwners(userId),
+      limit: query.limit,
+      today: query.today,
+    });
+
+    return { items: views.map((view) => toListItemOutput(view)) };
+  }
+
+  async findLocationById(userId: string, id: string) {
+    const { itemCount, location } = await this.getStockLocationByIdUseCase.execute({
+      accessibleOwners: await this.getAccessibleOwners(userId),
+      id,
+    });
+
+    return toLocationOutput(location, itemCount);
+  }
+
   async findLocations(
     userId: string,
     query: { includeArchived: boolean; owner: OwnerType; ownerId: string },
@@ -338,7 +365,24 @@ export class StockService {
     });
   }
 
-  async suggest(userId: string, query: { owner: OwnerType; ownerId: string; q: string }) {
+  async setGestureExpiration(
+    userId: string,
+    gestureId: string,
+    input: { expirationDate: string; today?: string },
+  ) {
+    return {
+      item: toItemOutput(
+        await this.setGestureExpirationUseCase.execute({
+          ...input,
+          accessibleOwners: await this.getAccessibleOwners(userId),
+          gestureId,
+          userId,
+        }),
+      ),
+    };
+  }
+
+  async suggest(userId: string, query: { owner?: OwnerType; ownerId?: string; q: string }) {
     const suggestions = await this.suggestStockItemsUseCase.execute({
       ...query,
       accessibleOwners: await this.getAccessibleOwners(userId),
@@ -346,6 +390,18 @@ export class StockService {
 
     return {
       items: suggestions.map((suggestion) => ({ ...suggestion, brand: suggestion.brand ?? null })),
+    };
+  }
+
+  async undoGesture(userId: string, gestureId: string) {
+    return {
+      item: toItemOutput(
+        await this.undoStockGestureUseCase.execute({
+          accessibleOwners: await this.getAccessibleOwners(userId),
+          gestureId,
+          userId,
+        }),
+      ),
     };
   }
 

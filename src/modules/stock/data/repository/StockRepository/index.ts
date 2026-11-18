@@ -2,18 +2,44 @@ import { Inject, Injectable } from '@nestjs/common';
 
 import { StockUnit } from '@db/client';
 import { StockMapper } from '@stock/data/datasource/mapper/StockMapper';
-import { IStockDatasource } from '@stock/data/repository/datasource/IStockDatasource';
+import {
+  IStockDatasource,
+  MovementOperationDatasource,
+} from '@stock/data/repository/datasource/IStockDatasource';
 import { OwnerAccess } from '@stock/domain/entity/OwnerAccess';
 import StockEntity from '@stock/domain/entity/StockEntity';
 import StockMovementEntity from '@stock/domain/entity/StockMovementEntity';
 import {
   CreateStockRepositoryParams,
+  GesturePlanner,
   IStockRepository,
+  MovementOperation,
   MovementOptions,
   MovementPlanner,
   StockFilter,
   UpdateStockRepositoryParams,
 } from '@stock/domain/repository';
+
+function toDatasourceOperation(operation: MovementOperation): MovementOperationDatasource {
+  return {
+    lot:
+      'create' in operation.lot
+        ? {
+            create: {
+              expiration_date: operation.lot.create.expirationDate,
+              opened_at: operation.lot.create.openedAt,
+              purchase_date: operation.lot.create.purchaseDate,
+              quantity: operation.lot.create.quantity,
+            },
+          }
+        : operation.lot,
+    movement: operation.movement,
+    update: operation.update && {
+      opened_at: operation.update.openedAt,
+      quantity: operation.update.quantity,
+    },
+  };
+}
 
 @Injectable()
 export class StockRepository implements IStockRepository {
@@ -21,6 +47,29 @@ export class StockRepository implements IStockRepository {
     @Inject('IStockDatasource')
     private readonly stockDatasource: IStockDatasource,
   ) {}
+
+  async applyGestureChange(
+    gestureId: string,
+    userId: string,
+    planner: GesturePlanner,
+  ): Promise<{ item: StockEntity } | undefined> {
+    const result = await this.stockDatasource.applyGestureChange(gestureId, userId, (context) => {
+      const plan = planner({
+        foreignLotIds: context.foreign_lot_ids,
+        item: StockMapper.toDomain({ ...context.item, lots: context.lots }),
+        laterLotIds: context.later_lot_ids,
+        movements: context.movements.map((movement) => StockMapper.toMovement(movement)),
+      });
+
+      return {
+        create: plan.create.map((operation) => toDatasourceOperation(operation)),
+        delete_lot_ids: plan.deleteLotIds,
+        lot_updates: plan.lotUpdates,
+      };
+    });
+
+    return result ? { item: StockMapper.toDomain(result) } : undefined;
+  }
 
   async applyMovement(
     itemId: string,
@@ -34,24 +83,9 @@ export class StockRepository implements IStockRepository {
       itemId,
       userId,
       (item, lots) =>
-        planner(StockMapper.toDomain({ ...item, lots })).map((operation) => ({
-          lot:
-            'create' in operation.lot
-              ? {
-                  create: {
-                    expiration_date: operation.lot.create.expirationDate,
-                    opened_at: operation.lot.create.openedAt,
-                    purchase_date: operation.lot.create.purchaseDate,
-                    quantity: operation.lot.create.quantity,
-                  },
-                }
-              : operation.lot,
-          movement: operation.movement,
-          update: operation.update && {
-            opened_at: operation.update.openedAt,
-            quantity: operation.update.quantity,
-          },
-        })),
+        planner(StockMapper.toDomain({ ...item, lots })).map((operation) =>
+          toDatasourceOperation(operation),
+        ),
       options && { client_id: options.clientId, gesture_id: options.gestureId },
     );
 
@@ -114,6 +148,15 @@ export class StockRepository implements IStockRepository {
     return result ? StockMapper.toDomain(result) : undefined;
   }
 
+  async findByIds(ids: string[]): Promise<StockEntity[]> {
+    const rows = await this.stockDatasource.findByIds(ids);
+
+    return ids
+      .map((id) => rows.find((row) => row.id === id))
+      .filter((row): row is NonNullable<typeof row> => row !== undefined)
+      .map((row) => StockMapper.toDomain(row));
+  }
+
   async findByOwners(owners: OwnerAccess[], filter?: StockFilter): Promise<StockEntity[]> {
     const result = await this.stockDatasource.findByOwners(
       owners,
@@ -121,6 +164,10 @@ export class StockRepository implements IStockRepository {
     );
 
     return result.map((row) => StockMapper.toDomain(row));
+  }
+
+  async findFrequentItemIds(owners: OwnerAccess[], since: Date, limit: number): Promise<string[]> {
+    return this.stockDatasource.findFrequentItemIds(owners, since, limit);
   }
 
   async findMovements(

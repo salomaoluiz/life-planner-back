@@ -7,6 +7,7 @@ import {
   CreateStockDatasourceParams,
   DeleteByOwnerStockDatasourceParams,
   ExistsStockDatasourceParams,
+  GesturePlannerDatasource,
   IStockDatasource,
   MovementPlannerDatasource,
   StockFilterDatasourceParams,
@@ -23,6 +24,103 @@ export class StockDatasource implements IStockDatasource {
 
   // Spec 116 FR 10: the item row is locked until commit, so movements of one item serialize and the planner
   // always sees committed lots. Nothing is written when the planner throws.
+  // Spec 117 FR 8/9: delete the gesture's movements and apply the plan under the item lock.
+  async applyGestureChange(
+    gestureId: string,
+    userId: string,
+    planner: GesturePlannerDatasource,
+  ): Promise<null | StockItemWithLots> {
+    return this.db.client.$transaction(async (tx) => {
+      const first = await tx.stockMovement.findFirst({
+        where: { gesture_id: gestureId, user_id: userId },
+      });
+
+      if (!first) {
+        return null;
+      }
+
+      const itemId = first.item_id;
+
+      await tx.$queryRaw(
+        Prisma.sql`SELECT "id" FROM "stock_items" WHERE "id" = ${itemId} FOR UPDATE`,
+      );
+
+      const movements = await tx.stockMovement.findMany({
+        orderBy: [{ created_at: 'asc' }, { id: 'asc' }],
+        where: { gesture_id: gestureId, user_id: userId },
+      });
+
+      if (movements.length === 0) {
+        return null;
+      }
+
+      const item = await tx.stockItem.findUniqueOrThrow({ where: { id: itemId } });
+      const lots = await tx.stockLot.findMany({
+        orderBy: { id: 'asc' },
+        where: { item_id: itemId },
+      });
+      const startedAt = movements[0].created_at;
+      const foreign = await tx.stockMovement.findMany({
+        select: { created_at: true, lot_id: true },
+        where: {
+          lot_id: { in: [...new Set(movements.map((movement) => movement.lot_id))] },
+          OR: [{ gesture_id: null }, { gesture_id: { not: gestureId } }],
+        },
+      });
+      const plan = planner({
+        foreign_lot_ids: [...new Set(foreign.map((row) => row.lot_id))],
+        item,
+        later_lot_ids: [
+          ...new Set(foreign.filter((row) => row.created_at >= startedAt).map((row) => row.lot_id)),
+        ],
+        lots,
+        movements,
+      });
+
+      await tx.stockMovement.deleteMany({ where: { gesture_id: gestureId, user_id: userId } });
+
+      for (const update of plan.lot_updates) {
+        await tx.stockLot.update({
+          data: { opened_at: update.opened_at, quantity: update.quantity },
+          where: { id: update.id },
+        });
+      }
+
+      for (const operation of plan.create) {
+        let lotId: string;
+
+        if ('create' in operation.lot) {
+          lotId = (await tx.stockLot.create({ data: { ...operation.lot.create, item_id: itemId } }))
+            .id;
+        } else {
+          lotId = operation.lot.id;
+
+          if (operation.update) {
+            await tx.stockLot.update({ data: operation.update, where: { id: lotId } });
+          }
+        }
+
+        if (operation.movement) {
+          await tx.stockMovement.create({
+            data: {
+              ...operation.movement,
+              gesture_id: gestureId,
+              item_id: itemId,
+              lot_id: lotId,
+              user_id: userId,
+            },
+          });
+        }
+      }
+
+      if (plan.delete_lot_ids.length > 0) {
+        await tx.stockLot.deleteMany({ where: { id: { in: plan.delete_lot_ids } } });
+      }
+
+      return tx.stockItem.findUniqueOrThrow({ include: OPEN_LOTS, where: { id: itemId } });
+    });
+  }
+
   async applyMovement(
     itemId: string,
     userId: string,
@@ -164,6 +262,43 @@ export class StockDatasource implements IStockDatasource {
 
   async findById(id: string): Promise<null | StockItemWithLots> {
     return this.db.client.stockItem.findUnique({ include: OPEN_LOTS, where: { id } });
+  }
+
+  async findByIds(ids: string[]): Promise<StockItemWithLots[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    const items = await this.db.client.stockItem.findMany({ where: { id: { in: ids } } });
+    const lots = await this.db.client.stockLot.findMany({
+      orderBy: { id: 'asc' },
+      where: { item_id: { in: ids }, quantity: { gt: 0 } },
+    });
+
+    return items.map((item) => ({ ...item, lots: lots.filter((lot) => lot.item_id === item.id) }));
+  }
+
+  // One grouped statement over the movements of the period, joined to the owner's items.
+  async findFrequentItemIds(owners: OwnerAccess[], since: Date, limit: number): Promise<string[]> {
+    if (owners.length === 0) {
+      return [];
+    }
+
+    const ownerClauses = owners.map(
+      (access) =>
+        Prisma.sql`(i."owner" = ${access.owner}::"OwnerType" AND i."owner_id" = ${access.ownerId})`,
+    );
+    const rows = await this.db.client.$queryRaw<{ item_id: string }[]>(Prisma.sql`
+      SELECT m."item_id" AS "item_id"
+      FROM "stock_movements" m
+      JOIN "stock_items" i ON i."id" = m."item_id"
+      WHERE m."created_at" >= ${since} AND (${Prisma.join(ownerClauses, ' OR ')})
+      GROUP BY m."item_id"
+      ORDER BY count(*) DESC, max(m."created_at") DESC, m."item_id" ASC
+      LIMIT ${limit}
+    `);
+
+    return rows.map((row) => row.item_id);
   }
 
   // Two statements regardless of the item count: the items, then the open lots of those items.

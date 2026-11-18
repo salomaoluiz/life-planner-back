@@ -1,6 +1,11 @@
 import { Test } from '@nestjs/testing';
 
-import { StockController, StockSuggestionController } from '@api/stock/v1/stock.controller';
+import {
+  StockController,
+  StockFrequentController,
+  StockGestureController,
+  StockSuggestionController,
+} from '@api/stock/v1/stock.controller';
 import { StockService } from '@api/stock/v1/stock.service';
 import {
   StockCategoryController,
@@ -26,11 +31,15 @@ const methods = [
   'deleteLocation',
   'findAll',
   'findById',
+  'findFrequent',
+  'findLocationById',
   'findCategories',
   'findLocations',
   'findMovements',
   'ownerChangePreview',
+  'setGestureExpiration',
   'suggest',
+  'undoGesture',
   'update',
   'updateCategory',
   'updateLocation',
@@ -47,6 +56,8 @@ async function setup() {
     controllers: [
       StockController,
       StockSuggestionController,
+      StockFrequentController,
+      StockGestureController,
       StockCategoryController,
       StockLocationController,
     ],
@@ -55,6 +66,8 @@ async function setup() {
 
   return {
     categories: module.get(StockCategoryController),
+    frequent: module.get(StockFrequentController),
+    gestures: module.get(StockGestureController),
     items: module.get(StockController),
     locations: module.get(StockLocationController),
     suggestions: module.get(StockSuggestionController),
