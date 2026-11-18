@@ -88,8 +88,12 @@ function toListItemOutput(view: StockItemView): StockListItemApiOutput {
     categoryId: item.categoryId ?? null,
     createdAt: item.createdAt.toISOString(),
     description: item.description,
-    effectiveShoppingListId: view.effectiveShoppingListId ?? null,
-    estimatedUnitPriceCents: item.estimatedUnitPriceCents ?? null,
+    ...(view.effectiveShoppingListId === undefined
+      ? {}
+      : { effectiveShoppingListId: view.effectiveShoppingListId }),
+    ...(item.estimatedUnitPriceCents === undefined
+      ? {}
+      : { estimatedUnitPriceCents: item.estimatedUnitPriceCents }),
     expirationStatus: view.expirationStatus,
     hasExpiredLot: view.hasExpiredLot,
     hasOpenLot: view.hasOpenLot,
@@ -107,7 +111,7 @@ function toListItemOutput(view: StockItemView): StockListItemApiOutput {
     quantity: view.quantity,
     quickStep: item.quickStep ?? null,
     restockQuantity: view.restockQuantity,
-    shoppingListId: item.shoppingListId ?? null,
+    ...(item.shoppingListId === undefined ? {} : { shoppingListId: item.shoppingListId }),
     stockOnly: item.stockOnly,
     unit: item.unit,
     updatedAt: item.updatedAt.toISOString(),
