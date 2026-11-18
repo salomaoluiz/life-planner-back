@@ -47,7 +47,20 @@ export function listLanguageOf(header?: string): 'en-US' | 'pt-BR' | undefined {
   return header.toLowerCase().startsWith('pt') ? 'pt-BR' : 'en-US';
 }
 
-// `restock-summary` and `rows/:rowId` are declared before the `:id` routes.
+// `GET stock/shopping-lists/restock-summary` lives in its own controller, registered before this one: the class
+// methods are sorted by lint, so declaration order cannot be what keeps it from being read as `:id`.
+@ApiBearerAuth('JWT')
+@Controller({ path: 'stock/shopping-lists/restock-summary', version: '1' })
+export class ShoppingListSummaryController {
+  constructor(private readonly shoppingListService: ShoppingListService) {}
+
+  @Get()
+  @ZodResponse({ type: RestockSummaryOutput })
+  async restockSummary(@Request() req: JwtPayload & Request) {
+    return this.shoppingListService.restockSummary(req.user.id);
+  }
+}
+
 @ApiBearerAuth('JWT')
 @Controller({ path: 'stock/shopping-lists', version: '1' })
 export class ShoppingListController {
@@ -93,12 +106,6 @@ export class ShoppingListController {
   @ZodResponse({ type: ShoppingListDetailOutput })
   async findById(@Request() req: JwtPayload & Request, @Param('id', ParseUUIDPipe) id: string) {
     return this.shoppingListService.findById(req.user.id, id);
-  }
-
-  @Get('restock-summary')
-  @ZodResponse({ type: RestockSummaryOutput })
-  async restockSummary(@Request() req: JwtPayload & Request) {
-    return this.shoppingListService.restockSummary(req.user.id);
   }
 
   @Patch(':id')

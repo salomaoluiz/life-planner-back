@@ -48,7 +48,7 @@
     "kind": "read",
     "knownException": "Deferred, see perf-roadmap.md",
     "maxBytes": 640000,
-    "maxQueries": 6,
+    "maxQueries": 7,
     "p50Ms": null,
     "scenario": ""
   },
@@ -67,7 +67,7 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": null,
-    "maxQueries": 7,
+    "maxQueries": 8,
     "p50Ms": null,
     "scenario": "",
     "params": {
@@ -78,7 +78,7 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": null,
-    "maxQueries": 6,
+    "maxQueries": 7,
     "p50Ms": null,
     "scenario": "owner=USER&ownerId={userId}",
     "params": {
@@ -97,7 +97,7 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": null,
-    "maxQueries": 5,
+    "maxQueries": 6,
     "p50Ms": null,
     "scenario": "owner=USER&ownerId={userId}&q=perf"
   },

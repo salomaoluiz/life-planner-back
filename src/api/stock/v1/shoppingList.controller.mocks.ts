@@ -1,6 +1,9 @@
 import { Test } from '@nestjs/testing';
 
-import { ShoppingListController } from '@api/stock/v1/shoppingList.controller';
+import {
+  ShoppingListController,
+  ShoppingListSummaryController,
+} from '@api/stock/v1/shoppingList.controller';
 import { ShoppingListService } from '@api/stock/v1/shoppingList.service';
 import { JwtPayload } from '@shared/infra/jwt/types';
 
@@ -28,11 +31,14 @@ async function setup() {
   methods.forEach((method) => service[method].mockResolvedValue(result));
 
   const module = await Test.createTestingModule({
-    controllers: [ShoppingListController],
+    controllers: [ShoppingListController, ShoppingListSummaryController],
     providers: [{ provide: ShoppingListService, useValue: service }],
   }).compile();
 
-  return module.get(ShoppingListController);
+  return {
+    controller: module.get(ShoppingListController),
+    summary: module.get(ShoppingListSummaryController),
+  };
 }
 
 const mocks = { id, ownerId, request, result, service, userId };

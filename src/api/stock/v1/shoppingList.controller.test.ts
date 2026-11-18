@@ -7,10 +7,11 @@ import { listLanguageOf, ShoppingListController } from './shoppingList.controlle
 import { mocks, setup } from './shoppingList.controller.mocks';
 
 const { id, ownerId, request, service, userId } = mocks;
-let controller: Awaited<ReturnType<typeof setup>>;
+let controller: Awaited<ReturnType<typeof setup>>['controller'];
+let summary: Awaited<ReturnType<typeof setup>>['summary'];
 
 beforeEach(async () => {
-  controller = await setup();
+  ({ controller, summary } = await setup());
 });
 
 it('SHOULD be served at /stock/shopping-lists under URI version 1', () => {
@@ -56,7 +57,7 @@ it('SHOULD refuse changing the owner of a list (400) AND require a field', async
 
 it('SHOULD read the detail and the restock summary', async () => {
   await controller.findById(request, id);
-  await controller.restockSummary(request);
+  await summary.restockSummary(request);
 
   expect(service.findById).toHaveBeenCalledWith(userId, id);
   expect(service.restockSummary).toHaveBeenCalledWith(userId);
