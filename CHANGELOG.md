@@ -3,6 +3,12 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [6.1.1] - 2026-11-18
+
+### Fixed
+
+- Foreign stock ticker search accepts share-class symbols such as `BRK.B` (fix-1).
+
 ## [6.1.0] - 2026-11-18
 
 ### Added

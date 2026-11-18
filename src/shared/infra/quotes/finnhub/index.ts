@@ -16,6 +16,9 @@ import {
 const FINNHUB_API = 'https://finnhub.io/api/v1';
 const TIMEOUT_MS = 5000;
 const MAX_SEARCH_RESULTS = 10;
+// A US symbol is a plain ticker or a share class (`BRK.A`, `BF.B`). Any other dot suffix is a foreign listing
+// (`BRK.L` in London, `AAPL.SW` in Zurich), which this search must keep out: the item is always reported in USD.
+const US_SYMBOL = /^[A-Z0-9-]{1,12}$|^[A-Z0-9-]{1,10}\.[AB]$/;
 
 interface RawDividend {
   amount?: null | number;
@@ -194,7 +197,7 @@ export class FinnhubQuotes implements IFinnhubQuotes {
       q: query.trim().slice(0, 20),
     });
     const items = (data.result ?? [])
-      .filter((item) => item.symbol && /^[A-Z0-9-]{1,12}$/.test(item.symbol))
+      .filter((item) => item.symbol && US_SYMBOL.test(item.symbol))
       .slice(0, MAX_SEARCH_RESULTS);
     const quotes = await this.getQuotes(items.map((item) => item.symbol as string));
     return quotes.map((quote) => ({
