@@ -76,6 +76,14 @@
       "id": "stockItem"
     }
   },
+  "GET /api/v1/stock/items/frequent": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 4,
+    "p50Ms": null,
+    "scenario": ""
+  },
   "GET /api/v1/stock/items/suggestions": {
     "indexes": null,
     "kind": "read",
@@ -91,6 +99,15 @@
     "maxQueries": 5,
     "p50Ms": null,
     "scenario": "owner=USER&ownerId={userId}"
+  },
+  "GET /api/v1/stock/locations/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "The perf dataset seeds no stock locations; the route is one lookup plus one grouped count (spec 117)."
   },
   "PATCH /api/v1/stock/categories/:id": {
     "indexes": null,
@@ -165,6 +182,24 @@
     "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "POST /api/v1/stock/locations/suggestions": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
+  "POST /api/v1/stock/movements/:gestureId/expiration": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
+  "POST /api/v1/stock/movements/undo": {
     "indexes": null,
     "kind": "unmeasured",
     "maxBytes": null,
