@@ -35,6 +35,7 @@ import {
   defaultOpenLot,
   findEntryLot,
   latestClosedLot,
+  planConsume,
   planOpen,
 } from '@stock/domain/service/LotAllocation';
 import { fromMilli, quantityError, toMilli } from '@stock/domain/service/StockQuantity';
@@ -52,6 +53,11 @@ function assertPrecision(item: StockEntity, quantity: number): void {
   if (error) {
     throw new UnprocessableEntityException(error);
   }
+}
+function legacyConsume(lots: StockLotEntity[], quantity: number, shelfLifeDays?: number) {
+  const steps = planConsume(lots, quantity, shelfLifeDays);
+
+  return steps && { consumes: steps, discards: [] };
 }
 function lotOf(item: StockEntity, lotId: string): StockLotEntity {
   const lot = item.lots.find((candidate) => candidate.id === lotId);
@@ -151,14 +157,11 @@ function plan(movement: Movement, item: StockEntity, today: Date): MovementOpera
       assertPrecision(item, movement.quantity);
 
       const lots = movement.lotId ? [lotOf(item, movement.lotId)] : item.lots;
-      // Spec 117 FR 25: 116 clients (no `expiredLots`) skip expired lots, which is what the quick clients default to.
-      const steps = planConsumeWithChoice(
-        lots,
-        movement.quantity,
-        movement.expiredLots ?? 'VALID_ONLY',
-        item,
-        today,
-      );
+      // Spec 117 FR 25: an explicit choice decides which lots are touched; without one the 116 rule stands (open
+      // lots first, then by expiration, expired lots included), so 116 clients behave as before.
+      const steps = movement.expiredLots
+        ? planConsumeWithChoice(lots, movement.quantity, movement.expiredLots, item, today)
+        : legacyConsume(lots, movement.quantity, item.openedShelfLifeDays);
 
       if (!steps) {
         throw new ConflictException('Not enough quantity');

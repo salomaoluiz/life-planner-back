@@ -356,13 +356,28 @@ describe('quick movement (spec 117)', () => {
     ]);
   });
 
-  it('SHOULD skip expired lots by default and answer 409 WHEN only expired lots hold stock', async () => {
+  it('SHOULD skip expired lots WHEN VALID_ONLY and answer 409 WHEN only expired lots hold stock', async () => {
+    expect(
+      (
+        await operationsOf(item([expired, valid]), {
+          expiredLots: 'VALID_ONLY',
+          quantity: 1,
+          type: 'CONSUME',
+        })
+      )[0],
+    ).toMatchObject({ lot: { id: 'new' } });
+    await expect(
+      operationsOf(item([expired]), { expiredLots: 'VALID_ONLY', quantity: 1, type: 'CONSUME' }),
+    ).rejects.toThrow(ConflictException);
+  });
+
+  it('SHOULD keep the 116 order (expired lots included) WHEN expiredLots is omitted', async () => {
     expect(
       (await operationsOf(item([expired, valid]), { quantity: 1, type: 'CONSUME' }))[0],
-    ).toMatchObject({ lot: { id: 'new' } });
-    await expect(operationsOf(item([expired]), { quantity: 1, type: 'CONSUME' })).rejects.toThrow(
-      ConflictException,
-    );
+    ).toMatchObject({ lot: { id: 'old' }, update: { quantity: 1 } });
+    expect(
+      (await operationsOf(item([expired]), { quantity: 1, type: 'CONSUME' }))[0],
+    ).toMatchObject({ lot: { id: 'old' } });
   });
 
   it('SHOULD consume the expired lot first WHEN EXPIRED_FIRST', async () => {
