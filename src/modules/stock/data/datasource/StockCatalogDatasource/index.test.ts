@@ -94,10 +94,16 @@ it('SHOULD purge the categories and locations of an owner in one transaction', a
 it('SHOULD read the categories and locations of several owners in two statements', async () => {
   spies.categoryFindMany.mockResolvedValue([{ id: 'c' }]);
   spies.locationFindMany.mockResolvedValue([{ id: 'l' }]);
+  spies.shoppingListFindMany.mockResolvedValue([{ id: 's' }]);
 
   expect(await setup.findCatalogByOwners([mocks.key, { owner: 'FAMILY', owner_id: 'f' }])).toEqual({
     categories: [{ id: 'c' }],
     locations: [{ id: 'l' }],
+    shopping_lists: [{ id: 's' }],
+  });
+  expect(spies.shoppingListFindMany).toHaveBeenCalledWith({
+    orderBy: { name: 'asc' },
+    where: { OR: [mocks.key, { owner: 'FAMILY', owner_id: 'f' }], status: 'ACTIVE' },
   });
   expect(spies.categoryFindMany).toHaveBeenCalledWith({
     orderBy: { name: 'asc' },

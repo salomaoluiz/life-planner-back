@@ -91,6 +91,11 @@ class StockEntityFixture {
     return this;
   }
 
+  withShoppingListId(shoppingListId?: string) {
+    this.value.shoppingListId = shoppingListId;
+    return this;
+  }
+
   withStockOnly(stockOnly = true) {
     this.value.stockOnly = stockOnly;
     return this;

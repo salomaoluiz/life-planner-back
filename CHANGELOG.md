@@ -3,6 +3,15 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [6.2.0] - 2026-11-18
+
+### Added
+
+- Shopping lists per owner (personal or family) at `/stock/shopping-lists`: several lists, one default created on demand, archive and reactivate (spec 118).
+- Smart rows: items at or below their minimum get an automatic row on their list (`AUTO`, `AUTO_EDITED` when you change it), kept in step by every stock movement; removing one is remembered until the next consumption (spec 118).
+- Manual and text-only rows, an estimated total with per-item prices and `GET /stock/shopping-lists/restock-summary` for the Home card (spec 118).
+- Items carry `shoppingListId`, `effectiveShoppingListId` and `estimatedUnitPriceCents`; the owner-change preview reports the list (spec 118).
+
 ## [6.1.1] - 2026-11-18
 
 ### Fixed

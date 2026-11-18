@@ -38,6 +38,7 @@ describe('Method create', () => {
       },
     });
     expect(result.lots).toEqual([mocks.lot]);
+    expect(spies.sync).toHaveBeenCalledWith(expect.anything(), [mocks.stock.id]);
   });
 
   it.each([
@@ -153,9 +154,23 @@ describe('Method update', () => {
 
     expect(spies.stockUpdate).toHaveBeenCalledWith({
       data: { min_quantity: null, notes: 'n' },
+      where: { id: 'x' },
+    });
+    expect(spies.stockFindUniqueOrThrow).toHaveBeenCalledWith({
       include: expect.any(Object),
       where: { id: 'x' },
     });
+    expect(spies.sync).toHaveBeenCalledWith(expect.anything(), ['x']);
+    expect(spies.executeRaw).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD turn the rows of the item into text rows WHEN the owner changes, before the sync', async () => {
+    spies.stockFindUniqueOrThrow.mockResolvedValue({ ...mocks.stock, lots: [] });
+
+    await setup.update({ id: 'x', owner: 'FAMILY', owner_id: 'f' });
+
+    expect(spies.executeRaw).toHaveBeenCalledTimes(1);
+    expect(spies.sync).toHaveBeenCalledWith(expect.anything(), ['x']);
   });
 });
 
@@ -218,6 +233,23 @@ describe('Method applyMovement', () => {
     ]);
     expect(result?.movements).toHaveLength(2);
     expect(result?.item.id).toBe(mocks.stock.id);
+    // A lowering movement (negative quantity) also clears the dismissal of a removed row (spec 118 FR 11).
+    expect(spies.sync).toHaveBeenCalledWith(expect.anything(), ['item'], { clearDismissal: true });
+  });
+
+  it('SHOULD keep the dismissal WHEN no movement lowers the quantity AND skip the sync on a replay', async () => {
+    await setup.applyMovement('item', 'user', () => [
+      { lot: { id: 'lot' }, movement: { quantity: 2, type: 'ENTRY' }, update: { quantity: 4 } },
+    ]);
+    expect(spies.sync).toHaveBeenCalledWith(expect.anything(), ['item'], { clearDismissal: false });
+
+    spies.sync.mockClear();
+    spies.movementFindFirst.mockResolvedValue({ gesture_id: null, id: 'first' });
+    spies.movementFindMany.mockResolvedValue([]);
+    const replay = await setup.applyMovement('item', 'user', jest.fn(), { client_id: 'key' });
+
+    expect(replay?.replayed).toBe(true);
+    expect(spies.sync).not.toHaveBeenCalled();
   });
 
   it('SHOULD store the gesture on every movement and the idempotency key on the first one only', async () => {
@@ -310,6 +342,25 @@ describe('Method applyGestureChange', () => {
       data: expect.objectContaining({ gesture_id: 'g', lot_id: 'lot', user_id: 'user' }),
     });
     expect(spies.lotDeleteMany).toHaveBeenCalledWith({ where: { id: { in: ['gone'] } } });
+    // Undoing an entry lowers the quantity: a dismissed row may come back (spec 118 FR 10).
+    expect(spies.sync).toHaveBeenCalledWith(expect.anything(), ['item'], {
+      clearDismissal: false,
+    });
+  });
+
+  it('SHOULD clear the dismissal WHEN the undone gesture was an entry', async () => {
+    spies.movementFindMany
+      .mockReset()
+      .mockResolvedValueOnce([{ ...gestureMovement, quantity: 2, type: 'ENTRY' }])
+      .mockResolvedValueOnce([]);
+
+    await setup.applyGestureChange('g', 'user', () => ({
+      create: [],
+      delete_lot_ids: [],
+      lot_updates: [],
+    }));
+
+    expect(spies.sync).toHaveBeenCalledWith(expect.anything(), ['item'], { clearDismissal: true });
   });
 
   it('SHOULD write nothing WHEN the planner refuses', async () => {

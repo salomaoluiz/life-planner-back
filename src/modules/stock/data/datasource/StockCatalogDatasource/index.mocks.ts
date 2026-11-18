@@ -17,6 +17,7 @@ const spies = {
   locationFindMany: jest.fn(),
   locationFindUnique: jest.fn(),
   locationUpdate: jest.fn(),
+  shoppingListFindMany: jest.fn(),
   transaction: jest.fn(),
 };
 const databaseMock = {
@@ -38,6 +39,7 @@ const databaseMock = {
       findUnique: spies.locationFindUnique,
       update: spies.locationUpdate,
     },
+    stockShoppingList: { findMany: spies.shoppingListFindMany },
   },
 } as unknown as Database;
 let setup: StockCatalogDatasource;

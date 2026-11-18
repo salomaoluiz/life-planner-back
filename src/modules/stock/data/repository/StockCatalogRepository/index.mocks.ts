@@ -1,10 +1,12 @@
 import { Test } from '@nestjs/testing';
 
+import { ShoppingListMapper } from '@stock/data/datasource/mapper/ShoppingListMapper';
 import { StockMapper } from '@stock/data/datasource/mapper/StockMapper';
 
 import { StockCatalogRepository } from './index';
 
 jest.mock('@stock/data/datasource/mapper/StockMapper');
+jest.mock('@stock/data/datasource/mapper/ShoppingListMapper');
 
 const datasource = {
   countItemsByCategory: jest.fn(),
@@ -27,6 +29,7 @@ const datasource = {
 };
 const spies = {
   toCategory: jest.mocked(StockMapper.toCategory),
+  toList: jest.mocked(ShoppingListMapper.toList),
   toLocation: jest.mocked(StockMapper.toLocation),
 };
 let setup: StockCatalogRepository;
@@ -35,6 +38,7 @@ beforeEach(async () => {
   jest.clearAllMocks();
   spies.toCategory.mockReturnValue({ id: 'category' } as never);
   spies.toLocation.mockReturnValue({ id: 'location' } as never);
+  spies.toList.mockReturnValue({ id: 'list' } as never);
 
   const module = await Test.createTestingModule({
     providers: [

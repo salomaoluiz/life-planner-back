@@ -11,6 +11,7 @@ import {
   item,
   location,
   lot,
+  shoppingList,
 } from '@stock/application/mocks/stock.mocks';
 import { StockUnits } from '@stock/domain/entity/StockEntity';
 
@@ -100,6 +101,7 @@ describe('owner change', () => {
         ? {
             categories: [category('src-cat', { name: 'Dairy' })],
             locations: [location('src-loc', { name: 'Fridge' })],
+            shoppingLists: [],
           }
         : {
             categories: [
@@ -116,6 +118,7 @@ describe('owner change', () => {
                 ownerId: mocks.familyId,
               }),
             ],
+            shoppingLists: [],
           },
     );
     mocks.catalog.findCategoryById.mockResolvedValue(
@@ -142,6 +145,7 @@ describe('owner change', () => {
     mocks.catalog.findCatalogByOwners.mockImplementation(async (owners) => ({
       categories: owners[0].owner === 'USER' ? [category('src-cat')] : [],
       locations: [],
+      shoppingLists: [],
     }));
 
     await setup.execute(move);
@@ -171,4 +175,72 @@ it('SHOULD throw ValidationError WHEN nothing is sent or only half of the owner'
   await expect(setup.execute({ ...input, owner: OwnerType.FAMILY })).rejects.toThrow(
     ValidationError,
   );
+});
+
+describe('shopping list (spec 118)', () => {
+  it('SHOULD point the item to an active list of its owner AND store the typed price', async () => {
+    mocks.lists.findById.mockResolvedValue(shoppingList('l'));
+
+    await setup.execute({ ...input, estimatedUnitPriceCents: 489, shoppingListId: 'l' });
+
+    expect(mocks.stock.update).toHaveBeenCalledWith(
+      expect.objectContaining({ estimatedUnitPriceCents: 489, shoppingListId: 'l' }),
+    );
+  });
+
+  it('SHOULD clear the pointer with null', async () => {
+    await setup.execute({ ...input, shoppingListId: null });
+
+    expect(mocks.stock.update).toHaveBeenCalledWith(
+      expect.objectContaining({ shoppingListId: null }),
+    );
+  });
+
+  it('SHOULD refuse a list of another owner (422) AND a list on a stock-only item (422)', async () => {
+    mocks.lists.findById.mockResolvedValueOnce(shoppingList('l', { ownerId: 'someone-else' }));
+    await expect(setup.execute({ ...input, shoppingListId: 'l' })).rejects.toThrow(
+      UnprocessableEntityException,
+    );
+
+    await expect(setup.execute({ ...input, shoppingListId: 'l', stockOnly: true })).rejects.toThrow(
+      UnprocessableEntityException,
+    );
+  });
+
+  it('SHOULD drop the pointer WHEN the item becomes stock-only', async () => {
+    mocks.stock.findById.mockResolvedValue(item([], (f) => f.withShoppingListId('l')));
+
+    await setup.execute({ ...input, stockOnly: true });
+
+    expect(mocks.stock.update).toHaveBeenCalledWith(
+      expect.objectContaining({ shoppingListId: null, stockOnly: true }),
+    );
+  });
+
+  it('SHOULD replace the list by the same-name one of the new owner on an owner change', async () => {
+    mocks.stock.findById.mockResolvedValue(item([], (f) => f.withShoppingListId('src-list')));
+    mocks.catalog.findCatalogByOwners.mockImplementation(async (owners) => ({
+      categories: [],
+      locations: [],
+      shoppingLists:
+        owners[0].owner === 'USER'
+          ? [shoppingList('src-list', { name: 'Pharmacy' })]
+          : [
+              shoppingList('dst-list', {
+                name: 'pharmacy',
+                owner: OwnerType.FAMILY,
+                ownerId: mocks.familyId,
+              }),
+            ],
+    }));
+    mocks.lists.findById.mockResolvedValue(
+      shoppingList('dst-list', { owner: OwnerType.FAMILY, ownerId: mocks.familyId }),
+    );
+
+    await setup.execute({ ...input, owner: OwnerType.FAMILY, ownerId: mocks.familyId });
+
+    expect(mocks.stock.update).toHaveBeenCalledWith(
+      expect.objectContaining({ owner: 'FAMILY', shoppingListId: 'dst-list' }),
+    );
+  });
 });

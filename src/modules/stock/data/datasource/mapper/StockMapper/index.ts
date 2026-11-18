@@ -35,6 +35,7 @@ export class StockMapper {
       categoryId: raw.category_id ?? undefined,
       createdAt: raw.created_at,
       description: raw.description,
+      estimatedUnitPriceCents: raw.estimated_unit_price_cents ?? undefined,
       id: raw.id,
       idealQuantity: raw.ideal_quantity === null ? undefined : toNumber(raw.ideal_quantity),
       locationId: raw.location_id ?? undefined,
@@ -45,6 +46,7 @@ export class StockMapper {
       owner: OwnerType[raw.owner],
       ownerId: raw.owner_id,
       quickStep: raw.quick_step === null ? undefined : toNumber(raw.quick_step),
+      shoppingListId: raw.shopping_list_id ?? undefined,
       stockOnly: raw.stock_only,
       // Prisma's generated StockUnit already carries the lowercase wire values.
       unit: raw.unit as StockUnits,

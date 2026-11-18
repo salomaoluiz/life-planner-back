@@ -17,18 +17,20 @@ datasource db {
 }
 
 model User {
-  id               String                    @id @default(uuid())
-  email            String                    @unique
-  name             String
-  password_hash    String
-  photo_url        String?
-  created_at       DateTime?                 @default(now())
-  updated_at       DateTime?                 @updatedAt
-  families         Family[]
-  family_members   FamilyMember[]
-  sessions         UserSession[]
-  account_favorite FinancialAccountFavorite?
-  stock_movements  StockMovement[]
+  id                 String                    @id @default(uuid())
+  email              String                    @unique
+  name               String
+  password_hash      String
+  photo_url          String?
+  created_at         DateTime?                 @default(now())
+  updated_at         DateTime?                 @updatedAt
+  families           Family[]
+  family_members     FamilyMember[]
+  sessions           UserSession[]
+  account_favorite   FinancialAccountFavorite?
+  stock_movements    StockMovement[]
+  shopping_list_rows StockShoppingListRow[]
+  restock_dismissals StockRestockDismissal[]
 }
 
 model Family {
@@ -398,36 +400,100 @@ enum StockMovementReason {
 // Spec 116: the quantity lives in lots; every change is an immutable movement. `name_embedding` (pgvector) is read and
 // written with raw SQL only (`Unsupported`), see StockEmbeddingDatasource.
 model StockItem {
-  id                     String                       @id @default(uuid())
-  owner                  OwnerType
-  owner_id               String
-  description            String
-  unit                   StockUnit
-  brand                  String?
-  barcode                String?
-  notes                  String?
-  category_id            String?
-  location_id            String?
-  min_quantity           Decimal?                     @db.Decimal(14, 3)
-  ideal_quantity         Decimal?                     @db.Decimal(14, 3)
-  opened_shelf_life_days Int?
-  warn_days_closed       Int                          @default(7)
-  warn_days_opened       Int                          @default(1)
-  stock_only             Boolean                      @default(false)
-  quick_step             Decimal?                     @db.Decimal(14, 3)
-  name_embedding         Unsupported("vector(1024)")?
-  created_at             DateTime                     @default(now()) @db.Timestamptz(6)
-  updated_at             DateTime                     @updatedAt @db.Timestamptz(6)
+  id                         String                       @id @default(uuid())
+  owner                      OwnerType
+  owner_id                   String
+  description                String
+  unit                       StockUnit
+  brand                      String?
+  barcode                    String?
+  notes                      String?
+  category_id                String?
+  location_id                String?
+  min_quantity               Decimal?                     @db.Decimal(14, 3)
+  ideal_quantity             Decimal?                     @db.Decimal(14, 3)
+  opened_shelf_life_days     Int?
+  warn_days_closed           Int                          @default(7)
+  warn_days_opened           Int                          @default(1)
+  stock_only                 Boolean                      @default(false)
+  quick_step                 Decimal?                     @db.Decimal(14, 3)
+  shopping_list_id           String?
+  estimated_unit_price_cents Int?
+  name_embedding             Unsupported("vector(1024)")?
+  created_at                 DateTime                     @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime                     @updatedAt @db.Timestamptz(6)
 
-  category  StockCategory?  @relation(fields: [category_id], references: [id], onDelete: SetNull)
-  location  StockLocation?  @relation(fields: [location_id], references: [id], onDelete: SetNull)
-  lots      StockLot[]
-  movements StockMovement[]
+  category           StockCategory?         @relation(fields: [category_id], references: [id], onDelete: SetNull)
+  location           StockLocation?         @relation(fields: [location_id], references: [id], onDelete: SetNull)
+  lots               StockLot[]
+  movements          StockMovement[]
+  shopping_list      StockShoppingList?     @relation(fields: [shopping_list_id], references: [id], onDelete: SetNull)
+  shopping_list_rows StockShoppingListRow[]
+  restock_dismissal  StockRestockDismissal?
 
   @@index([owner, owner_id])
   @@index([owner, owner_id, category_id])
   @@index([owner, owner_id, location_id])
   @@map("stock_items")
+}
+
+enum ShoppingListRowOrigin {
+  AUTO
+  AUTO_EDITED
+  MANUAL
+}
+
+// Spec 118: the partial unique indexes (one active default and one active name per owner) live in the migration.
+model StockShoppingList {
+  id         String        @id @default(uuid())
+  owner      OwnerType
+  owner_id   String
+  name       String        @db.VarChar(50)
+  is_default Boolean       @default(false)
+  status     AccountStatus @default(ACTIVE)
+  currency   String        @default("BRL") @db.VarChar(3)
+  created_at DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at DateTime      @updatedAt @db.Timestamptz(6)
+
+  items StockItem[]
+  rows  StockShoppingListRow[]
+
+  @@index([owner, owner_id])
+  @@map("stock_shopping_lists")
+}
+
+// The partial unique `(list_id, item_id)` and the row CHECKs live in the migration.
+model StockShoppingListRow {
+  id                         String                @id @default(uuid())
+  list_id                    String
+  item_id                    String?
+  description                String?               @db.VarChar(100)
+  unit                       StockUnit?
+  quantity                   Decimal               @db.Decimal(14, 3)
+  origin                     ShoppingListRowOrigin
+  estimated_unit_price_cents Int?
+  created_by                 String?
+  created_at                 DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime              @updatedAt @db.Timestamptz(6)
+
+  list StockShoppingList @relation(fields: [list_id], references: [id], onDelete: Cascade)
+  item StockItem?        @relation(fields: [item_id], references: [id], onDelete: Cascade)
+  user User?             @relation(fields: [created_by], references: [id], onDelete: SetNull)
+
+  @@index([list_id, origin])
+  @@index([item_id])
+  @@map("stock_shopping_list_rows")
+}
+
+model StockRestockDismissal {
+  item_id      String   @id
+  dismissed_at DateTime @default(now()) @db.Timestamptz(6)
+  dismissed_by String?
+
+  item StockItem @relation(fields: [item_id], references: [id], onDelete: Cascade)
+  user User?     @relation(fields: [dismissed_by], references: [id], onDelete: SetNull)
+
+  @@map("stock_restock_dismissals")
 }
 
 model StockLot {

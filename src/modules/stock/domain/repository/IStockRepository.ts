@@ -96,6 +96,7 @@ interface CreateStockRepositoryParams {
   brand?: string;
   categoryId?: string;
   description: string;
+  estimatedUnitPriceCents?: number;
   firstLot?: NewLotParams;
   idealQuantity?: number;
   locationId?: string;
@@ -105,6 +106,7 @@ interface CreateStockRepositoryParams {
   owner: OwnerType;
   ownerId: string;
   quickStep?: number;
+  shoppingListId?: string;
   stockOnly: boolean;
   unit: StockUnits;
   userId: string;
@@ -117,6 +119,7 @@ interface UpdateStockRepositoryParams {
   brand?: null | string;
   categoryId?: null | string;
   description?: string;
+  estimatedUnitPriceCents?: null | number;
   id: string;
   idealQuantity?: null | number;
   locationId?: null | string;
@@ -126,6 +129,7 @@ interface UpdateStockRepositoryParams {
   owner?: OwnerType;
   ownerId?: string;
   quickStep?: null | number;
+  shoppingListId?: null | string;
   stockOnly?: boolean;
   unit?: StockUnits;
   warnDaysClosed?: number;

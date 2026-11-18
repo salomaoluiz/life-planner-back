@@ -78,6 +78,7 @@ const catalog = {
     category('cheese', { parentId: 'dairy' }),
   ],
   locations: [location('fridge')],
+  shoppingLists: [],
 };
 const view = toStockItemView(
   item(

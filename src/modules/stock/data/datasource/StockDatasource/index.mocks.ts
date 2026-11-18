@@ -4,8 +4,11 @@ import { Test } from '@nestjs/testing';
 import { StockItem, StockLot, StockMovement } from '@db/client';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { Database } from '@shared/infra/db/Database';
+import { syncRestockRows } from '@stock/data/datasource/RestockSync';
 
 import { StockDatasource } from './index';
+
+jest.mock('@stock/data/datasource/RestockSync');
 
 const stockMock = {
   id: faker.string.uuid(),
@@ -21,6 +24,7 @@ const ownersMock = [
 ];
 
 const spies = {
+  executeRaw: jest.fn(),
   lotCreate: jest.fn(),
   lotDeleteMany: jest.fn(),
   lotFindMany: jest.fn(),
@@ -37,9 +41,11 @@ const spies = {
   stockFindUnique: jest.fn(),
   stockFindUniqueOrThrow: jest.fn(),
   stockUpdate: jest.fn(),
+  sync: jest.mocked(syncRestockRows),
 };
 
 const client = {
+  $executeRaw: spies.executeRaw,
   $queryRaw: spies.queryRaw,
   $transaction: jest.fn(),
   stockItem: {

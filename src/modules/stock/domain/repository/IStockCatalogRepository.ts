@@ -1,4 +1,5 @@
 import { OwnerAccess } from '@stock/domain/entity/OwnerAccess';
+import ShoppingListEntity from '@stock/domain/entity/ShoppingListEntity';
 import StockCategoryEntity, { StockCatalogStatus } from '@stock/domain/entity/StockCategoryEntity';
 import StockLocationEntity from '@stock/domain/entity/StockLocationEntity';
 
@@ -30,6 +31,7 @@ export type IStockCatalogRepository = {
   findCatalogByOwners(owners: OwnerAccess[]): Promise<{
     categories: StockCategoryEntity[];
     locations: StockLocationEntity[];
+    shoppingLists: ShoppingListEntity[];
   }>;
   findCategories(ownerAccess: OwnerAccess): Promise<StockCategoryEntity[]>;
   findCategoryById(id: string): Promise<StockCategoryEntity | undefined>;

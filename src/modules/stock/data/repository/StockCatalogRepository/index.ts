@@ -1,9 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import { AccountStatus } from '@db/client';
+import { ShoppingListMapper } from '@stock/data/datasource/mapper/ShoppingListMapper';
 import { StockMapper } from '@stock/data/datasource/mapper/StockMapper';
 import { IStockCatalogDatasource } from '@stock/data/repository/datasource/IStockCatalogDatasource';
 import { OwnerAccess } from '@stock/domain/entity/OwnerAccess';
+import ShoppingListEntity from '@stock/domain/entity/ShoppingListEntity';
 import StockCategoryEntity, { StockCatalogStatus } from '@stock/domain/entity/StockCategoryEntity';
 import StockLocationEntity from '@stock/domain/entity/StockLocationEntity';
 import {
@@ -88,12 +90,16 @@ export class StockCatalogRepository implements IStockCatalogRepository {
   async findCatalogByOwners(owners: OwnerAccess[]): Promise<{
     categories: StockCategoryEntity[];
     locations: StockLocationEntity[];
+    shoppingLists: ShoppingListEntity[];
   }> {
-    const { categories, locations } = await this.datasource.findCatalogByOwners(owners.map(key));
+    const { categories, locations, shopping_lists } = await this.datasource.findCatalogByOwners(
+      owners.map(key),
+    );
 
     return {
       categories: categories.map((row) => StockMapper.toCategory(row)),
       locations: locations.map((row) => StockMapper.toLocation(row)),
+      shoppingLists: shopping_lists.map((row) => ShoppingListMapper.toList(row)),
     };
   }
 

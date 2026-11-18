@@ -41,6 +41,7 @@ it('SHOULD expand a category filter to its descendants and keep unknown ids', as
   mocks.catalog.findCatalogByOwners.mockResolvedValue({
     categories: [category('dairy'), category('cheese', { parentId: 'dairy' })],
     locations: [],
+    shoppingLists: [],
   });
 
   await setup.execute({

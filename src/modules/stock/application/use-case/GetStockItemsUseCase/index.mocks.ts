@@ -19,7 +19,11 @@ let setup: GetStockItemsUseCase;
 beforeEach(async () => {
   jest.clearAllMocks();
   mocks.stock.findByOwners.mockResolvedValue([]);
-  mocks.catalog.findCatalogByOwners.mockResolvedValue({ categories: [], locations: [] });
+  mocks.catalog.findCatalogByOwners.mockResolvedValue({
+    categories: [],
+    locations: [],
+    shoppingLists: [],
+  });
   setup = await build(GetStockItemsUseCase, [
     { provide: 'IStockRepository', useValue: mocks.stock },
     { provide: 'IStockCatalogRepository', useValue: mocks.catalog },

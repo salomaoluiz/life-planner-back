@@ -2,7 +2,13 @@ import { ForbiddenException, UnprocessableEntityException } from '@nestjs/common
 
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { ValidationError } from '@shared/domain/error/ValidationError';
-import { archivedOwners, category, location } from '@stock/application/mocks/stock.mocks';
+import {
+  archivedOwners,
+  category,
+  location,
+  shoppingList,
+} from '@stock/application/mocks/stock.mocks';
+import { StockCatalogStatus } from '@stock/domain/entity/StockCategoryEntity';
 import { StockUnits } from '@stock/domain/entity/StockEntity';
 
 import { base, mocks, setup } from './index.mocks';
@@ -89,4 +95,40 @@ it('SHOULD refuse an owner the caller cannot access (403) and an archived family
 it('SHOULD throw ValidationError WHEN the input is malformed', async () => {
   await expect(setup.execute({ ...base, quantity: -1 })).rejects.toThrow(ValidationError);
   await expect(setup.execute({ ...base, description: '' })).rejects.toThrow(ValidationError);
+});
+
+describe('shopping list (spec 118)', () => {
+  it('SHOULD store the list and the typed price WHEN the list is an active one of the same owner', async () => {
+    mocks.lists.findById.mockResolvedValue(shoppingList('l'));
+
+    await setup.execute({ ...base, estimatedUnitPriceCents: 489, shoppingListId: 'l' });
+
+    expect(mocks.stock.create).toHaveBeenCalledWith(
+      expect.objectContaining({ estimatedUnitPriceCents: 489, shoppingListId: 'l' }),
+    );
+  });
+
+  it('SHOULD refuse a missing, archived or foreign list AND a list on a stock-only item (422)', async () => {
+    mocks.lists.findById.mockResolvedValueOnce(undefined);
+    await expect(setup.execute({ ...base, shoppingListId: 'l' })).rejects.toThrow(
+      UnprocessableEntityException,
+    );
+
+    mocks.lists.findById.mockResolvedValueOnce(
+      shoppingList('l', { status: StockCatalogStatus.ARCHIVED }),
+    );
+    await expect(setup.execute({ ...base, shoppingListId: 'l' })).rejects.toThrow(
+      UnprocessableEntityException,
+    );
+
+    mocks.lists.findById.mockResolvedValueOnce(shoppingList('l', { ownerId: 'someone-else' }));
+    await expect(setup.execute({ ...base, shoppingListId: 'l' })).rejects.toThrow(
+      UnprocessableEntityException,
+    );
+
+    await expect(setup.execute({ ...base, shoppingListId: 'l', stockOnly: true })).rejects.toThrow(
+      UnprocessableEntityException,
+    );
+    expect(mocks.stock.create).not.toHaveBeenCalled();
+  });
 });

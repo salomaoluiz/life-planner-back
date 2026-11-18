@@ -23,6 +23,13 @@ const OptionalShelfLifeSchema = OpenedShelfLifeDaysSchema.nullish().transform(
   (value) => value ?? undefined,
 );
 
+const OptionalPriceSchema = z
+  .number()
+  .int()
+  .min(1)
+  .max(99_999_999)
+  .nullish()
+  .transform((value) => value ?? undefined);
 const OptionalStepSchema = StepSchema.nullish().transform((value) => value ?? undefined);
 
 export const CreateStockItemSchema = z.object({
@@ -31,6 +38,7 @@ export const CreateStockItemSchema = z.object({
   brand: OptionalBrandSchema,
   categoryId: OptionalIdSchema,
   description: DescriptionSchema,
+  estimatedUnitPriceCents: OptionalPriceSchema,
   expirationDate: OptionalDaySchema,
   idealQuantity: OptionalQuantitySchema,
   locationId: OptionalIdSchema,
@@ -42,6 +50,7 @@ export const CreateStockItemSchema = z.object({
   purchaseDate: OptionalDaySchema,
   quantity: QuantitySchema.default(0),
   quickStep: OptionalStepSchema,
+  shoppingListId: OptionalIdSchema,
   stockOnly: z.boolean().default(false),
   today: OptionalTodaySchema,
   unit: UnitSchema,

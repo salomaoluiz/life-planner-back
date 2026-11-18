@@ -13,6 +13,7 @@ import {
 } from '@stock/application/dto/UpdateStockItem';
 import { planOwnerChange } from '@stock/application/service/OwnerChange';
 import { ensureOwnerWritable } from '@stock/application/service/OwnerWritable';
+import { assertItemShoppingList } from '@stock/application/service/ShoppingListAccess';
 import { assertStockLimits, loadCatalogRefs } from '@stock/application/service/StockRules';
 import {
   loadCatalogLookup,
@@ -22,7 +23,11 @@ import {
 } from '@stock/application/service/StockView';
 import { RefreshStockEmbeddingUseCase } from '@stock/application/use-case/RefreshStockEmbeddingUseCase';
 import { hasOwnerAccess } from '@stock/domain/entity/OwnerAccess';
-import { IStockCatalogRepository, IStockRepository } from '@stock/domain/repository';
+import {
+  IShoppingListRepository,
+  IStockCatalogRepository,
+  IStockRepository,
+} from '@stock/domain/repository';
 import { quantityError } from '@stock/domain/service/StockQuantity';
 
 export class UpdateStockItemUseCase implements UseCaseWithParams<
@@ -35,6 +40,8 @@ export class UpdateStockItemUseCase implements UseCaseWithParams<
     @Inject('IStockCatalogRepository')
     private readonly catalogRepository: IStockCatalogRepository,
     private readonly refreshEmbedding: RefreshStockEmbeddingUseCase,
+    @Inject('IShoppingListRepository')
+    private readonly listRepository: IShoppingListRepository,
   ) {}
 
   async execute(params: UpdateStockItemInput): Promise<StockItemView> {
@@ -91,6 +98,7 @@ export class UpdateStockItemUseCase implements UseCaseWithParams<
 
     let categoryId = input.categoryId;
     let locationId = input.locationId;
+    let shoppingListId = input.shoppingListId;
 
     if (ownerChanged) {
       const [source, destination] = await Promise.all([
@@ -101,6 +109,14 @@ export class UpdateStockItemUseCase implements UseCaseWithParams<
 
       categoryId = categoryId === undefined ? plan.categoryId : categoryId;
       locationId = locationId === undefined ? plan.locationId : locationId;
+      shoppingListId = shoppingListId === undefined ? plan.shoppingListId : shoppingListId;
+    }
+
+    // Spec 118 FR 6: a stock-only item keeps no list (switching to it clears the pointer).
+    if (typeof shoppingListId === 'string') {
+      await assertItemShoppingList(this.listRepository, target, shoppingListId, stockOnly);
+    } else if (stockOnly && item.shoppingListId) {
+      shoppingListId = null;
     }
 
     await loadCatalogRefs(this.catalogRepository, target, { categoryId, locationId });
@@ -110,6 +126,7 @@ export class UpdateStockItemUseCase implements UseCaseWithParams<
       brand: input.brand,
       categoryId,
       description: input.description,
+      estimatedUnitPriceCents: input.estimatedUnitPriceCents,
       id: input.id,
       idealQuantity: clearLimits || input.idealQuantity !== undefined ? idealQuantity : undefined,
       locationId,
@@ -119,6 +136,7 @@ export class UpdateStockItemUseCase implements UseCaseWithParams<
       owner: ownerChanged ? target.owner : undefined,
       ownerId: ownerChanged ? target.ownerId : undefined,
       quickStep: input.quickStep,
+      shoppingListId,
       stockOnly: input.stockOnly,
       unit: input.unit,
       warnDaysClosed: input.warnDaysClosed,

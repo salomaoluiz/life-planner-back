@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma, StockMovement } from '@db/client';
 import { Database } from '@shared/infra/db/Database';
 import { toOwnerWhere } from '@stock/data/datasource/mapper/OwnerWhere';
+import { syncRestockRows } from '@stock/data/datasource/RestockSync';
 import {
   CreateStockDatasourceParams,
   DeleteByOwnerStockDatasourceParams,
@@ -117,6 +118,13 @@ export class StockDatasource implements IStockDatasource {
         await tx.stockLot.deleteMany({ where: { id: { in: plan.delete_lot_ids } } });
       }
 
+      // Spec 118 FR 10: undoing an entry lowers the quantity (a dismissed row may come back).
+      await syncRestockRows(tx, [itemId], {
+        clearDismissal: movements.some(
+          (movement) => movement.type === 'ENTRY' && Number(movement.quantity) > 0,
+        ),
+      });
+
       return tx.stockItem.findUniqueOrThrow({ include: OPEN_LOTS, where: { id: itemId } });
     });
   }
@@ -203,6 +211,11 @@ export class StockDatasource implements IStockDatasource {
         }
       }
 
+      // Spec 118 FR 10/11: the smart row follows the new quantity; a lowering movement clears the dismissal.
+      await syncRestockRows(tx, [itemId], {
+        clearDismissal: movements.some((movement) => Number(movement.quantity) < 0),
+      });
+
       const after = await tx.stockItem.findUniqueOrThrow({
         include: OPEN_LOTS,
         where: { id: itemId },
@@ -219,6 +232,8 @@ export class StockDatasource implements IStockDatasource {
       const item = await tx.stockItem.create({ data });
 
       if (!firstLot || firstLot.quantity <= 0) {
+        await syncRestockRows(tx, [item.id]);
+
         return { ...item, lots: [] };
       }
 
@@ -234,6 +249,7 @@ export class StockDatasource implements IStockDatasource {
           user_id: userId,
         },
       });
+      await syncRestockRows(tx, [item.id]);
 
       return { ...item, lots: [lot] };
     });
@@ -352,6 +368,23 @@ export class StockDatasource implements IStockDatasource {
   async update(params: UpdateStockDatasourceParams): Promise<StockItemWithLots> {
     const { id, ...data } = params;
 
-    return this.db.client.stockItem.update({ data, include: OPEN_LOTS, where: { id } });
+    return this.db.client.$transaction(async (tx) => {
+      // Spec 118 FR 8: the rows of an item that changes owner stay with the old owner: the ones the user wrote
+      // (manual and edited) become text rows, the AUTO ones are removed by the sync below.
+      if (data.owner !== undefined) {
+        await tx.$executeRaw(Prisma.sql`
+          UPDATE "stock_shopping_list_rows" r
+          SET "description" = LEFT(i."description", 100), "unit" = i."unit", "item_id" = NULL,
+            "estimated_unit_price_cents" = i."estimated_unit_price_cents", "origin" = 'MANUAL', "updated_at" = now()
+          FROM "stock_items" i
+          WHERE r."item_id" = i."id" AND i."id" = ${id} AND r."origin" IN ('MANUAL', 'AUTO_EDITED')
+        `);
+      }
+
+      await tx.stockItem.update({ data, where: { id } });
+      await syncRestockRows(tx, [id]);
+
+      return tx.stockItem.findUniqueOrThrow({ include: OPEN_LOTS, where: { id } });
+    });
   }
 }

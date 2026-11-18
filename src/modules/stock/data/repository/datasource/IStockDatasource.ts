@@ -14,6 +14,7 @@ export interface CreateStockDatasourceParams {
   brand?: string;
   category_id?: string;
   description: string;
+  estimated_unit_price_cents?: number;
   first_lot?: NewLotDatasourceParams;
   ideal_quantity?: number;
   location_id?: string;
@@ -23,6 +24,7 @@ export interface CreateStockDatasourceParams {
   owner: OwnerType;
   owner_id: string;
   quick_step?: number;
+  shopping_list_id?: string;
   stock_only: boolean;
   unit: StockUnit;
   user_id: string;
@@ -112,6 +114,7 @@ export interface UpdateStockDatasourceParams {
   brand?: null | string;
   category_id?: null | string;
   description?: string;
+  estimated_unit_price_cents?: null | number;
   id: string;
   ideal_quantity?: null | number;
   location_id?: null | string;
@@ -121,6 +124,7 @@ export interface UpdateStockDatasourceParams {
   owner?: OwnerType;
   owner_id?: string;
   quick_step?: null | number;
+  shopping_list_id?: null | string;
   stock_only?: boolean;
   unit?: StockUnit;
   warn_days_closed?: number;

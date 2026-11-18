@@ -1,4 +1,10 @@
-import { AccountStatus, OwnerType, StockCategory, StockLocation } from '@db/client';
+import {
+  AccountStatus,
+  OwnerType,
+  StockCategory,
+  StockLocation,
+  StockShoppingList,
+} from '@db/client';
 
 export interface CreateStockCategoryDatasourceParams extends OwnerKey {
   finance_category_id?: string;
@@ -24,9 +30,11 @@ export interface IStockCatalogDatasource {
   deleteByOwner(key: OwnerKey): Promise<void>;
   deleteCategory(id: string): Promise<void>;
   deleteLocation(id: string): Promise<void>;
-  findCatalogByOwners(
-    keys: OwnerKey[],
-  ): Promise<{ categories: StockCategory[]; locations: StockLocation[] }>;
+  findCatalogByOwners(keys: OwnerKey[]): Promise<{
+    categories: StockCategory[];
+    locations: StockLocation[];
+    shopping_lists: StockShoppingList[];
+  }>;
   findCategories(key: OwnerKey): Promise<StockCategory[]>;
   findCategoryById(id: string): Promise<null | StockCategory>;
   findLocationById(id: string): Promise<null | StockLocation>;

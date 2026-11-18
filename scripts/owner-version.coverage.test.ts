@@ -21,6 +21,7 @@ const EXEMPT = new Set([
   'stock_items', // not finance
   'stock_categories', // not finance: stock reads carry no ETag yet (spec 116 FR 36 follow-up)
   'stock_locations', // not finance, same as stock_categories
+  'stock_shopping_lists', // not finance, same as stock_categories (spec 118: no stock ETag yet)
   'investment_assets', // not finance: investment reads carry no ETag; the finance rows an operation writes are bumped
 ]);
 

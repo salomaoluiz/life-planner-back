@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 
+import { ShoppingListController } from '@api/stock/v1/shoppingList.controller';
+import { ShoppingListService } from '@api/stock/v1/shoppingList.service';
 import {
   StockController,
   StockFrequentController,
@@ -25,8 +27,9 @@ import { UserModule } from '@user/user.module';
     StockGestureController,
     StockCategoryController,
     StockLocationController,
+    ShoppingListController,
   ],
   imports: [FamilyModule, FinanceModule, StockModule, UserModule],
-  providers: [StockService],
+  providers: [ShoppingListService, StockService],
 })
 export class StockAPIModule {}
