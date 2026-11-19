@@ -72,6 +72,8 @@ const transactionDatasourceMock = {
       owner: 'USER',
       owner_id: 'u1',
       recurrence_id: null,
+      split: null,
+      split_id: null,
       type: 'EXPENSE',
       value: 1000,
     },

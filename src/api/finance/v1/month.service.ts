@@ -6,6 +6,7 @@ import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { resolveToday } from '@api/finance/v1/finance-query';
 import { toDetailOutput } from '@api/finance/v1/invoice.service';
 import { toProjectedOutput } from '@api/finance/v1/recurrence.service';
+import { SplitLookupsService } from '@api/finance/v1/split-lookups.service';
 import { toTransactionItem, toTransactionLookups } from '@api/finance/v1/transaction.service';
 import { TransferLookupsService } from '@api/finance/v1/transfer-lookups.service';
 import {
@@ -38,6 +39,7 @@ export class MonthService {
     private readonly getTransactionsUseCase: GetTransactionsUseCase,
     private readonly loadFilterCategoriesUseCase: LoadFilterCategoriesUseCase,
     private readonly materializeRecurrencesUseCase: MaterializeRecurrencesUseCase,
+    private readonly splitLookupsService: SplitLookupsService,
     private readonly transferLookupsService: TransferLookupsService,
   ) {}
 
@@ -142,10 +144,14 @@ export class MonthService {
     return {
       dailyBalances: toDailyBalancesOutput(dailyBalances),
       invoices: invoices.map((detail) => toDetailOutput(detail)),
-      lookups: await this.transferLookupsService.attach(
+      lookups: await this.splitLookupsService.attach(
         accessibleOwners,
         page.items,
-        toTransactionLookups(page.items),
+        await this.transferLookupsService.attach(
+          accessibleOwners,
+          page.items,
+          toTransactionLookups(page.items),
+        ),
       ),
       month,
       projections: projections.map((item) => toProjectedOutput(item)),

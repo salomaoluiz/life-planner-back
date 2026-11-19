@@ -47,6 +47,8 @@ function rowMock(date: string, overrides: { id?: string; value?: number } = {}):
     owner: OwnerType.USER,
     ownerId,
     recurrenceId: null,
+    splitDescription: null,
+    splitId: null,
     type: TransactionType.EXPENSE,
     value: overrides.value ?? 1000,
   };

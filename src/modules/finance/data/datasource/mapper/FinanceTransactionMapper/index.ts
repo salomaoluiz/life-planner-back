@@ -42,6 +42,7 @@ export class FinanceTransactionMapper {
       currency: raw.currency as CurrencyCode,
       date: toCalendarDate(raw.date),
       description: raw.description,
+      descriptionInherited: raw.description_inherited,
       earlyPayment: raw.early_payment
         ? {
             creditCardId: raw.early_payment.credit_card_id as string,
@@ -81,6 +82,7 @@ export class FinanceTransactionMapper {
       refundedName: raw.refunded_transaction?.description ?? raw.refunded_plan?.description ?? null,
       refundedPlanId: raw.refunded_plan_id,
       refundedTransactionId: raw.refunded_transaction_id,
+      splitId: raw.split_id,
       tags: toTagRefs(raw.tags),
       transferId: raw.transfer_id,
       type: TransactionType[raw.type],

@@ -58,7 +58,7 @@ async function main(): Promise<number> {
         COALESCE(SUM(value) FILTER (WHERE type = 'INCOME' AND NOT projected), 0) AS income,
         COALESCE(SUM(value) FILTER (WHERE type = 'EXPENSE' AND NOT projected), 0) AS expense,
         COALESCE(SUM(value) FILTER (WHERE category_id = $1), 0) AS early_paid,
-        COUNT(*) FILTER (WHERE NOT projected) AS purchase_count,
+        COUNT(DISTINCT COALESCE(split_id, id)) FILTER (WHERE NOT projected) AS purchase_count,
         COALESCE(SUM(value) FILTER (WHERE projected), 0) AS projected_amount,
         COUNT(*) FILTER (WHERE projected) AS projected_count
        FROM financial_transactions WHERE credit_card_id IS NOT NULL

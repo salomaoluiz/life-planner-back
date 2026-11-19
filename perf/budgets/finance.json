@@ -90,6 +90,16 @@
     "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
     "scenario": ""
   },
+  "DELETE /api/v1/finance/splits/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "maxQueriesInTx": 16,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
   "DELETE /api/v1/finance/tags/:id": {
     "indexes": null,
     "kind": "unmeasured",
@@ -434,6 +444,15 @@
     "scenario": "from={referenceMonth}&to={nextMonth}",
     "revalidate": true
   },
+  "GET /api/v1/finance/splits/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Not measured: the pinned perf dataset has no splits (spec 119); one split read by id with its parts and one join read.",
+    "scenario": ""
+  },
   "GET /api/v1/finance/tags": {
     "indexes": null,
     "kind": "read",
@@ -664,6 +683,16 @@
     "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
     "scenario": ""
   },
+  "PATCH /api/v1/finance/splits/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "maxQueriesInTx": 70,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
   "PATCH /api/v1/finance/tags/:id": {
     "indexes": null,
     "kind": "unmeasured",
@@ -693,7 +722,6 @@
     "reason": "Writes are not measured: perf tests only read (spec 093).",
     "scenario": ""
   },
-
   "POST /api/v1/finance/accounts": {
     "indexes": null,
     "kind": "unmeasured",
@@ -801,6 +829,16 @@
     "maxQueriesInTx": 10,
     "p50Ms": null,
     "reason": "Needs fixtures beyond the single-record cycle of this slice (cards with invoices, plans, occurrences); no safe create-then-delete recipe yet.",
+    "scenario": ""
+  },
+  "POST /api/v1/finance/splits": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "maxQueriesInTx": 60,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
     "scenario": ""
   },
   "POST /api/v1/finance/tags": {

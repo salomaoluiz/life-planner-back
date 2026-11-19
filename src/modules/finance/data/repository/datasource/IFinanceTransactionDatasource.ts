@@ -124,7 +124,7 @@ export interface FindTransactionsFilter {
   // Spec 103: rows in this currency only.
   currency?: CurrencyCode;
   // Spec 078: keyset position (rows strictly after it in the list order) and page size (`limit + 1` rows are read).
-  cursor?: { createdAt: Date; date: Date; id: string };
+  cursor?: { createdAt: Date; date: Date; id: string; splitId?: null | string };
   from?: string;
   invoiceMonth?: string;
   invoiceRefs?: CardInvoiceKey[];
@@ -198,9 +198,10 @@ export type TransactionScalarsRecord = { category: { system_key: null | string }
   | 'paid'
   | 'projected'
   | 'recurrence_id'
+  | 'split_id'
   | 'type'
 >;
-export type UnpaidAccountRowRecord = Pick<
+export type UnpaidAccountRowRecord = { split: { description: string } | null } & Pick<
   FinancialTransaction,
   | 'account_id'
   | 'category_id'
@@ -212,6 +213,7 @@ export type UnpaidAccountRowRecord = Pick<
   | 'owner_id'
   | 'owner'
   | 'recurrence_id'
+  | 'split_id'
   | 'type'
   | 'value'
 >;

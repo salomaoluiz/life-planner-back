@@ -128,12 +128,24 @@ export class GetTransactionsUseCase implements UseCaseWithParams<
 }
 
 // Rows arrive in the list order; `limit + 1` rows mean a next page exists.
+// Spec 119 FR 30: when the limit falls inside a split the page ends after the split's last row (the datasource
+// returned those rows, plus the first row after them when more exist).
 function toPage(rows: TransactionEntity[], limit: number): TransactionPage {
-  if (rows.length <= limit) {
+  let end = limit;
+
+  while (
+    end < rows.length &&
+    Boolean(rows[end].splitId) &&
+    rows[end].splitId === rows[end - 1].splitId
+  ) {
+    end += 1;
+  }
+
+  if (rows.length <= end) {
     return { items: rows, nextCursor: null };
   }
 
-  const items = rows.slice(0, limit);
+  const items = rows.slice(0, end);
   const last = items[items.length - 1];
 
   return {
@@ -142,6 +154,7 @@ function toPage(rows: TransactionEntity[], limit: number): TransactionPage {
       createdAt: last.createdAt,
       date: new Date(`${last.date}T00:00:00.000Z`),
       id: last.id,
+      splitId: last.splitId,
     }),
   };
 }

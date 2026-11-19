@@ -284,6 +284,8 @@ model FinancialTransaction {
   split_id                 String?
   // Spec 119: true on a part without its own description (it stores the header description).
   description_inherited    Boolean                  @default(false)
+  // Spec 119: order of the part inside its split (0-based); null outside a split.
+  split_position           Int?                     @db.SmallInt
   // Spec 107: a row managed by another module (investment income); finance never edits or deletes it directly.
   external_lock            TransactionExternalLock?
   currency                 String                   @default("BRL") @db.VarChar(3)

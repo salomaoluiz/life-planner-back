@@ -22,6 +22,9 @@ import { MonthService } from '@api/finance/v1/month.service';
 import { RecurrenceProjectionController } from '@api/finance/v1/recurrence-projection.controller';
 import { RecurrenceController } from '@api/finance/v1/recurrence.controller';
 import { RecurrenceService } from '@api/finance/v1/recurrence.service';
+import { SplitLookupsService } from '@api/finance/v1/split-lookups.service';
+import { SplitController } from '@api/finance/v1/split.controller';
+import { SplitService } from '@api/finance/v1/split.service';
 import { TagController } from '@api/finance/v1/tag.controller';
 import { TagService } from '@api/finance/v1/tag.service';
 import { TransactionCsvController } from '@api/finance/v1/transaction-csv.controller';
@@ -55,6 +58,7 @@ import { InvestmentModule } from '@investment/investment.module';
     TagController,
     TransactionCsvController,
     TransactionController,
+    SplitController,
     TransferController,
     UpcomingController,
   ],
@@ -74,6 +78,8 @@ import { InvestmentModule } from '@investment/investment.module';
     TagService,
     TransactionCsvService,
     TransactionService,
+    SplitLookupsService,
+    SplitService,
     TransferLookupsService,
     TransferService,
     UpcomingService,

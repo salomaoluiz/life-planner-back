@@ -285,6 +285,7 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
         paid: true,
         projected: true,
         recurrence_id: true,
+        split_id: true,
         type: true,
       },
       where: { id },
@@ -314,22 +315,70 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
       return [];
     }
 
-    return this.db.client.financialTransaction.findMany({
+    const base = [
+      toOwnerWhere(owners),
+      sourceWhere,
+      ...filterWhere(source, filter),
+      ...(searched ? [{ id: { in: searched } }] : []),
+    ];
+    const rows = await this.db.client.financialTransaction.findMany({
       include: TRANSACTION_RELATIONS,
-      // `id` breaks ties (rows imported or materialized together share date and created_at): a stable order.
-      orderBy: [{ date: 'desc' }, { created_at: 'desc' }, { id: 'desc' }],
+      orderBy: LIST_ORDER,
       relationLoadStrategy: relationLoadStrategyFor(source, filter),
       ...(filter.limit === undefined ? {} : { take: filter.limit + 1 }),
+      where: { AND: [...base, ...(filter.cursor ? [afterCursorWhere(filter.cursor)] : [])] },
+    });
+
+    return filter.limit === undefined
+      ? rows
+      : this.extendToSplitEnd(rows, filter.limit, base, relationLoadStrategyFor(source, filter));
+  }
+
+  // Spec 119 FR 30: a page never cuts a split. When the limit falls inside a split, the page is extended with the rest
+  // of the split's (matching) rows, plus one sentinel row after it so the caller still knows a next page exists.
+  private async extendToSplitEnd(
+    rows: FinancialTransactionWithRelations[],
+    limit: number,
+    base: Prisma.FinancialTransactionWhereInput[],
+    relationLoadStrategy: ReturnType<typeof relationLoadStrategyFor>,
+  ): Promise<FinancialTransactionWithRelations[]> {
+    const boundary = rows.length > limit ? rows[limit - 1].split_id : null;
+
+    if (!boundary || rows[limit].split_id !== boundary) {
+      return rows;
+    }
+    const rest = await this.db.client.financialTransaction.findMany({
+      include: TRANSACTION_RELATIONS,
+      orderBy: LIST_ORDER,
+      relationLoadStrategy,
       where: {
         AND: [
-          toOwnerWhere(owners),
-          sourceWhere,
-          ...filterWhere(source, filter),
-          ...(filter.cursor ? [afterCursorWhere(filter.cursor)] : []),
-          ...(searched ? [{ id: { in: searched } }] : []),
+          ...base,
+          { split_id: boundary },
+          { id: { notIn: rows.filter((row) => row.split_id === boundary).map((row) => row.id) } },
         ],
       },
     });
+    const last = rest.length > 0 ? rest[rest.length - 1] : rows[limit];
+    const sentinel = await this.db.client.financialTransaction.findMany({
+      include: TRANSACTION_RELATIONS,
+      orderBy: LIST_ORDER,
+      relationLoadStrategy,
+      take: 1,
+      where: {
+        AND: [
+          ...base,
+          afterCursorWhere({
+            createdAt: last.created_at,
+            date: last.date,
+            id: last.id,
+            splitId: last.split_id,
+          }),
+        ],
+      },
+    });
+
+    return [...rows, ...rest, ...sentinel];
   }
 
   // Spec 082: the unpaid account rows up to `to` (no lower bound) with scalars only, for /finance/upcoming.
@@ -350,6 +399,8 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
         owner: true,
         owner_id: true,
         recurrence_id: true,
+        split: { select: { description: true } },
+        split_id: true,
         type: true,
         value: true,
       },
@@ -372,17 +423,14 @@ export class FinanceTransactionDatasource implements IFinanceTransactionDatasour
     if (keys.length === 0) {
       return [];
     }
-    const rows = await this.db.client.financialTransaction.groupBy({
-      _count: { _all: true },
-      by: ['credit_card_id', 'invoice_month'],
-      where: { OR: keys.map((key) => ({ ...key })) },
-    });
+    // Spec 119 FR 36: a split counts as ONE purchase (its parts share the split id).
+    const rows = await this.db.client.$queryRaw<
+      { count: number; credit_card_id: string; invoice_month: string }[]
+    >(
+      Prisma.sql`SELECT t."credit_card_id", t."invoice_month", COUNT(DISTINCT COALESCE(t."split_id", t."id"))::int AS "count" FROM "financial_transactions" t WHERE ${invoiceKeysSql(keys)} GROUP BY t."credit_card_id", t."invoice_month"`,
+    );
 
-    return rows.map((row) => ({
-      count: row._count._all,
-      credit_card_id: row.credit_card_id as string,
-      invoice_month: row.invoice_month as string,
-    }));
+    return rows;
   }
 
   async findCardPurchases(
@@ -747,13 +795,31 @@ const ACCOUNT_SOURCE_WHERE = {
     { early_payment: { isNot: null } },
   ],
 };
-// Rows strictly after the cursor in the (date, created_at, id) descending order.
+// `id` breaks ties (rows imported or materialized together share date and created_at): a stable order. The parts of a
+// split share date and created_at, so `split_id` (nulls last) keeps them adjacent (spec 119 FR 30).
+const LIST_ORDER = [
+  { date: 'desc' },
+  { created_at: 'desc' },
+  { split_id: { nulls: 'last', sort: 'desc' } },
+  { id: 'desc' },
+] satisfies Prisma.FinancialTransactionOrderByWithRelationInput[];
+
+// Rows strictly after the cursor in the (date, created_at, split_id nulls last, id) descending order.
 function afterCursorWhere(cursor: NonNullable<FindTransactionsFilter['cursor']>) {
+  const sameMoment = { created_at: cursor.createdAt, date: cursor.date };
+  const afterInTie: Prisma.FinancialTransactionWhereInput[] = cursor.splitId
+    ? [
+        { ...sameMoment, split_id: { lt: cursor.splitId } },
+        { ...sameMoment, id: { lt: cursor.id }, split_id: cursor.splitId },
+        { ...sameMoment, split_id: null },
+      ]
+    : [{ ...sameMoment, id: { lt: cursor.id }, split_id: null }];
+
   return {
     OR: [
       { date: { lt: cursor.date } },
       { created_at: { lt: cursor.createdAt }, date: cursor.date },
-      { created_at: cursor.createdAt, date: cursor.date, id: { lt: cursor.id } },
+      ...afterInTie,
     ],
   };
 }

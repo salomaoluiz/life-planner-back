@@ -15,6 +15,7 @@ import { CreateCategoryUseCase } from '@finance/application/use-case/CreateCateg
 import { CreateCreditCardUseCase } from '@finance/application/use-case/CreateCreditCardUseCase';
 import { CreateInstallmentPlanUseCase } from '@finance/application/use-case/CreateInstallmentPlanUseCase';
 import { CreateRecurrenceUseCase } from '@finance/application/use-case/CreateRecurrenceUseCase';
+import { CreateSplitUseCase } from '@finance/application/use-case/CreateSplitUseCase';
 import { CreateTagUseCase } from '@finance/application/use-case/CreateTagUseCase';
 import { CreateTransactionUseCase } from '@finance/application/use-case/CreateTransactionUseCase';
 import { CreateTransferUseCase } from '@finance/application/use-case/CreateTransferUseCase';
@@ -27,6 +28,7 @@ import { DeleteFinanceDataByOwnerUseCase } from '@finance/application/use-case/D
 import { DeleteInstallmentPlanUseCase } from '@finance/application/use-case/DeleteInstallmentPlanUseCase';
 import { DeleteOccurrenceUseCase } from '@finance/application/use-case/DeleteOccurrenceUseCase';
 import { DeleteRecurrenceUseCase } from '@finance/application/use-case/DeleteRecurrenceUseCase';
+import { DeleteSplitUseCase } from '@finance/application/use-case/DeleteSplitUseCase';
 import { DeleteTagUseCase } from '@finance/application/use-case/DeleteTagUseCase';
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
 import { DeleteTransferUseCase } from '@finance/application/use-case/DeleteTransferUseCase';
@@ -61,6 +63,8 @@ import { GetPrepaymentPreviewUseCase } from '@finance/application/use-case/GetPr
 import { GetProjectionsUseCase } from '@finance/application/use-case/GetProjectionsUseCase';
 import { GetRecurrencesUseCase } from '@finance/application/use-case/GetRecurrencesUseCase';
 import { GetRecurrenceUseCase } from '@finance/application/use-case/GetRecurrenceUseCase';
+import { GetSplitLookupsUseCase } from '@finance/application/use-case/GetSplitLookupsUseCase';
+import { GetSplitUseCase } from '@finance/application/use-case/GetSplitUseCase';
 import { GetTagsUseCase } from '@finance/application/use-case/GetTagsUseCase';
 import { GetTransactionByIdUseCase } from '@finance/application/use-case/GetTransactionByIdUseCase';
 import { GetTransactionsUseCase } from '@finance/application/use-case/GetTransactionsUseCase';
@@ -91,6 +95,7 @@ import { UpdateCategoryUseCase } from '@finance/application/use-case/UpdateCateg
 import { UpdateCreditCardUseCase } from '@finance/application/use-case/UpdateCreditCardUseCase';
 import { UpdateInstallmentPlanUseCase } from '@finance/application/use-case/UpdateInstallmentPlanUseCase';
 import { UpdateRecurrenceUseCase } from '@finance/application/use-case/UpdateRecurrenceUseCase';
+import { UpdateSplitUseCase } from '@finance/application/use-case/UpdateSplitUseCase';
 import { UpdateTagUseCase } from '@finance/application/use-case/UpdateTagUseCase';
 import { UpdateTransactionUseCase } from '@finance/application/use-case/UpdateTransactionUseCase';
 import { UpdateTransferUseCase } from '@finance/application/use-case/UpdateTransferUseCase';
@@ -106,6 +111,7 @@ import { FinanceOwnerDataDatasource } from '@finance/data/datasource/FinanceOwne
 import { FinanceOwnerVersionDatasource } from '@finance/data/datasource/FinanceOwnerVersionDatasource';
 import { FinancePrepaymentDatasource } from '@finance/data/datasource/FinancePrepaymentDatasource';
 import { FinanceRecurrenceDatasource } from '@finance/data/datasource/FinanceRecurrenceDatasource';
+import { FinanceSplitDatasource } from '@finance/data/datasource/FinanceSplitDatasource';
 import { FinanceTagDatasource } from '@finance/data/datasource/FinanceTagDatasource';
 import { FinanceTransactionDatasource } from '@finance/data/datasource/FinanceTransactionDatasource';
 import { FinanceTransferDatasource } from '@finance/data/datasource/FinanceTransferDatasource';
@@ -121,6 +127,7 @@ import { FinanceOwnerDataRepository } from '@finance/data/repository/FinanceOwne
 import { FinanceOwnerVersionRepository } from '@finance/data/repository/FinanceOwnerVersionRepository';
 import { FinancePrepaymentRepository } from '@finance/data/repository/FinancePrepaymentRepository';
 import { FinanceRecurrenceRepository } from '@finance/data/repository/FinanceRecurrenceRepository';
+import { FinanceSplitRepository } from '@finance/data/repository/FinanceSplitRepository';
 import { FinanceTagRepository } from '@finance/data/repository/FinanceTagRepository';
 import { FinanceTransactionRepository } from '@finance/data/repository/FinanceTransactionRepository';
 import { FinanceTransferRepository } from '@finance/data/repository/FinanceTransferRepository';
@@ -202,10 +209,15 @@ const useCases = [
   ResolveCardRowsPaidUseCase,
   UndoInstallmentPrepaymentUseCase,
   UndoInvoicePaymentUseCase,
+  CreateSplitUseCase,
   CreateTransferUseCase,
+  DeleteSplitUseCase,
   DeleteTransferUseCase,
+  GetSplitLookupsUseCase,
+  GetSplitUseCase,
   GetTransferLookupsUseCase,
   GetTransferUseCase,
+  UpdateSplitUseCase,
   UpdateTransferUseCase,
   UpdateAccountUseCase,
   UpdateCategorySubtreeAppearanceUseCase,
@@ -254,6 +266,8 @@ const useCases = [
     { provide: 'IFinanceTagDatasource', useClass: FinanceTagDatasource },
     { provide: 'IFinanceTransactionRepository', useClass: FinanceTransactionRepository },
     { provide: 'IFinanceTransactionDatasource', useClass: FinanceTransactionDatasource },
+    { provide: 'IFinanceSplitRepository', useClass: FinanceSplitRepository },
+    { provide: 'IFinanceSplitDatasource', useClass: FinanceSplitDatasource },
     { provide: 'IFinanceTransferRepository', useClass: FinanceTransferRepository },
     { provide: 'IFinanceTransferDatasource', useClass: FinanceTransferDatasource },
   ],

@@ -13,6 +13,7 @@ import {
   EXTERNALLY_LOCKED_MESSAGE,
   INVESTMENT_KEYS,
   INVESTMENT_ROW_USE_OPERATION,
+  SPLIT_ROW_USE_SPLIT,
   TRANSFER_KEYS,
   TRANSFER_ROW_USE_TRANSFER,
 } from '@finance/domain/entity/SystemCategory';
@@ -66,6 +67,11 @@ export class DeleteTransactionUseCase implements UseCaseWithParams<DeleteTransac
         code: EXTERNALLY_LOCKED_CODE,
         message: EXTERNALLY_LOCKED_MESSAGE,
       });
+    }
+
+    // Spec 119 FR 21: the parts of a split change only through the split.
+    if (transaction.splitId !== null) {
+      throw new UnprocessableEntityException(SPLIT_ROW_USE_SPLIT);
     }
 
     // Spec 098 FR 6: a transfer row goes away only with its transfer.

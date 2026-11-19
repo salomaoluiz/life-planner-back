@@ -189,8 +189,8 @@ describe('search by notes, category and amount (spec 059, in SQL since spec 084)
   });
 });
 
-function cursorOf(date: string, createdAt: string, id: string) {
-  return Buffer.from(`${date}|${createdAt}|${id}`).toString('base64');
+function cursorOf(date: string, createdAt: string, id: string, splitId = '') {
+  return Buffer.from(`${date}|${createdAt}|${id}|${splitId}`).toString('base64');
 }
 function row(id: string, date: string, createdAt: string) {
   return {
@@ -236,6 +236,7 @@ describe('keyset pages (spec 078)', () => {
           createdAt: new Date('2026-11-02T10:00:00.000Z'),
           date: new Date('2026-11-02T00:00:00.000Z'),
           id: 'b',
+          splitId: null,
         },
       }),
     );
@@ -315,4 +316,46 @@ it('SHOULD forward the currency to the repository (spec 103)', async () => {
     'ACCOUNT',
     expect.objectContaining({ currency: 'USD' }),
   );
+});
+
+describe('pages never cut a split (spec 119 FR 30)', () => {
+  function part(id: string, splitId: null | string) {
+    return {
+      createdAt: new Date('2026-11-02T10:00:00.000Z'),
+      date: '2026-11-02',
+      description: id,
+      id,
+      notes: null,
+      splitId,
+      value: 100,
+    };
+  }
+
+  it('SHOULD end the page after the last part of the split AND return the cursor of that part', async () => {
+    mocks.transactionRepository.findTransactions.mockResolvedValueOnce([
+      part('a', null),
+      part('p1', 's1'),
+      part('p2', 's1'),
+      part('p3', 's1'),
+      part('z', null),
+    ] as never);
+
+    const result = await setup.execute({ accessibleOwners: mocks.accessibleOwners, limit: 2 });
+
+    expect(result.items.map((item) => item.id)).toEqual(['a', 'p1', 'p2', 'p3']);
+    expect(result.nextCursor).toBe(cursorOf('2026-11-02', '2026-11-02T10:00:00.000Z', 'p3', 's1'));
+  });
+
+  it('SHOULD return no cursor WHEN the split is the last thing of the data', async () => {
+    mocks.transactionRepository.findTransactions.mockResolvedValueOnce([
+      part('p1', 's1'),
+      part('p2', 's1'),
+      part('p3', 's1'),
+    ] as never);
+
+    const result = await setup.execute({ accessibleOwners: mocks.accessibleOwners, limit: 1 });
+
+    expect(result.items).toHaveLength(3);
+    expect(result.nextCursor).toBeNull();
+  });
 });

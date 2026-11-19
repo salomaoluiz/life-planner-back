@@ -23,8 +23,11 @@ export interface UpcomingItem {
   ownerId: string;
   // Spec 096: the projected part of an invoice item; left out when there is none.
   projectedAmount?: number;
+  // Spec 119 FR 33: an unpaid account split is one item (net total, `type` of the net); null otherwise.
+  partCount?: number;
   purchaseCount: null | number;
   recurrenceId: null | string;
+  splitId?: string;
   type: TransactionType;
   valueCents: number;
 }

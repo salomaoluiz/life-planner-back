@@ -197,6 +197,7 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
       paid: row.paid === true,
       projected: row.projected,
       recurrenceId: row.recurrence_id,
+      splitId: row.split_id,
       type: TransactionType[row.type],
     };
   }
@@ -221,6 +222,8 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
       owner: OwnerType[row.owner],
       ownerId: row.owner_id,
       recurrenceId: row.recurrence_id,
+      splitDescription: row.split?.description ?? null,
+      splitId: row.split_id,
       type: TransactionType[row.type],
       value: row.value,
     }));

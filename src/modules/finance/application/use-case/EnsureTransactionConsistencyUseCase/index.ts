@@ -16,6 +16,7 @@ import { hasOwnerAccess, OwnerAccess } from '@finance/domain/entity/OwnerAccess'
 import {
   INVESTMENT_ROW_USE_OPERATION,
   isInvestmentCategoryId,
+  isSplitAdjustmentCategoryId,
   isSystemCategoryId,
 } from '@finance/domain/entity/SystemCategory';
 import { AccountStatus, TransactionType } from '@finance/domain/enum';
@@ -93,7 +94,11 @@ export class EnsureTransactionConsistencyUseCase implements UseCaseWithParams<
     if (isInvestmentCategoryId(input.categoryId)) {
       throw new UnprocessableEntityException(INVESTMENT_ROW_USE_OPERATION);
     }
-    if (isSystemCategoryId(input.categoryId)) {
+    // Spec 119 FR 8, 10: the split adjustment is the only system category a part may use; it has no owner or scope.
+    const isAdjustment =
+      input.allowSplitAdjustment && isSplitAdjustmentCategoryId(input.categoryId);
+
+    if (!isAdjustment && isSystemCategoryId(input.categoryId)) {
       throw new UnprocessableEntityException('System category is reserved');
     }
 
@@ -105,9 +110,17 @@ export class EnsureTransactionConsistencyUseCase implements UseCaseWithParams<
             account,
             card: undefined,
           })),
-      this.categoryRepository.findCategoryById(input.categoryId),
+      isAdjustment ? undefined : this.categoryRepository.findCategoryById(input.categoryId),
     ]);
     const { account, card } = source;
+
+    if (isAdjustment) {
+      if (input.type !== TransactionType.EXPENSE) {
+        throw new BadRequestException('Category type does not match the transaction type');
+      }
+
+      return { account, card };
+    }
 
     if (!category || !isVisibleTo(category, input.accessibleOwners)) {
       throw new NotFoundException('Category not found');

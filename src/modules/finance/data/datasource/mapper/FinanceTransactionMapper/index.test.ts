@@ -23,6 +23,7 @@ describe('FinanceTransactionMapper.toDomain', () => {
       currency: 'BRL' as const,
       date: '2026-10-03',
       description: 'Weekly groceries',
+      descriptionInherited: false,
       earlyPayment: null,
       externalLock: null,
       id: mocks.raw.id,
@@ -47,6 +48,7 @@ describe('FinanceTransactionMapper.toDomain', () => {
       refundedName: null,
       refundedPlanId: null,
       refundedTransactionId: null,
+      splitId: null,
       tags: [],
       transferId: null,
       type: 'EXPENSE',
@@ -213,4 +215,15 @@ describe('FinanceTransactionMapper.toDomain notes', () => {
 
     expect(FinanceTransactionMapper.toDomain(raw).notes).toBe('Casa\nAeroporto');
   });
+});
+
+it('SHOULD map the split of a part and the inherited description (spec 119)', () => {
+  const part = FinanceTransactionMapper.toDomain({
+    ...mocks.raw,
+    description_inherited: true,
+    split_id: 'split-1',
+  });
+
+  expect(part.splitId).toBe('split-1');
+  expect(part.descriptionInherited).toBe(true);
 });

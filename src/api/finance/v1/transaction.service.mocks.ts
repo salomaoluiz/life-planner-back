@@ -2,6 +2,7 @@ import { faker } from '@faker-js/faker';
 import { Test } from '@nestjs/testing';
 
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
+import { SplitLookupsService } from '@api/finance/v1/split-lookups.service';
 import { TransactionService } from '@api/finance/v1/transaction.service';
 import { TransferLookupsService } from '@api/finance/v1/transfer-lookups.service';
 import { ConfirmProjectedTransactionUseCase } from '@finance/application/use-case/ConfirmProjectedTransactionUseCase';
@@ -109,6 +110,9 @@ const updateTransactionUseCaseMock = {
 
 const materializeRecurrencesUseCaseMock = { execute: jest.fn().mockResolvedValue(undefined) };
 
+const splitLookupsServiceMock = {
+  attach: jest.fn(async (_owners: unknown, _rows: unknown, lookups: unknown) => lookups),
+};
 const transferLookupsServiceMock = {
   attach: jest.fn(async (_owners: unknown, _rows: unknown, lookups: unknown) => lookups),
 };
@@ -139,6 +143,7 @@ beforeEach(async () => {
       { provide: GetTransactionsUseCase, useValue: getTransactionsUseCaseMock },
       { provide: ResolveCardRowsPaidUseCase, useValue: resolveCardRowsPaidUseCaseMock },
       { provide: UpdateTransactionUseCase, useValue: updateTransactionUseCaseMock },
+      { provide: SplitLookupsService, useValue: splitLookupsServiceMock },
       { provide: TransferLookupsService, useValue: transferLookupsServiceMock },
       { provide: MaterializeRecurrencesUseCase, useValue: materializeRecurrencesUseCaseMock },
     ],
@@ -166,6 +171,7 @@ const mocks = {
   userId,
 };
 const spies = {
+  splitLookupsService: splitLookupsServiceMock,
   transferLookupsService: transferLookupsServiceMock,
 };
 

@@ -29,12 +29,12 @@ ALTER TABLE "financial_splits" ADD CONSTRAINT "financial_splits_account_id_fkey"
 ALTER TABLE "financial_splits" ADD CONSTRAINT "financial_splits_credit_card_id_fkey" FOREIGN KEY ("credit_card_id") REFERENCES "financial_credit_cards"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE "financial_splits" ADD CONSTRAINT "financial_splits_recurrence_id_fkey" FOREIGN KEY ("recurrence_id") REFERENCES "financial_recurrences"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
-ALTER TABLE "financial_transactions" ADD COLUMN "split_id" TEXT, ADD COLUMN "description_inherited" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "financial_transactions" ADD COLUMN "split_id" TEXT, ADD COLUMN "description_inherited" BOOLEAN NOT NULL DEFAULT false, ADD COLUMN "split_position" SMALLINT;
 CREATE INDEX "financial_transactions_split_id_idx" ON "financial_transactions"("split_id");
 ALTER TABLE "financial_transactions" ADD CONSTRAINT "financial_transactions_split_id_fkey" FOREIGN KEY ("split_id") REFERENCES "financial_splits"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 -- No `value` CHECK existed: only a split part may be negative (the SPLIT_ADJUSTMENT discount, FR 11); the category is checked by the use case.
 ALTER TABLE "financial_transactions" ADD CONSTRAINT "financial_transactions_value_check" CHECK ("value" > 0 OR ("split_id" IS NOT NULL AND "value" <> 0));
-ALTER TABLE "financial_transactions" ADD CONSTRAINT "financial_transactions_split_part_check" CHECK ("split_id" IS NULL OR ("installment_plan_id" IS NULL AND "transfer_id" IS NULL AND "projected" = false AND "prepayment_id" IS NULL AND "refunded_transaction_id" IS NULL));
+ALTER TABLE "financial_transactions" ADD CONSTRAINT "financial_transactions_split_part_check" CHECK (("split_id" IS NULL) = ("split_position" IS NULL) AND ("split_id" IS NULL OR ("installment_plan_id" IS NULL AND "transfer_id" IS NULL AND "projected" = false AND "prepayment_id" IS NULL AND "refunded_transaction_id" IS NULL AND "recurrence_id" IS NULL)));
 
 ALTER TABLE "financial_recurrences" ADD COLUMN "split" BOOLEAN NOT NULL DEFAULT false;
 
