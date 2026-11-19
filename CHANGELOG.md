@@ -3,6 +3,13 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [6.3.0] - 2026-11-19
+
+### Added
+
+- Split transactions at `/finance/splits` (create, convert a saved transaction, edit, only-paid, delete, dissolve to one part), the system category `SPLIT_ADJUSTMENT` and `splitId`/`lookups.splits` on the transaction lists; pages never cut a split (spec 119).
+- Upcoming shows an unpaid split as one item; invoices count a split as one purchase; CSV export/import have the Split group column.
+
 ## [6.2.0] - 2026-11-18
 
 ### Added
