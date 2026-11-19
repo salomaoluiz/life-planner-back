@@ -10,6 +10,7 @@ export const SYSTEM_CATEGORY_IDS: Record<SystemCategoryKey, string> = {
   [SystemCategoryKey.INVESTMENT_CONTRIBUTION]: '00000000-0000-4000-8000-000000000009',
   [SystemCategoryKey.INVESTMENT_REDEMPTION]: '00000000-0000-4000-8000-00000000000a',
   [SystemCategoryKey.INVOICE_PAYMENT]: '00000000-0000-4000-8000-000000000002',
+  [SystemCategoryKey.SPLIT_ADJUSTMENT]: '00000000-0000-4000-8000-00000000000b',
   [SystemCategoryKey.TRANSFER_FEE]: '00000000-0000-4000-8000-000000000008',
   [SystemCategoryKey.TRANSFER_IN]: '00000000-0000-4000-8000-000000000007',
   [SystemCategoryKey.TRANSFER_OUT]: '00000000-0000-4000-8000-000000000006',
@@ -84,3 +85,10 @@ export const EXTERNALLY_LOCKED_MESSAGE = 'Edit this transaction through its inve
 
 export const INVESTMENT_ROW_USE_OPERATION =
   'Edit this transaction through its investment operation';
+
+// Spec 119: the "Desconto/ajuste" part of a split may hold a negative value (discount) or a positive one (extra charge).
+export function isSplitAdjustmentCategoryId(id: string): boolean {
+  return id === SYSTEM_CATEGORY_IDS[SystemCategoryKey.SPLIT_ADJUSTMENT];
+}
+
+export const SPLIT_ROW_USE_SPLIT = 'SPLIT_ROW_USE_SPLIT';

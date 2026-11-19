@@ -98,6 +98,7 @@ enum SystemCategoryKey {
   TRANSFER_FEE
   INVESTMENT_CONTRIBUTION
   INVESTMENT_REDEMPTION
+  SPLIT_ADJUSTMENT
 }
 
 enum InvoicePaymentMethod {
@@ -127,6 +128,7 @@ model FinancialAccount {
   incoming_series       FinancialRecurrence[]      @relation("TransferSeriesDestination")
   transfers_out         FinancialTransfer[]        @relation("TransferFrom")
   transfers_in          FinancialTransfer[]        @relation("TransferTo")
+  splits                FinancialSplit[]
   invoice_payments      FinancialInvoicePayment[]
   payment_cards         FinancialCreditCard[]      @relation("CardPaymentAccount")
   favorites             FinancialAccountFavorite[]
@@ -181,6 +183,7 @@ model FinancialCreditCard {
   payment_account_id String?
   payment_account    FinancialAccount? @relation("CardPaymentAccount", fields: [payment_account_id], references: [id], onDelete: SetNull)
 
+  splits            FinancialSplit[]
   transactions      FinancialTransaction[]
   invoice_payments  FinancialInvoicePayment[]
   installment_plans FinancialInstallmentPlan[]
@@ -226,6 +229,7 @@ model FinancialCategory {
   transactions      FinancialTransaction[]
   installment_plans FinancialInstallmentPlan[]
   recurrences       FinancialRecurrence[]
+  recurrence_parts  FinancialRecurrencePart[]
 
   @@index([owner, owner_id])
   @@index([parent_id])
@@ -276,6 +280,10 @@ model FinancialTransaction {
   projected                Boolean                  @default(false)
   // Spec 098: out, in and fee rows of a transfer; they change only through the transfer.
   transfer_id              String?
+  // Spec 119: the parts of a split are ordinary rows that change only through the split.
+  split_id                 String?
+  // Spec 119: true on a part without its own description (it stores the header description).
+  description_inherited    Boolean                  @default(false)
   // Spec 107: a row managed by another module (investment income); finance never edits or deletes it directly.
   external_lock            TransactionExternalLock?
   currency                 String                   @default("BRL") @db.VarChar(3)
@@ -291,6 +299,7 @@ model FinancialTransaction {
   installment_plan     FinancialInstallmentPlan? @relation(fields: [installment_plan_id], references: [id], onDelete: Restrict)
   recurrence           FinancialRecurrence?      @relation(fields: [recurrence_id], references: [id], onDelete: Restrict)
   transfer             FinancialTransfer?        @relation(fields: [transfer_id], references: [id], onDelete: Restrict)
+  split                FinancialSplit?           @relation(fields: [split_id], references: [id], onDelete: Restrict)
   investment_operation InvestmentOperation?
   investment_income    InvestmentIncome?
 
@@ -312,6 +321,7 @@ model FinancialTransaction {
   @@index([account_id, date])
   @@index([category_id])
   @@index([transfer_id])
+  @@index([split_id])
   @@index([owner, owner_id, date])
   @@map("financial_transactions")
 }
@@ -630,18 +640,22 @@ model FinancialRecurrence {
   status                RecurrenceStatus @default(ACTIVE)
   // Spec 096: every occurrence of a card EXPENSE series is born projected (CHECK in the migration).
   projected             Boolean          @default(false)
+  // Spec 119: a split series; its parts live in `financial_recurrence_parts` (`category_id`/`value` mirror the first part and the net).
+  split                 Boolean          @default(false)
   currency              String           @default("BRL") @db.VarChar(3)
   owner                 OwnerType
   owner_id              String
   created_at            DateTime         @default(now()) @db.Timestamptz(6)
   updated_at            DateTime         @updatedAt @db.Timestamptz(6)
 
-  category     FinancialCategory        @relation(fields: [category_id], references: [id], onDelete: Restrict)
-  account      FinancialAccount?        @relation(fields: [account_id], references: [id], onDelete: Restrict)
-  credit_card  FinancialCreditCard?     @relation(fields: [credit_card_id], references: [id], onDelete: Restrict)
-  to_account   FinancialAccount?        @relation("TransferSeriesDestination", fields: [to_account_id], references: [id], onDelete: Restrict)
+  category     FinancialCategory         @relation(fields: [category_id], references: [id], onDelete: Restrict)
+  account      FinancialAccount?         @relation(fields: [account_id], references: [id], onDelete: Restrict)
+  credit_card  FinancialCreditCard?      @relation(fields: [credit_card_id], references: [id], onDelete: Restrict)
+  to_account   FinancialAccount?         @relation("TransferSeriesDestination", fields: [to_account_id], references: [id], onDelete: Restrict)
   transactions FinancialTransaction[]
   transfers    FinancialTransfer[]
+  splits       FinancialSplit[]
+  parts        FinancialRecurrencePart[]
   tags         FinancialRecurrenceTag[]
 
   @@index([owner, owner_id, status, next_occurrence_date])
@@ -714,9 +728,10 @@ model FinancialTag {
   created_at DateTime  @default(now()) @db.Timestamptz(6)
   updated_at DateTime  @updatedAt @db.Timestamptz(6)
 
-  scopes       FinancialTagScope[]
-  transactions FinancialTransactionTag[]
-  recurrences  FinancialRecurrenceTag[]
+  scopes           FinancialTagScope[]
+  transactions     FinancialTransactionTag[]
+  recurrences      FinancialRecurrenceTag[]
+  recurrence_parts FinancialRecurrencePartTag[]
 
   @@index([owner, owner_id])
   @@map("financial_tags")
@@ -1327,4 +1342,67 @@ model InvestmentEventSuggestion {
   @@unique([asset_id, event_id])
   @@index([asset_id, status])
   @@map("investment_event_suggestions")
+}
+
+// Spec 119: header of a split transaction; the parts are `financial_transactions` rows with `split_id`.
+model FinancialSplit {
+  id                String    @id @default(uuid())
+  description       String
+  notes             String?
+  date              DateTime  @db.Date
+  account_id        String?
+  credit_card_id    String?
+  invoice_month     String?   @db.Char(7)
+  paid              Boolean?
+  currency          String    @default("BRL") @db.VarChar(3)
+  recurrence_id     String?
+  occurrence_number Int?
+  owner             OwnerType
+  owner_id          String
+  created_by        String
+  created_at        DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime  @updatedAt @db.Timestamptz(6)
+
+  account      FinancialAccount?      @relation(fields: [account_id], references: [id], onDelete: Restrict)
+  credit_card  FinancialCreditCard?   @relation(fields: [credit_card_id], references: [id], onDelete: Restrict)
+  recurrence   FinancialRecurrence?   @relation(fields: [recurrence_id], references: [id], onDelete: Restrict)
+  transactions FinancialTransaction[]
+
+  @@unique([recurrence_id, occurrence_number])
+  @@index([owner, owner_id, date])
+  @@index([account_id])
+  @@index([credit_card_id, invoice_month])
+  @@map("financial_splits")
+}
+
+// Spec 119: the parts of a split series, copied to every occurrence.
+model FinancialRecurrencePart {
+  id            String          @id @default(uuid())
+  recurrence_id String
+  type          TransactionType
+  category_id   String
+  value         Int
+  description   String?
+  sort_order    Int             @db.SmallInt
+
+  recurrence FinancialRecurrence          @relation(fields: [recurrence_id], references: [id], onDelete: Cascade)
+  category   FinancialCategory            @relation(fields: [category_id], references: [id], onDelete: Restrict)
+  tags       FinancialRecurrencePartTag[]
+
+  @@unique([recurrence_id, sort_order])
+  @@index([category_id])
+  @@map("financial_recurrence_parts")
+}
+
+model FinancialRecurrencePartTag {
+  part_id  String
+  tag_id   String
+  position Int    @db.SmallInt
+
+  part FinancialRecurrencePart @relation(fields: [part_id], references: [id], onDelete: Cascade)
+  tag  FinancialTag            @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@id([part_id, tag_id])
+  @@index([tag_id])
+  @@map("financial_recurrence_part_tags")
 }
