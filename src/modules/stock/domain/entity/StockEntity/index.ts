@@ -22,6 +22,7 @@ interface IStockEntity {
   barcode?: string;
   brand?: string;
   categoryId?: string;
+  estimatedUnitPriceCents?: number;
   idealQuantity?: number;
   locationId?: string;
   // Only the lots with quantity > 0 (spec 116 FR 6).
@@ -30,6 +31,7 @@ interface IStockEntity {
   notes?: string;
   openedShelfLifeDays?: number;
   quickStep?: number;
+  shoppingListId?: string;
 }
 
 // Spec 116: the quantity lives in the lots; the item only keeps its own attributes.
@@ -39,6 +41,7 @@ class StockEntity {
   categoryId?: string;
   createdAt: Date;
   description: string;
+  estimatedUnitPriceCents?: number;
   id: string;
   idealQuantity?: number;
   locationId?: string;
@@ -49,6 +52,7 @@ class StockEntity {
   owner: OwnerType;
   ownerId: string;
   quickStep?: number;
+  shoppingListId?: string;
   stockOnly: boolean;
   unit: StockUnits;
   updatedAt: Date;
@@ -61,6 +65,7 @@ class StockEntity {
     this.categoryId = params.categoryId;
     this.createdAt = params.createdAt;
     this.description = params.description;
+    this.estimatedUnitPriceCents = params.estimatedUnitPriceCents;
     this.id = params.id;
     this.idealQuantity = params.idealQuantity;
     this.locationId = params.locationId;
@@ -71,6 +76,7 @@ class StockEntity {
     this.owner = params.owner;
     this.ownerId = params.ownerId;
     this.quickStep = params.quickStep;
+    this.shoppingListId = params.shoppingListId;
     this.stockOnly = params.stockOnly;
     this.unit = params.unit;
     this.updatedAt = params.updatedAt;

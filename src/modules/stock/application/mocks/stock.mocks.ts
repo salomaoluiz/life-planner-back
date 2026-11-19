@@ -2,9 +2,15 @@ import { Test } from '@nestjs/testing';
 
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import StockEntityFixture from '@stock/domain/entity/mocks/StockEntity.fixture';
+import ShoppingListEntity from '@stock/domain/entity/ShoppingListEntity';
+import ShoppingListRowEntity, {
+  ShoppingListRowOrigins,
+} from '@stock/domain/entity/ShoppingListRowEntity';
 import StockCategoryEntity, { StockCatalogStatus } from '@stock/domain/entity/StockCategoryEntity';
+import { StockUnits } from '@stock/domain/entity/StockEntity';
 import StockLocationEntity from '@stock/domain/entity/StockLocationEntity';
 import StockLotEntity from '@stock/domain/entity/StockLotEntity';
+import { ShoppingRowRecord } from '@stock/domain/repository';
 
 export const userId = 'user-id';
 export const familyId = 'family-id';
@@ -45,7 +51,9 @@ export function catalogRepositoryMock() {
     deleteByOwner: jest.fn().mockResolvedValue(undefined),
     deleteCategory: jest.fn().mockResolvedValue(undefined),
     deleteLocation: jest.fn().mockResolvedValue(undefined),
-    findCatalogByOwners: jest.fn().mockResolvedValue({ categories: [], locations: [] }),
+    findCatalogByOwners: jest
+      .fn()
+      .mockResolvedValue({ categories: [], locations: [], shoppingLists: [] }),
     findCategories: jest.fn().mockResolvedValue([]),
     findCategoryById: jest.fn(),
     findLocationById: jest.fn(),
@@ -93,6 +101,36 @@ export function location(id: string, extra: Partial<StockLocationEntity> = {}) {
 export function lot(id: string, quantity: number, extra: Partial<StockLotEntity> = {}) {
   return new StockLotEntity({ createdAt: date, id, itemId: 'item', quantity, ...extra });
 }
+export function shoppingList(id: string, extra: Partial<ShoppingListEntity> = {}) {
+  return new ShoppingListEntity({
+    createdAt: date,
+    currency: 'BRL',
+    id,
+    isDefault: false,
+    name: `List ${id}`,
+    owner: OwnerType.USER,
+    ownerId: userId,
+    status: StockCatalogStatus.ACTIVE,
+    updatedAt: date,
+    ...extra,
+  });
+}
+export function shoppingListRepositoryMock() {
+  return {
+    addRow: jest.fn(),
+    create: jest.fn(),
+    deleteByOwner: jest.fn().mockResolvedValue(undefined),
+    deleteRow: jest.fn().mockResolvedValue(undefined),
+    ensureDefault: jest.fn(),
+    findById: jest.fn(),
+    findByOwners: jest.fn().mockResolvedValue([]),
+    findRestockRows: jest.fn().mockResolvedValue([]),
+    findRowById: jest.fn(),
+    findRowsByLists: jest.fn().mockResolvedValue([]),
+    update: jest.fn(),
+    updateRow: jest.fn(),
+  };
+}
 export function stockRepositoryMock() {
   return {
     applyGestureChange: jest.fn(),
@@ -115,5 +153,34 @@ export function suggestionRepositoryMock() {
     findSuggestions: jest.fn().mockResolvedValue([]),
     findWithoutEmbedding: jest.fn().mockResolvedValue([]),
     setEmbedding: jest.fn().mockResolvedValue(undefined),
+  };
+}
+// An item row (`item` given) or a text row, on `list`.
+export function shoppingRow(
+  id: string,
+  list: ShoppingListEntity,
+  extra: {
+    description?: string;
+    item?: ShoppingRowRecord['item'];
+    origin?: ShoppingListRowOrigins;
+    price?: number;
+    quantity?: number;
+  } = {},
+): ShoppingRowRecord {
+  return {
+    item: extra.item,
+    list,
+    row: new ShoppingListRowEntity({
+      createdAt: date,
+      description: extra.item ? undefined : (extra.description ?? 'Candle'),
+      estimatedUnitPriceCents: extra.item ? undefined : extra.price,
+      id,
+      itemId: extra.item?.id,
+      listId: list.id,
+      origin: extra.origin ?? ShoppingListRowOrigins.MANUAL,
+      quantity: extra.quantity ?? 1,
+      unit: extra.item ? undefined : StockUnits.UNIT,
+      updatedAt: date,
+    }),
   };
 }

@@ -7,6 +7,7 @@ import {
   CreateStockItemSchema,
 } from '@stock/application/dto/CreateStockItem';
 import { ensureOwnerWritable } from '@stock/application/service/OwnerWritable';
+import { assertItemShoppingList } from '@stock/application/service/ShoppingListAccess';
 import { assertStockLimits, loadCatalogRefs } from '@stock/application/service/StockRules';
 import {
   loadCatalogLookup,
@@ -16,7 +17,11 @@ import {
 } from '@stock/application/service/StockView';
 import { RefreshStockEmbeddingUseCase } from '@stock/application/use-case/RefreshStockEmbeddingUseCase';
 import { hasOwnerAccess } from '@stock/domain/entity/OwnerAccess';
-import { IStockCatalogRepository, IStockRepository } from '@stock/domain/repository';
+import {
+  IShoppingListRepository,
+  IStockCatalogRepository,
+  IStockRepository,
+} from '@stock/domain/repository';
 import { quantityError } from '@stock/domain/service/StockQuantity';
 
 export class CreateStockItemUseCase implements UseCaseWithParams<
@@ -29,6 +34,8 @@ export class CreateStockItemUseCase implements UseCaseWithParams<
     @Inject('IStockCatalogRepository')
     private readonly catalogRepository: IStockCatalogRepository,
     private readonly refreshEmbedding: RefreshStockEmbeddingUseCase,
+    @Inject('IShoppingListRepository')
+    private readonly listRepository: IShoppingListRepository,
   ) {}
 
   async execute(params: CreateStockItemInput): Promise<StockItemView> {
@@ -52,12 +59,22 @@ export class CreateStockItemUseCase implements UseCaseWithParams<
     assertStockLimits(input);
     await loadCatalogRefs(this.catalogRepository, target, input);
 
+    if (input.shoppingListId) {
+      await assertItemShoppingList(
+        this.listRepository,
+        target,
+        input.shoppingListId,
+        input.stockOnly,
+      );
+    }
+
     const today = input.today ?? todayUtc();
     const item = await this.stockRepository.create({
       barcode: input.barcode,
       brand: input.brand,
       categoryId: input.categoryId,
       description: input.description,
+      estimatedUnitPriceCents: input.estimatedUnitPriceCents,
       firstLot:
         input.quantity > 0
           ? {
@@ -74,6 +91,7 @@ export class CreateStockItemUseCase implements UseCaseWithParams<
       owner: input.owner,
       ownerId: input.ownerId,
       quickStep: input.quickStep,
+      shoppingListId: input.shoppingListId,
       stockOnly: input.stockOnly,
       unit: input.unit,
       userId: input.userId,

@@ -19,6 +19,7 @@ import { StockMovementReasons, StockMovementTypes } from '@stock/domain/entity/S
 const DayApiSchema = z.iso.date();
 const BarcodeApiSchema = z.string().trim().max(64);
 const BrandApiSchema = z.string().trim().max(100);
+const PriceApiSchema = z.number().int().min(1).max(99_999_999);
 const NotesApiSchema = z.string().max(1000);
 const OwnerTypeApiSchema = z.enum(OwnerType);
 const StockUnitApiSchema = z.enum(StockUnits);
@@ -30,6 +31,7 @@ export const CreateStockItemApiSchema = z
     brand: BrandApiSchema.nullish(),
     categoryId: z.uuid().nullish(),
     description: DescriptionSchema,
+    estimatedUnitPriceCents: PriceApiSchema.nullish(),
     expirationDate: DayApiSchema.nullish(),
     idealQuantity: QuantitySchema.nullish(),
     locationId: z.uuid().nullish(),
@@ -41,6 +43,7 @@ export const CreateStockItemApiSchema = z
     purchaseDate: DayApiSchema.nullish(),
     quantity: QuantitySchema.optional(),
     quickStep: StepApiSchema.nullish(),
+    shoppingListId: z.uuid().nullish(),
     stockOnly: z.boolean().optional(),
     unit: StockUnitApiSchema,
     warnDaysClosed: WarnDaysSchema.optional(),
@@ -56,6 +59,7 @@ export const UpdateStockItemApiSchema = z
     brand: BrandApiSchema.nullable(),
     categoryId: z.uuid().nullable(),
     description: DescriptionSchema,
+    estimatedUnitPriceCents: PriceApiSchema.nullable(),
     idealQuantity: QuantitySchema.nullable(),
     locationId: z.uuid().nullable(),
     minQuantity: QuantitySchema.nullable(),
@@ -64,6 +68,7 @@ export const UpdateStockItemApiSchema = z
     owner: OwnerTypeApiSchema,
     ownerId: z.uuid(),
     quickStep: StepApiSchema.nullable(),
+    shoppingListId: z.uuid().nullable(),
     stockOnly: z.boolean(),
     unit: StockUnitApiSchema,
     warnDaysClosed: WarnDaysSchema,
@@ -171,6 +176,9 @@ const ItemFields = {
   categoryId: z.uuid().nullable(),
   createdAt: z.iso.datetime(),
   description: z.string(),
+  // Spec 118: absent (not null) without a list or a typed price, which keeps the 1000-item list lean.
+  effectiveShoppingListId: z.uuid().optional(),
+  estimatedUnitPriceCents: z.number().int().optional(),
   expirationStatus: LotStatusSchema,
   hasExpiredLot: z.boolean(),
   hasOpenLot: z.boolean(),
@@ -188,6 +196,7 @@ const ItemFields = {
   quantity: z.number(),
   quickStep: z.number().nullable(),
   restockQuantity: z.number(),
+  shoppingListId: z.uuid().optional(),
   stockOnly: z.boolean(),
   unit: StockUnitApiSchema,
   updatedAt: z.iso.datetime(),
@@ -234,6 +243,7 @@ const OwnerChangeSideSchema = z.object({ from: z.string().nullable(), to: z.stri
 export const OwnerChangePreviewApiSchema = z.object({
   category: OwnerChangeSideSchema,
   location: OwnerChangeSideSchema,
+  shoppingList: OwnerChangeSideSchema,
 });
 
 function toList(value: string | string[] | undefined): string[] | undefined {

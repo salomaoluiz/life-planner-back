@@ -1,0 +1,39 @@
+import { Inject } from '@nestjs/common';
+
+import { UseCaseWithParams } from '@shared/application/use-case/types';
+import { validate } from '@shared/infra/validation';
+import { GetShoppingListsInput, GetShoppingListsSchema } from '@stock/application/dto/ShoppingList';
+import { ShoppingListCard, toListCards } from '@stock/application/service/ShoppingListView';
+import { narrowOwners } from '@stock/domain/entity/OwnerAccess';
+import { IShoppingListRepository } from '@stock/domain/repository';
+import { defaultListName } from '@stock/domain/service/DefaultListName';
+
+// Spec 118 FR 2 and 20: the cards of the lists screen. "Todas" (no ownerId) skips archived families; each
+// writable owner gets its default list on the first read.
+export class GetShoppingListsUseCase implements UseCaseWithParams<
+  GetShoppingListsInput,
+  ShoppingListCard[]
+> {
+  constructor(
+    @Inject('IShoppingListRepository')
+    private readonly listRepository: IShoppingListRepository,
+  ) {}
+
+  async execute(params: GetShoppingListsInput): Promise<ShoppingListCard[]> {
+    const input = validate(GetShoppingListsSchema, params);
+    const owners = narrowOwners(input.accessibleOwners, input.ownerId);
+
+    await Promise.all(
+      owners
+        .filter((owner) => !owner.archived)
+        .map(async (owner) =>
+          this.listRepository.ensureDefault(owner, defaultListName(input.language)),
+        ),
+    );
+
+    const lists = await this.listRepository.findByOwners(owners, input.includeArchived);
+    const rows = await this.listRepository.findRowsByLists(lists.map((list) => list.id));
+
+    return toListCards(lists, rows);
+  }
+}

@@ -6,6 +6,7 @@ import {
   familyId,
   item,
   lot,
+  shoppingListRepositoryMock,
   stockRepositoryMock,
 } from '@stock/application/mocks/stock.mocks';
 
@@ -17,6 +18,7 @@ const mocks = {
   accessibleOwners,
   catalog: catalogRepositoryMock(),
   familyId,
+  lists: shoppingListRepositoryMock(),
   refresh,
   stock: stockRepositoryMock(),
 };
@@ -30,6 +32,7 @@ beforeEach(async () => {
   setup = await build(UpdateStockItemUseCase, [
     { provide: 'IStockRepository', useValue: mocks.stock },
     { provide: 'IStockCatalogRepository', useValue: mocks.catalog },
+    { provide: 'IShoppingListRepository', useValue: mocks.lists },
     { provide: RefreshStockEmbeddingUseCase, useValue: refresh },
   ]);
 });

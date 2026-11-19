@@ -49,6 +49,7 @@ const catalog = {
       updatedAt: date,
     }),
   ],
+  shoppingLists: [],
 };
 
 it('SHOULD sum the open lots, ignore empty ones and order open lots first', () => {

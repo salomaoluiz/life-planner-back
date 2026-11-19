@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { AccountStatus, StockCategory, StockLocation } from '@db/client';
+import { AccountStatus, StockCategory, StockLocation, StockShoppingList } from '@db/client';
 import { Database } from '@shared/infra/db/Database';
 import {
   CreateStockCategoryDatasourceParams,
@@ -88,16 +88,23 @@ export class StockCatalogDatasource implements IStockCatalogDatasource {
     await this.db.client.stockLocation.deleteMany({ where: { id } });
   }
 
-  async findCatalogByOwners(
-    keys: OwnerKey[],
-  ): Promise<{ categories: StockCategory[]; locations: StockLocation[] }> {
+  async findCatalogByOwners(keys: OwnerKey[]): Promise<{
+    categories: StockCategory[];
+    locations: StockLocation[];
+    shopping_lists: StockShoppingList[];
+  }> {
     const where = { OR: keys };
-    const [categories, locations] = await Promise.all([
+    const [categories, locations, shoppingLists] = await Promise.all([
       this.db.client.stockCategory.findMany({ orderBy: { name: 'asc' }, where }),
       this.db.client.stockLocation.findMany({ orderBy: { name: 'asc' }, where }),
+      // Spec 118: the active lists, so item views resolve their effective list without another round trip.
+      this.db.client.stockShoppingList.findMany({
+        orderBy: { name: 'asc' },
+        where: { ...where, status: 'ACTIVE' },
+      }),
     ]);
 
-    return { categories, locations };
+    return { categories, locations, shopping_lists: shoppingLists };
   }
 
   async findCategories(key: OwnerKey): Promise<StockCategory[]> {

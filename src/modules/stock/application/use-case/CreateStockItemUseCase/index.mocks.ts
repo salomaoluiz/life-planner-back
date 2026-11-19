@@ -5,6 +5,7 @@ import {
   catalogRepositoryMock,
   item,
   lot,
+  shoppingListRepositoryMock,
   stockRepositoryMock,
 } from '@stock/application/mocks/stock.mocks';
 import { StockUnits } from '@stock/domain/entity/StockEntity';
@@ -16,6 +17,7 @@ const refresh = { execute: jest.fn() };
 const mocks = {
   accessibleOwners,
   catalog: catalogRepositoryMock(),
+  lists: shoppingListRepositoryMock(),
   refresh,
   stock: stockRepositoryMock(),
 };
@@ -38,6 +40,7 @@ beforeEach(async () => {
   setup = await build(CreateStockItemUseCase, [
     { provide: 'IStockRepository', useValue: mocks.stock },
     { provide: 'IStockCatalogRepository', useValue: mocks.catalog },
+    { provide: 'IShoppingListRepository', useValue: mocks.lists },
     { provide: RefreshStockEmbeddingUseCase, useValue: refresh },
   ]);
 });

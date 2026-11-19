@@ -6,10 +6,14 @@ import {
   DeleteStockItemsByOwnerInput,
   DeleteStockItemsByOwnerSchema,
 } from '@stock/application/dto/DeleteStockItemsByOwner';
-import { IStockCatalogRepository, IStockRepository } from '@stock/domain/repository';
+import {
+  IShoppingListRepository,
+  IStockCatalogRepository,
+  IStockRepository,
+} from '@stock/domain/repository';
 
-// Account deletion: purges every stock item (lots and movements cascade), category and location of one owner (a
-// user or a family). Idempotent; returns the items deleted.
+// Account deletion: purges every stock item (lots and movements cascade), category, location and shopping list of
+// one owner (a user or a family). Idempotent; returns the items deleted.
 export class DeleteStockItemsByOwnerUseCase implements UseCaseWithParams<
   DeleteStockItemsByOwnerInput,
   number
@@ -19,6 +23,8 @@ export class DeleteStockItemsByOwnerUseCase implements UseCaseWithParams<
     private readonly stockRepository: IStockRepository,
     @Inject('IStockCatalogRepository')
     private readonly catalogRepository: IStockCatalogRepository,
+    @Inject('IShoppingListRepository')
+    private readonly listRepository: IShoppingListRepository,
   ) {}
 
   async execute(params: DeleteStockItemsByOwnerInput): Promise<number> {
@@ -26,6 +32,8 @@ export class DeleteStockItemsByOwnerUseCase implements UseCaseWithParams<
     const deleted = await this.stockRepository.deleteByOwner(input);
 
     await this.catalogRepository.deleteByOwner(input);
+    // Spec 118: the lists go after the items (rows cascade, dismissals went with the items).
+    await this.listRepository.deleteByOwner(input);
 
     return deleted;
   }

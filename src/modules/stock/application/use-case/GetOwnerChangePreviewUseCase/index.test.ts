@@ -22,6 +22,7 @@ it('SHOULD report what happens to the category and the location', async () => {
       ? {
           categories: [category('c', { name: 'Dairy' })],
           locations: [location('l', { name: 'Fridge' })],
+          shoppingLists: [],
         }
       : {
           categories: [
@@ -30,12 +31,14 @@ it('SHOULD report what happens to the category and the location', async () => {
           locations: [
             location('l2', { name: 'Fridge', owner: OwnerType.FAMILY, ownerId: 'family-id' }),
           ],
+          shoppingLists: [],
         },
   );
 
   expect(await setup.execute(input)).toEqual({
     category: { from: 'Dairy', to: 'dairy' },
     location: { from: 'Fridge', to: 'Fridge' },
+    shoppingList: { from: null, to: null },
   });
 });
 

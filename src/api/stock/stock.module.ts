@@ -1,6 +1,11 @@
 import { Module } from '@nestjs/common';
 
 import {
+  ShoppingListController,
+  ShoppingListSummaryController,
+} from '@api/stock/v1/shoppingList.controller';
+import { ShoppingListService } from '@api/stock/v1/shoppingList.service';
+import {
   StockController,
   StockFrequentController,
   StockGestureController,
@@ -19,14 +24,16 @@ import { UserModule } from '@user/user.module';
 @Module({
   // StockSuggestionController first: `GET stock/items/suggestions` must win over `GET stock/items/:id`.
   controllers: [
+    ShoppingListSummaryController,
     StockSuggestionController,
     StockFrequentController,
     StockController,
     StockGestureController,
     StockCategoryController,
     StockLocationController,
+    ShoppingListController,
   ],
   imports: [FamilyModule, FinanceModule, StockModule, UserModule],
-  providers: [StockService],
+  providers: [ShoppingListService, StockService],
 })
 export class StockAPIModule {}

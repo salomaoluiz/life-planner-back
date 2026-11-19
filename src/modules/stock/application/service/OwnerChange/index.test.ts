@@ -1,4 +1,5 @@
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
+import { shoppingList } from '@stock/application/mocks/stock.mocks';
 import StockCategoryEntity, { StockCatalogStatus } from '@stock/domain/entity/StockCategoryEntity';
 import StockLocationEntity from '@stock/domain/entity/StockLocationEntity';
 
@@ -35,6 +36,7 @@ const source = {
     category('s-cheese', 'Cheese', { parentId: 's-dairy' }),
   ],
   locations: [location('s-fridge', 'Fridge')],
+  shoppingLists: [],
 };
 
 it('SHOULD keep the same-name category (full path, case-insensitive) and location', () => {
@@ -44,6 +46,7 @@ it('SHOULD keep the same-name category (full path, case-insensitive) and locatio
       category('t-cheese', 'CHEESE', { parentId: 't-dairy' }),
     ],
     locations: [location('t-fridge', 'fridge')],
+    shoppingLists: [],
   };
 
   expect(
@@ -54,7 +57,9 @@ it('SHOULD keep the same-name category (full path, case-insensitive) and locatio
     preview: {
       category: { from: 'Dairy / Cheese', to: 'dairy / CHEESE' },
       location: { from: 'Fridge', to: 'fridge' },
+      shoppingList: { from: null, to: null },
     },
+    shoppingListId: null,
   });
 });
 
@@ -65,6 +70,7 @@ it('SHOULD clear them WHEN the new owner has no match, only the leaf name matche
       category('t-dairy', 'Dairy', { status: StockCatalogStatus.ARCHIVED }),
     ],
     locations: [location('t-fridge', 'Fridge', StockCatalogStatus.ARCHIVED)],
+    shoppingLists: [],
   };
 
   expect(
@@ -77,9 +83,44 @@ it('SHOULD clear them WHEN the new owner has no match, only the leaf name matche
 });
 
 it('SHOULD report nothing WHEN the item has no category or location', () => {
-  expect(planOwnerChange({}, source, { categories: [], locations: [] })).toEqual({
-    categoryId: null,
-    locationId: null,
-    preview: { category: { from: null, to: null }, location: { from: null, to: null } },
+  expect(planOwnerChange({}, source, { categories: [], locations: [], shoppingLists: [] })).toEqual(
+    {
+      categoryId: null,
+      locationId: null,
+      preview: {
+        category: { from: null, to: null },
+        location: { from: null, to: null },
+        shoppingList: { from: null, to: null },
+      },
+      shoppingListId: null,
+    },
+  );
+});
+
+it('SHOULD replace the shopping list by the active one with the same name in the new owner', () => {
+  function lists(id: string, name: string, status = StockCatalogStatus.ACTIVE) {
+    return shoppingList(id, { name, status });
+  }
+  const from = { categories: [], locations: [], shoppingLists: [lists('s-list', 'Pharmacy')] };
+
+  expect(
+    planOwnerChange({ shoppingListId: 's-list' }, from, {
+      categories: [],
+      locations: [],
+      shoppingLists: [lists('t-list', 'pharmacy')],
+    }),
+  ).toMatchObject({
+    preview: { shoppingList: { from: 'Pharmacy', to: 'pharmacy' } },
+    shoppingListId: 't-list',
+  });
+  expect(
+    planOwnerChange({ shoppingListId: 's-list' }, from, {
+      categories: [],
+      locations: [],
+      shoppingLists: [lists('t-list', 'Pharmacy', StockCatalogStatus.ARCHIVED)],
+    }),
+  ).toMatchObject({
+    preview: { shoppingList: { from: 'Pharmacy', to: null } },
+    shoppingListId: null,
   });
 });

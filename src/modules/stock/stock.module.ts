@@ -1,18 +1,25 @@
 import { Module } from '@nestjs/common';
 
+import { AddShoppingListRowUseCase } from '@stock/application/use-case/AddShoppingListRowUseCase';
 import { BackfillStockEmbeddingsUseCase } from '@stock/application/use-case/BackfillStockEmbeddingsUseCase';
+import { CreateShoppingListUseCase } from '@stock/application/use-case/CreateShoppingListUseCase';
 import { CreateStockCategorySuggestionsUseCase } from '@stock/application/use-case/CreateStockCategorySuggestionsUseCase';
 import { CreateStockCategoryUseCase } from '@stock/application/use-case/CreateStockCategoryUseCase';
 import { CreateStockItemUseCase } from '@stock/application/use-case/CreateStockItemUseCase';
 import { CreateStockLocationSuggestionsUseCase } from '@stock/application/use-case/CreateStockLocationSuggestionsUseCase';
 import { CreateStockLocationUseCase } from '@stock/application/use-case/CreateStockLocationUseCase';
 import { CreateStockMovementUseCase } from '@stock/application/use-case/CreateStockMovementUseCase';
+import { DeleteShoppingListRowUseCase } from '@stock/application/use-case/DeleteShoppingListRowUseCase';
 import { DeleteStockCategoryUseCase } from '@stock/application/use-case/DeleteStockCategoryUseCase';
 import { DeleteStockItemsByOwnerUseCase } from '@stock/application/use-case/DeleteStockItemsByOwnerUseCase';
 import { DeleteStockItemUseCase } from '@stock/application/use-case/DeleteStockItemUseCase';
 import { DeleteStockLocationUseCase } from '@stock/application/use-case/DeleteStockLocationUseCase';
+import { EnsureDefaultShoppingListUseCase } from '@stock/application/use-case/EnsureDefaultShoppingListUseCase';
 import { GetFrequentStockItemsUseCase } from '@stock/application/use-case/GetFrequentStockItemsUseCase';
 import { GetOwnerChangePreviewUseCase } from '@stock/application/use-case/GetOwnerChangePreviewUseCase';
+import { GetRestockSummaryUseCase } from '@stock/application/use-case/GetRestockSummaryUseCase';
+import { GetShoppingListByIdUseCase } from '@stock/application/use-case/GetShoppingListByIdUseCase';
+import { GetShoppingListsUseCase } from '@stock/application/use-case/GetShoppingListsUseCase';
 import { GetStockCategoriesUseCase } from '@stock/application/use-case/GetStockCategoriesUseCase';
 import { GetStockItemByIdUseCase } from '@stock/application/use-case/GetStockItemByIdUseCase';
 import { GetStockItemsUseCase } from '@stock/application/use-case/GetStockItemsUseCase';
@@ -24,17 +31,30 @@ import { RefreshStockEmbeddingUseCase } from '@stock/application/use-case/Refres
 import { SetGestureExpirationUseCase } from '@stock/application/use-case/SetGestureExpirationUseCase';
 import { SuggestStockItemsUseCase } from '@stock/application/use-case/SuggestStockItemsUseCase';
 import { UndoStockGestureUseCase } from '@stock/application/use-case/UndoStockGestureUseCase';
+import { UpdateShoppingListRowUseCase } from '@stock/application/use-case/UpdateShoppingListRowUseCase';
+import { UpdateShoppingListUseCase } from '@stock/application/use-case/UpdateShoppingListUseCase';
 import { UpdateStockCategoryUseCase } from '@stock/application/use-case/UpdateStockCategoryUseCase';
 import { UpdateStockItemUseCase } from '@stock/application/use-case/UpdateStockItemUseCase';
 import { UpdateStockLocationUseCase } from '@stock/application/use-case/UpdateStockLocationUseCase';
+import { ShoppingListDatasource } from '@stock/data/datasource/ShoppingListDatasource';
 import { StockCatalogDatasource } from '@stock/data/datasource/StockCatalogDatasource';
 import { StockDatasource } from '@stock/data/datasource/StockDatasource';
 import { StockSuggestionDatasource } from '@stock/data/datasource/StockSuggestionDatasource';
+import { ShoppingListRepository } from '@stock/data/repository/ShoppingListRepository';
 import { StockCatalogRepository } from '@stock/data/repository/StockCatalogRepository';
 import { StockRepository } from '@stock/data/repository/StockRepository';
 import { StockSuggestionRepository } from '@stock/data/repository/StockSuggestionRepository';
 
 const useCases = [
+  AddShoppingListRowUseCase,
+  CreateShoppingListUseCase,
+  DeleteShoppingListRowUseCase,
+  EnsureDefaultShoppingListUseCase,
+  GetRestockSummaryUseCase,
+  GetShoppingListByIdUseCase,
+  GetShoppingListsUseCase,
+  UpdateShoppingListRowUseCase,
+  UpdateShoppingListUseCase,
   BackfillStockEmbeddingsUseCase,
   CreateStockCategorySuggestionsUseCase,
   CreateStockCategoryUseCase,
@@ -68,6 +88,8 @@ const useCases = [
   exports: [...useCases],
   providers: [
     ...useCases,
+    { provide: 'IShoppingListDatasource', useClass: ShoppingListDatasource },
+    { provide: 'IShoppingListRepository', useClass: ShoppingListRepository },
     { provide: 'IStockCatalogDatasource', useClass: StockCatalogDatasource },
     { provide: 'IStockCatalogRepository', useClass: StockCatalogRepository },
     { provide: 'IStockDatasource', useClass: StockDatasource },

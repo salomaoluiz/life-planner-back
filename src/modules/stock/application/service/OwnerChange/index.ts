@@ -1,3 +1,4 @@
+import ShoppingListEntity from '@stock/domain/entity/ShoppingListEntity';
 import StockCategoryEntity, { StockCatalogStatus } from '@stock/domain/entity/StockCategoryEntity';
 import StockLocationEntity from '@stock/domain/entity/StockLocationEntity';
 import { pathOf } from '@stock/domain/service/CategoryTree';
@@ -5,7 +6,8 @@ import { pathOf } from '@stock/domain/service/CategoryTree';
 export interface OwnerChangePlan {
   categoryId: null | string;
   locationId: null | string;
-  preview: { category: OwnerChangeSide; location: OwnerChangeSide };
+  preview: { category: OwnerChangeSide; location: OwnerChangeSide; shoppingList: OwnerChangeSide };
+  shoppingListId: null | string;
 }
 export interface OwnerChangeSide {
   from: null | string;
@@ -19,9 +21,17 @@ function same(a: string, b: string) {
 // Spec 116 FR 27: the category (by full path) and the location (by name) are replaced by the ACTIVE row with the
 // same name (case-insensitive) in the new owner, or cleared.
 export function planOwnerChange(
-  item: { categoryId?: string; locationId?: string },
-  source: { categories: StockCategoryEntity[]; locations: StockLocationEntity[] },
-  target: { categories: StockCategoryEntity[]; locations: StockLocationEntity[] },
+  item: { categoryId?: string; locationId?: string; shoppingListId?: string },
+  source: {
+    categories: StockCategoryEntity[];
+    locations: StockLocationEntity[];
+    shoppingLists: ShoppingListEntity[];
+  },
+  target: {
+    categories: StockCategoryEntity[];
+    locations: StockLocationEntity[];
+    shoppingLists: ShoppingListEntity[];
+  },
 ): OwnerChangePlan {
   const fromCategory = item.categoryId ? pathOf(source.categories, item.categoryId) : null;
   const fromLocation = source.locations.find((row) => row.id === item.locationId)?.name ?? null;
@@ -38,6 +48,14 @@ export function planOwnerChange(
       )
     : undefined;
 
+  // Spec 118 FR 8: the list is replaced by the active list with the same name in the new owner.
+  const fromList = source.shoppingLists.find((row) => row.id === item.shoppingListId)?.name ?? null;
+  const toList = fromList
+    ? target.shoppingLists.find(
+        (row) => row.status === StockCatalogStatus.ACTIVE && same(row.name, fromList),
+      )
+    : undefined;
+
   return {
     categoryId: toCategory?.id ?? null,
     locationId: toLocation?.id ?? null,
@@ -47,6 +65,8 @@ export function planOwnerChange(
         to: toCategory ? pathOf(target.categories, toCategory.id) : null,
       },
       location: { from: fromLocation, to: toLocation?.name ?? null },
+      shoppingList: { from: fromList, to: toList?.name ?? null },
     },
+    shoppingListId: toList?.id ?? null,
   };
 }

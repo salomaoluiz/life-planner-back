@@ -102,11 +102,16 @@ it('SHOULD update and set statuses', async () => {
 });
 
 it('SHOULD read the catalog of several owners at once AND map both lists', async () => {
-  datasource.findCatalogByOwners.mockResolvedValue({ categories: [{}], locations: [{}, {}] });
+  datasource.findCatalogByOwners.mockResolvedValue({
+    categories: [{}],
+    locations: [{}, {}],
+    shopping_lists: [{}],
+  });
 
   const result = await setup.findCatalogByOwners([owner]);
 
   expect(datasource.findCatalogByOwners).toHaveBeenCalledWith([key]);
   expect(result.categories).toEqual([{ id: 'category' }]);
   expect(result.locations).toHaveLength(2);
+  expect(result.shoppingLists).toEqual([{ id: 'list' }]);
 });

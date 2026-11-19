@@ -1,4 +1,5 @@
 import { OwnerAccess } from '@stock/domain/entity/OwnerAccess';
+import ShoppingListEntity from '@stock/domain/entity/ShoppingListEntity';
 import StockCategoryEntity from '@stock/domain/entity/StockCategoryEntity';
 import StockEntity from '@stock/domain/entity/StockEntity';
 import StockLocationEntity from '@stock/domain/entity/StockLocationEntity';
@@ -19,8 +20,12 @@ import { needsRestock, restockQuantity } from '@stock/domain/service/StockRestoc
 export interface CatalogLookup {
   categories: StockCategoryEntity[];
   locations: StockLocationEntity[];
+  // Active lists only (spec 118).
+  shoppingLists: ShoppingListEntity[];
 }
 export interface StockItemView {
+  // Spec 118 FR 6: the item's list when it is active, else the owner's default list (when it exists).
+  effectiveShoppingListId?: string;
   expirationStatus: LotStatus;
   // Spec 117 FR 15: any lot (with stock) whose effective expiration is before today.
   hasExpiredLot: boolean;
@@ -73,6 +78,13 @@ export function toStockItemView(
   const category = catalog.categories.find((row) => row.id === item.categoryId);
   const location = catalog.locations.find((row) => row.id === item.locationId);
 
+  const pointed = catalog.shoppingLists.find((row) => row.id === item.shoppingListId);
+  const effectiveList =
+    pointed ??
+    catalog.shoppingLists.find(
+      (row) => row.isDefault && row.owner === item.owner && row.ownerId === item.ownerId,
+    );
+
   return {
     category: category && {
       archived: category.status === 'ARCHIVED',
@@ -80,6 +92,7 @@ export function toStockItemView(
       name: category.name,
       path: pathOf(catalog.categories, category.id),
     },
+    effectiveShoppingListId: effectiveList?.id,
     expirationStatus: worstStatus(lotViews.map((view) => view.expirationStatus)),
     hasExpiredLot: lotViews.some((view) => view.expirationStatus === 'EXPIRED'),
     hasOpenLot: lots.some((lot) => lot.openedAt),
