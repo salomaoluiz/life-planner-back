@@ -199,3 +199,15 @@ it('SHOULD not invalidate WHEN the row is not part of a series (spec 081)', asyn
 
   expect(mocks.gate.invalidate).not.toHaveBeenCalled();
 });
+
+it('SHOULD refuse to delete a part of a split with SPLIT_ROW_USE_SPLIT (422): only the split removes it (spec 119)', async () => {
+  mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce({
+    ...mocks.transaction,
+    splitId: 'split-1',
+  });
+
+  await expect(
+    setup.execute({ accessibleOwners: mocks.accessibleOwners, id: mocks.transaction.id }),
+  ).rejects.toThrow('SPLIT_ROW_USE_SPLIT');
+  expect(mocks.transactionRepository.deleteTransaction).not.toHaveBeenCalled();
+});

@@ -25,6 +25,60 @@ describe('GetUpcomingItemsUseCase', () => {
     });
   });
 
+  describe('split rows (spec 119 FR 33)', () => {
+    it('SHOULD return the parts of an unpaid split as ONE item with the net total, the header description AND the part count', async () => {
+      function part(id: string, value: number, type = 'EXPENSE') {
+        return {
+          ...mocks.row('2023-05-01', { id }),
+          splitDescription: 'Mercado',
+          splitId: 'split-1',
+          type,
+          value,
+        };
+      }
+
+      mocks.transactionRepository.findUnpaidAccountRows.mockResolvedValue([
+        part('p1', 12000),
+        part('p2', 5000),
+        part('p3', -440),
+        mocks.row('2023-05-02', { id: 'plain' }),
+      ] as never);
+
+      const result = await setup.execute(mocks.input);
+
+      expect(result.overdue).toHaveLength(2);
+      expect(result.overdue.find((item) => item.splitId === 'split-1')).toMatchObject({
+        description: 'Mercado',
+        id: 'split-1',
+        partCount: 3,
+        type: 'EXPENSE',
+        valueCents: 16560,
+      });
+    });
+
+    it('SHOULD turn a paycheck split (income parts and expenses) into a net income item', async () => {
+      function part(id: string, value: number, type: string) {
+        return {
+          ...mocks.row('2023-05-01', { id }),
+          splitDescription: 'Holerite',
+          splitId: 'split-2',
+          type,
+          value,
+        };
+      }
+
+      mocks.transactionRepository.findUnpaidAccountRows.mockResolvedValue([
+        part('a', 950000, 'INCOME'),
+        part('b', 90885, 'EXPENSE'),
+        part('c', 134040, 'EXPENSE'),
+      ] as never);
+
+      const result = await setup.execute(mocks.input);
+
+      expect(result.overdue[0]).toMatchObject({ type: 'INCOME', valueCents: 725075 });
+    });
+  });
+
   describe('invoices', () => {
     it('SHOULD turn an open invoice into one item with its purchase count', async () => {
       mocks.findInvoices.execute.mockResolvedValue([
