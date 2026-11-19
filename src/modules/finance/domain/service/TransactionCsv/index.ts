@@ -8,6 +8,8 @@ export interface ExportRow {
   categoryPath: string;
   // "Personal" (localized) or the family name.
   belongsTo: string;
+  // Spec 119 FR 37: the code (`G1`, `G2`, ...) shared by the parts of one split in the file.
+  splitGroup?: string;
   transaction: TransactionEntity;
 }
 
@@ -30,6 +32,7 @@ export const TRANSACTION_CSV_HEADERS: Record<CsvLanguage, string[]> = {
     'Recurring',
     'Notes',
     'Transfer ID',
+    'Split group',
   ],
   'pt-BR': [
     'Data',
@@ -48,6 +51,7 @@ export const TRANSACTION_CSV_HEADERS: Record<CsvLanguage, string[]> = {
     'Recorrente',
     'Notas',
     'ID da transferência',
+    'Grupo',
   ],
 };
 
@@ -60,6 +64,7 @@ export const SYSTEM_CATEGORY_LABELS: Record<CsvLanguage, Record<SystemCategoryKe
     [SystemCategoryKey.INVESTMENT_CONTRIBUTION]: 'Investment contribution',
     [SystemCategoryKey.INVESTMENT_REDEMPTION]: 'Investment redemption',
     [SystemCategoryKey.INVOICE_PAYMENT]: 'Invoice payment',
+    [SystemCategoryKey.SPLIT_ADJUSTMENT]: 'Discount/adjustment',
     [SystemCategoryKey.TRANSFER_FEE]: 'Transfer fees',
     [SystemCategoryKey.TRANSFER_IN]: 'Transfer in',
     [SystemCategoryKey.TRANSFER_OUT]: 'Transfer out',
@@ -72,6 +77,7 @@ export const SYSTEM_CATEGORY_LABELS: Record<CsvLanguage, Record<SystemCategoryKe
     [SystemCategoryKey.INVESTMENT_CONTRIBUTION]: 'Aporte em investimento',
     [SystemCategoryKey.INVESTMENT_REDEMPTION]: 'Resgate de investimento',
     [SystemCategoryKey.INVOICE_PAYMENT]: 'Pagamento de fatura',
+    [SystemCategoryKey.SPLIT_ADJUSTMENT]: 'Desconto/ajuste',
     [SystemCategoryKey.TRANSFER_FEE]: 'Tarifas de transferência',
     [SystemCategoryKey.TRANSFER_IN]: 'Transferência recebida',
     [SystemCategoryKey.TRANSFER_OUT]: 'Transferência enviada',
@@ -90,10 +96,11 @@ export function csvFilename(from: string, to: string, lang: CsvLanguage): string
   return `${lang === 'pt-BR' ? 'transacoes' : 'transactions'}-${from}_${to}.csv`;
 }
 
-// Positive, always 2 decimals, no thousands separator (BR: comma, INTL: point).
+// Always 2 decimals, no thousands separator (BR: comma, INTL: point).
 export function formatCsvAmount(cents: number, format: CsvFormat): string {
   const absolute = Math.abs(cents);
-  const text = `${Math.trunc(absolute / 100)}.${String(absolute % 100).padStart(2, '0')}`;
+  // Only the "Desconto/ajuste" part of a split may be negative (spec 119 FR 11): it keeps its sign.
+  const text = `${cents < 0 ? '-' : ''}${Math.trunc(absolute / 100)}.${String(absolute % 100).padStart(2, '0')}`;
 
   return format === 'BR' ? text.replace('.', ',') : text;
 }
@@ -135,5 +142,6 @@ export function toCsvRow(row: ExportRow, format: CsvFormat, lang: CsvLanguage): 
     yesNo(transaction.recurrenceId !== null),
     transaction.notes ?? '',
     transaction.transferId ?? '',
+    row.splitGroup ?? '',
   ];
 }

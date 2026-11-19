@@ -83,6 +83,7 @@ type TransactionScalars = { category: Pick<TransactionCategorySummary, 'systemKe
   | 'paid'
   | 'projected'
   | 'recurrenceId'
+  | 'splitId'
   | 'type'
 >;
 interface UnpaidAccountRow {
@@ -97,6 +98,9 @@ interface UnpaidAccountRow {
   owner: OwnerType;
   ownerId: string;
   recurrenceId: null | string;
+  // Spec 119: the part of a split; `splitDescription` is the header's.
+  splitDescription: null | string;
+  splitId: null | string;
   type: TransactionType;
   value: number;
 }
@@ -190,7 +194,7 @@ interface TransactionQuery {
   // Spec 103: rows in this currency only.
   currency?: CurrencyCode;
   // Spec 078: rows strictly after this position, at most `limit + 1` of them (the extra one tells a next page exists).
-  cursor?: { createdAt: Date; date: Date; id: string };
+  cursor?: { createdAt: Date; date: Date; id: string; splitId?: null | string };
   from?: string;
   invoiceMonth?: string;
   invoiceRefs?: CardInvoiceRef[];

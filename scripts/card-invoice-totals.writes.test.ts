@@ -11,6 +11,7 @@ const REQUIRED_REFRESH_CALLS: Record<string, number> = {
   FinanceOwnerDataDatasource: 1,
   FinancePrepaymentDatasource: 2,
   FinanceRecurrenceDatasource: 5,
+  FinanceSplitDatasource: 4,
   FinanceTransactionDatasource: 4,
 };
 

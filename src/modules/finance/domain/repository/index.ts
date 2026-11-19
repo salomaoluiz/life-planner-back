@@ -11,6 +11,7 @@ export * from './IFinanceOwnerDataRepository';
 export * from './IFinanceOwnerVersionRepository';
 export * from './IFinancePrepaymentRepository';
 export * from './IFinanceRecurrenceRepository';
+export * from './IFinanceSplitRepository';
 export * from './IFinanceTagRepository';
 export * from './IFinanceTransactionRepository';
 export * from './IFinanceTransferRepository';

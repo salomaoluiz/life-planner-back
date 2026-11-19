@@ -411,6 +411,8 @@ describe('spec 082 reads', () => {
         owner: OwnerType.USER,
         ownerId: 'u1',
         recurrenceId: null,
+        splitDescription: null,
+        splitId: null,
         type: TransactionType.EXPENSE,
         value: 1000,
       },

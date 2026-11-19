@@ -34,6 +34,7 @@ const rawRecurrenceMock: FinancialRecurrenceWithRelations = {
   owner_id: faker.string.uuid(),
   projected: false,
   skipped_numbers: [3],
+  split: false,
   start_date: new Date('2026-10-05T00:00:00.000Z'),
   status: 'ACTIVE',
   to_account: null,

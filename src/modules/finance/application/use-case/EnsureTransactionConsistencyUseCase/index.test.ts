@@ -289,3 +289,31 @@ describe('archived categories (spec 041)', () => {
     );
   });
 });
+
+describe('split adjustment (spec 119)', () => {
+  const adjustment = {
+    ...mocks.input,
+    categoryId: SYSTEM_CATEGORY_IDS[SystemCategoryKey.SPLIT_ADJUSTMENT],
+    type: TransactionType.EXPENSE,
+  };
+
+  it('SHOULD refuse the adjustment WHEN the caller is not a split', async () => {
+    await expect(setup.execute(adjustment)).rejects.toThrow('System category is reserved');
+  });
+
+  it('SHOULD let an expense adjustment through WITHOUT reading a category WHEN allowed', async () => {
+    mocks.categoryRepository.findCategoryById.mockClear();
+
+    await expect(setup.execute({ ...adjustment, allowSplitAdjustment: true })).resolves.toEqual({
+      account: mocks.account,
+      card: undefined,
+    });
+    expect(mocks.categoryRepository.findCategoryById).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD refuse an income adjustment (400)', async () => {
+    await expect(
+      setup.execute({ ...adjustment, allowSplitAdjustment: true, type: TransactionType.INCOME }),
+    ).rejects.toThrow(BadRequestException);
+  });
+});

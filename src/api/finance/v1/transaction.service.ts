@@ -10,6 +10,7 @@ import {
 } from '@api/finance/v1/dto/transaction.dto';
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { resolveToday } from '@api/finance/v1/finance-query';
+import { SplitLookupsService } from '@api/finance/v1/split-lookups.service';
 import { TransferLookupsService } from '@api/finance/v1/transfer-lookups.service';
 import { ConfirmProjectedTransactionUseCase } from '@finance/application/use-case/ConfirmProjectedTransactionUseCase';
 import { CreateTransactionUseCase } from '@finance/application/use-case/CreateTransactionUseCase';
@@ -113,9 +114,12 @@ function toTransactionItem(transaction: TransactionEntity, overLimit?: boolean):
     ownerId: transaction.ownerId,
     paid: transaction.paid,
     // Lean payload: only a projected row carries the flag.
+    descriptionInherited: transaction.descriptionInherited ? true : undefined,
     projected: transaction.projected ? true : undefined,
     recurrenceFrequency: transaction.recurrenceFrequency ?? undefined,
     recurrenceId: transaction.recurrenceId ?? undefined,
+    splitId: transaction.splitId ?? undefined,
+    splitPosition: transaction.splitPosition ?? undefined,
     tagIds: transaction.tags.length > 0 ? transaction.tags.map((tag) => tag.id) : undefined,
     transferId: transaction.transferId ?? undefined,
     type: transaction.type,
@@ -187,6 +191,7 @@ export class TransactionService {
     private readonly getTransactionsUseCase: GetTransactionsUseCase,
     private readonly materializeRecurrencesUseCase: MaterializeRecurrencesUseCase,
     private readonly resolveCardRowsPaidUseCase: ResolveCardRowsPaidUseCase,
+    private readonly splitLookupsService: SplitLookupsService,
     private readonly transferLookupsService: TransferLookupsService,
     private readonly updateTransactionUseCase: UpdateTransactionUseCase,
   ) {}
@@ -283,10 +288,14 @@ export class TransactionService {
 
     return {
       items: resolved.map((transaction) => toTransactionItem(transaction)),
-      lookups: await this.transferLookupsService.attach(
+      lookups: await this.splitLookupsService.attach(
         accessibleOwners,
         resolved,
-        toTransactionLookups(resolved),
+        await this.transferLookupsService.attach(
+          accessibleOwners,
+          resolved,
+          toTransactionLookups(resolved),
+        ),
       ),
       nextCursor,
     };
@@ -308,10 +317,10 @@ export class TransactionService {
     return {
       ...withLookups,
       ...(investment ? { investment } : {}),
-      lookups: await this.transferLookupsService.attach(
+      lookups: await this.splitLookupsService.attach(
         accessibleOwners,
         [resolved],
-        withLookups.lookups,
+        await this.transferLookupsService.attach(accessibleOwners, [resolved], withLookups.lookups),
       ),
     };
   }

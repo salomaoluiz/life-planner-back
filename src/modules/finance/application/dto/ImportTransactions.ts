@@ -30,6 +30,8 @@ export const ImportRowSchema = z.object({
   paid: z.boolean().nullish(),
   // Spec 048: the account debited by an early payment or an invoice payment.
   paidFromAccountId: z.string().min(1).nullish(),
+  // Spec 119 FR 38: lines with the same group (the CSV `Split group` column) are the parts of one split.
+  splitGroup: z.string().min(1).nullish(),
   tags: z.array(z.string()).nullish(),
   // Spec 098: groups the out, in and fee rows of one transfer (the CSV `Transfer ID` column).
   transferId: z.string().min(1).nullish(),

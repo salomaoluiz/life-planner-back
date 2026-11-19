@@ -21,7 +21,7 @@ it('SHOULD write the header, the category path and the owner name, ";"-separated
 
   expect(filename).toBe('transacoes-2026-01-01_2026-12-31.csv');
   expect(lines[0]).toBe(
-    `${BOM}Data;Descrição;Tipo;Valor;Moeda;Categoria;Conta;Cartão;Fatura;Pago;Tags;Pertence a;Parcela;Recorrente;Notas;ID da transferência`,
+    `${BOM}Data;Descrição;Tipo;Valor;Moeda;Categoria;Conta;Cartão;Fatura;Pago;Tags;Pertence a;Parcela;Recorrente;Notas;ID da transferência;Grupo`,
   );
   expect(lines[1]).toContain('02/10/2026;Supermercado;');
   expect(lines[1]).toContain(';Casa > Mercado;');
@@ -102,7 +102,7 @@ it('SHOULD quote notes with separator, quotes and line breaks as ONE cell (spec 
 
   const { csv } = await setup.execute({ ...base, accessibleOwners: mocks.accessibleOwners });
 
-  expect(csv.endsWith(';"Rota; ""ida"", volta\r\nTerminal 2";\r\n')).toBe(true);
+  expect(csv.endsWith(';"Rota; ""ida"", volta\r\nTerminal 2";;\r\n')).toBe(true);
 });
 
 it('SHOULD read the categories ONCE and the rows once, whatever the number of rows (spec 083)', async () => {
@@ -114,4 +114,24 @@ it('SHOULD read the categories ONCE and the rows once, whatever the number of ro
 
   expect(mocks.categoryRepository.findCategories).toHaveBeenCalledTimes(1);
   expect(mocks.resolvePaid.execute).toHaveBeenCalledTimes(1);
+});
+
+describe('split groups (spec 119 FR 37)', () => {
+  function part(id: string, splitId: null | string, position: number) {
+    return { ...mocks.transactions.user, id, splitId, splitPosition: position };
+  }
+
+  it('SHOULD give the parts of a split the same code in export order AND keep them together in their position order', async () => {
+    mocks.transactionRepository.findTransactionsForExport.mockResolvedValueOnce([
+      part('a2', 'split-a', 1),
+      part('plain', null, 0),
+      part('b1', 'split-b', 0),
+      part('a1', 'split-a', 0),
+    ]);
+
+    const { csv } = await setup.execute({ ...base, accessibleOwners: mocks.accessibleOwners });
+    const lines = csv.trim().split('\r\n').slice(1);
+
+    expect(lines.map((line) => line.split(';').pop())).toEqual(['G1', 'G1', '', 'G2']);
+  });
 });

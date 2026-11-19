@@ -32,9 +32,11 @@ const UpcomingItemApiSchema = z.object({
   occurrenceNumber: z.number().int().nullable(),
   owner: OwnerTypeApiSchema,
   ownerId: z.uuid(),
+  partCount: z.number().int().optional(),
   projectedAmount: z.number().int().optional(),
   purchaseCount: z.number().int().nullable(),
   recurrenceId: z.uuid().nullable(),
+  splitId: z.uuid().optional(),
   type: z.enum(TransactionType),
   valueCents: z.number().int(),
 });

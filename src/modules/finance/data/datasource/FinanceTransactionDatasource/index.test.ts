@@ -248,6 +248,7 @@ describe('Method findScalarsById (spec 085)', () => {
         paid: true,
         projected: true,
         recurrence_id: true,
+        split_id: true,
         type: true,
       },
       where: { id: mocks.transaction.id },
@@ -266,7 +267,12 @@ describe('Method findByOwners', () => {
     expect(spies.findMany.mock.calls[0][0].relationLoadStrategy).toBeUndefined();
     expect(spies.findMany).toHaveBeenCalledWith({
       include: mocks.include,
-      orderBy: [{ date: 'desc' }, { created_at: 'desc' }, { id: 'desc' }],
+      orderBy: [
+        { date: 'desc' },
+        { created_at: 'desc' },
+        { split_id: { nulls: 'last', sort: 'desc' } },
+        { id: 'desc' },
+      ],
       where: {
         AND: [
           { OR: [{ owner: 'USER', owner_id: mocks.owners[0].ownerId }] },
@@ -345,9 +351,61 @@ describe('Method findByOwners keyset pages (spec 078)', () => {
       OR: [
         { date: { lt: cursor.date } },
         { created_at: { lt: cursor.createdAt }, date: cursor.date },
-        { created_at: cursor.createdAt, date: cursor.date, id: { lt: 'row-2' } },
+        { created_at: cursor.createdAt, date: cursor.date, id: { lt: 'row-2' }, split_id: null },
       ],
     });
+  });
+
+  it('SHOULD order a split cursor before the rows outside a split (nulls last, spec 119 FR 30)', async () => {
+    spies.findMany.mockResolvedValue([]);
+
+    await setup.findByOwners(mocks.owners, TransactionSource.ACCOUNT, {
+      cursor: { ...cursor, splitId: 'split-2' },
+      limit: 2,
+    });
+
+    const and = spies.findMany.mock.calls[0][0].where.AND;
+    const same = { created_at: cursor.createdAt, date: cursor.date };
+
+    expect(and[and.length - 1].OR).toEqual([
+      { date: { lt: cursor.date } },
+      { created_at: { lt: cursor.createdAt }, date: cursor.date },
+      { ...same, split_id: { lt: 'split-2' } },
+      { ...same, id: { lt: 'row-2' }, split_id: 'split-2' },
+      { ...same, split_id: null },
+    ]);
+  });
+
+  it('SHOULD extend the page to the end of the split the limit falls in, plus one row after it (spec 119 FR 30)', async () => {
+    function part(id: string) {
+      return { ...mocks.transaction, id, split_id: 'split-1' };
+    }
+    const after = { ...mocks.transaction, id: 'after', split_id: null };
+
+    // limit 2 -> take 3: the third row is still a part of the split the second row belongs to.
+    spies.findMany
+      .mockResolvedValueOnce([part('p-1'), part('p-2'), part('p-3')])
+      .mockResolvedValueOnce([part('p-4')])
+      .mockResolvedValueOnce([after]);
+
+    const rows = await setup.findByOwners(mocks.owners, TransactionSource.ACCOUNT, { limit: 2 });
+
+    expect(rows.map((row) => row.id)).toEqual(['p-1', 'p-2', 'p-3', 'p-4', 'after']);
+    expect(spies.findMany).toHaveBeenCalledTimes(3);
+    expect(spies.findMany.mock.calls[1][0].where.AND).toContainEqual({ split_id: 'split-1' });
+    expect(spies.findMany.mock.calls[2][0].take).toBe(1);
+  });
+
+  it('SHOULD NOT extend WHEN the extra row is outside the split of the last row', async () => {
+    const part = { ...mocks.transaction, id: 'p-1', split_id: 'split-1' };
+    const rows = [part, { ...mocks.transaction, id: 'p-2', split_id: null }, mocks.transaction];
+
+    spies.findMany.mockResolvedValueOnce(rows);
+
+    expect(await setup.findByOwners(mocks.owners, TransactionSource.ACCOUNT, { limit: 2 })).toEqual(
+      rows,
+    );
+    expect(spies.findMany).toHaveBeenCalledTimes(1);
   });
 
   it('SHOULD apply the cursor to card rows too', async () => {
@@ -808,7 +866,12 @@ describe('search in SQL (spec 084)', () => {
 
     expect(call.where.AND).toContainEqual({ id: { in: ['row-1', 'row-2'] } });
     expect(call.take).toBe(201);
-    expect(call.orderBy).toEqual([{ date: 'desc' }, { created_at: 'desc' }, { id: 'desc' }]);
+    expect(call.orderBy).toEqual([
+      { date: 'desc' },
+      { created_at: 'desc' },
+      { split_id: { nulls: 'last', sort: 'desc' } },
+      { id: 'desc' },
+    ]);
     expect(call.relationLoadStrategy).toBe('join');
   });
 
@@ -1386,6 +1449,8 @@ describe('Method findUnpaidAccountRows (spec 082)', () => {
         owner: true,
         owner_id: true,
         recurrence_id: true,
+        split: { select: { description: true } },
+        split_id: true,
         type: true,
         value: true,
       },
@@ -1414,8 +1479,8 @@ describe('Method findUnpaidAccountRows (spec 082)', () => {
 
 describe('Method countCardPurchases (spec 082)', () => {
   it('SHOULD group the rows by card and invoice month in ONE query', async () => {
-    spies.groupBy.mockResolvedValue([
-      { _count: { _all: 3 }, credit_card_id: 'card-1', invoice_month: '2026-11' },
+    spies.queryRaw.mockResolvedValue([
+      { count: 3, credit_card_id: 'card-1', invoice_month: '2026-11' },
     ]);
 
     const keys = [{ credit_card_id: 'card-1', invoice_month: '2026-11' }];
@@ -1423,15 +1488,13 @@ describe('Method countCardPurchases (spec 082)', () => {
     expect(await setup.countCardPurchases(keys)).toEqual([
       { count: 3, credit_card_id: 'card-1', invoice_month: '2026-11' },
     ]);
-    expect(spies.groupBy).toHaveBeenCalledWith({
-      _count: { _all: true },
-      by: ['credit_card_id', 'invoice_month'],
-      where: { OR: keys },
-    });
+    expect(spies.queryRaw).toHaveBeenCalledTimes(1);
+    // Spec 119 FR 36: a split counts as ONE purchase.
+    expect(spies.queryRaw.mock.calls[0][0].sql).toContain('COUNT(DISTINCT COALESCE(t."split_id"');
   });
 
   it('SHOULD NOT query WHEN there are no keys', async () => {
     expect(await setup.countCardPurchases([])).toEqual([]);
-    expect(spies.groupBy).not.toHaveBeenCalled();
+    expect(spies.queryRaw).not.toHaveBeenCalled();
   });
 });

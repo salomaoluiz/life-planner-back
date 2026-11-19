@@ -17,6 +17,7 @@ import {
   normalizeTags,
   validateImportRow,
 } from '@finance/application/service/ImportRows';
+import { checkSplitRows, isSplitRow } from '@finance/application/service/ImportSplits';
 import { checkTransferRows } from '@finance/application/service/ImportTransfers';
 import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { ComputeCardInvoicesUseCase } from '@finance/application/use-case/ComputeCardInvoicesUseCase';
@@ -37,6 +38,7 @@ import {
   IFinanceAccountRepository,
   IFinanceCardCreditRepository,
   IFinanceCreditCardRepository,
+  IFinanceSplitRepository,
   IFinanceTransactionRepository,
   IFinanceTransferRepository,
   PayInvoiceRepositoryParams,
@@ -60,6 +62,8 @@ export interface ImportTransactionsResult {
   errors: ImportRowError[];
   // Spec 048 FR 24: the invoices the file touches (dry run, only when it has card credits or payments).
   invoices: ImportInvoiceSummary[];
+  // Spec 119: how many splits the file holds (only present when it has any).
+  splits?: number;
   // Spec 098: how many transfers the file holds (only present when it has any).
   transfers?: number;
 }
@@ -99,6 +103,8 @@ export class ImportTransactionsUseCase implements UseCaseWithParams<
     private readonly creditCardRepository: IFinanceCreditCardRepository,
     @Inject(EnsureTransactionConsistencyUseCase)
     private readonly ensureTransactionConsistencyUseCase: EnsureTransactionConsistencyUseCase,
+    @Inject('IFinanceSplitRepository')
+    private readonly splitRepository: IFinanceSplitRepository,
     @Inject('IFinanceTransactionRepository')
     private readonly transactionRepository: IFinanceTransactionRepository,
     @Inject('IFinanceTransferRepository')
@@ -121,8 +127,23 @@ export class ImportTransactionsUseCase implements UseCaseWithParams<
     const cardLookups = new Map<string, Promise<CardLookup | ImportRowError>>();
     const wellFormed: ImportRow[] = [];
 
+    // Spec 119 FR 38: the lines of a split group become whole splits, apart from the others.
+    const checkedSplits = await checkSplitRows({
+      accessibleOwners: input.accessibleOwners,
+      accountRepository: this.accountRepository,
+      creditCardRepository: this.creditCardRepository,
+      ensureConsistencyUseCase: this.ensureTransactionConsistencyUseCase,
+      requesterId: input.requesterId ?? input.ownerId,
+      rows: input.rows.filter((row) => isSplitRow(row)),
+      today: input.today,
+    });
+
+    errors.push(...checkedSplits.errors);
+
     // Spec 098 FR 12: the rows of the transfer categories are grouped into whole transfers, apart from the others.
-    const transferRows = input.rows.filter((row) => transferRowKind(row.categoryId) !== undefined);
+    const transferRows = input.rows.filter(
+      (row) => !isSplitRow(row) && transferRowKind(row.categoryId) !== undefined,
+    );
     const transferErrors: ImportRowError[] = [];
     const wellFormedTransferRows: ImportRow[] = [];
 
@@ -145,7 +166,9 @@ export class ImportTransactionsUseCase implements UseCaseWithParams<
 
     errors.push(...transferErrors, ...checkedTransfers.errors);
 
-    for (const row of input.rows.filter((item) => transferRowKind(item.categoryId) === undefined)) {
+    for (const row of input.rows.filter(
+      (item) => !isSplitRow(item) && transferRowKind(item.categoryId) === undefined,
+    )) {
       const invalid = validateImportRow(row);
 
       if (invalid) {
@@ -249,9 +272,10 @@ export class ImportTransactionsUseCase implements UseCaseWithParams<
 
       // The transfers are validated up front, so they go first in their own single database transaction.
       const transfers = await this.transferRepository.createTransfers(checkedTransfers.transfers);
+      const splits = await this.splitRepository.createSplits(checkedSplits.splits);
 
       return {
-        created: transfers + (await this.write(checked, cardRows.months, input)),
+        created: transfers + splits + (await this.write(checked, cardRows.months, input)),
         duplicates: [],
         errors: [],
         invoices: [],
@@ -263,6 +287,7 @@ export class ImportTransactionsUseCase implements UseCaseWithParams<
       duplicates: [...duplicates].sort((a, b) => a - b),
       errors,
       invoices: cardRows.invoices,
+      ...(checkedSplits.splits.length > 0 ? { splits: checkedSplits.splits.length } : {}),
       ...(checkedTransfers.transfers.length > 0
         ? { transfers: checkedTransfers.transfers.length }
         : {}),

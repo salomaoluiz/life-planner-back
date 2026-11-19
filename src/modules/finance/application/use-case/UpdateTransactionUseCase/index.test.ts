@@ -865,3 +865,19 @@ it('SHOULD update the notes alone AND clear them with null (spec 059)', async ()
     expect.objectContaining({ notes: null }),
   );
 });
+
+describe('split parts (spec 119)', () => {
+  it('SHOULD refuse to edit a part with SPLIT_ROW_USE_SPLIT (value AND paid) AND update nothing', async () => {
+    for (const patch of [{ value: 1 }, { paid: false }]) {
+      mocks.transactionRepository.findTransactionScalarsById.mockResolvedValueOnce({
+        ...mocks.transaction,
+        splitId: 'split-1',
+      });
+
+      await expect(run(patch)).rejects.toThrow(
+        new UnprocessableEntityException('SPLIT_ROW_USE_SPLIT'),
+      );
+    }
+    expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
+  });
+});

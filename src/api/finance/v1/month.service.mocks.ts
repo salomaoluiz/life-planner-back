@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 
 import { FinanceAccessService } from '@api/finance/v1/finance-access.service';
 import { MonthService } from '@api/finance/v1/month.service';
+import { SplitLookupsService } from '@api/finance/v1/split-lookups.service';
 import { TransferLookupsService } from '@api/finance/v1/transfer-lookups.service';
 import { GetDailyBalancesUseCase } from '@finance/application/use-case/GetDailyBalancesUseCase';
 import { GetInvoicesForListUseCase } from '@finance/application/use-case/GetInvoicesForListUseCase';
@@ -39,6 +40,9 @@ const getTransactionsUseCaseMock = { execute: jest.fn() };
 const loadFilterCategoriesUseCaseMock = { execute: jest.fn() };
 const materializeRecurrencesUseCaseMock = { execute: jest.fn() };
 
+const splitLookupsServiceMock = {
+  attach: jest.fn(async (_owners: unknown, _rows: unknown, lookups: unknown) => lookups),
+};
 const transferLookupsServiceMock = {
   attach: jest.fn(async (_owners: unknown, _rows: unknown, lookups: unknown) => lookups),
 };
@@ -58,6 +62,7 @@ beforeEach(async () => {
   loadFilterCategoriesUseCaseMock.execute.mockResolvedValue(undefined);
   materializeRecurrencesUseCaseMock.execute.mockResolvedValue(undefined);
   transferLookupsServiceMock.attach.mockImplementation(async (_owners, _rows, lookups) => lookups);
+  splitLookupsServiceMock.attach.mockImplementation(async (_owners, _rows, lookups) => lookups);
 
   const module = await Test.createTestingModule({
     providers: [
@@ -70,6 +75,7 @@ beforeEach(async () => {
       { provide: GetTransactionsUseCase, useValue: getTransactionsUseCaseMock },
       { provide: LoadFilterCategoriesUseCase, useValue: loadFilterCategoriesUseCaseMock },
       { provide: MaterializeRecurrencesUseCase, useValue: materializeRecurrencesUseCaseMock },
+      { provide: SplitLookupsService, useValue: splitLookupsServiceMock },
       { provide: TransferLookupsService, useValue: transferLookupsServiceMock },
     ],
   }).compile();
@@ -92,6 +98,7 @@ const mocks = {
   userId,
 };
 const spies = {
+  splitLookupsService: splitLookupsServiceMock,
   transferLookupsService: transferLookupsServiceMock,
 };
 

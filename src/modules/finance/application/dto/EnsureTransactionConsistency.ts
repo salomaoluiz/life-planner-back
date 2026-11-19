@@ -11,7 +11,9 @@ import {
 export const EnsureTransactionConsistencySchema = z
   .object({
     accessibleOwners: AccessibleOwnersSchema,
+    // Spec 119: lets the `SPLIT_ADJUSTMENT` system category through (only a split part may use it).
     accountId: z.string().min(1).optional(),
+    allowSplitAdjustment: z.boolean().default(false),
     // Create, and an update that MOVES the transaction to another account or card, may not target an archived one.
     blockArchivedAccount: z.boolean().default(false),
     // Create, and an update that CHANGES the category, may not target an archived one (spec 041 FR 11).

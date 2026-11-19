@@ -646,3 +646,183 @@ describe('transfers (spec 098 FR 12)', () => {
     ]);
   });
 });
+
+describe('split groups (spec 119 FR 38)', () => {
+  const ADJUSTMENT = SYSTEM_CATEGORY_IDS[SystemCategoryKey.SPLIT_ADJUSTMENT];
+  const first = {
+    ...mocks.validRow,
+    description: 'Mercado',
+    line: 2,
+    notes: 'Compra do mês',
+    splitGroup: 'G1',
+    value: 12000,
+  };
+  const second = {
+    ...first,
+    categoryId: 'cat-2',
+    description: 'Detergente',
+    line: 3,
+    notes: null,
+    value: 5000,
+  };
+  const adjustment = {
+    ...first,
+    categoryId: ADJUSTMENT,
+    description: 'Mercado',
+    line: 4,
+    notes: null,
+    value: -440,
+  };
+
+  it('SHOULD list the splits of a dry run as one each AND write nothing', async () => {
+    const result = await setup.execute({ ...mocks.base, rows: [first, second, adjustment] });
+
+    expect(result).toEqual(expect.objectContaining({ errors: [], splits: 1 }));
+    expect(mocks.splitRepository.createSplits).not.toHaveBeenCalled();
+    // The lines of the group never go through the single-row path.
+    expect(mocks.ensure.execute).toHaveBeenCalledTimes(3);
+  });
+
+  it('SHOULD write ONE split with the first line as header (description, notes) AND the signed adjustment', async () => {
+    const result = await setup.execute({
+      ...mocks.base,
+      dryRun: false,
+      rows: [first, second, adjustment],
+    });
+
+    expect(result.created).toBe(1);
+    expect(mocks.splitRepository.createSplits).toHaveBeenCalledWith([
+      expect.objectContaining({
+        accountId: 'acc-1',
+        date: '2026-10-02',
+        description: 'Mercado',
+        notes: 'Compra do mês',
+        paid: true,
+        parts: [
+          expect.objectContaining({ categoryId: 'cat-1', description: null, value: 12000 }),
+          expect.objectContaining({ categoryId: 'cat-2', description: 'Detergente', value: 5000 }),
+          expect.objectContaining({ categoryId: ADJUSTMENT, description: null, value: -440 }),
+        ],
+      }),
+    ]);
+    expect(mocks.transactionRepository.createManyTransactions).toHaveBeenCalledWith([]);
+  });
+
+  it('SHOULD report SPLIT_GROUP_SIZE on every line WHEN the group has one line', async () => {
+    const result = await setup.execute({ ...mocks.base, rows: [first] });
+
+    expect(result.errors).toEqual([expect.objectContaining({ code: 'SPLIT_GROUP_SIZE', line: 2 })]);
+  });
+
+  it('SHOULD report SPLIT_GROUP_MISMATCH on every line AND create nothing WHEN the dates differ', async () => {
+    const rows = [first, { ...second, date: '2026-10-03' }];
+
+    const dry = await setup.execute({ ...mocks.base, rows });
+
+    expect(dry.errors.map((error) => [error.code, error.line])).toEqual([
+      ['SPLIT_GROUP_MISMATCH', 2],
+      ['SPLIT_GROUP_MISMATCH', 3],
+    ]);
+    await expect(setup.execute({ ...mocks.base, dryRun: false, rows })).rejects.toThrow(
+      UnprocessableEntityException,
+    );
+    expect(mocks.splitRepository.createSplits).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['a negative value outside the adjustment', { ...second, value: -5 }, 'INVALID_VALUE'],
+    ['an invalid date', { ...second, date: 'nope' }, 'INVALID_DATE'],
+  ])('SHOULD report the row error WHEN a group has %s', async (_label, bad, code) => {
+    const result = await setup.execute({ ...mocks.base, rows: [first, bad] });
+
+    expect(result.errors.map((error) => error.code)).toEqual([code]);
+  });
+
+  it('SHOULD report SPLIT_GROUP_INVALID WHEN the rules break (two adjustments, income on a card)', async () => {
+    const duplicate = await setup.execute({
+      ...mocks.base,
+      rows: [first, adjustment, { ...adjustment, line: 5, value: 10 }],
+    });
+    const card = await setup.execute({
+      ...mocks.base,
+      rows: [
+        { ...first, accountId: undefined, creditCardId: 'card-1' },
+        { ...second, accountId: undefined, creditCardId: 'card-1', type: TransactionType.INCOME },
+      ],
+    });
+
+    expect(duplicate.errors[0]).toEqual(
+      expect.objectContaining({
+        code: 'SPLIT_GROUP_INVALID',
+        message: 'SPLIT_ADJUSTMENT_DUPLICATE',
+      }),
+    );
+    expect(card.errors[0]).toEqual(
+      expect.objectContaining({ code: 'SPLIT_GROUP_INVALID', message: 'SPLIT_CARD_EXPENSE_ONLY' }),
+    );
+  });
+
+  it('SHOULD land a card split on the invoice of the closing day AND leave paid empty', async () => {
+    await setup.execute({
+      ...mocks.base,
+      dryRun: false,
+      rows: [
+        { ...first, accountId: undefined, creditCardId: 'card-1' },
+        { ...second, accountId: undefined, creditCardId: 'card-1' },
+      ],
+    });
+
+    expect(mocks.splitRepository.createSplits.mock.calls[0][0][0]).toEqual(
+      expect.objectContaining({ creditCardId: 'card-1', invoiceMonth: '2026-10', paid: null }),
+    );
+  });
+
+  it.each([
+    [
+      'the account is missing',
+      () => mocks.account.findAccountById.mockResolvedValueOnce(undefined),
+      'ACCOUNT_NOT_FOUND',
+    ],
+    [
+      'the account is archived',
+      () =>
+        mocks.account.findAccountById.mockResolvedValueOnce({
+          ...mocks.validRow,
+          id: 'acc-1',
+          owner: 'USER',
+          ownerId: 'user-id',
+          status: 'ARCHIVED',
+        }),
+      'ACCOUNT_ARCHIVED',
+    ],
+    [
+      'the card is missing',
+      () => mocks.card.findCreditCardById.mockResolvedValueOnce(undefined),
+      'CARD_NOT_FOUND',
+    ],
+  ])('SHOULD report %s on every line of the group', async (label, arrange, code) => {
+    arrange();
+    const rows = label.includes('card')
+      ? [
+          { ...first, accountId: undefined, creditCardId: 'card-1' },
+          { ...second, accountId: undefined, creditCardId: 'card-1' },
+        ]
+      : [first, second];
+
+    const result = await setup.execute({ ...mocks.base, rows });
+
+    expect(result.errors.map((error) => error.code)).toEqual([code, code]);
+  });
+
+  it('SHOULD map a category error to the line that uses it', async () => {
+    mocks.ensure.execute
+      .mockResolvedValueOnce({})
+      .mockRejectedValueOnce(mocks.errors.notFound('Category not found'));
+
+    const result = await setup.execute({ ...mocks.base, rows: [first, second] });
+
+    expect(result.errors).toEqual([
+      expect.objectContaining({ code: 'CATEGORY_NOT_FOUND', line: 3 }),
+    ]);
+  });
+});

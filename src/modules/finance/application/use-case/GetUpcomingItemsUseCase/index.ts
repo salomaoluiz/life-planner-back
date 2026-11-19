@@ -10,7 +10,7 @@ import { GetProjectionsUseCase } from '@finance/application/use-case/GetProjecti
 import { narrowOwners, OwnerAccess } from '@finance/domain/entity/OwnerAccess';
 import { UpcomingItem } from '@finance/domain/entity/UpcomingItem';
 import { InvoiceStatus, TransactionType } from '@finance/domain/enum';
-import { IFinanceTransactionRepository } from '@finance/domain/repository';
+import { IFinanceTransactionRepository, UnpaidAccountRow } from '@finance/domain/repository';
 import { addDays, lastDayOfMonth } from '@finance/domain/service/RecurrenceSchedule';
 import { splitUpcoming, UpcomingSplit } from '@finance/domain/service/UpcomingItems';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
@@ -63,25 +63,36 @@ export class GetUpcomingItemsUseCase implements UseCaseWithParams<
   // Unpaid account rows; the repository already leaves out card rows and the categories that only move money.
   private async findRows(owners: OwnerAccess[], last: string): Promise<UpcomingItem[]> {
     const rows = await this.transactionRepository.findUnpaidAccountRows(owners, last);
+    const nets = new Map<string, number>();
+    const items: UpcomingItem[] = [];
 
-    return rows.map((row) => ({
-      accountId: row.accountId,
-      categoryId: row.categoryId,
-      creditCardId: null,
-      currency: row.currency,
-      date: row.date,
-      description: row.description,
-      id: row.id,
-      invoiceMonth: null,
-      kind: 'TRANSACTION',
-      occurrenceNumber: row.occurrenceNumber,
-      owner: row.owner,
-      ownerId: row.ownerId,
-      purchaseCount: null,
-      recurrenceId: row.recurrenceId,
-      type: row.type,
-      valueCents: row.value,
-    }));
+    for (const row of rows) {
+      if (row.splitId === null) {
+        items.push(toRowItem(row));
+        continue;
+      }
+      // Spec 119 FR 33: the parts of an unpaid split are ONE item with the net total (the direction of the net).
+      const net =
+        (nets.get(row.splitId) ?? 0) + (row.type === TransactionType.INCOME ? 1 : -1) * row.value;
+      let item = items.find((candidate) => candidate.splitId === row.splitId);
+
+      if (!item) {
+        item = {
+          ...toRowItem(row),
+          description: row.splitDescription ?? row.description,
+          id: row.splitId,
+          partCount: 0,
+          splitId: row.splitId,
+        };
+        items.push(item);
+      }
+      nets.set(row.splitId, net);
+      item.partCount = (item.partCount ?? 0) + 1;
+      item.type = net > 0 ? TransactionType.INCOME : TransactionType.EXPENSE;
+      item.valueCents = Math.abs(net);
+    }
+
+    return items;
   }
 
   // One item per card and invoice month: not paid and with something left to pay.
@@ -168,4 +179,25 @@ export class GetUpcomingItemsUseCase implements UseCaseWithParams<
         valueCents: item.value,
       }));
   }
+}
+
+function toRowItem(row: UnpaidAccountRow): UpcomingItem {
+  return {
+    accountId: row.accountId,
+    categoryId: row.categoryId,
+    creditCardId: null,
+    currency: row.currency,
+    date: row.date,
+    description: row.description,
+    id: row.id,
+    invoiceMonth: null,
+    kind: 'TRANSACTION',
+    occurrenceNumber: row.occurrenceNumber,
+    owner: row.owner,
+    ownerId: row.ownerId,
+    purchaseCount: null,
+    recurrenceId: row.recurrenceId,
+    type: row.type,
+    valueCents: row.value,
+  };
 }

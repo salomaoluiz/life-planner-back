@@ -159,6 +159,10 @@ export const TransactionItemApiSchema = z.strictObject({
   recurrenceFrequency: FrequencyApiSchema.optional(),
   recurrenceId: z.uuid().optional(),
   tagIds: z.array(z.uuid()).optional(),
+  // Spec 119: a part of a split (`lookups.splits[splitId]`); true when the row stores the header description.
+  descriptionInherited: z.literal(true).optional(),
+  splitId: z.uuid().optional(),
+  splitPosition: z.number().int().optional(),
   // Spec 098: out, in and fee rows of a transfer (`lookups.transfers[transferId]`).
   transferId: z.uuid().optional(),
   type: TransactionTypeApiSchema,
@@ -185,6 +189,24 @@ export const TransactionLookupsApiSchema = z.strictObject({
       title: z.string(),
     }),
   ),
+  // Spec 119 FR 27-28: present only when a row is a part of a split; `matched*` follow the request filters.
+  splits: z
+    .record(
+      z.uuid(),
+      z.strictObject({
+        description: z.string(),
+        matchedCount: z.number().int(),
+        matchedTotal: z.number().int(),
+        notes: z.string().optional(),
+        occurrenceNumber: z.number().int().optional(),
+        paid: z.boolean().optional(),
+        partCount: z.number().int(),
+        recurrenceId: z.uuid().optional(),
+        total: z.number().int(),
+        type: TransactionTypeApiSchema,
+      }),
+    )
+    .optional(),
   tags: z.record(z.uuid(), z.strictObject({ name: z.string() })),
   // Spec 098: present only when a row belongs to a transfer. A side the caller cannot read is left out and
   // `counterpartHidden` is true (the row is read-only, "Conta de outro dono").
