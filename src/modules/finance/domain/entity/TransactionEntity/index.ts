@@ -85,6 +85,8 @@ interface ITransactionEntity {
   // Spec 119: set on the parts of a split; `descriptionInherited` when the row stores the header description.
   descriptionInherited?: boolean;
   splitId?: null | string;
+  // 0-based order of the part inside its split.
+  splitPosition?: null | number;
   // Spec 098: set on the out, in and fee rows of a transfer.
   transferId?: null | string;
   type: TransactionType;
@@ -138,6 +140,7 @@ class TransactionEntity {
   refundedPlanId: null | string;
   refundedTransactionId: null | string;
   splitId: null | string;
+  splitPosition: null | number;
   tags: TagRef[];
   transferId: null | string;
   type: TransactionType;
@@ -182,6 +185,7 @@ class TransactionEntity {
     this.externalLock = params.externalLock ?? null;
     this.tags = params.tags ?? [];
     this.splitId = params.splitId ?? null;
+    this.splitPosition = params.splitPosition ?? null;
     this.descriptionInherited = params.descriptionInherited ?? false;
     this.transferId = params.transferId ?? null;
     this.type = params.type;

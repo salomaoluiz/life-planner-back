@@ -49,6 +49,7 @@ describe('FinanceTransactionMapper.toDomain', () => {
       refundedPlanId: null,
       refundedTransactionId: null,
       splitId: null,
+      splitPosition: null,
       tags: [],
       transferId: null,
       type: 'EXPENSE',

@@ -49,6 +49,7 @@ const paramsMock: TransactionEntity = {
   refundedPlanId: null,
   refundedTransactionId: null,
   splitId: null,
+  splitPosition: null,
   tags: [],
   transferId: null,
   type: TransactionType.EXPENSE,

@@ -162,6 +162,7 @@ export const TransactionItemApiSchema = z.strictObject({
   // Spec 119: a part of a split (`lookups.splits[splitId]`); true when the row stores the header description.
   descriptionInherited: z.literal(true).optional(),
   splitId: z.uuid().optional(),
+  splitPosition: z.number().int().optional(),
   // Spec 098: out, in and fee rows of a transfer (`lookups.transfers[transferId]`).
   transferId: z.uuid().optional(),
   type: TransactionTypeApiSchema,

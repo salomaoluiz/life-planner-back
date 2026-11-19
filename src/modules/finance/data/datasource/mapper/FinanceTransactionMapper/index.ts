@@ -83,6 +83,7 @@ export class FinanceTransactionMapper {
       refundedPlanId: raw.refunded_plan_id,
       refundedTransactionId: raw.refunded_transaction_id,
       splitId: raw.split_id,
+      splitPosition: raw.split_position,
       tags: toTagRefs(raw.tags),
       transferId: raw.transfer_id,
       type: TransactionType[raw.type],
