@@ -59,6 +59,7 @@ const ImportRowApiSchema = z.object({
   paidFromAccountId: z.uuid().nullish(),
   tags: z.array(z.string()).nullish(),
   // Spec 098: the `Transfer ID` column; groups the out, in and fee rows of one transfer.
+  splitGroup: z.string().min(1).nullish(),
   transferId: z.string().min(1).nullish(),
   type: TransactionTypeApiSchema,
   value: z.number(),
@@ -92,6 +93,8 @@ export const ImportDryRunOutputSchema = z.object({
       paid: z.boolean(),
     }),
   ),
+  // Spec 119: how many splits the file holds (only present when it has any).
+  splits: z.number().int().min(0).optional(),
   // Spec 098: how many transfers the file holds (only present when it has any).
   transfers: z.number().int().min(0).optional(),
 });

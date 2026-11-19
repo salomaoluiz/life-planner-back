@@ -32,9 +32,9 @@ describe('formatCsvDate', () => {
 });
 
 describe('headers and labels', () => {
-  it('SHOULD have 16 headers per language and a label for every system category', () => {
-    expect(TRANSACTION_CSV_HEADERS['pt-BR']).toHaveLength(16);
-    expect(TRANSACTION_CSV_HEADERS['en-US']).toHaveLength(16);
+  it('SHOULD have 17 headers per language and a label for every system category', () => {
+    expect(TRANSACTION_CSV_HEADERS['pt-BR']).toHaveLength(17);
+    expect(TRANSACTION_CSV_HEADERS['en-US']).toHaveLength(17);
     expect(Object.keys(SYSTEM_CATEGORY_LABELS['pt-BR'])).toHaveLength(11);
   });
 
@@ -74,7 +74,7 @@ describe('toCsvRow', () => {
     expect(row[0]).toBe('02/10/2026');
     expect(row.slice(1, 6)).toEqual(['Supermercado', 'Despesa', '312,40', 'BRL', 'Casa > Mercado']);
     expect(row[6]).toBe(transaction.account?.name ?? '');
-    expect(row.slice(7)).toEqual(['', '', 'Sim', 'fixo', 'Pessoal', '', 'Não', '', '']);
+    expect(row.slice(7)).toEqual(['', '', 'Sim', 'fixo', 'Pessoal', '', 'Não', '', '', '']);
   });
 
   it('SHOULD write a card purchase with its invoice, installment and recurrence', () => {
@@ -106,14 +106,15 @@ describe('toCsvRow', () => {
       'Yes',
       '',
       '',
+      '',
     ]);
   });
 });
 
 describe('notes column (spec 059)', () => {
   it('SHOULD put Notes / Notas right before the Transfer ID column', () => {
-    expect(TRANSACTION_CSV_HEADERS['en-US'].slice(-2)[0]).toBe('Notes');
-    expect(TRANSACTION_CSV_HEADERS['pt-BR'].slice(-2)[0]).toBe('Notas');
+    expect(TRANSACTION_CSV_HEADERS['en-US'].slice(-3)[0]).toBe('Notes');
+    expect(TRANSACTION_CSV_HEADERS['pt-BR'].slice(-3)[0]).toBe('Notas');
   });
 
   it('SHOULD write the notes before the transfer id, with line breaks, and leave it empty when null', () => {
@@ -121,17 +122,17 @@ describe('notes column (spec 059)', () => {
     const plain = make({ notes: null });
     const args = { belongsTo: 'Pessoal', categoryPath: 'X' };
 
-    expect(toCsvRow({ ...args, transaction: noted }, 'BR', 'pt-BR').slice(-2)[0]).toBe(
+    expect(toCsvRow({ ...args, transaction: noted }, 'BR', 'pt-BR').slice(-3)[0]).toBe(
       'Casa\nAeroporto',
     );
-    expect(toCsvRow({ ...args, transaction: plain }, 'BR', 'pt-BR').slice(-2)[0]).toBe('');
+    expect(toCsvRow({ ...args, transaction: plain }, 'BR', 'pt-BR').slice(-3)[0]).toBe('');
   });
 });
 
 describe('transfer id column (spec 098)', () => {
-  it('SHOULD end the header with Transfer ID / ID da transferência', () => {
-    expect(TRANSACTION_CSV_HEADERS['en-US'].slice(-1)[0]).toBe('Transfer ID');
-    expect(TRANSACTION_CSV_HEADERS['pt-BR'].slice(-1)[0]).toBe('ID da transferência');
+  it('SHOULD put Transfer ID / ID da transferência right before the Split group column', () => {
+    expect(TRANSACTION_CSV_HEADERS['en-US'].slice(-2)[0]).toBe('Transfer ID');
+    expect(TRANSACTION_CSV_HEADERS['pt-BR'].slice(-2)[0]).toBe('ID da transferência');
   });
 
   it('SHOULD write the transfer id of a transfer row AND leave it empty for the others', () => {
@@ -139,11 +140,36 @@ describe('transfer id column (spec 098)', () => {
 
     expect(
       toCsvRow({ ...args, transaction: make({ transferId: 'transfer-1' }) }, 'BR', 'pt-BR').slice(
-        -1,
+        -2,
       )[0],
     ).toBe('transfer-1');
     expect(
-      toCsvRow({ ...args, transaction: make({ transferId: null }) }, 'BR', 'pt-BR').slice(-1)[0],
+      toCsvRow({ ...args, transaction: make({ transferId: null }) }, 'BR', 'pt-BR').slice(-2)[0],
     ).toBe('');
+  });
+});
+
+describe('split group column (spec 119 FR 37)', () => {
+  const args = { belongsTo: 'Pessoal', categoryPath: 'X' };
+
+  it('SHOULD end the header with Split group / Grupo', () => {
+    expect(TRANSACTION_CSV_HEADERS['en-US'].slice(-1)[0]).toBe('Split group');
+    expect(TRANSACTION_CSV_HEADERS['pt-BR'].slice(-1)[0]).toBe('Grupo');
+  });
+
+  it('SHOULD write the group code of a part AND leave it empty for an ordinary row', () => {
+    expect(
+      toCsvRow({ ...args, splitGroup: 'G2', transaction: make({}) }, 'BR', 'pt-BR').slice(-1)[0],
+    ).toBe('G2');
+    expect(toCsvRow({ ...args, transaction: make({}) }, 'BR', 'pt-BR').slice(-1)[0]).toBe('');
+  });
+
+  it('SHOULD write the negative adjustment with its sign (R$ 4,40 discount)', () => {
+    expect(formatCsvAmount(-440, 'BR')).toBe('-4,40');
+    expect(formatCsvAmount(-440, 'INTL')).toBe('-4.40');
+    expect(formatCsvAmount(31240, 'BR')).toBe('312,40');
+    expect(toCsvRow({ ...args, transaction: make({ value: -440 }) }, 'BR', 'pt-BR')[3]).toBe(
+      '-4,40',
+    );
   });
 });

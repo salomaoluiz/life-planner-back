@@ -62,12 +62,14 @@ export class ExportTransactionsUseCase implements UseCaseWithParams<
         (category) => [category.id, category],
       ),
     );
-    const rows: ExportRow[] = transactions.map((transaction) => ({
+    const groups = splitGroups(transactions);
+    const rows: ExportRow[] = groups.ordered.map((transaction) => ({
       belongsTo:
         transaction.owner === OwnerType.USER
           ? localizedPersonal(input.lang)
           : (input.ownerNames[transaction.ownerId] ?? ''),
       categoryPath: categoryPath(transaction, categories, input.lang),
+      splitGroup: transaction.splitId ? groups.codes.get(transaction.splitId) : undefined,
       transaction,
     }));
 
@@ -82,6 +84,30 @@ export class ExportTransactionsUseCase implements UseCaseWithParams<
       filename: csvFilename(input.from, input.to, input.lang),
     };
   }
+}
+
+// Spec 119 FR 37: the parts of a split share a code (`G1`, `G2`, ... in export order) AND sit together, in their order.
+function splitGroups(transactions: TransactionEntity[]) {
+  const codes = new Map<string, string>();
+  const first = new Map<string, number>();
+
+  transactions.forEach((transaction, index) => {
+    if (transaction.splitId && !codes.has(transaction.splitId)) {
+      codes.set(transaction.splitId, `G${codes.size + 1}`);
+      first.set(transaction.splitId, index);
+    }
+  });
+
+  const ordered = transactions
+    .map((transaction, index) => ({
+      key: transaction.splitId ? (first.get(transaction.splitId) as number) : index,
+      position: transaction.splitPosition ?? 0,
+      transaction,
+    }))
+    .sort((a, b) => a.key - b.key || a.position - b.position)
+    .map((item) => item.transaction);
+
+  return { codes, ordered };
 }
 
 // `Parent > Child`; a system category has no owner-visible tree, so its localized label stands.
