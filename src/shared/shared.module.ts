@@ -15,6 +15,7 @@ import { JwtAuthGuard } from './infra/http/guards/JwtAuthGuard';
 import { NestJwtProvider } from './infra/jwt/nest';
 import { Logger } from './infra/logger';
 import { BcbIndexes } from './infra/market-index/bcb';
+import { PgNotifier } from './infra/notifier';
 import { BcryptHasher } from './infra/password-hasher/bcrypt/BcryptHasher';
 import { BrapiQuotes } from './infra/quotes/brapi';
 import { FinnhubQuotes } from './infra/quotes/finnhub';
@@ -35,6 +36,7 @@ import { Scheduler } from './infra/scheduler';
     'IBcbIndexes',
     'IEmbeddings',
     'IScheduler',
+    'INotifier',
     Database,
     EnvModule,
   ],
@@ -46,6 +48,7 @@ import { Scheduler } from './infra/scheduler';
     { provide: 'IPasswordHasher', useClass: BcryptHasher },
     { provide: 'IGithubReleases', useClass: GithubReleases },
     { provide: 'IBuildInfo', useClass: BuildInfoReader },
+    { provide: 'INotifier', useClass: PgNotifier },
     { provide: 'IBrapiQuotes', useClass: BrapiQuotes },
     { provide: 'IFinnhubQuotes', useClass: FinnhubQuotes },
     { provide: 'IFxRates', useClass: FxRates },

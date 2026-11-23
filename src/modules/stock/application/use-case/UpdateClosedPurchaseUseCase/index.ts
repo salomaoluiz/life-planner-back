@@ -9,6 +9,7 @@ import { loadWritablePurchase } from '@stock/application/service/PurchaseAccess'
 import {
   ClosingFinancePosting,
   ClosingRowChoice,
+  noPriceLabel,
   purchaseDescription,
   runClosingPlan,
   toClosingRows,
@@ -113,6 +114,9 @@ export class UpdateClosedPurchaseUseCase {
           date,
           description: purchaseDescription(market.name),
           invoiceMonth: source.creditCardId ? invoiceMonth : undefined,
+          noPriceLabel: noPriceLabel(),
+          owner: purchase.owner,
+          ownerId: purchase.ownerId,
           parts: plan.parts,
           splitId: purchase.splitId,
           total: receiptTotalCents,

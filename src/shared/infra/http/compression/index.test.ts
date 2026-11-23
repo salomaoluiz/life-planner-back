@@ -52,4 +52,17 @@ describe('GIVEN buildCompression', () => {
     expect(res.headers['content-encoding']).toBe('x-custom');
     expect(res.text).toBe(big);
   });
+
+  it('SHOULD NOT compress an event stream (spec 120 FR 26)', async () => {
+    const app = express();
+
+    app.use(buildCompression());
+    app.get('/events', (_req, res) => {
+      res.type('text/event-stream').send(`data: ${'a'.repeat(2000)}\n\n`);
+    });
+
+    const res = await request(app).get('/events').set('Accept-Encoding', 'gzip');
+
+    expect(res.headers['content-encoding']).toBeUndefined();
+  });
 });

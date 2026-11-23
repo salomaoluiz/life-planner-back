@@ -1,5 +1,6 @@
 import { UnprocessableEntityException } from '@nestjs/common';
 
+import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { PurchaseRowRecord } from '@stock/domain/repository';
 import { effectiveFinanceCategoryId, TreeCategory } from '@stock/domain/service/CategoryTree';
 import {
@@ -17,6 +18,9 @@ export interface ClosingFinancePosting {
   date: Date;
   description: string;
   invoiceMonth?: string;
+  noPriceLabel: string;
+  owner: OwnerType;
+  ownerId: string;
   parts: ClosingPlan['parts'];
   total: number;
 }
@@ -97,6 +101,9 @@ export function toClosingRows(
 }
 
 // The closing rules answer 422 with their code (spec 120 §7).
+export function noPriceLabel(language?: 'en-US' | 'pt-BR'): string {
+  return language === 'en-US' ? 'No price' : 'Sem preço';
+}
 export function runClosingPlan(input: Parameters<typeof planClosing>[0]): ClosingPlan {
   try {
     return planClosing(input);
