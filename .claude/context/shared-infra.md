@@ -59,6 +59,10 @@ Spec 115: `RefreshIncomeSeriesJob` (`src/api/investment/v1/job`, day 1 of each m
 
 Spec 116: `@shared/infra/embeddings` (`IEmbeddings`, token `'IEmbeddings'`): `embed(text, { timeoutMs? })` posts to an OpenAI-compatible `{EMBEDDINGS_API_URL}/embeddings` (`EMBEDDINGS_API_KEY`, `EMBEDDINGS_MODEL`, `EMBEDDINGS_DIMENSIONS` default 1024 = the `vector(1024)` column) and returns the vector, or `null` without a key, on timeout (800 ms default), error or a wrong size (never throws, never logs the error). In-memory LRU cache of 1 000 texts for 10 minutes. Only item names and brands are sent. Env getters `embeddingsApiUrl|Key|Model|Dimensions`.
 
+## LLM and Open Food Facts (spec 121)
+
+`@shared/infra/llm` (`ILlm`, token `'ILlm'`): `isEnabled(kind)` and `complete({ kind: 'LIGHT'\|'SEARCH', system, user, schema })` post to an OpenRouter-compatible `{LLM_API_URL}/chat/completions` (`LLM_API_KEY`, `LLM_MODEL_LIGHT|SEARCH`, JSON object output validated with the Zod `schema`; SEARCH adds the `web` plugin; timeouts `LLM_TIMEOUT_LIGHT_MS` 6000 / `LLM_TIMEOUT_SEARCH_MS` 15000) and return the validated answer or `null` (no key, timeout, error, invalid JSON; never throws, never logs the key or prompt). `@shared/infra/open-food-facts` (`IOpenFoodFacts.getProduct(code)`): API v2 product read with `OPEN_FOOD_FACTS_USER_AGENT`, 2 s timeout, product / `null` (not found) / `undefined` (error), LRU of 5 000 codes for 24 h (errors never cached). Env: `LLM_DAILY_LIGHT_LIMIT` (50), `LLM_DAILY_SEARCH_LIMIT` (10), `LLM_USAGE_TIMEZONE` (`America/Sao_Paulo`), `OPEN_FOOD_FACTS_URL`, `OPEN_FOOD_FACTS_TIMEOUT_MS`.
+
 ## Notifier (spec 120)
 
 `@shared/infra/notifier` (`INotifier`, `PgNotifier`): one dedicated `pg` connection per API instance that `LISTEN`s to the channels in use and reconnects (5 s) when it drops; `subscribe(channel, handler)` returns the unsubscribe function. `Database.runInTransaction` (see `data.md`). The compression filter never compresses `text/event-stream`.

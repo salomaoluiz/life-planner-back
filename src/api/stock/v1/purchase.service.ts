@@ -17,6 +17,7 @@ import { SystemCategoryKey, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { ClosingFinancePosting } from '@stock/application/service/PurchaseClosing';
 import { PurchaseRowView, PurchaseView } from '@stock/application/service/PurchaseView';
+import { AddPurchaseRowByCodeUseCase } from '@stock/application/use-case/AddPurchaseRowByCodeUseCase';
 import { ChangePurchaseStatusUseCase } from '@stock/application/use-case/ChangePurchaseStatusUseCase';
 import { ClosePurchaseUseCase } from '@stock/application/use-case/ClosePurchaseUseCase';
 import { ClosingLockUseCase } from '@stock/application/use-case/ClosingLockUseCase';
@@ -129,6 +130,7 @@ function nullable<T>(value: T | undefined): null | T {
 @Injectable()
 export class PurchaseService {
   constructor(
+    private readonly addPurchaseRowByCodeUseCase: AddPurchaseRowByCodeUseCase,
     private readonly changePurchaseStatusUseCase: ChangePurchaseStatusUseCase,
     private readonly closePurchaseUseCase: ClosePurchaseUseCase,
     private readonly closingLockUseCase: ClosingLockUseCase,
@@ -464,6 +466,19 @@ export class PurchaseService {
         id,
       }),
     );
+  }
+
+  // Spec 121 FR 25.
+  async addRowByCode(userId: string, purchaseId: string, code: string, clientId?: string) {
+    const result = await this.addPurchaseRowByCodeUseCase.execute({
+      accessibleOwners: await this.owners(userId),
+      clientId,
+      code,
+      purchaseId,
+      userId,
+    });
+
+    return { row: toPurchaseRowOutput(result.row), source: result.source };
   }
 
   async upsertRow(

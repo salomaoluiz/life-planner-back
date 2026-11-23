@@ -7,6 +7,7 @@ import { CreateTransactionUseCase } from '@finance/application/use-case/CreateTr
 import { DeleteSplitUseCase } from '@finance/application/use-case/DeleteSplitUseCase';
 import { DeleteTransactionUseCase } from '@finance/application/use-case/DeleteTransactionUseCase';
 import { market, purchase, purchaseRow } from '@stock/application/mocks/stock.mocks';
+import { AddPurchaseRowByCodeUseCase } from '@stock/application/use-case/AddPurchaseRowByCodeUseCase';
 import { ChangePurchaseStatusUseCase } from '@stock/application/use-case/ChangePurchaseStatusUseCase';
 import { ClosePurchaseUseCase } from '@stock/application/use-case/ClosePurchaseUseCase';
 import { ClosingLockUseCase } from '@stock/application/use-case/ClosingLockUseCase';
@@ -29,6 +30,7 @@ import { UpsertPurchaseRowUseCase } from '@stock/application/use-case/UpsertPurc
 const userId = 'user-id';
 const familyId = 'family-id';
 const uses = {
+  addRowByCode: AddPurchaseRowByCodeUseCase,
   changeStatus: ChangePurchaseStatusUseCase,
   close: ClosePurchaseUseCase,
   closePreview: GetClosePreviewUseCase,

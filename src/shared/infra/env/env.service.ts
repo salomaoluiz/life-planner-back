@@ -41,6 +41,55 @@ export class EnvService {
     return this.nestConfigService.get('EMBEDDINGS_MODEL');
   }
 
+  // LLM and Open Food Facts (spec 121)
+  get llmApiKey(): Env['LLM_API_KEY'] {
+    return this.nestConfigService.get('LLM_API_KEY');
+  }
+
+  get llmApiUrl(): Env['LLM_API_URL'] {
+    return this.nestConfigService.get('LLM_API_URL');
+  }
+
+  get llmDailyLightLimit(): Env['LLM_DAILY_LIGHT_LIMIT'] {
+    return this.nestConfigService.get('LLM_DAILY_LIGHT_LIMIT');
+  }
+
+  get llmDailySearchLimit(): Env['LLM_DAILY_SEARCH_LIMIT'] {
+    return this.nestConfigService.get('LLM_DAILY_SEARCH_LIMIT');
+  }
+
+  get llmModelLight(): Env['LLM_MODEL_LIGHT'] {
+    return this.nestConfigService.get('LLM_MODEL_LIGHT');
+  }
+
+  get llmModelSearch(): Env['LLM_MODEL_SEARCH'] {
+    return this.nestConfigService.get('LLM_MODEL_SEARCH');
+  }
+
+  get llmTimeoutLightMs(): Env['LLM_TIMEOUT_LIGHT_MS'] {
+    return this.nestConfigService.get('LLM_TIMEOUT_LIGHT_MS');
+  }
+
+  get llmTimeoutSearchMs(): Env['LLM_TIMEOUT_SEARCH_MS'] {
+    return this.nestConfigService.get('LLM_TIMEOUT_SEARCH_MS');
+  }
+
+  get llmUsageTimezone(): Env['LLM_USAGE_TIMEZONE'] {
+    return this.nestConfigService.get('LLM_USAGE_TIMEZONE');
+  }
+
+  get openFoodFactsTimeoutMs(): Env['OPEN_FOOD_FACTS_TIMEOUT_MS'] {
+    return this.nestConfigService.get('OPEN_FOOD_FACTS_TIMEOUT_MS');
+  }
+
+  get openFoodFactsUrl(): Env['OPEN_FOOD_FACTS_URL'] {
+    return this.nestConfigService.get('OPEN_FOOD_FACTS_URL');
+  }
+
+  get openFoodFactsUserAgent(): Env['OPEN_FOOD_FACTS_USER_AGENT'] {
+    return this.nestConfigService.get('OPEN_FOOD_FACTS_USER_AGENT');
+  }
+
   // Investment quotes (spec 104)
   get brapiToken(): Env['BRAPI_TOKEN'] {
     return this.nestConfigService.get('BRAPI_TOKEN');

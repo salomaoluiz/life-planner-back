@@ -75,6 +75,11 @@ describe('purchases', () => {
     expect(service.closingLock).toHaveBeenNthCalledWith(2, userId, id, true);
   });
 
+  it('SHOULD add a row by code with the key (spec 121)', async () => {
+    await controllers.purchases.addRowByCode(request, id, { code: '7891000100103' }, key);
+    expect(service.addRowByCode).toHaveBeenCalledWith(userId, id, '7891000100103', key);
+  });
+
   it('SHOULD upsert AND remove a row with the key', async () => {
     await controllers.purchases.upsertRow(request, id, rowId, { quantity: 2 } as never, key);
     expect(service.upsertRow).toHaveBeenCalledWith(userId, id, rowId, { quantity: 2 }, key);

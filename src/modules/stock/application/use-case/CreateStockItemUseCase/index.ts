@@ -6,6 +6,7 @@ import {
   CreateStockItemInput,
   CreateStockItemSchema,
 } from '@stock/application/dto/CreateStockItem';
+import { assertBarcodeFree, normalizeOrThrow } from '@stock/application/service/BarcodeRules';
 import { ensureOwnerWritable } from '@stock/application/service/OwnerWritable';
 import { assertItemShoppingList } from '@stock/application/service/ShoppingListAccess';
 import { assertStockLimits, loadCatalogRefs } from '@stock/application/service/StockRules';
@@ -57,6 +58,13 @@ export class CreateStockItemUseCase implements UseCaseWithParams<
     }
 
     assertStockLimits(input);
+
+    const barcode = input.barcode === undefined ? undefined : normalizeOrThrow(input.barcode);
+
+    if (barcode) {
+      await assertBarcodeFree(this.stockRepository, target, barcode);
+    }
+
     await loadCatalogRefs(this.catalogRepository, target, input);
 
     if (input.shoppingListId) {
@@ -70,7 +78,7 @@ export class CreateStockItemUseCase implements UseCaseWithParams<
 
     const today = input.today ?? todayUtc();
     const item = await this.stockRepository.create({
-      barcode: input.barcode,
+      barcode,
       brand: input.brand,
       categoryId: input.categoryId,
       description: input.description,

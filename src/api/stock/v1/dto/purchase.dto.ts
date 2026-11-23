@@ -49,6 +49,7 @@ export const StartPurchaseApiSchema = z
   .strict();
 export const UpsertPurchaseRowApiSchema = z
   .object({
+    barcode: z.string().trim().min(1).max(80).optional(),
     description: DescriptionSchema.optional(),
     expirationDate: DayApiSchema.nullable().optional(),
     itemId: z.uuid().optional(),
@@ -289,6 +290,11 @@ export class PendingPurchasesOutput extends createZodDto(
   }),
 ) {}
 export class PurchaseHeaderOutput extends createZodDto(PurchaseHeaderSchema) {}
+export const AddRowByCodeApiSchema = z.object({ code: z.string().trim().min(1).max(80) });
+export class AddRowByCodeBody extends createZodDto(AddRowByCodeApiSchema) {}
+export class PurchaseRowByCodeOutput extends createZodDto(
+  z.object({ row: PurchaseRowSchema, source: z.enum(['ITEM', 'NONE', 'OPEN_FOOD_FACTS']) }),
+) {}
 export class PurchaseRowResultOutput extends createZodDto(
   z.object({
     conflict: z.object({ purchaseId: z.uuid(), userName: z.string() }).nullable(),

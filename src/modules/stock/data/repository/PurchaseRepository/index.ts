@@ -78,6 +78,7 @@ export function toRow(raw: RowWithRelations | StockPurchaseRow): PurchaseRowReco
   const full = raw as RowWithRelations;
 
   return {
+    barcode: raw.barcode ?? undefined,
     checkedAt: raw.checked_at,
     checkedBy: full.checker ? { id: full.checker.id, name: full.checker.name } : undefined,
     description: raw.description ?? undefined,
@@ -174,9 +175,27 @@ export class PurchaseRepository implements IPurchaseRepository {
         const quantity = input?.quantity ?? toNumber(raw.quantity) ?? 0;
         let itemId = input?.itemId ?? raw.item_id;
 
+        // Spec 121 FR 26: a code the owner already has links the row to that item instead of a duplicate.
+        const holder =
+          !itemId && raw.barcode
+            ? await tx.stockItem.findFirst({
+                select: { id: true },
+                where: {
+                  barcode: raw.barcode,
+                  owner: purchase.owner,
+                  owner_id: purchase.owner_id,
+                },
+              })
+            : null;
+
+        if (holder) {
+          itemId = holder.id;
+        }
+
         if (!itemId) {
           const created = await tx.stockItem.create({
             data: {
+              barcode: raw.barcode,
               category_id: input?.newItem?.categoryId,
               description: input?.newItem?.description ?? raw.description ?? '',
               location_id: input?.newItem?.locationId,
@@ -954,6 +973,7 @@ export class PurchaseRepository implements IPurchaseRepository {
         : await tx.stockPurchaseRow.create({
             data: {
               ...fields,
+              barcode: params.barcode,
               checked_by: params.userId,
               description,
               id: params.rowId,

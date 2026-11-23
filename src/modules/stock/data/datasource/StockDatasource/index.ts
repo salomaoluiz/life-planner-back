@@ -326,6 +326,7 @@ export class StockDatasource implements IStockDatasource {
       orderBy: { id: 'asc' },
       where: {
         ...toOwnerWhere(owners),
+        ...(filter?.barcode ? { barcode: filter.barcode } : {}),
         ...(filter?.category_ids ? { category_id: { in: filter.category_ids } } : {}),
         ...(filter?.location_ids ? { location_id: { in: filter.location_ids } } : {}),
       },

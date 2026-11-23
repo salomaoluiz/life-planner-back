@@ -466,5 +466,39 @@
     "p50Ms": null,
     "scenario": "",
     "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
+  "GET /api/v1/stock/barcodes/:code": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 4,
+    "p50Ms": null,
+    "scenario": "code=7891000100103"
+  },
+  "POST /api/v1/stock/item-suggestions": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Calls external providers (Open Food Facts, LLM); writes usage counters (spec 121)."
+  },
+  "GET /api/v1/stock/item-suggestions/usage": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 2,
+    "p50Ms": null,
+    "scenario": ""
+  },
+  "POST /api/v1/stock/purchases/:id/rows/by-code": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
   }
 }

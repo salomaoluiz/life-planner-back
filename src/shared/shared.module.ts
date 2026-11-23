@@ -13,9 +13,11 @@ import { CacheControlInterceptor } from './infra/http/cache-control';
 import { AllExceptionsFilter } from './infra/http/filters/all-exception-filter';
 import { JwtAuthGuard } from './infra/http/guards/JwtAuthGuard';
 import { NestJwtProvider } from './infra/jwt/nest';
+import { Llm } from './infra/llm';
 import { Logger } from './infra/logger';
 import { BcbIndexes } from './infra/market-index/bcb';
 import { PgNotifier } from './infra/notifier';
+import { OpenFoodFacts } from './infra/open-food-facts';
 import { BcryptHasher } from './infra/password-hasher/bcrypt/BcryptHasher';
 import { BrapiQuotes } from './infra/quotes/brapi';
 import { FinnhubQuotes } from './infra/quotes/finnhub';
@@ -35,6 +37,8 @@ import { Scheduler } from './infra/scheduler';
     'IFxRates',
     'IBcbIndexes',
     'IEmbeddings',
+    'ILlm',
+    'IOpenFoodFacts',
     'IScheduler',
     'INotifier',
     Database,
@@ -54,6 +58,8 @@ import { Scheduler } from './infra/scheduler';
     { provide: 'IFxRates', useClass: FxRates },
     { provide: 'IBcbIndexes', useClass: BcbIndexes },
     { provide: 'IEmbeddings', useClass: Embeddings },
+    { provide: 'ILlm', useClass: Llm },
+    { provide: 'IOpenFoodFacts', useClass: OpenFoodFacts },
     { provide: 'IScheduler', useClass: Scheduler },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_GUARD, useClass: JwtAuthGuard },

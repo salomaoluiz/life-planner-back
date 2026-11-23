@@ -244,3 +244,36 @@ describe('shopping list (spec 118)', () => {
     );
   });
 });
+
+describe('barcode (spec 121)', () => {
+  it('SHOULD normalize the new code', async () => {
+    mocks.stock.findByOwners.mockResolvedValue([]);
+
+    await setup.execute({ ...input, barcode: '036000291452' });
+
+    expect(mocks.stock.update).toHaveBeenCalledWith(
+      expect.objectContaining({ barcode: '0036000291452' }),
+    );
+  });
+
+  it('SHOULD clear the code WITHOUT checking conflicts WHEN it is null', async () => {
+    await setup.execute({ ...input, barcode: null });
+
+    expect(mocks.stock.update).toHaveBeenCalledWith(expect.objectContaining({ barcode: null }));
+    expect(mocks.stock.findByOwners).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD answer 409 BARCODE_IN_USE WHEN another item of the owner has the code', async () => {
+    mocks.stock.findByOwners.mockResolvedValue([item([], (f) => f.withId('other'))]);
+
+    await expect(setup.execute({ ...input, barcode: '7891000100103' })).rejects.toMatchObject({
+      response: { code: 'BARCODE_IN_USE', itemId: 'other' },
+    });
+  });
+
+  it('SHOULD refuse an invalid code with 422', async () => {
+    await expect(setup.execute({ ...input, barcode: '7891000100104' })).rejects.toThrow(
+      UnprocessableEntityException,
+    );
+  });
+});

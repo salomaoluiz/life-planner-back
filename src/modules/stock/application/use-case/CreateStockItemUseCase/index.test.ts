@@ -5,6 +5,7 @@ import { ValidationError } from '@shared/domain/error/ValidationError';
 import {
   archivedOwners,
   category,
+  item,
   location,
   shoppingList,
 } from '@stock/application/mocks/stock.mocks';
@@ -129,6 +130,36 @@ describe('shopping list (spec 118)', () => {
     await expect(setup.execute({ ...base, shoppingListId: 'l', stockOnly: true })).rejects.toThrow(
       UnprocessableEntityException,
     );
+    expect(mocks.stock.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('barcode (spec 121)', () => {
+  it('SHOULD store the normalized code', async () => {
+    mocks.stock.findByOwners.mockResolvedValue([]);
+
+    await setup.execute({ ...base, barcode: ' 036000291452 ' });
+
+    expect(mocks.stock.create).toHaveBeenCalledWith(
+      expect.objectContaining({ barcode: '0036000291452' }),
+    );
+  });
+
+  it('SHOULD refuse a wrong check digit with 422 AND write nothing', async () => {
+    await expect(setup.execute({ ...base, barcode: '7891000100104' })).rejects.toThrow(
+      UnprocessableEntityException,
+    );
+    expect(mocks.stock.create).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD answer 409 BARCODE_IN_USE WHEN another item of the owner has the code', async () => {
+    mocks.stock.findByOwners.mockResolvedValue([
+      item([], (f) => f.withDescription('Leite').withId('other')),
+    ]);
+
+    await expect(setup.execute({ ...base, barcode: '7891000100103' })).rejects.toMatchObject({
+      response: { code: 'BARCODE_IN_USE', itemId: 'other' },
+    });
     expect(mocks.stock.create).not.toHaveBeenCalled();
   });
 });

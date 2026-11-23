@@ -3,6 +3,14 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [6.5.0] - 2026-11-23
+
+### Added
+
+- Stock barcodes (spec 121): look an item up by barcode across your stocks (`GET /stock/barcodes/:code`), with codes normalized (UPC-A matches EAN-13) and unique per owner (`409 BARCODE_IN_USE`, `422 BARCODE_INVALID`).
+- Suggestions for a new item from Open Food Facts and an AI provider (`POST /stock/item-suggestions`), with per-user daily limits (`GET /stock/item-suggestions/usage`); without `LLM_API_KEY` only Open Food Facts is used.
+- Shopping mode: scanning a code adds the item, a named row from Open Food Facts or a placeholder (`POST /stock/purchases/:id/rows/by-code`); closing creates the item with the code.
+
 ## [6.4.0] - 2026-11-23
 
 ### Added

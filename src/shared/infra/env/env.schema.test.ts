@@ -20,7 +20,15 @@ describe('validateEnvironment', () => {
       INVESTMENT_QUOTES_JOB_ENABLED: true,
       INVESTMENT_QUOTES_MIN_INTERVAL_MS: 0,
       JWT_EXPIRES_IN: 7200, // Coerced
+      LLM_DAILY_LIGHT_LIMIT: 50,
+      LLM_DAILY_SEARCH_LIMIT: 10,
+      LLM_TIMEOUT_LIGHT_MS: 6000,
+      LLM_TIMEOUT_SEARCH_MS: 15000,
+      LLM_USAGE_TIMEZONE: 'America/Sao_Paulo',
       MARKET_INDEX_JOB_ENABLED: true,
+      OPEN_FOOD_FACTS_TIMEOUT_MS: 2000,
+      OPEN_FOOD_FACTS_URL: 'https://world.openfoodfacts.org',
+      OPEN_FOOD_FACTS_USER_AGENT: 'LifePlanner/1.0',
       PERF_COUNT_QUERIES: false,
       PORT: 4000, // Coerced
       SENTRY_ENABLED: false,

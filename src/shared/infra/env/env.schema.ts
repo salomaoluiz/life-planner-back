@@ -6,6 +6,14 @@ const emptyToUndefined = z
   .optional()
   .transform((value) => (value === '' ? undefined : value));
 
+// Optional string; an empty string (unset compose/.env value) falls back to the default.
+function withDefault(fallback: string) {
+  return z
+    .string()
+    .optional()
+    .transform((value) => (value === undefined || value === '' ? fallback : value));
+}
+
 // Optional integer; an empty string (unset compose/.env value) falls back to the default.
 function optionalInt(min: number, fallback: number) {
   return z.preprocess(
@@ -47,6 +55,20 @@ export const envSchema = z.object({
   EMBEDDINGS_API_URL: emptyToUndefined,
   EMBEDDINGS_DIMENSIONS: optionalInt(1, 1024),
   EMBEDDINGS_MODEL: emptyToUndefined,
+
+  // Stock suggestions by AI (spec 121): an empty key disables the AI steps (Open Food Facts only)
+  LLM_API_KEY: emptyToUndefined,
+  LLM_API_URL: emptyToUndefined,
+  LLM_DAILY_LIGHT_LIMIT: optionalInt(0, 50),
+  LLM_DAILY_SEARCH_LIMIT: optionalInt(0, 10),
+  LLM_MODEL_LIGHT: emptyToUndefined,
+  LLM_MODEL_SEARCH: emptyToUndefined,
+  LLM_TIMEOUT_LIGHT_MS: optionalInt(1, 6000),
+  LLM_TIMEOUT_SEARCH_MS: optionalInt(1, 15000),
+  LLM_USAGE_TIMEZONE: withDefault('America/Sao_Paulo'),
+  OPEN_FOOD_FACTS_TIMEOUT_MS: optionalInt(1, 2000),
+  OPEN_FOOD_FACTS_URL: withDefault('https://world.openfoodfacts.org'),
+  OPEN_FOOD_FACTS_USER_AGENT: withDefault('LifePlanner/1.0'),
 
   // Investment quotes (spec 104): tokens are optional, a missing one disables that source
   BRAPI_TOKEN: emptyToUndefined,

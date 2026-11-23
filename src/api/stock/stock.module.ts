@@ -22,6 +22,11 @@ import {
 } from '@api/stock/v1/stock.controller';
 import { StockService } from '@api/stock/v1/stock.service';
 import {
+  StockBarcodeController,
+  StockItemSuggestionController,
+} from '@api/stock/v1/stockBarcode.controller';
+import { StockBarcodeService } from '@api/stock/v1/stockBarcode.service';
+import {
   StockCategoryController,
   StockLocationController,
 } from '@api/stock/v1/stockCatalog.controller';
@@ -39,6 +44,8 @@ import { UserModule } from '@user/user.module';
     ListPurchaseController,
     ItemPriceController,
     StockSuggestionController,
+    StockBarcodeController,
+    StockItemSuggestionController,
     StockFrequentController,
     StockController,
     StockGestureController,
@@ -49,6 +56,6 @@ import { UserModule } from '@user/user.module';
     PurchaseController,
   ],
   imports: [FamilyModule, FinanceModule, StockModule, UserModule],
-  providers: [PurchaseService, ShoppingListService, StockService],
+  providers: [PurchaseService, ShoppingListService, StockBarcodeService, StockService],
 })
 export class StockAPIModule {}
