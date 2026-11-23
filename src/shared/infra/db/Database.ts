@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 import { PrismaClient } from '@db/client';
 import { EnvService } from '@shared/infra/env/env.service';
@@ -9,6 +10,8 @@ import { QueryCounter } from './QueryCounter';
 @Injectable()
 export class Database {
   prisma: PrismaClient;
+  // Spec 120: a transaction opened by `runInTransaction` that every `client` use inside it joins.
+  private readonly ambient = new AsyncLocalStorage<PrismaClient>();
 
   constructor(private readonly env: EnvService) {
     if (this.env.perfCountQueries) {
@@ -31,6 +34,28 @@ export class Database {
   }
 
   get client(): PrismaClient {
-    return this.prisma;
+    return this.ambient.getStore() ?? this.prisma;
+  }
+
+  // Runs `work` in ONE database transaction shared by every datasource it calls (their own
+  // `$transaction` blocks join it instead of opening another). Nested calls reuse the open one.
+  async runInTransaction<T>(work: () => Promise<T>, timeoutMs = 30_000): Promise<T> {
+    if (this.ambient.getStore()) {
+      return work();
+    }
+
+    return this.prisma.$transaction(
+      async (tx) => {
+        const scoped = new Proxy(tx, {
+          get: (target, property, receiver) =>
+            property === '$transaction'
+              ? async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)
+              : Reflect.get(target, property, receiver),
+        }) as unknown as PrismaClient;
+
+        return this.ambient.run(scoped, work);
+      },
+      { maxWait: timeoutMs, timeout: timeoutMs },
+    );
   }
 }
