@@ -9,7 +9,7 @@ import {
 import { loadWritableList } from '@stock/application/service/ShoppingListAccess';
 import ShoppingListEntity from '@stock/domain/entity/ShoppingListEntity';
 import { StockCatalogStatus } from '@stock/domain/entity/StockCategoryEntity';
-import { IShoppingListRepository } from '@stock/domain/repository';
+import { IMarketRepository, IShoppingListRepository } from '@stock/domain/repository';
 
 // Spec 118 FR 3 and 4: default switch, archive and reactivate (the AUTO rows move inside the datasource
 // transaction).
@@ -20,6 +20,8 @@ export class UpdateShoppingListUseCase implements UseCaseWithParams<
   constructor(
     @Inject('IShoppingListRepository')
     private readonly listRepository: IShoppingListRepository,
+    @Inject('IMarketRepository')
+    private readonly marketRepository: IMarketRepository,
   ) {}
 
   async execute(params: UpdateShoppingListInput): Promise<ShoppingListEntity> {
@@ -54,8 +56,24 @@ export class UpdateShoppingListUseCase implements UseCaseWithParams<
       }
     }
 
+    // Spec 120 FR 10: the default market is an active market of the list owner.
+    if (input.defaultMarketId) {
+      const market = await this.marketRepository.findById(input.defaultMarketId);
+
+      if (
+        !market ||
+        market.owner !== list.owner ||
+        market.ownerId !== list.ownerId ||
+        market.status !== StockCatalogStatus.ACTIVE
+      ) {
+        throw new UnprocessableEntityException('Choose an active market of the same owner');
+      }
+    }
+
     return this.listRepository.update({
       currency: input.currency,
+      defaultFinanceCategoryId: input.defaultFinanceCategoryId,
+      defaultMarketId: input.defaultMarketId,
       id: list.id,
       isDefault: input.isDefault,
       name: input.name,

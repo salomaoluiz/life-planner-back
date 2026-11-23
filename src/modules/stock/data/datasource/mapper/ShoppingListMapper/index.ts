@@ -16,6 +16,8 @@ export class ShoppingListMapper {
     return new ShoppingListEntity({
       createdAt: raw.created_at,
       currency: raw.currency,
+      defaultFinanceCategoryId: raw.default_finance_category_id ?? undefined,
+      defaultMarketId: raw.default_market_id ?? undefined,
       id: raw.id,
       isDefault: raw.is_default,
       name: raw.name,

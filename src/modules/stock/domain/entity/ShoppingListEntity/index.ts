@@ -11,12 +11,17 @@ interface IShoppingListEntity {
   ownerId: string;
   status: StockCatalogStatus;
   updatedAt: Date;
+  // Optional properties
+  defaultFinanceCategoryId?: string;
+  defaultMarketId?: string;
 }
 
 // Spec 118 FR 1: a named shopping list of one owner (a user or a family).
 class ShoppingListEntity {
   createdAt: Date;
   currency: string;
+  defaultFinanceCategoryId?: string;
+  defaultMarketId?: string;
   id: string;
   isDefault: boolean;
   name: string;
@@ -28,6 +33,8 @@ class ShoppingListEntity {
   constructor(params: IShoppingListEntity) {
     this.createdAt = params.createdAt;
     this.currency = params.currency;
+    this.defaultFinanceCategoryId = params.defaultFinanceCategoryId;
+    this.defaultMarketId = params.defaultMarketId;
     this.id = params.id;
     this.isDefault = params.isDefault;
     this.name = params.name;

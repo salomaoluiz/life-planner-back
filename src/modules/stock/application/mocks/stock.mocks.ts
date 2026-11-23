@@ -1,7 +1,9 @@
 import { Test } from '@nestjs/testing';
 
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
+import MarketEntity from '@stock/domain/entity/MarketEntity';
 import StockEntityFixture from '@stock/domain/entity/mocks/StockEntity.fixture';
+import PurchaseEntity, { PurchaseStatuses } from '@stock/domain/entity/PurchaseEntity';
 import ShoppingListEntity from '@stock/domain/entity/ShoppingListEntity';
 import ShoppingListRowEntity, {
   ShoppingListRowOrigins,
@@ -10,7 +12,7 @@ import StockCategoryEntity, { StockCatalogStatus } from '@stock/domain/entity/St
 import { StockUnits } from '@stock/domain/entity/StockEntity';
 import StockLocationEntity from '@stock/domain/entity/StockLocationEntity';
 import StockLotEntity from '@stock/domain/entity/StockLotEntity';
-import { ShoppingRowRecord } from '@stock/domain/repository';
+import { PurchaseRowRecord, ShoppingRowRecord } from '@stock/domain/repository';
 
 export const userId = 'user-id';
 export const familyId = 'family-id';
@@ -156,6 +158,77 @@ export function suggestionRepositoryMock() {
   };
 }
 // An item row (`item` given) or a text row, on `list`.
+export function market(id: string, extra: Partial<MarketEntity> = {}) {
+  return new MarketEntity({
+    createdAt: date,
+    id,
+    name: `Market ${id}`,
+    owner: OwnerType.USER,
+    ownerId: userId,
+    status: StockCatalogStatus.ACTIVE,
+    updatedAt: date,
+    ...extra,
+  });
+}
+export function marketRepositoryMock() {
+  return {
+    create: jest.fn(),
+    deleteByOwner: jest.fn().mockResolvedValue(undefined),
+    findById: jest.fn(),
+    findByOwners: jest.fn().mockResolvedValue([]),
+    update: jest.fn(),
+  };
+}
+export function purchase(id: string, extra: Partial<PurchaseEntity> = {}) {
+  return new PurchaseEntity({
+    currency: 'BRL',
+    id,
+    lastActivityAt: date,
+    listId: 'list-id',
+    marketId: 'market-id',
+    owner: OwnerType.USER,
+    ownerId: userId,
+    purchaseDate: date,
+    startedAt: date,
+    status: PurchaseStatuses.OPEN,
+    ...extra,
+  });
+}
+export function purchaseRepositoryMock() {
+  return {
+    close: jest.fn(),
+    create: jest.fn(),
+    deleteByOwner: jest.fn().mockResolvedValue(undefined),
+    deleteClosed: jest.fn(),
+    deleteRow: jest.fn(),
+    discardIdle: jest.fn().mockResolvedValue(0),
+    findById: jest.fn(),
+    findByList: jest.fn().mockResolvedValue([]),
+    findClosedByList: jest.fn().mockResolvedValue([]),
+    findEventsAfter: jest.fn().mockResolvedValue([]),
+    findLastPrices: jest.fn().mockResolvedValue(new Map()),
+    findOtherCarts: jest.fn().mockResolvedValue([]),
+    findPending: jest.fn().mockResolvedValue([]),
+    findPriceHistory: jest.fn().mockResolvedValue([]),
+    findRows: jest.fn().mockResolvedValue([]),
+    findUsedRowIds: jest.fn().mockResolvedValue([]),
+    mergeInto: jest.fn(),
+    setClosing: jest.fn(),
+    transition: jest.fn(),
+    updateClosed: jest.fn(),
+    upsertRow: jest.fn(),
+  };
+}
+export function purchaseRow(id: string, extra: Partial<PurchaseRowRecord> = {}): PurchaseRowRecord {
+  return {
+    checkedAt: date,
+    id,
+    purchaseId: 'purchase-id',
+    state: 'IN_CART',
+    unknownPrice: false,
+    ...extra,
+  };
+}
 export function shoppingRow(
   id: string,
   list: ShoppingListEntity,
