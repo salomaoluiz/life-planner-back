@@ -144,3 +144,30 @@ describe('full replacement (FR 18)', () => {
     );
   });
 });
+
+describe('stock purchase split (spec 120 FR 40)', () => {
+  it('SHOULD refuse the parts from finance (422) AND still allow paid', async () => {
+    spies.getSplitUseCase.execute.mockResolvedValue({
+      ...mocks.split,
+      stockPurchaseId: 'purchase-1',
+    });
+
+    await expect(
+      setup.execute({
+        accessibleOwners: mocks.accessibleOwners,
+        date: mocks.split.date,
+        description: 'x',
+        id: mocks.split.id,
+        parts: [],
+      }),
+    ).rejects.toThrow('SPLIT_FROM_STOCK_PURCHASE');
+    expect(spies.splitRepository.updateSplit).not.toHaveBeenCalled();
+
+    await setup.execute({
+      accessibleOwners: mocks.accessibleOwners,
+      id: mocks.split.id,
+      paid: true,
+    });
+    expect(spies.splitRepository.setSplitPaid).toHaveBeenCalledWith(mocks.split.id, true);
+  });
+});

@@ -80,6 +80,7 @@ interface ITransactionEntity {
   refundedTransactionId?: null | string;
   // Spec 107: set on the rows managed by another module.
   externalLock?: null | TransactionExternalLock;
+  stockPurchaseId?: null | string;
   // Spec 043: the tags of the row, in the stored order.
   tags?: TagRef[];
   // Spec 119: set on the parts of a split; `descriptionInherited` when the row stores the header description.
@@ -141,6 +142,7 @@ class TransactionEntity {
   refundedTransactionId: null | string;
   splitId: null | string;
   splitPosition: null | number;
+  stockPurchaseId: null | string;
   tags: TagRef[];
   transferId: null | string;
   type: TransactionType;
@@ -183,6 +185,7 @@ class TransactionEntity {
     this.refundedPlanId = params.refundedPlanId ?? null;
     this.refundedTransactionId = params.refundedTransactionId ?? null;
     this.externalLock = params.externalLock ?? null;
+    this.stockPurchaseId = params.stockPurchaseId ?? null;
     this.tags = params.tags ?? [];
     this.splitId = params.splitId ?? null;
     this.splitPosition = params.splitPosition ?? null;

@@ -198,6 +198,7 @@ export class FinanceTransactionRepository implements IFinanceTransactionReposito
       projected: row.projected,
       recurrenceId: row.recurrence_id,
       splitId: row.split_id,
+      stockPurchaseId: row.stock_purchase_id,
       type: TransactionType[row.type],
     };
   }

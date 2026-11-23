@@ -14,6 +14,7 @@ import {
   INVESTMENT_KEYS,
   INVESTMENT_ROW_USE_OPERATION,
   SPLIT_ROW_USE_SPLIT,
+  TRANSACTION_FROM_STOCK_PURCHASE,
   TRANSFER_KEYS,
   TRANSFER_ROW_USE_TRANSFER,
 } from '@finance/domain/entity/SystemCategory';
@@ -67,6 +68,11 @@ export class DeleteTransactionUseCase implements UseCaseWithParams<DeleteTransac
         code: EXTERNALLY_LOCKED_CODE,
         message: EXTERNALLY_LOCKED_MESSAGE,
       });
+    }
+
+    // Spec 120 FR 40: the posting of a stock purchase is deleted through the purchase.
+    if (transaction.stockPurchaseId !== null && !input.fromStockPurchase) {
+      throw new UnprocessableEntityException(TRANSACTION_FROM_STOCK_PURCHASE);
     }
 
     // Spec 119 FR 21: the parts of a split change only through the split.

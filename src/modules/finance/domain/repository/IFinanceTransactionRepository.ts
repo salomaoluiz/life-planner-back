@@ -84,6 +84,7 @@ type TransactionScalars = { category: Pick<TransactionCategorySummary, 'systemKe
   | 'projected'
   | 'recurrenceId'
   | 'splitId'
+  | 'stockPurchaseId'
   | 'type'
 >;
 interface UnpaidAccountRow {

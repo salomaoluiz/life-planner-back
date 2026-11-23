@@ -10,6 +10,7 @@ import {
 import { EnsureTransactionConsistencyUseCase } from '@finance/application/use-case/EnsureTransactionConsistencyUseCase';
 import { GetSplitUseCase } from '@finance/application/use-case/GetSplitUseCase';
 import SplitEntity from '@finance/domain/entity/SplitEntity';
+import { SPLIT_FROM_STOCK_PURCHASE } from '@finance/domain/entity/SystemCategory';
 import TransactionEntity from '@finance/domain/entity/TransactionEntity';
 import {
   IFinanceAccountRepository,
@@ -50,6 +51,11 @@ export class UpdateSplitUseCase implements UseCaseWithParams<UpdateSplitInput, U
     const stored = await this.getSplitUseCase.execute(input);
 
     ensureOwnerWritable(input.accessibleOwners, stored);
+
+    // Spec 120 FR 40: only `paid` (spec 097) stays allowed from finance on a purchase split.
+    if (stored.stockPurchaseId !== null && !input.fromStockPurchase && input.parts !== undefined) {
+      throw new UnprocessableEntityException(SPLIT_FROM_STOCK_PURCHASE);
+    }
 
     if (input.parts === undefined) {
       if (stored.accountId === null) {

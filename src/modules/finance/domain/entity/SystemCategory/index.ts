@@ -92,3 +92,6 @@ export function isSplitAdjustmentCategoryId(id: string): boolean {
 }
 
 export const SPLIT_ROW_USE_SPLIT = 'SPLIT_ROW_USE_SPLIT';
+// Spec 120 FR 40: a split or transaction created by a stock purchase changes only through the purchase.
+export const SPLIT_FROM_STOCK_PURCHASE = 'SPLIT_FROM_STOCK_PURCHASE';
+export const TRANSACTION_FROM_STOCK_PURCHASE = 'TRANSACTION_FROM_STOCK_PURCHASE';

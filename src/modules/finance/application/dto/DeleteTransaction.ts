@@ -5,6 +5,7 @@ import { InstallmentEditScope } from '@finance/domain/enum';
 
 export const DeleteTransactionSchema = z.object({
   accessibleOwners: AccessibleOwnersSchema,
+  fromStockPurchase: z.boolean().optional(),
   id: z.string().min(1),
   // Required on a recurring occurrence (spec 034 FR 29): only ONLY_THIS is deleted here.
   scope: z.enum(InstallmentEditScope).optional(),

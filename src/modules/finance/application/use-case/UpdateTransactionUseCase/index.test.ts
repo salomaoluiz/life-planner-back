@@ -881,3 +881,17 @@ describe('split parts (spec 119)', () => {
     expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
   });
 });
+
+describe('stock purchase posting (spec 120 FR 40)', () => {
+  it('SHOULD refuse edits (422) but let paid through', async () => {
+    mocks.transactionRepository.findTransactionScalarsById.mockResolvedValue({
+      ...mocks.transaction,
+      stockPurchaseId: 'purchase-1',
+    });
+
+    await expect(run({ value: 1 })).rejects.toThrow(
+      new UnprocessableEntityException('TRANSACTION_FROM_STOCK_PURCHASE'),
+    );
+    expect(mocks.transactionRepository.updateTransaction).not.toHaveBeenCalled();
+  });
+});
