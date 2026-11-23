@@ -163,6 +163,8 @@ export const TransactionItemApiSchema = z.strictObject({
   descriptionInherited: z.literal(true).optional(),
   splitId: z.uuid().optional(),
   splitPosition: z.number().int().optional(),
+  // Spec 120 FR 40: the posting of a stock purchase (single-category case).
+  stockPurchaseId: z.uuid().optional(),
   // Spec 098: out, in and fee rows of a transfer (`lookups.transfers[transferId]`).
   transferId: z.uuid().optional(),
   type: TransactionTypeApiSchema,
@@ -202,6 +204,8 @@ export const TransactionLookupsApiSchema = z.strictObject({
         paid: z.boolean().optional(),
         partCount: z.number().int(),
         recurrenceId: z.uuid().optional(),
+        // Spec 120 FR 40: the purchase that owns the split (read-only in finance).
+        stockPurchaseId: z.uuid().optional(),
         total: z.number().int(),
         type: TransactionTypeApiSchema,
       }),
