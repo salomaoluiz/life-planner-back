@@ -308,19 +308,7 @@ export class PurchaseRepository implements IPurchaseRepository {
         where: { id: purchase.id },
       });
 
-      // The finance rows point back to the purchase (read-only in finance, FR 40).
-      if (reference.splitId) {
-        await tx.financialSplit.update({
-          data: { stock_purchase_id: purchase.id },
-          where: { id: reference.splitId },
-        });
-      }
-      if (reference.transactionId) {
-        await tx.financialTransaction.update({
-          data: { stock_purchase_id: purchase.id },
-          where: { id: reference.transactionId },
-        });
-      }
+      await this.linkFinance(tx, purchase.id, reference);
 
       await emit(
         tx,
@@ -801,7 +789,7 @@ export class PurchaseRepository implements IPurchaseRepository {
 
   async updateClosed(
     params: Parameters<IPurchaseRepository['updateClosed']>[0],
-    repostFinance: (rows: PurchaseRowRecord[]) => Promise<void>,
+    repostFinance: (rows: PurchaseRowRecord[]) => Promise<FinanceReference>,
   ): Promise<PurchaseWithRows> {
     return this.db.runInTransaction(async () => {
       const tx = this.db.client;
@@ -828,7 +816,7 @@ export class PurchaseRepository implements IPurchaseRepository {
         })
       ).map(toRow);
 
-      await repostFinance(rows);
+      const reference = await repostFinance(rows);
 
       const updated = await tx.stockPurchase.update({
         data: {
@@ -838,9 +826,13 @@ export class PurchaseRepository implements IPurchaseRepository {
           market_id: params.marketId,
           purchase_date: params.date,
           receipt_total_cents: params.receiptTotalCents,
+          split_id: reference.splitId ?? null,
+          transaction_id: reference.transactionId ?? null,
         },
         where: { id: purchase.id },
       });
+
+      await this.linkFinance(tx, purchase.id, reference);
 
       // FR 39: the price history of the purchase is rewritten.
       await tx.stockPriceHistory.deleteMany({ where: { purchase_id: purchase.id } });
@@ -971,6 +963,26 @@ export class PurchaseRepository implements IPurchaseRepository {
 
       return { conflict, convertedToOutside: conflict !== undefined, row: toRow(saved) };
     });
+  }
+
+  // The finance rows point back to the purchase (read-only in finance, FR 40).
+  private async linkFinance(
+    tx: Tx,
+    purchaseId: string,
+    reference: FinanceReference,
+  ): Promise<void> {
+    if (reference.splitId) {
+      await tx.financialSplit.update({
+        data: { stock_purchase_id: purchaseId },
+        where: { id: reference.splitId },
+      });
+    }
+    if (reference.transactionId) {
+      await tx.financialTransaction.update({
+        data: { stock_purchase_id: purchaseId },
+        where: { id: reference.transactionId },
+      });
+    }
   }
 
   // FR 38: AUTO rows follow the new stock (already recomputed by the sync); manual rows are reduced or removed.

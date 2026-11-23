@@ -109,7 +109,7 @@ export type IPurchaseRepository = {
       rowPrices?: { lineTotalCents?: number; rowId: string; unitPriceCents?: number }[];
       userId: string;
     },
-    repostFinance: (rows: PurchaseRowRecord[]) => Promise<void>,
+    repostFinance: (rows: PurchaseRowRecord[]) => Promise<FinanceReference>,
   ): Promise<PurchaseWithRows>;
   upsertRow(params: UpsertPurchaseRowParams): Promise<UpsertPurchaseRowResult>;
 };

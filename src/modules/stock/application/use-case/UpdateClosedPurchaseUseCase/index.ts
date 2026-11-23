@@ -27,7 +27,7 @@ import {
 // Rebuilds the finance posting of a closed purchase (spec 120 FR 39); the API sends it to the finance module.
 export type RepostClosingFinance = (
   posting: ClosingFinancePosting & FinanceReference,
-) => Promise<void>;
+) => Promise<FinanceReference>;
 
 // Spec 120 FR 39: prices, receipt total, market, date and source of a closed purchase. Quantity, item and
 // expiration edits (lot rule) are not offered yet.
