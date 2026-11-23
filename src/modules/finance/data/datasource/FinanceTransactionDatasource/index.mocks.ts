@@ -64,6 +64,7 @@ const transactionMock: FinancialTransactionWithRelations = {
   refunded_transaction_id: null,
   split_id: null,
   split_position: null,
+  stock_purchase_id: null,
   transfer_id: null,
   type: 'EXPENSE',
   updated_at: faker.date.recent(),

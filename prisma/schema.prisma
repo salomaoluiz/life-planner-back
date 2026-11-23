@@ -31,6 +31,8 @@ model User {
   stock_movements    StockMovement[]
   shopping_list_rows StockShoppingListRow[]
   restock_dismissals StockRestockDismissal[]
+  purchases_started  StockPurchase[]           @relation("PurchaseStarter")
+  purchase_rows      StockPurchaseRow[]        @relation("PurchaseRowChecker")
 }
 
 model Family {
@@ -282,6 +284,7 @@ model FinancialTransaction {
   transfer_id              String?
   // Spec 119: the parts of a split are ordinary rows that change only through the split.
   split_id                 String?
+  stock_purchase_id        String?                  @db.Uuid
   // Spec 119: true on a part without its own description (it stores the header description).
   description_inherited    Boolean                  @default(false)
   // Spec 119: order of the part inside its split (0-based); null outside a split.
@@ -302,6 +305,7 @@ model FinancialTransaction {
   recurrence           FinancialRecurrence?      @relation(fields: [recurrence_id], references: [id], onDelete: Restrict)
   transfer             FinancialTransfer?        @relation(fields: [transfer_id], references: [id], onDelete: Restrict)
   split                FinancialSplit?           @relation(fields: [split_id], references: [id], onDelete: Restrict)
+  stock_purchase       StockPurchase?            @relation("PurchaseTransaction", fields: [stock_purchase_id], references: [id], onDelete: SetNull)
   investment_operation InvestmentOperation?
   investment_income    InvestmentIncome?
 
@@ -442,6 +446,8 @@ model StockItem {
   shopping_list      StockShoppingList?     @relation(fields: [shopping_list_id], references: [id], onDelete: SetNull)
   shopping_list_rows StockShoppingListRow[]
   restock_dismissal  StockRestockDismissal?
+  purchase_rows      StockPurchaseRow[]
+  price_history      StockPriceHistory[]
 
   @@index([owner, owner_id])
   @@index([owner, owner_id, category_id])
@@ -457,18 +463,22 @@ enum ShoppingListRowOrigin {
 
 // Spec 118: the partial unique indexes (one active default and one active name per owner) live in the migration.
 model StockShoppingList {
-  id         String        @id @default(uuid())
-  owner      OwnerType
-  owner_id   String
-  name       String        @db.VarChar(50)
-  is_default Boolean       @default(false)
-  status     AccountStatus @default(ACTIVE)
-  currency   String        @default("BRL") @db.VarChar(3)
-  created_at DateTime      @default(now()) @db.Timestamptz(6)
-  updated_at DateTime      @updatedAt @db.Timestamptz(6)
+  id                          String        @id @default(uuid())
+  owner                       OwnerType
+  owner_id                    String
+  name                        String        @db.VarChar(50)
+  is_default                  Boolean       @default(false)
+  status                      AccountStatus @default(ACTIVE)
+  currency                    String        @default("BRL") @db.VarChar(3)
+  default_market_id           String?
+  default_finance_category_id String?
+  created_at                  DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at                  DateTime      @updatedAt @db.Timestamptz(6)
 
-  items StockItem[]
-  rows  StockShoppingListRow[]
+  items          StockItem[]
+  rows           StockShoppingListRow[]
+  default_market StockMarket?           @relation(fields: [default_market_id], references: [id], onDelete: SetNull)
+  purchases      StockPurchase[]
 
   @@index([owner, owner_id])
   @@map("stock_shopping_lists")
@@ -539,9 +549,10 @@ model StockMovement {
   client_id  String?              @db.Uuid
   created_at DateTime             @default(now()) @db.Timestamptz(6)
 
-  item StockItem @relation(fields: [item_id], references: [id], onDelete: Cascade)
-  lot  StockLot  @relation(fields: [lot_id], references: [id], onDelete: Cascade)
-  user User?     @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  item          StockItem          @relation(fields: [item_id], references: [id], onDelete: Cascade)
+  lot           StockLot           @relation(fields: [lot_id], references: [id], onDelete: Cascade)
+  user          User?              @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  purchase_rows StockPurchaseRow[]
 
   @@index([item_id, created_at(sort: Desc), id(sort: Desc)])
   @@index([gesture_id])
@@ -1362,13 +1373,15 @@ model FinancialSplit {
   owner             OwnerType
   owner_id          String
   created_by        String
+  stock_purchase_id String?   @unique @db.Uuid
   created_at        DateTime  @default(now()) @db.Timestamptz(6)
   updated_at        DateTime  @updatedAt @db.Timestamptz(6)
 
-  account      FinancialAccount?      @relation(fields: [account_id], references: [id], onDelete: Restrict)
-  credit_card  FinancialCreditCard?   @relation(fields: [credit_card_id], references: [id], onDelete: Restrict)
-  recurrence   FinancialRecurrence?   @relation(fields: [recurrence_id], references: [id], onDelete: Restrict)
-  transactions FinancialTransaction[]
+  account        FinancialAccount?      @relation(fields: [account_id], references: [id], onDelete: Restrict)
+  credit_card    FinancialCreditCard?   @relation(fields: [credit_card_id], references: [id], onDelete: Restrict)
+  recurrence     FinancialRecurrence?   @relation(fields: [recurrence_id], references: [id], onDelete: Restrict)
+  transactions   FinancialTransaction[]
+  stock_purchase StockPurchase?         @relation("PurchaseSplit", fields: [stock_purchase_id], references: [id], onDelete: SetNull)
 
   @@unique([recurrence_id, occurrence_number])
   @@index([owner, owner_id, date])
@@ -1407,4 +1420,142 @@ model FinancialRecurrencePartTag {
   @@id([part_id, tag_id])
   @@index([tag_id])
   @@map("financial_recurrence_part_tags")
+}
+
+enum StockPurchaseStatus {
+  OPEN
+  ENDED
+  CLOSED
+  DISCARDED
+}
+
+enum PurchasePriceInput {
+  UNIT
+  LINE
+}
+
+enum PurchaseRowState {
+  IN_CART
+  NOT_FOUND
+}
+
+// Spec 120: markets of an owner (archived, never deleted: purchases and prices point to them).
+model StockMarket {
+  id           String        @id @default(uuid())
+  owner        OwnerType
+  owner_id     String
+  name         String        @db.VarChar(60)
+  neighborhood String?       @db.VarChar(60)
+  status       AccountStatus @default(ACTIVE)
+  created_at   DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime      @updatedAt @db.Timestamptz(6)
+
+  lists         StockShoppingList[]
+  purchases     StockPurchase[]
+  price_history StockPriceHistory[]
+
+  @@index([owner, owner_id])
+  @@map("stock_markets")
+}
+
+model StockPurchase {
+  id                  String              @id @db.Uuid
+  list_id             String
+  owner               OwnerType
+  owner_id            String
+  market_id           String
+  status              StockPurchaseStatus @default(OPEN)
+  started_by          String?
+  closed_by           String?
+  started_at          DateTime            @default(now()) @db.Timestamptz(6)
+  ended_at            DateTime?           @db.Timestamptz(6)
+  closed_at           DateTime?           @db.Timestamptz(6)
+  last_activity_at    DateTime            @default(now()) @db.Timestamptz(6)
+  closing_by          String?
+  closing_at          DateTime?           @db.Timestamptz(6)
+  purchase_date       DateTime            @db.Date
+  receipt_total_cents Int?
+  currency            String              @default("BRL") @db.VarChar(3)
+  account_id          String?
+  credit_card_id      String?
+  invoice_month       String?             @db.Char(7)
+  split_id            String?
+  transaction_id      String?
+  created_at          DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime            @updatedAt @db.Timestamptz(6)
+
+  list          StockShoppingList      @relation(fields: [list_id], references: [id], onDelete: Restrict)
+  market        StockMarket            @relation(fields: [market_id], references: [id], onDelete: Restrict)
+  starter       User?                  @relation("PurchaseStarter", fields: [started_by], references: [id], onDelete: SetNull)
+  rows          StockPurchaseRow[]
+  price_history StockPriceHistory[]
+  split         FinancialSplit?        @relation("PurchaseSplit")
+  transactions  FinancialTransaction[] @relation("PurchaseTransaction")
+
+  @@index([list_id, status])
+  @@index([owner, owner_id, status, last_activity_at])
+  @@map("stock_purchases")
+}
+
+model StockPurchaseRow {
+  id                String              @id @db.Uuid
+  purchase_id       String              @db.Uuid
+  list_row_id       String?
+  item_id           String?
+  description       String?             @db.VarChar(100)
+  unit              StockUnit?
+  quantity          Decimal?            @db.Decimal(14, 3)
+  unit_price_cents  Int?
+  line_total_cents  Int?
+  price_input       PurchasePriceInput?
+  unknown_price     Boolean             @default(false)
+  expiration_date   DateTime?           @db.Date
+  state             PurchaseRowState    @default(IN_CART)
+  entry_movement_id String?
+  checked_by        String?
+  checked_at        DateTime            @default(now()) @db.Timestamptz(6)
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime            @updatedAt @db.Timestamptz(6)
+
+  purchase       StockPurchase  @relation(fields: [purchase_id], references: [id], onDelete: Cascade)
+  item           StockItem?     @relation(fields: [item_id], references: [id], onDelete: SetNull)
+  entry_movement StockMovement? @relation(fields: [entry_movement_id], references: [id], onDelete: SetNull)
+  checker        User?          @relation("PurchaseRowChecker", fields: [checked_by], references: [id], onDelete: SetNull)
+
+  @@index([purchase_id])
+  @@index([list_row_id])
+  @@map("stock_purchase_rows")
+}
+
+model StockPurchaseEvent {
+  id          BigInt   @id @default(autoincrement())
+  list_id     String
+  purchase_id String   @db.Uuid
+  type        String   @db.VarChar(40)
+  payload     Json
+  client_id   String?  @unique @db.Uuid
+  user_id     String?
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([list_id, id])
+  @@map("stock_purchase_events")
+}
+
+model StockPriceHistory {
+  id               String   @id @default(uuid())
+  item_id          String
+  market_id        String
+  purchase_id      String   @db.Uuid
+  date             DateTime @db.Date
+  unit_price_cents Int
+  currency         String   @default("BRL") @db.VarChar(3)
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+
+  item     StockItem     @relation(fields: [item_id], references: [id], onDelete: Cascade)
+  market   StockMarket   @relation(fields: [market_id], references: [id], onDelete: Restrict)
+  purchase StockPurchase @relation(fields: [purchase_id], references: [id], onDelete: Cascade)
+
+  @@index([item_id, market_id, date(sort: Desc)])
+  @@index([item_id, date(sort: Desc)])
+  @@map("stock_price_history")
 }
