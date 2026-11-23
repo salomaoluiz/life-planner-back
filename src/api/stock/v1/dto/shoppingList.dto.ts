@@ -47,6 +47,8 @@ export const CreateShoppingListApiSchema = z
 export const UpdateShoppingListApiSchema = z
   .object({
     currency: CurrencyApiSchema,
+    defaultFinanceCategoryId: z.uuid().nullable(),
+    defaultMarketId: z.uuid().nullable(),
     isDefault: z.boolean(),
     name: CatalogNameSchema,
     status: z.enum(StockCatalogStatus),
@@ -82,6 +84,8 @@ export const UpdateShoppingListRowApiSchema = z
 
 const ListSchema = z.object({
   currency: CurrencyApiSchema,
+  defaultFinanceCategoryId: z.uuid().nullable(),
+  defaultMarketId: z.uuid().nullable(),
   id: z.uuid(),
   isDefault: z.boolean(),
   name: z.string(),

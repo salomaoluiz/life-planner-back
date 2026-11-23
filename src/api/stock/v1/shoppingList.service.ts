@@ -28,6 +28,8 @@ import { StockUnits } from '@stock/domain/entity/StockEntity';
 function toListOutput(list: ShoppingListEntity) {
   return {
     currency: list.currency as 'BRL' | 'EUR' | 'USD',
+    defaultFinanceCategoryId: list.defaultFinanceCategoryId ?? null,
+    defaultMarketId: list.defaultMarketId ?? null,
     id: list.id,
     isDefault: list.isDefault,
     name: list.name,
