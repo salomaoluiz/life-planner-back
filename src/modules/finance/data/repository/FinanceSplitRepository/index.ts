@@ -98,6 +98,7 @@ export class FinanceSplitRepository implements IFinanceSplitRepository {
       paid: record.paid,
       partCount: record.transactions.length,
       recurrenceId: record.recurrence_id,
+      stockPurchaseId: record.stock_purchase_id,
       total: totalOf(record.transactions.map(toRulePart)),
       type: typeOf(record.transactions.map(toRulePart)),
     }));

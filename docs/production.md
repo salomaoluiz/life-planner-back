@@ -140,3 +140,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer <staging-jwt>
 ## 8. pgvector (spec 116)
 
 The stock name suggestions use the `vector` extension. Install it on every PostgreSQL server (production, staging and the local test database) **before** the release that carries migration `stock_item_base`, because `CREATE EXTENSION vector` needs it available (for example the `pgvector` package or an image that ships it). Then set `EMBEDDINGS_API_URL`, `EMBEDDINGS_API_KEY` and `EMBEDDINGS_MODEL` (an OpenAI-compatible embeddings endpoint, 1024 dimensions) and run `yarn stock:embeddings:backfill` once after the deploy; without a key the suggestions use trigram only. Take a backup first: the migration moves quantities into lots and drops the old columns, and it is not reversible.
+
+## Stock shopping-mode event stream (spec 120)
+
+`GET /api/v1/stock/shopping-lists/:id/events` is a long-lived `text/event-stream` response. The reverse proxy in front of the API must pass it without buffering and with a long read timeout (for example `proxy_buffering off;` and `proxy_read_timeout 3600s;` for that location; the API already sends `X-Accel-Buffering: no` and `Cache-Control: no-cache`). The API closes a stream after 30 minutes and the app reconnects. Without the change the app falls back to reconnect with `Last-Event-ID` replay, only with more delay.

@@ -23,6 +23,8 @@ interface ISplitEntity {
   parts: TransactionEntity[];
   recurrenceId: null | string;
   updatedAt: Date;
+  // Spec 120 FR 40: the purchase that owns the split (read-only in finance).
+  stockPurchaseId?: null | string;
 }
 
 // Spec 119: the header of a split; the parts are ordinary transaction rows (`splitId`), in the stored order.
@@ -43,6 +45,7 @@ class SplitEntity {
   paid: boolean | null;
   parts: TransactionEntity[];
   recurrenceId: null | string;
+  stockPurchaseId: null | string;
   // Magnitude of the net (FR 13) and its direction.
   total: number;
   type: TransactionType;
@@ -65,6 +68,7 @@ class SplitEntity {
     this.paid = params.paid;
     this.parts = params.parts;
     this.recurrenceId = params.recurrenceId;
+    this.stockPurchaseId = params.stockPurchaseId ?? null;
     this.total = totalOf(params.parts);
     this.type = typeOf(params.parts);
     this.updatedAt = params.updatedAt;

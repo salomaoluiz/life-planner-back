@@ -58,6 +58,7 @@ export interface SplitSummary {
   paid: boolean | null;
   partCount: number;
   recurrenceId: null | string;
+  stockPurchaseId: null | string;
   total: number;
   type: TransactionType;
 }

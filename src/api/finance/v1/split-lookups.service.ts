@@ -43,6 +43,7 @@ export class SplitLookupsService {
               paid: summary.paid ?? undefined,
               partCount: summary.partCount,
               recurrenceId: summary.recurrenceId ?? undefined,
+              stockPurchaseId: summary.stockPurchaseId ?? undefined,
               total: summary.total,
               type: summary.type,
             },

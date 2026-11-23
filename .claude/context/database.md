@@ -140,3 +140,7 @@ Migration `investment_income_series`: enum `InvestmentIncomeSeriesEndReason` (`E
 The same migration adds deferred triggers `investment_income_series_bump_version` (any series write) and `investment_operations_bump_version` (an operation write on an asset that has a series in finance) that bump `finance_owner_versions` of the asset's owner, because finance reads merge the projected incomes of the series (spec 092/115).
 
 Spec 119 migrations `20261119120000_split_system_key` and `20261119120100_split_transactions`: `financial_splits`, `financial_transactions.split_id/description_inherited/split_position`, CHECKs (`value > 0` or a part with `value <> 0`; a part has no installment/transfer/projected/prepayment/refund/recurrence), `financial_recurrence_parts` + `_part_tags` and `financial_recurrences.split` (tables only, unused yet), the seeded `SPLIT_ADJUSTMENT` category and owner-version triggers.
+
+## Spec 120 tables
+
+`stock_markets`, `stock_purchases`, `stock_purchase_rows`, `stock_purchase_events` (bigserial id, unique `client_id`), `stock_price_history`; nullable `stock_purchase_id` (uuid FK, SET NULL) on `financial_splits` (unique) and `financial_transactions`; `default_market_id`/`default_finance_category_id` on `stock_shopping_lists`. Migration `20261123120000_stock_shopping_mode_and_closing`. Stock tables carry no owner-version trigger (no stock ETag yet).

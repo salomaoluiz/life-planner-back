@@ -76,6 +76,7 @@ export const SplitApiSchema = z.strictObject({
   paid: z.boolean().optional(),
   parts: z.array(TransactionItemApiSchema),
   recurrenceId: z.uuid().optional(),
+  stockPurchaseId: z.uuid().optional(),
   // Magnitude of the net of the parts and its direction (FR 13).
   total: z.number().int(),
   type: TransactionTypeApiSchema,

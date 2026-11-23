@@ -199,6 +199,7 @@ export type TransactionScalarsRecord = { category: { system_key: null | string }
   | 'projected'
   | 'recurrence_id'
   | 'split_id'
+  | 'stock_purchase_id'
   | 'type'
 >;
 export type UnpaidAccountRowRecord = { split: { description: string } | null } & Pick<

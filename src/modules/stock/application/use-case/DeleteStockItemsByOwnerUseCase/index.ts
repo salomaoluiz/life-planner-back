@@ -7,6 +7,8 @@ import {
   DeleteStockItemsByOwnerSchema,
 } from '@stock/application/dto/DeleteStockItemsByOwner';
 import {
+  IMarketRepository,
+  IPurchaseRepository,
   IShoppingListRepository,
   IStockCatalogRepository,
   IStockRepository,
@@ -25,15 +27,23 @@ export class DeleteStockItemsByOwnerUseCase implements UseCaseWithParams<
     private readonly catalogRepository: IStockCatalogRepository,
     @Inject('IShoppingListRepository')
     private readonly listRepository: IShoppingListRepository,
+    @Inject('IMarketRepository')
+    private readonly marketRepository: IMarketRepository,
+    @Inject('IPurchaseRepository')
+    private readonly purchaseRepository: IPurchaseRepository,
   ) {}
 
   async execute(params: DeleteStockItemsByOwnerInput): Promise<number> {
     const input = validate(DeleteStockItemsByOwnerSchema, params);
+    // Spec 120: purchases (with their events and price history) first, they point to lists and markets.
+    await this.purchaseRepository.deleteByOwner(input);
+
     const deleted = await this.stockRepository.deleteByOwner(input);
 
     await this.catalogRepository.deleteByOwner(input);
     // Spec 118: the lists go after the items (rows cascade, dismissals went with the items).
     await this.listRepository.deleteByOwner(input);
+    await this.marketRepository.deleteByOwner(input);
 
     return deleted;
   }

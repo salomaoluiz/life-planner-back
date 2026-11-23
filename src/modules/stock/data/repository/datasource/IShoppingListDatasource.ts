@@ -56,6 +56,8 @@ export type ShoppingRowWithItem = {
 // `undefined` = unchanged (Prisma no-op), `null` = set NULL.
 export interface UpdateShoppingListDatasourceParams {
   currency?: string;
+  default_finance_category_id?: null | string;
+  default_market_id?: null | string;
   id: string;
   is_default?: boolean;
   name?: string;

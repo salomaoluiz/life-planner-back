@@ -120,6 +120,7 @@ function toTransactionItem(transaction: TransactionEntity, overLimit?: boolean):
     recurrenceId: transaction.recurrenceId ?? undefined,
     splitId: transaction.splitId ?? undefined,
     splitPosition: transaction.splitPosition ?? undefined,
+    stockPurchaseId: transaction.stockPurchaseId ?? undefined,
     tagIds: transaction.tags.length > 0 ? transaction.tags.map((tag) => tag.id) : undefined,
     transferId: transaction.transferId ?? undefined,
     type: transaction.type,

@@ -101,6 +101,8 @@ export class ShoppingListRepository implements IShoppingListRepository {
     return ShoppingListMapper.toList(
       await this.datasource.update({
         currency: params.currency,
+        default_finance_category_id: params.defaultFinanceCategoryId,
+        default_market_id: params.defaultMarketId,
         id: params.id,
         is_default: params.isDefault,
         name: params.name,

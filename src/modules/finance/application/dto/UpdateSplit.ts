@@ -10,6 +10,7 @@ export const UpdateSplitSchema = z
     accessibleOwners: AccessibleOwnersSchema,
     date: SplitSharedShape.date.optional(),
     description: SplitSharedShape.description.optional(),
+    fromStockPurchase: z.boolean().optional(),
     id: z.string().min(1),
     parts: SplitSharedShape.parts.optional(),
     today: CalendarDateSchema.optional(),

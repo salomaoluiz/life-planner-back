@@ -1,7 +1,7 @@
 import { ConflictException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
-import { shoppingList } from '@stock/application/mocks/stock.mocks';
+import { market, shoppingList } from '@stock/application/mocks/stock.mocks';
 import { StockCatalogStatus } from '@stock/domain/entity/StockCategoryEntity';
 
 import { mocks, setup } from './index.mocks';
@@ -54,4 +54,20 @@ it('SHOULD answer 404 for a missing or unreachable list AND 422 for an archived 
   await expect(
     setup.execute({ accessibleOwners: mocks.archivedOwners, id: 'o', name: 'x' }),
   ).rejects.toThrow(UnprocessableEntityException);
+});
+
+it('SHOULD accept an active market of the owner as the default AND refuse another one (422)', async () => {
+  await setup.execute({ ...ids, defaultMarketId: 'm', id: 'o' });
+  expect(mocks.lists.update).toHaveBeenCalledWith(
+    expect.objectContaining({ defaultMarketId: 'm', id: 'o' }),
+  );
+
+  mocks.markets.findById.mockResolvedValue(market('m', { ownerId: 'other-owner' }));
+  await expect(setup.execute({ ...ids, defaultMarketId: 'm', id: 'o' })).rejects.toThrow(
+    UnprocessableEntityException,
+  );
+  mocks.markets.findById.mockResolvedValue(undefined);
+  await expect(setup.execute({ ...ids, defaultMarketId: 'm', id: 'o' })).rejects.toThrow(
+    UnprocessableEntityException,
+  );
 });

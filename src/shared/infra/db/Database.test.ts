@@ -74,4 +74,46 @@ describe('Database', () => {
   it('SHOULD not touch the query counter WHEN perfCountQueries is false', () => {
     expect(jest.mocked(QueryCounter.enable)).not.toHaveBeenCalled();
   });
+
+  describe('runInTransaction', () => {
+    function mockTransaction() {
+      const tx = { stockItem: { findMany: jest.fn() } };
+      const transaction = jest.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      );
+
+      Object.assign(mocks.prismaClientInstance, { $transaction: transaction });
+
+      return { transaction, tx };
+    }
+
+    it('SHOULD make `client` the open transaction inside the work AND the pool outside', async () => {
+      const { transaction, tx } = mockTransaction();
+
+      const inside = await setup.runInTransaction(async () => setup.client);
+
+      expect((inside as unknown as typeof tx).stockItem).toBe(tx.stockItem);
+      expect(transaction).toHaveBeenCalledTimes(1);
+      expect(setup.client).toBe(mocks.prismaClientInstance);
+    });
+
+    it('SHOULD join the open transaction WHEN a datasource calls $transaction inside it', async () => {
+      const { transaction, tx } = mockTransaction();
+
+      const received = await setup.runInTransaction(async () =>
+        setup.client.$transaction(async (client) => client),
+      );
+
+      expect(received).toBe(tx);
+      expect(transaction).toHaveBeenCalledTimes(1);
+    });
+
+    it('SHOULD reuse the open transaction WHEN runInTransaction is nested', async () => {
+      const { transaction } = mockTransaction();
+
+      await setup.runInTransaction(async () => setup.runInTransaction(async () => 'done'));
+
+      expect(transaction).toHaveBeenCalledTimes(1);
+    });
+  });
 });

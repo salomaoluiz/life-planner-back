@@ -1,8 +1,9 @@
-import { Inject } from '@nestjs/common';
+import { Inject, UnprocessableEntityException } from '@nestjs/common';
 
 import { SplitAccessInput, SplitAccessSchema } from '@finance/application/dto/SplitAccess';
 import { ensureOwnerWritable } from '@finance/application/service/OwnerWritable';
 import { GetSplitUseCase } from '@finance/application/use-case/GetSplitUseCase';
+import { SPLIT_FROM_STOCK_PURCHASE } from '@finance/domain/entity/SystemCategory';
 import { IFinanceSplitRepository } from '@finance/domain/repository';
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
@@ -21,6 +22,12 @@ export class DeleteSplitUseCase implements UseCaseWithParams<SplitAccessInput, v
     const split = await this.getSplitUseCase.execute(input);
 
     ensureOwnerWritable(input.accessibleOwners, split);
+
+    // Spec 120 FR 40: a purchase split is deleted through the purchase.
+    if (split.stockPurchaseId !== null && !input.fromStockPurchase) {
+      throw new UnprocessableEntityException(SPLIT_FROM_STOCK_PURCHASE);
+    }
+
     await this.splitRepository.deleteSplit(split.id);
   }
 }

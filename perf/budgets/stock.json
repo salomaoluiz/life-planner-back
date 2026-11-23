@@ -26,6 +26,33 @@
     "scenario": "",
     "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
+  "DELETE /api/v1/stock/purchases/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
+  "DELETE /api/v1/stock/purchases/:id/closing": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
+  "DELETE /api/v1/stock/purchases/:id/rows/:rowId": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
   "DELETE /api/v1/stock/shopping-lists/rows/:rowId": {
     "indexes": null,
     "kind": "unmeasured",
@@ -85,6 +112,15 @@
       "id": "stockItem"
     }
   },
+  "GET /api/v1/stock/items/:id/prices": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Needs a seeded purchase: measured when the pinned dataset gains purchases (spec 120)."
+  },
   "GET /api/v1/stock/items/frequent": {
     "indexes": null,
     "kind": "read",
@@ -118,6 +154,41 @@
     "scenario": "",
     "reason": "The perf dataset seeds no stock locations; the route is one lookup plus one grouped count (spec 117)."
   },
+  "GET /api/v1/stock/markets": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 4,
+    "p50Ms": null,
+    "scenario": "ownerId={userId}"
+  },
+  "GET /api/v1/stock/purchases/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Needs a seeded purchase: measured when the pinned dataset gains purchases (spec 120)."
+  },
+  "GET /api/v1/stock/purchases/:id/close-preview": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Needs a seeded purchase: measured when the pinned dataset gains purchases (spec 120)."
+  },
+  "GET /api/v1/stock/purchases/pending": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Needs a seeded purchase: measured when the pinned dataset gains purchases (spec 120)."
+  },
   "GET /api/v1/stock/shopping-lists": {
     "indexes": null,
     "kind": "unmeasured",
@@ -135,6 +206,24 @@
     "p50Ms": null,
     "scenario": "",
     "reason": "The perf dataset seeds no shopping lists: the route is one list read, then the rows and the categories in parallel (spec 118)."
+  },
+  "GET /api/v1/stock/shopping-lists/:id/events": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Needs a seeded purchase: measured when the pinned dataset gains purchases (spec 120)."
+  },
+  "GET /api/v1/stock/shopping-lists/:id/purchases": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Needs a seeded purchase: measured when the pinned dataset gains purchases (spec 120)."
   },
   "GET /api/v1/stock/shopping-lists/restock-summary": {
     "indexes": null,
@@ -163,6 +252,24 @@
     "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "PATCH /api/v1/stock/locations/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
+  "PATCH /api/v1/stock/markets/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
+  "PATCH /api/v1/stock/purchases/:id": {
     "indexes": null,
     "kind": "unmeasured",
     "maxBytes": null,
@@ -243,6 +350,15 @@
     "scenario": "",
     "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
+  "POST /api/v1/stock/markets": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
   "POST /api/v1/stock/movements/:gestureId/expiration": {
     "indexes": null,
     "kind": "unmeasured",
@@ -261,6 +377,69 @@
     "scenario": "",
     "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
+  "POST /api/v1/stock/purchases": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
+  "POST /api/v1/stock/purchases/:id/close": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
+  "POST /api/v1/stock/purchases/:id/closing": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
+  "POST /api/v1/stock/purchases/:id/discard": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
+  "POST /api/v1/stock/purchases/:id/end": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
+  "POST /api/v1/stock/purchases/:id/merge-into/:targetId": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
+  "POST /api/v1/stock/purchases/:id/reopen": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
   "POST /api/v1/stock/shopping-lists": {
     "indexes": null,
     "kind": "unmeasured",
@@ -271,6 +450,15 @@
     "reason": "Writes are not measured: perf tests only read (spec 093)."
   },
   "POST /api/v1/stock/shopping-lists/:id/rows": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "scenario": "",
+    "reason": "Writes are not measured: perf tests only read (spec 093)."
+  },
+  "PUT /api/v1/stock/purchases/:id/rows/:rowId": {
     "indexes": null,
     "kind": "unmeasured",
     "maxBytes": null,

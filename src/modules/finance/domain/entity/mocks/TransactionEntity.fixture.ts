@@ -128,6 +128,7 @@ class TransactionEntityFixture {
       refundedTransactionId: null,
       splitId: null,
       splitPosition: null,
+      stockPurchaseId: null,
       tags: [],
       transferId: null,
       type: TransactionType.EXPENSE,

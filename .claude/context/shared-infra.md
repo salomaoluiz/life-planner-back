@@ -58,3 +58,7 @@ Spec 113 adds `@shared/infra/market-index/bcb` (`IBcbIndexes`: `getSeries(code, 
 Spec 115: `RefreshIncomeSeriesJob` (`src/api/investment/v1/job`, day 1 of each month at 00:10 São Paulo through `IScheduler`) creates the planned occurrences of the new month; `INVESTMENT_INCOME_SERIES_JOB_ENABLED` (default true) turns it off. New env getter `investmentIncomeSeriesJobEnabled`.
 
 Spec 116: `@shared/infra/embeddings` (`IEmbeddings`, token `'IEmbeddings'`): `embed(text, { timeoutMs? })` posts to an OpenAI-compatible `{EMBEDDINGS_API_URL}/embeddings` (`EMBEDDINGS_API_KEY`, `EMBEDDINGS_MODEL`, `EMBEDDINGS_DIMENSIONS` default 1024 = the `vector(1024)` column) and returns the vector, or `null` without a key, on timeout (800 ms default), error or a wrong size (never throws, never logs the error). In-memory LRU cache of 1 000 texts for 10 minutes. Only item names and brands are sent. Env getters `embeddingsApiUrl|Key|Model|Dimensions`.
+
+## Notifier (spec 120)
+
+`@shared/infra/notifier` (`INotifier`, `PgNotifier`): one dedicated `pg` connection per API instance that `LISTEN`s to the channels in use and reconnects (5 s) when it drops; `subscribe(channel, handler)` returns the unsubscribe function. `Database.runInTransaction` (see `data.md`). The compression filter never compresses `text/event-stream`.

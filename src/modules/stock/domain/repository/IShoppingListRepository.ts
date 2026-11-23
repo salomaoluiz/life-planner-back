@@ -64,8 +64,11 @@ export interface ShoppingRowRecord {
   row: ShoppingListRowEntity;
 }
 // `undefined` = unchanged. Archiving moves the AUTO rows to the default list in the same transaction (FR 4).
+// `undefined` = unchanged, `null` = clear.
 export interface UpdateShoppingListParams {
   currency?: string;
+  defaultFinanceCategoryId?: null | string;
+  defaultMarketId?: null | string;
   id: string;
   isDefault?: boolean;
   name?: string;

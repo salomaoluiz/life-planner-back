@@ -1,3 +1,5 @@
+export * from './IMarketRepository';
+export * from './IPurchaseRepository';
 export * from './IShoppingListRepository';
 export * from './IStockCatalogRepository';
 export * from './IStockRepository';

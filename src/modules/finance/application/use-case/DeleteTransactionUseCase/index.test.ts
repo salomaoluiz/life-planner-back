@@ -211,3 +211,22 @@ it('SHOULD refuse to delete a part of a split with SPLIT_ROW_USE_SPLIT (422): on
   ).rejects.toThrow('SPLIT_ROW_USE_SPLIT');
   expect(mocks.transactionRepository.deleteTransaction).not.toHaveBeenCalled();
 });
+
+it('SHOULD refuse to delete the posting of a stock purchase (422) unless the purchase asks (spec 120 FR 40)', async () => {
+  mocks.transactionRepository.findTransactionScalarsById.mockResolvedValue({
+    ...mocks.transaction,
+    stockPurchaseId: 'purchase-1',
+  });
+
+  await expect(
+    setup.execute({ accessibleOwners: mocks.accessibleOwners, id: mocks.transaction.id }),
+  ).rejects.toThrow('TRANSACTION_FROM_STOCK_PURCHASE');
+  expect(mocks.transactionRepository.deleteTransaction).not.toHaveBeenCalled();
+
+  await setup.execute({
+    accessibleOwners: mocks.accessibleOwners,
+    fromStockPurchase: true,
+    id: mocks.transaction.id,
+  });
+  expect(mocks.transactionRepository.deleteTransaction).toHaveBeenCalled();
+});

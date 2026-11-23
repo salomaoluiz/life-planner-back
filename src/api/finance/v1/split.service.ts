@@ -35,6 +35,7 @@ function toSplitItem(split: SplitEntity): SplitItem {
     paid: split.paid ?? undefined,
     parts: split.parts.map((part) => toTransactionItem(part)),
     recurrenceId: split.recurrenceId ?? undefined,
+    stockPurchaseId: split.stockPurchaseId ?? undefined,
     total: split.total,
     type: split.type,
   };

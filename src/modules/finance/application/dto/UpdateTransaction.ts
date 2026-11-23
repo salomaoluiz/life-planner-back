@@ -22,6 +22,7 @@ export const UpdateTransactionSchema = z
     creditCardId: z.string().min(1).optional(),
     date: CalendarDateSchema.optional(),
     description: DescriptionSchema.optional(),
+    fromStockPurchase: z.boolean().optional(),
     id: z.string().min(1),
     // Spec 095: the invoice of a card purchase (or of an installment row, with `scope`).
     invoiceMonth: InvoiceMonthSchema.optional(),

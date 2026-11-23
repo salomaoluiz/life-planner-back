@@ -24,6 +24,7 @@ export class FinanceSplitMapper {
       paid: record.paid,
       parts: record.transactions.map((row) => FinanceTransactionMapper.toDomain(row)),
       recurrenceId: record.recurrence_id,
+      stockPurchaseId: record.stock_purchase_id,
       updatedAt: record.updated_at,
     });
   }

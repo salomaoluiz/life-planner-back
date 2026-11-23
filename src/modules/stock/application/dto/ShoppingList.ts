@@ -42,6 +42,8 @@ export const UpdateShoppingListSchema = z
   .object({
     accessibleOwners: AccessibleOwnersSchema,
     currency: CurrencySchema.optional(),
+    defaultFinanceCategoryId: z.string().min(1).nullable().optional(),
+    defaultMarketId: z.string().min(1).nullable().optional(),
     id: z.string().min(1),
     isDefault: z.boolean().optional(),
     name: CatalogNameSchema.optional(),
@@ -50,6 +52,8 @@ export const UpdateShoppingListSchema = z
   .refine(
     (input) =>
       input.currency !== undefined ||
+      input.defaultFinanceCategoryId !== undefined ||
+      input.defaultMarketId !== undefined ||
       input.isDefault !== undefined ||
       input.name !== undefined ||
       input.status !== undefined,

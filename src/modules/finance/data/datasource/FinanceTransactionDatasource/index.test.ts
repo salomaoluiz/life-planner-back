@@ -249,6 +249,7 @@ describe('Method findScalarsById (spec 085)', () => {
         projected: true,
         recurrence_id: true,
         split_id: true,
+        stock_purchase_id: true,
         type: true,
       },
       where: { id: mocks.transaction.id },

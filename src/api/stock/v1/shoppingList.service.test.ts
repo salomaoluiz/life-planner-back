@@ -18,6 +18,8 @@ it('SHOULD output the cards with counts and the estimate', async () => {
   expect(result.items[0]).toMatchObject({
     autoCount: 1,
     currency: 'BRL',
+    defaultFinanceCategoryId: null,
+    defaultMarketId: null,
     estimatedTotalCents: 300,
     id: 'list',
     isDefault: true,
