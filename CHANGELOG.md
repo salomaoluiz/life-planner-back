@@ -3,6 +3,14 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [6.4.0] - 2026-11-23
+
+### Added
+
+- Stock shopping mode (spec 120): markets, purchases of a shopping list with rows checked in the cart (idempotent, offline-friendly), "Não tinha", end/reopen/discard/merge, forgotten-purchase reminders, and a Server-Sent Events stream per list at `GET /stock/shopping-lists/:id/events` (Postgres LISTEN/NOTIFY, `Last-Event-ID` replay).
+- Closing a purchase writes the stock entries, one split (or one transaction) in finance, the price history and the list changes in one transaction, with one closer at a time; closed purchases can be edited (prices, total, market, date, source) or deleted.
+- Finance splits and transactions created by a purchase are read-only in finance (`SPLIT_FROM_STOCK_PURCHASE`, `TRANSACTION_FROM_STOCK_PURCHASE`) and carry `stockPurchaseId`.
+
 ## [6.3.0] - 2026-11-19
 
 ### Added
