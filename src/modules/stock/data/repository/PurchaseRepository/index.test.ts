@@ -528,3 +528,29 @@ describe('deleteClosed', () => {
     await expect(setup.deleteClosed('p1', user, jest.fn())).rejects.toThrow(ConflictException);
   });
 });
+
+describe('upsertRow from a list row', () => {
+  it('SHOULD copy the item of the list row into the new purchase row', async () => {
+    models.stockPurchaseRow.findUnique.mockResolvedValue(null);
+    models.stockPurchaseRow.findFirst.mockResolvedValue(null);
+    models.stockShoppingListRow.findUnique.mockResolvedValue({
+      description: null,
+      item_id: 'i9',
+      unit: null,
+    });
+    models.stockPurchaseRow.create.mockResolvedValue(rawRow({ item_id: 'i9', list_row_id: 'l1' }));
+
+    await setup.upsertRow({
+      listRowId: 'l1',
+      purchaseId: 'p1',
+      quantity: 1,
+      rowId: 'r1',
+      userId: user,
+    });
+
+    expect(models.stockPurchaseRow.create.mock.calls[0][0].data).toMatchObject({
+      item_id: 'i9',
+      list_row_id: 'l1',
+    });
+  });
+});

@@ -748,8 +748,6 @@ export class PurchaseRepository implements IPurchaseRepository {
       where: { id },
     });
 
-    await this.db.client.$executeRaw(Prisma.sql`SELECT 1`);
-
     return toPurchase(updated);
   }
 
@@ -904,6 +902,15 @@ export class PurchaseRepository implements IPurchaseRepository {
           unit = unit ?? (listRow?.unit as StockUnits | undefined);
           listRowId = undefined;
         }
+      }
+
+      // A new row of a list row carries what the list row is: its item, or its text and unit.
+      if (listRowId && !existing) {
+        const source = await tx.stockShoppingListRow.findUnique({ where: { id: listRowId } });
+
+        itemId = itemId ?? source?.item_id ?? undefined;
+        description = description ?? source?.description ?? undefined;
+        unit = unit ?? (source?.unit as StockUnits | undefined);
       }
 
       // One purchase row per item: another row with the same item takes the quantity.
