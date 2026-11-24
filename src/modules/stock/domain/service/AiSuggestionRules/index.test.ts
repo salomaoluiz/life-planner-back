@@ -3,7 +3,10 @@ import { StockUnits } from '@stock/domain/entity/StockEntity';
 import { filterAiFields } from './index';
 
 const catalog = {
-  categories: [{ id: 'c1', path: 'Laticínios' }],
+  categories: [
+    { id: 'c1', path: 'Laticínios' },
+    { id: 'c2', path: 'Mercearia / Café e chás' },
+  ],
   locations: [{ id: 'l1', name: 'Geladeira' }],
 };
 
@@ -35,5 +38,30 @@ describe('filterAiFields', () => {
       ),
     ).toEqual({ description: 'Leite', packageQuantity: 1, unit: StockUnits.LITER });
     expect(filterAiFields({ packageQuantity: 0 }, catalog)).toEqual({});
+  });
+
+  it.each([
+    ['laticinios', 'c1'],
+    ['MERCEARIA > CAFE E CHAS', 'c2'],
+    ['Café e chás', 'c2'],
+    ['  Mercearia/Café e chás ', 'c2'],
+  ])('SHOULD match %s to the owner’s category despite case, accents and separators', (path, id) => {
+    expect(filterAiFields({ categoryPath: path }, catalog).categoryId).toBe(id);
+  });
+
+  it('SHOULD match a location by name without case or accents', () => {
+    expect(filterAiFields({ locationName: ' GELADEIRA ' }, catalog).locationId).toBe('l1');
+  });
+
+  it('SHOULD NOT guess WHEN the name alone matches more than one category', () => {
+    const twin = {
+      ...catalog,
+      categories: [
+        { id: 'a', path: 'Doces / Chocolate' },
+        { id: 'b', path: 'Bebidas / Chocolate' },
+      ],
+    };
+
+    expect(filterAiFields({ categoryPath: 'Chocolate' }, twin).categoryId).toBeUndefined();
   });
 });
