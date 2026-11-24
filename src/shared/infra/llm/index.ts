@@ -26,6 +26,11 @@ interface ChatResponse {
 const MAX_TOKENS_LIGHT = 400;
 const MAX_TOKENS_SEARCH = 800;
 const MESSAGE_MAX = 300;
+interface GoogleResponse {
+  candidates?: { content?: { parts?: { text?: unknown }[] } }[];
+}
+type Provider = 'GOOGLE' | 'OPENROUTER';
+
 const FENCE = /^```(?:json)?\s*([\s\S]*?)\s*```$/;
 
 function describe(error: unknown): [string, string] {
@@ -67,65 +72,102 @@ export class Llm implements ILlm {
     @Inject('ILogger') private readonly logger: ILogger,
   ) {}
 
-  async complete<T>(request: LlmRequest<T>): Promise<null | T> {
-    if (!this.isEnabled(request.kind)) {
-      return null;
-    }
+  // OpenRouter first; the search falls back to Google AI Studio (its own Google Search grounding, billed to the
+  // Google key) when OpenRouter is not configured or its call fails, for example without OpenRouter credit (402).
+  private async askGoogle<T>(request: LlmRequest<T>): Promise<unknown> {
+    const response = await axios.post<GoogleResponse>(
+      `${this.env.googleAiApiUrl.replace(/\/+$/, '')}/models/${this.env.googleAiSearchModel}:generateContent`,
+      {
+        contents: [{ parts: [{ text: request.user }], role: 'user' }],
+        generationConfig: { maxOutputTokens: MAX_TOKENS_SEARCH, temperature: 0 },
+        systemInstruction: { parts: [{ text: request.system }] },
+        tools: [{ google_search: {} }],
+      },
+      {
+        headers: { 'x-goog-api-key': this.env.googleAiApiKey },
+        timeout: this.env.llmTimeoutSearchMs,
+      },
+    );
 
+    return response.data?.candidates?.[0]?.content?.parts
+      ?.map((part) => (typeof part.text === 'string' ? part.text : ''))
+      .join('');
+  }
+
+  private async askOpenRouter<T>(request: LlmRequest<T>): Promise<unknown> {
     const search = request.kind === 'SEARCH';
+    const response = await axios.post<ChatResponse>(
+      `${this.env.llmApiUrl?.replace(/\/+$/, '')}/chat/completions`,
+      {
+        messages: [
+          { content: request.system, role: 'system' },
+          { content: request.user, role: 'user' },
+        ],
+        // OpenRouter reserves credit for the model's whole output limit when none is set, and answers 402.
+        max_tokens: search ? MAX_TOKENS_SEARCH : MAX_TOKENS_LIGHT,
+        model: this.openRouterModel(request.kind),
+        ...(search ? { plugins: [{ id: 'web' }] } : {}),
+        response_format: { type: 'json_object' },
+        temperature: 0,
+      },
+      {
+        headers: { Authorization: `Bearer ${this.env.llmApiKey}` },
+        timeout: search ? this.env.llmTimeoutSearchMs : this.env.llmTimeoutLightMs,
+      },
+    );
 
-    try {
-      const response = await axios.post<ChatResponse>(
-        `${this.env.llmApiUrl?.replace(/\/+$/, '')}/chat/completions`,
-        {
-          messages: [
-            { content: request.system, role: 'system' },
-            { content: request.user, role: 'user' },
-          ],
-          // OpenRouter reserves credit for the model's whole output limit when none is set, and answers 402.
-          max_tokens: search ? MAX_TOKENS_SEARCH : MAX_TOKENS_LIGHT,
-          model: this.model(request.kind),
-          ...(search ? { plugins: [{ id: 'web' }] } : {}),
-          response_format: { type: 'json_object' },
-          temperature: 0,
-        },
-        {
-          headers: { Authorization: `Bearer ${this.env.llmApiKey}` },
-          timeout: search ? this.env.llmTimeoutSearchMs : this.env.llmTimeoutLightMs,
-        },
-      );
-      const parsed = request.schema.safeParse(
-        parseJson(response.data?.choices?.[0]?.message?.content),
-      );
+    return response.data?.choices?.[0]?.message?.content;
+  }
 
-      if (!parsed.success) {
-        this.fail(request.kind, 'invalid-answer', 'The answer is not the expected JSON');
+  async complete<T>(request: LlmRequest<T>): Promise<null | T> {
+    for (const provider of this.providers(request.kind)) {
+      try {
+        const content =
+          provider === 'GOOGLE' ? await this.askGoogle(request) : await this.askOpenRouter(request);
+        const parsed = request.schema.safeParse(parseJson(content));
+
+        if (parsed.success) {
+          return parsed.data;
+        }
+
+        this.fail(request.kind, provider, 'invalid-answer', 'The answer is not the expected JSON');
+      } catch (error) {
+        this.fail(request.kind, provider, ...describe(error));
       }
-
-      return parsed.success ? parsed.data : null;
-    } catch (error) {
-      this.fail(request.kind, ...describe(error));
-
-      return null;
     }
+
+    return null;
   }
 
   isEnabled(kind: LlmKind): boolean {
-    return Boolean(this.env.llmApiKey && this.env.llmApiUrl && this.model(kind));
+    return this.providers(kind).length > 0;
   }
 
-  // Never the key, the prompt or the answer: only the kind, the model, the status and the provider's short message.
-  private fail(kind: LlmKind, status: string, message: string) {
+  private providers(kind: LlmKind): Provider[] {
+    const openRouter = Boolean(
+      this.env.llmApiKey && this.env.llmApiUrl && this.openRouterModel(kind),
+    );
+    const google = kind === 'SEARCH' && Boolean(this.env.googleAiApiKey);
+
+    return [
+      ...(openRouter ? (['OPENROUTER'] as const) : []),
+      ...(google ? (['GOOGLE'] as const) : []),
+    ];
+  }
+
+  // Never the key, the prompt or the answer: only the kind, the provider, the model, the status and the short message.
+  private fail(kind: LlmKind, provider: Provider, status: string, message: string) {
     this.logger.log(LogLevel.WARN, 'LLM call failed', {
       kind,
       message,
-      model: this.model(kind),
+      model: provider === 'GOOGLE' ? this.env.googleAiSearchModel : this.openRouterModel(kind),
       module: 'Llm',
+      provider,
       status,
     });
   }
 
-  private model(kind: LlmKind): string | undefined {
+  private openRouterModel(kind: LlmKind): string | undefined {
     return kind === 'SEARCH' ? this.env.llmModelSearch : this.env.llmModelLight;
   }
 }

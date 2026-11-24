@@ -113,3 +113,83 @@ describe('Llm failures are logged', () => {
     );
   });
 });
+
+describe('Llm search fallback to Google AI Studio', () => {
+  const google = {
+    googleAiApiKey: 'your-google-key',
+    googleAiApiUrl: 'https://google.example.com/v1beta/',
+    googleAiSearchModel: 'gemini-test',
+  };
+  const search = { ...request, kind: 'SEARCH' as const };
+
+  function googleAnswer(text: string) {
+    return { data: { candidates: [{ content: { parts: [{ text }] } }] } };
+  }
+
+  it('SHOULD use OpenRouter FIRST and NOT call Google WHEN it answers', async () => {
+    const result = await new Llm(envWith(google), logger).complete(search);
+
+    expect(result).toEqual({ name: 'milk' });
+    expect(postSpy).toHaveBeenCalledTimes(1);
+    expect(postSpy.mock.calls[0][0]).toBe('https://llm.example.com/v1/chat/completions');
+  });
+
+  it('SHOULD fall back to Google with the Google Search tool WHEN OpenRouter fails AND log both', async () => {
+    postSpy
+      .mockRejectedValueOnce({
+        response: { data: { error: { message: 'Insufficient credits' } }, status: 402 },
+      })
+      .mockResolvedValueOnce(googleAnswer('```json\n{"name":"tea"}\n```'));
+
+    const result = await new Llm(envWith(google), logger).complete(search);
+
+    expect(result).toEqual({ name: 'tea' });
+    expect(postSpy).toHaveBeenLastCalledWith(
+      'https://google.example.com/v1beta/models/gemini-test:generateContent',
+      expect.objectContaining({
+        systemInstruction: { parts: [{ text: 'sys' }] },
+        tools: [{ google_search: {} }],
+      }),
+      { headers: { 'x-goog-api-key': 'your-google-key' }, timeout: 15000 },
+    );
+    expect(logger.log).toHaveBeenCalledWith(
+      LogLevel.WARN,
+      'LLM call failed',
+      expect.objectContaining({ provider: 'OPENROUTER', status: '402' }),
+    );
+  });
+
+  it('SHOULD fall back WHEN OpenRouter answers something that is not the expected JSON', async () => {
+    postSpy
+      .mockResolvedValueOnce(answer('sorry'))
+      .mockResolvedValueOnce(googleAnswer('{"name":"tea"}'));
+
+    expect(await new Llm(envWith(google), logger).complete(search)).toEqual({ name: 'tea' });
+  });
+
+  it('SHOULD return null WHEN both providers fail', async () => {
+    postSpy.mockRejectedValue(new Error('down'));
+
+    expect(await new Llm(envWith(google), logger).complete(search)).toBeNull();
+    expect(postSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('SHOULD work with only the Google key for the search AND never use Google for the light call', async () => {
+    const llm = new Llm(
+      envWith({
+        ...google,
+        llmApiKey: undefined,
+        llmModelLight: undefined,
+        llmModelSearch: undefined,
+      }),
+      logger,
+    );
+
+    expect(llm.isEnabled('SEARCH')).toBe(true);
+    expect(llm.isEnabled('LIGHT')).toBe(false);
+
+    postSpy.mockResolvedValue(googleAnswer('{"name":"tea"}'));
+
+    expect(await llm.complete(search)).toEqual({ name: 'tea' });
+  });
+});

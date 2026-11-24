@@ -12,6 +12,7 @@ function lenient<T extends z.ZodType>(schema: T) {
     .transform((value) => value ?? undefined);
 }
 
+const SYMBOL_UNITS: Record<string, StockUnits> = { KG: StockUnits.KILOGRAM, L: StockUnits.LITER };
 const UNIT_BY_NAME: Record<string, StockUnits> = {
   KILOGRAM: StockUnits.KILOGRAM,
   LITER: StockUnits.LITER,
@@ -24,16 +25,47 @@ export const LightAnswerSchema = z.object({
   openedShelfLifeDays: lenient(z.number()),
 });
 
-export const SearchAnswerSchema = z.object({
-  brand: lenient(z.string()),
-  categoryPath: lenient(z.string()),
-  confidence: lenient(z.enum(['HIGH', 'LOW'])),
-  description: lenient(z.string()),
-  locationName: lenient(z.string()),
-  openedShelfLifeDays: lenient(z.number()),
-  packageQuantity: lenient(z.number()),
-  unit: lenient(z.string().transform((value) => UNIT_BY_NAME[value.toUpperCase()])),
-});
+// The models sometimes answer `g`/`ml` with the package in grams or millilitres and lower case `high`/`low`.
+function normalizeUnit(unit: string | undefined, quantity: number | undefined) {
+  const key = unit?.trim().toUpperCase();
+
+  if (key === 'G' || key === 'GRAM' || key === 'GRAMS') {
+    return {
+      packageQuantity: quantity === undefined ? undefined : quantity / 1000,
+      unit: StockUnits.KILOGRAM,
+    };
+  }
+
+  if (key === 'ML' || key === 'MILLILITER' || key === 'MILLILITERS') {
+    return {
+      packageQuantity: quantity === undefined ? undefined : quantity / 1000,
+      unit: StockUnits.LITER,
+    };
+  }
+
+  return {
+    packageQuantity: quantity,
+    unit: key ? (SYMBOL_UNITS[key] ?? UNIT_BY_NAME[key]) : undefined,
+  };
+}
+
+export const SearchAnswerSchema = z
+  .object({
+    brand: lenient(z.string()),
+    categoryPath: lenient(z.string()),
+    confidence: lenient(
+      z
+        .string()
+        .transform((value) => value.toUpperCase())
+        .pipe(z.enum(['HIGH', 'LOW'])),
+    ),
+    description: lenient(z.string()),
+    locationName: lenient(z.string()),
+    openedShelfLifeDays: lenient(z.number()),
+    packageQuantity: lenient(z.number()),
+    unit: lenient(z.string()),
+  })
+  .transform((answer) => ({ ...answer, ...normalizeUnit(answer.unit, answer.packageQuantity) }));
 
 export type LightAnswer = z.output<typeof LightAnswerSchema>;
 export type SearchAnswer = AiRaw & z.output<typeof SearchAnswerSchema>;

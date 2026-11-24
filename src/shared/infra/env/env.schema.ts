@@ -57,6 +57,9 @@ export const envSchema = z.object({
   EMBEDDINGS_MODEL: emptyToUndefined,
 
   // Stock suggestions by AI (spec 121): an empty key disables the AI steps (Open Food Facts only)
+  GOOGLE_AI_API_KEY: emptyToUndefined,
+  GOOGLE_AI_API_URL: withDefault('https://generativelanguage.googleapis.com/v1beta'),
+  GOOGLE_AI_SEARCH_MODEL: withDefault('gemini-2.5-flash'),
   LLM_API_KEY: emptyToUndefined,
   LLM_API_URL: emptyToUndefined,
   LLM_DAILY_LIGHT_LIMIT: optionalInt(0, 50),

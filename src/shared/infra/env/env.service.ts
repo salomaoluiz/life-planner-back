@@ -42,6 +42,18 @@ export class EnvService {
   }
 
   // LLM and Open Food Facts (spec 121)
+  get googleAiApiKey(): Env['GOOGLE_AI_API_KEY'] {
+    return this.nestConfigService.get('GOOGLE_AI_API_KEY');
+  }
+
+  get googleAiApiUrl(): Env['GOOGLE_AI_API_URL'] {
+    return this.nestConfigService.get('GOOGLE_AI_API_URL');
+  }
+
+  get googleAiSearchModel(): Env['GOOGLE_AI_SEARCH_MODEL'] {
+    return this.nestConfigService.get('GOOGLE_AI_SEARCH_MODEL');
+  }
+
   get llmApiKey(): Env['LLM_API_KEY'] {
     return this.nestConfigService.get('LLM_API_KEY');
   }

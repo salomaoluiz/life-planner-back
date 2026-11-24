@@ -14,6 +14,8 @@ describe('validateEnvironment', () => {
       DB_STATEMENT_TIMEOUT_MS: 0,
       EMBEDDINGS_DIMENSIONS: 1024,
       FINANCE_MATERIALIZATION_GATE_TTL_MS: 60000,
+      GOOGLE_AI_API_URL: 'https://generativelanguage.googleapis.com/v1beta',
+      GOOGLE_AI_SEARCH_MODEL: 'gemini-2.5-flash',
       INVESTMENT_INCOME_SERIES_JOB_ENABLED: true,
       INVESTMENT_QUOTE_REFRESH_COOLDOWN_MS: 60000,
       INVESTMENT_QUOTES_BRAPI_BATCH_SIZE: 20,
