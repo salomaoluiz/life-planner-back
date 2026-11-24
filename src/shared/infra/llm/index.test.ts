@@ -1,12 +1,15 @@
 import axios from 'axios';
 import { z } from 'zod';
 
+import { LogLevel } from '@shared/infra/logger/types';
+
 import { Llm } from './index';
 import { answer, envWith } from './index.mocks';
 
 jest.mock('axios');
 
 const postSpy = jest.mocked(axios.post);
+const logger = { log: jest.fn() };
 const schema = z.object({ name: z.string() });
 const request = { kind: 'LIGHT' as const, schema, system: 'sys', user: 'usr' };
 
@@ -17,10 +20,11 @@ beforeEach(() => {
 
 describe('Llm.complete', () => {
   it('SHOULD post the chat request with the light model and timeout AND return the validated answer', async () => {
-    expect(await new Llm(envWith()).complete(request)).toEqual({ name: 'milk' });
+    expect(await new Llm(envWith(), logger).complete(request)).toEqual({ name: 'milk' });
     expect(postSpy).toHaveBeenCalledWith(
       'https://llm.example.com/v1/chat/completions',
       {
+        max_tokens: 400,
         messages: [
           { content: 'sys', role: 'system' },
           { content: 'usr', role: 'user' },
@@ -34,9 +38,10 @@ describe('Llm.complete', () => {
   });
 
   it('SHOULD use the search model, the web plugin and the search timeout for SEARCH', async () => {
-    await new Llm(envWith()).complete({ ...request, kind: 'SEARCH' });
+    await new Llm(envWith(), logger).complete({ ...request, kind: 'SEARCH' });
 
     expect(postSpy.mock.calls[0][1]).toMatchObject({
+      max_tokens: 800,
       model: 'search-model',
       plugins: [{ id: 'web' }],
     });
@@ -46,7 +51,7 @@ describe('Llm.complete', () => {
   it('SHOULD read an answer wrapped in a code fence', async () => {
     postSpy.mockResolvedValue(answer('```json\n{"name":"tea"}\n```'));
 
-    expect(await new Llm(envWith()).complete(request)).toEqual({ name: 'tea' });
+    expect(await new Llm(envWith(), logger).complete(request)).toEqual({ name: 'tea' });
   });
 
   it.each([
@@ -54,7 +59,7 @@ describe('Llm.complete', () => {
     ['no url', { llmApiUrl: undefined }],
     ['no model', { llmModelLight: undefined }],
   ])('SHOULD return null WITHOUT calling the provider WHEN there is %s', async (_label, env) => {
-    expect(await new Llm(envWith(env)).complete(request)).toBeNull();
+    expect(await new Llm(envWith(env), logger).complete(request)).toBeNull();
     expect(postSpy).not.toHaveBeenCalled();
   });
 
@@ -67,15 +72,44 @@ describe('Llm.complete', () => {
   ])('SHOULD return null WHEN %s', async (_label, arrange) => {
     arrange();
 
-    expect(await new Llm(envWith()).complete(request)).toBeNull();
+    expect(await new Llm(envWith(), logger).complete(request)).toBeNull();
   });
 });
 
 describe('Llm.isEnabled', () => {
   it('SHOULD depend on the model of the kind', () => {
-    const llm = new Llm(envWith({ llmModelSearch: undefined }));
+    const llm = new Llm(envWith({ llmModelSearch: undefined }), logger);
 
     expect(llm.isEnabled('LIGHT')).toBe(true);
     expect(llm.isEnabled('SEARCH')).toBe(false);
+  });
+});
+
+describe('Llm failures are logged', () => {
+  it('SHOULD log the status and the provider message WITHOUT the key or the prompt', async () => {
+    postSpy.mockRejectedValue({
+      response: { data: { error: { message: 'Provider returned error' } }, status: 402 },
+    });
+
+    expect(await new Llm(envWith(), logger).complete(request)).toBeNull();
+    expect(logger.log).toHaveBeenCalledWith(
+      LogLevel.WARN,
+      'LLM call failed',
+      expect.objectContaining({ kind: 'LIGHT', message: 'Provider returned error', status: '402' }),
+    );
+    expect(JSON.stringify(logger.log.mock.calls)).not.toContain('your-key');
+    expect(JSON.stringify(logger.log.mock.calls)).not.toContain('usr');
+  });
+
+  it('SHOULD log an answer that fails the schema', async () => {
+    postSpy.mockResolvedValue(answer('{"name":1}'));
+
+    await new Llm(envWith(), logger).complete(request);
+
+    expect(logger.log).toHaveBeenCalledWith(
+      LogLevel.WARN,
+      'LLM call failed',
+      expect.objectContaining({ status: 'invalid-answer' }),
+    );
   });
 });
