@@ -51,6 +51,7 @@ export const UpdateShoppingListApiSchema = z
     defaultMarketId: z.uuid().nullable(),
     isDefault: z.boolean(),
     name: CatalogNameSchema,
+    purchaseIntervalDays: z.number().int().min(1).max(90),
     status: z.enum(StockCatalogStatus),
   })
   .partial()
@@ -91,17 +92,27 @@ const ListSchema = z.object({
   name: z.string(),
   owner: OwnerTypeApiSchema,
   ownerId: z.uuid(),
+  purchaseIntervalDays: z.number().int(),
   status: z.enum(StockCatalogStatus),
+});
+// Spec 123 FR 10-11: `nextTripDate` is a day (YYYY-MM-DD); the suggestion is null below 3 closed purchases.
+const ScheduleSchema = z.object({
+  nextTripDate: z.string(),
+  suggestedIntervalDays: z.number().int().nullable(),
 });
 const CardSchema = ListSchema.extend({
   autoCount: z.number().int(),
   estimatedTotalCents: z.number().int(),
+  forecastCount: z.number().int(),
   pricedCount: z.number().int(),
   rowCount: z.number().int(),
-});
+}).extend(ScheduleSchema.shape);
 const RowSchema = z.object({
   description: z.string(),
   estimateCents: z.number().int().nullable(),
+  forecast: z
+    .object({ minDate: z.string(), nextTripDate: z.string(), projectedOnTrip: z.number() })
+    .nullable(),
   id: z.uuid(),
   itemId: z.uuid().nullable(),
   origin: OriginApiSchema,
@@ -117,10 +128,12 @@ const RowSchema = z.object({
     .nullable(),
   unit: UnitApiSchema,
   unitPriceCents: z.number().int().nullable(),
+  wasteRatio90d: z.number().nullable(),
 });
 const TotalsSchema = z.object({
   autoCount: z.number().int(),
   estimatedTotalCents: z.number().int(),
+  forecastCount: z.number().int(),
   pricedCount: z.number().int(),
   rowCount: z.number().int(),
 });
@@ -134,7 +147,7 @@ export const ShoppingListDetailApiSchema = z.object({
       unpricedCount: z.number().int(),
     }),
   ),
-  list: ListSchema,
+  list: ListSchema.extend(ScheduleSchema.shape),
   totals: TotalsSchema,
 });
 export const ShoppingListRowResultApiSchema = z.object({ merged: z.boolean(), row: RowSchema });

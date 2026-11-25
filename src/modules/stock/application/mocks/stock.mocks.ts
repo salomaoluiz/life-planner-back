@@ -127,6 +127,7 @@ export function shoppingListRepositoryMock() {
     ensureDefault: jest.fn(),
     findById: jest.fn(),
     findByOwners: jest.fn().mockResolvedValue([]),
+    findClosedPurchaseDates: jest.fn().mockResolvedValue(new Map()),
     findRestockRows: jest.fn().mockResolvedValue([]),
     findRowById: jest.fn(),
     findRowsByLists: jest.fn().mockResolvedValue([]),

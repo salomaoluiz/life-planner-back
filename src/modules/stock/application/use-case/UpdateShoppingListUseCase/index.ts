@@ -77,6 +77,7 @@ export class UpdateShoppingListUseCase implements UseCaseWithParams<
       id: list.id,
       isDefault: input.isDefault,
       name: input.name,
+      purchaseIntervalDays: input.purchaseIntervalDays,
       status: input.status,
     });
   }

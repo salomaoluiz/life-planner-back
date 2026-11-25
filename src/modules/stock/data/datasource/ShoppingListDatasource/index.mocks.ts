@@ -14,6 +14,7 @@ jest.mock('@stock/data/datasource/RestockSync');
 const spies = {
   dismiss: jest.mocked(dismissIfNeeded),
   dismissalDeleteMany: jest.fn(),
+  itemFindMany: jest.fn(),
   itemFindUniqueOrThrow: jest.fn(),
   itemUpdate: jest.fn(),
   listCreate: jest.fn(),
@@ -39,7 +40,11 @@ const spies = {
 };
 const client = {
   $transaction: spies.transaction,
-  stockItem: { findUniqueOrThrow: spies.itemFindUniqueOrThrow, update: spies.itemUpdate },
+  stockItem: {
+    findMany: spies.itemFindMany,
+    findUniqueOrThrow: spies.itemFindUniqueOrThrow,
+    update: spies.itemUpdate,
+  },
   stockRestockDismissal: { deleteMany: spies.dismissalDeleteMany },
   stockShoppingList: {
     create: spies.listCreate,
@@ -76,6 +81,7 @@ beforeEach(async () => {
   spies.listCreate.mockImplementation(async ({ data }) => ({ id: 'new', ...data }));
   spies.listUpdate.mockResolvedValue({ id: 'l' });
   spies.rowFindMany.mockResolvedValue([]);
+  spies.itemFindMany.mockResolvedValue([]);
 
   const module = await Test.createTestingModule({
     providers: [ShoppingListDatasource, { provide: Database, useValue: { client } }],

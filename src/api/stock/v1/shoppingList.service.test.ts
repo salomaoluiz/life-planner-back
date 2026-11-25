@@ -4,7 +4,15 @@ const { accessibleOwners, list, rowView, userId } = mocks;
 
 it('SHOULD output the cards with counts and the estimate', async () => {
   useCases.getLists.execute.mockResolvedValue([
-    { autoCount: 1, estimatedTotalCents: 300, list, pricedCount: 1, rowCount: 2 },
+    {
+      autoCount: 1,
+      estimatedTotalCents: 300,
+      forecastCount: 1,
+      list,
+      pricedCount: 1,
+      rowCount: 2,
+      schedule: { nextTripDate: new Date('2026-12-02T00:00:00.000Z'), suggestedIntervalDays: 11 },
+    },
   ]);
 
   const result = await setup.findAll(userId, { includeArchived: true, ownerId: 'o' }, 'en-US');
@@ -21,10 +29,14 @@ it('SHOULD output the cards with counts and the estimate', async () => {
     defaultFinanceCategoryId: null,
     defaultMarketId: null,
     estimatedTotalCents: 300,
+    forecastCount: 1,
     id: 'list',
     isDefault: true,
+    nextTripDate: '2026-12-02',
     pricedCount: 1,
+    purchaseIntervalDays: 7,
     rowCount: 2,
+    suggestedIntervalDays: 11,
   });
 });
 
@@ -52,7 +64,14 @@ it('SHOULD output the detail with nulls for absent values and the category witho
       },
     ],
     list,
-    totals: { autoCount: 1, estimatedTotalCents: 2934, pricedCount: 1, rowCount: 2 },
+    schedule: { nextTripDate: new Date('2026-12-02T00:00:00.000Z'), suggestedIntervalDays: null },
+    totals: {
+      autoCount: 1,
+      estimatedTotalCents: 2934,
+      forecastCount: 0,
+      pricedCount: 1,
+      rowCount: 2,
+    },
   });
 
   const detail = await setup.findById(userId, 'list');
@@ -70,6 +89,7 @@ it('SHOULD output the detail with nulls for absent values and the category witho
     unitPriceCents: null,
   });
   expect(detail.totals.rowCount).toBe(2);
+  expect(detail.list).toMatchObject({ nextTripDate: '2026-12-02', suggestedIntervalDays: null });
 });
 
 it('SHOULD create and update lists with the accessible owners', async () => {

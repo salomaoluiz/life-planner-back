@@ -38,6 +38,17 @@ export class ShoppingListMapper {
             categoryId: item.category_id ?? undefined,
             description: item.description,
             estimatedUnitPriceCents: item.estimated_unit_price_cents ?? undefined,
+            forecast: {
+              dailyRate:
+                item.forecast_status === 'OK' && item.forecast_daily_rate !== null
+                  ? toNumber(item.forecast_daily_rate)
+                  : undefined,
+              minDate: (item.forecast_status === 'OK' ? item.forecast_min_date : null) ?? undefined,
+              wasteRatio90d:
+                item.forecast_waste_ratio_90d === null
+                  ? undefined
+                  : toNumber(item.forecast_waste_ratio_90d),
+            },
             id: item.id,
             idealQuantity: item.ideal_quantity === null ? undefined : toNumber(item.ideal_quantity),
             minQuantity: item.min_quantity === null ? undefined : toNumber(item.min_quantity),

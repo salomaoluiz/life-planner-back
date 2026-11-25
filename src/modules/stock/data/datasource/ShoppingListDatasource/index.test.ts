@@ -289,6 +289,38 @@ describe('update', () => {
   });
 });
 
+describe('update interval (spec 123 FR 12)', () => {
+  it('SHOULD re-evaluate the items that can hold a FORECAST row WHEN the interval changes', async () => {
+    spies.listFindUniqueOrThrow.mockResolvedValue({
+      ...key,
+      id: 'l',
+      is_default: false,
+      purchase_interval_days: 7,
+      status: 'ACTIVE',
+    });
+    spies.itemFindMany.mockResolvedValue([{ id: 'x' }, { id: 'y' }]);
+
+    await setup.update({ id: 'l', purchase_interval_days: 14 });
+
+    expect(spies.itemFindMany).toHaveBeenCalledTimes(1);
+    expect(spies.sync).toHaveBeenCalledWith(expect.anything(), ['x', 'y'], { forecast: 'reuse' });
+  });
+
+  it('SHOULD not look for items WHEN the interval stays the same', async () => {
+    spies.listFindUniqueOrThrow.mockResolvedValue({
+      ...key,
+      id: 'l',
+      is_default: false,
+      purchase_interval_days: 7,
+      status: 'ACTIVE',
+    });
+
+    await setup.update({ id: 'l', purchase_interval_days: 7 });
+
+    expect(spies.itemFindMany).not.toHaveBeenCalled();
+  });
+});
+
 describe('updateRow', () => {
   it('SHOULD freeze an AUTO row as AUTO_EDITED WHEN the quantity changes and store the price on the item', async () => {
     spies.rowFindUniqueOrThrow.mockResolvedValueOnce({

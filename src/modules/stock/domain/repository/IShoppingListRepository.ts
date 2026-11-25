@@ -36,8 +36,10 @@ export type IShoppingListRepository = {
   deleteRow(rowId: string, userId: string): Promise<void>;
   // The owner's active default list, created when missing (unique index: concurrent calls create one).
   ensureDefault(access: OwnerAccess, name: string): Promise<ShoppingListEntity>;
+  // The dates of the last (up to 7) CLOSED purchases of each list, newest first (spec 123 FR 10-11).
   findById(id: string): Promise<ShoppingListEntity | undefined>;
   findByOwners(owners: OwnerAccess[], includeArchived: boolean): Promise<ShoppingListEntity[]>;
+  findClosedPurchaseDates(listIds: string[]): Promise<Map<string, Date[]>>;
   // AUTO and AUTO_EDITED rows of the ACTIVE lists of the owners (Home card).
   findRestockRows(owners: OwnerAccess[]): Promise<ShoppingRowRecord[]>;
   findRowById(id: string): Promise<ShoppingRowRecord | undefined>;
@@ -50,6 +52,8 @@ export interface ShoppingRowItem {
   categoryId?: string;
   description: string;
   estimatedUnitPriceCents?: number;
+  // Spec 123: the stored forecast of the item (only when it is OK or has a waste ratio).
+  forecast?: { dailyRate?: number; minDate?: Date; wasteRatio90d?: number };
   id: string;
   idealQuantity?: number;
   minQuantity?: number;
@@ -72,6 +76,7 @@ export interface UpdateShoppingListParams {
   id: string;
   isDefault?: boolean;
   name?: string;
+  purchaseIntervalDays?: number;
   status?: StockCatalogStatus;
 }
 // `undefined` = unchanged, `null` = clear the estimate.

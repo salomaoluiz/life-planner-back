@@ -30,10 +30,28 @@ async function itemsWithAutoRows(tx: Tx, key: OwnerKey, listId?: string): Promis
   const rows = await tx.stockShoppingListRow.findMany({
     distinct: ['item_id'],
     select: { item_id: true },
-    where: { item_id: { not: null }, list: { ...key, id: listId }, origin: 'AUTO' },
+    where: {
+      item_id: { not: null },
+      list: { ...key, id: listId },
+      origin: { in: ['AUTO', 'FORECAST'] },
+    },
   });
 
   return rows.map((row) => row.item_id as string);
+}
+
+// The items of the owner that can hold a FORECAST row: a computed OK forecast, or a forecast row already there.
+async function itemsWithForecast(tx: Tx, key: OwnerKey): Promise<string[]> {
+  const items = await tx.stockItem.findMany({
+    select: { id: true },
+    where: {
+      ...key,
+      OR: [{ forecast_status: 'OK' }, { shopping_list_rows: { some: { origin: 'FORECAST' } } }],
+      stock_only: false,
+    },
+  });
+
+  return items.map((item) => item.id);
 }
 
 @Injectable()
@@ -206,6 +224,26 @@ export class ShoppingListDatasource implements IShoppingListDatasource {
     });
   }
 
+  // Spec 123 FR 10: the dates of the last 7 CLOSED purchases of each list, newest first (one statement).
+  async findClosedPurchaseDates(
+    listIds: string[],
+  ): Promise<{ list_id: string; purchase_date: Date }[]> {
+    if (listIds.length === 0) {
+      return [];
+    }
+
+    return this.db.client.$queryRaw<{ list_id: string; purchase_date: Date }[]>(Prisma.sql`
+      SELECT t."list_id" AS "list_id", t."purchase_date" AS "purchase_date" FROM (
+        SELECT p."list_id", p."purchase_date",
+          row_number() OVER (PARTITION BY p."list_id" ORDER BY p."purchase_date" DESC, p."closed_at" DESC) AS "rn"
+        FROM "stock_purchases" p
+        WHERE p."list_id" IN (${Prisma.join(listIds)}) AND p."status" = 'CLOSED'
+      ) t
+      WHERE t."rn" <= 7
+      ORDER BY t."list_id", t."purchase_date" DESC
+    `);
+  }
+
   async findRestockRows(keys: OwnerKey[]): Promise<ShoppingRowWithItem[]> {
     if (keys.length === 0) {
       return [];
@@ -258,10 +296,23 @@ export class ShoppingListDatasource implements IShoppingListDatasource {
 
       const updated = await tx.stockShoppingList.update({ data, where: { id } });
 
+      // Spec 123 FR 12: a new interval moves the next trip, so the items that can have a FORECAST row are re-evaluated.
+      const intervalItems =
+        data.purchase_interval_days !== undefined &&
+        data.purchase_interval_days !== current.purchase_interval_days
+          ? await itemsWithForecast(tx, key)
+          : [];
+
       if (data.is_default && !current.is_default) {
-        await syncRestockRows(tx, await itemsWithAutoRows(tx, key), { forecast: 'reuse' });
+        await syncRestockRows(
+          tx,
+          [...new Set([...(await itemsWithAutoRows(tx, key)), ...intervalItems])],
+          { forecast: 'reuse' },
+        );
       } else {
-        await syncRestockRows(tx, movedItems, { forecast: 'reuse' });
+        await syncRestockRows(tx, [...new Set([...intervalItems, ...movedItems])], {
+          forecast: 'reuse',
+        });
       }
 
       return updated;

@@ -94,3 +94,48 @@ describe('forecast refresh (spec 123 FR 13)', () => {
     expect(recomputeForecasts.mock.calls[0][1]).toEqual(['a', 'b']);
   });
 });
+
+describe('FORECAST rows (spec 123 FR 15)', () => {
+  it('SHOULD delete a FORECAST row that no longer applies AND keep the dismissal while the forecast wants a row', async () => {
+    const client = tx();
+
+    await syncRestockRows(asTx(client), ['a'], { forecast: 'reuse' });
+
+    const cleanup = sqlOf(client.$executeRaw.mock.calls[0]);
+
+    expect(cleanup).toContain('r."origin" = \'FORECAST\'');
+    expect(cleanup).toContain('NOT f."needs" AND NOT f."wants_forecast"');
+  });
+
+  it('SHOULD upsert AUTO at the minimum and FORECAST before the next trip, turning FORECAST into AUTO', async () => {
+    const client = tx();
+
+    await syncRestockRows(asTx(client), ['a'], { forecast: 'reuse' });
+
+    const upsert = sqlOf(client.$executeRaw.mock.calls[2]);
+
+    expect(upsert).toContain('f."needs" OR f."wants_forecast"');
+    expect(upsert).toContain('"origin" = EXCLUDED."origin"');
+    expect(upsert).toContain("\"origin\" IN ('AUTO', 'FORECAST')");
+  });
+
+  it('SHOULD derive the next trip from the last CLOSED purchase and the list interval', async () => {
+    const client = tx();
+
+    await syncRestockRows(asTx(client), ['a'], { forecast: 'reuse' });
+
+    const cleanup = sqlOf(client.$executeRaw.mock.calls[0]);
+
+    expect(cleanup).toContain('p."status" = \'CLOSED\'');
+    expect(cleanup).toContain('"purchase_interval_days"');
+    expect(cleanup).toContain('f."forecast_min_date"'.replace('f.', 'b.'));
+  });
+
+  it('SHOULD dismiss a removed row WHEN the item still has a forecast row', async () => {
+    const client = tx();
+
+    await dismissIfNeeded(asTx(client), 'a', 'user');
+
+    expect(sqlOf(client.$executeRaw.mock.calls[0])).toContain('f."needs" OR f."wants_forecast"');
+  });
+});

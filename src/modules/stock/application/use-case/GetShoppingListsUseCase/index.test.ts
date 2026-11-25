@@ -19,7 +19,15 @@ it('SHOULD ensure the default of every writable owner AND return the cards with 
   expect(mocks.lists.ensureDefault).toHaveBeenCalledTimes(2);
   expect(mocks.lists.ensureDefault).toHaveBeenCalledWith(mocks.accessibleOwners[0], 'Groceries');
   expect(cards).toEqual([
-    { autoCount: 0, estimatedTotalCents: 300, list, pricedCount: 1, rowCount: 2 },
+    {
+      autoCount: 0,
+      estimatedTotalCents: 300,
+      forecastCount: 0,
+      list,
+      pricedCount: 1,
+      rowCount: 2,
+      schedule: { nextTripDate: expect.any(Date), suggestedIntervalDays: null },
+    },
   ]);
 });
 

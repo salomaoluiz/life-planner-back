@@ -43,6 +43,7 @@ export interface IShoppingListDatasource {
     keys: { owner: OwnerType; owner_id: string }[],
     includeArchived: boolean,
   ): Promise<StockShoppingList[]>;
+  findClosedPurchaseDates(listIds: string[]): Promise<{ list_id: string; purchase_date: Date }[]>;
   findRestockRows(keys: { owner: OwnerType; owner_id: string }[]): Promise<ShoppingRowWithItem[]>;
   findRowById(id: string): Promise<null | ShoppingRowWithItem>;
   findRowsByLists(listIds: string[]): Promise<ShoppingRowWithItem[]>;
@@ -61,6 +62,7 @@ export interface UpdateShoppingListDatasourceParams {
   id: string;
   is_default?: boolean;
   name?: string;
+  purchase_interval_days?: number;
   status?: AccountStatus;
 }
 export interface UpdateShoppingListRowDatasourceParams {

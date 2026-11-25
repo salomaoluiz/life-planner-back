@@ -32,8 +32,12 @@ export class GetShoppingListsUseCase implements UseCaseWithParams<
     );
 
     const lists = await this.listRepository.findByOwners(owners, input.includeArchived);
-    const rows = await this.listRepository.findRowsByLists(lists.map((list) => list.id));
+    const listIds = lists.map((list) => list.id);
+    const [rows, closedDates] = await Promise.all([
+      this.listRepository.findRowsByLists(listIds),
+      this.listRepository.findClosedPurchaseDates(listIds),
+    ]);
 
-    return toListCards(lists, rows);
+    return toListCards(lists, rows, closedDates);
   }
 }

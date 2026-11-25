@@ -26,11 +26,12 @@ export class GetShoppingListByIdUseCase implements UseCaseWithParams<
   async execute(params: GetShoppingListByIdInput): Promise<ShoppingListDetail> {
     const input = validate(GetShoppingListByIdSchema, params);
     const list = await loadReadableList(this.listRepository, input.accessibleOwners, input.id);
-    const [rows, categories] = await Promise.all([
+    const [rows, categories, closedDates] = await Promise.all([
       this.listRepository.findRowsByLists([list.id]),
       this.catalogRepository.findCategories(list),
+      this.listRepository.findClosedPurchaseDates([list.id]),
     ]);
 
-    return toListDetail(list, rows, categories);
+    return toListDetail(list, rows, categories, closedDates.get(list.id));
   }
 }
