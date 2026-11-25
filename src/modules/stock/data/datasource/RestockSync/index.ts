@@ -15,8 +15,8 @@ function facts(itemIds: string[], today: Date) {
 
   return Prisma.sql`(
     SELECT b.*,
-      (NOT b."needs" AND NOT b."stock_only" AND b."forecast_status" = 'OK' AND b."effective_list_id" IS NOT NULL
-        AND b."forecast_min_date" <= b."next_trip" AND b."forecast_qty" > 0) AS "wants_forecast"
+      COALESCE(NOT b."needs" AND NOT b."stock_only" AND b."forecast_status" = 'OK' AND b."effective_list_id" IS NOT NULL
+        AND b."forecast_min_date" <= b."next_trip" AND b."forecast_qty" > 0, false) AS "wants_forecast"
     FROM (
       SELECT c.*,
         CASE WHEN c."forecast_status" IS DISTINCT FROM 'OK' OR c."next_trip" IS NULL THEN 0

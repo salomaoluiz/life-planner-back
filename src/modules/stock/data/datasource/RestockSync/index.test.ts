@@ -96,6 +96,14 @@ describe('forecast refresh (spec 123 FR 13)', () => {
 });
 
 describe('FORECAST rows (spec 123 FR 15)', () => {
+  it('SHOULD never leave wants_forecast NULL (an item without a forecast or a list)', async () => {
+    const client = tx();
+
+    await syncRestockRows(asTx(client), ['a'], { forecast: 'reuse' });
+
+    expect(sqlOf(client.$executeRaw.mock.calls[0])).toContain('COALESCE(NOT b."needs"');
+  });
+
   it('SHOULD delete a FORECAST row that no longer applies AND keep the dismissal while the forecast wants a row', async () => {
     const client = tx();
 
