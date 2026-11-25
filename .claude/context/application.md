@@ -95,3 +95,5 @@ Use cases: `CreateIncomeSeriesUseCase`, `PreviewIncomeSeriesUseCase`, `GetIncome
 ## Purchases (spec 120)
 
 `ClosePurchaseUseCase.execute(input, postFinance)`, `UpdateClosedPurchaseUseCase` and `DeleteClosedPurchaseUseCase` take a callback from the API layer that posts or cancels the finance side inside the closing transaction (the stock module never imports finance). Shared helpers: `PurchaseAccess`, `PurchaseView(Loader)`, `PurchaseClosing`.
+
+Spec 123: `RefreshStaleForecastsUseCase` (gated by `StockForecastGate`, in-memory per instance, key `OWNER:ownerId` + day) runs before `GetStockItems`, `GetStockItemById`, `GetShoppingLists`, `GetShoppingListById` and `GetRestockSummary`; movement, item, list and closing writes recompute the forecast inside their transaction through `syncRestockRows`. New use cases: `GetConsumptionWeeksUseCase`, `DismissLeftoverUseCase`, `GetWasteUseCase`.

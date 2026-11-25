@@ -3,6 +3,15 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [6.6.0] - 2026-11-25
+
+### Added
+
+- Stock forecast (spec 123): each item stores its average consumption and when it reaches the minimum and runs out; items that will not last until the next trip enter their list as `FORECAST` rows with the quantity that refills the ideal.
+- Lists get `purchaseIntervalDays` (1-90, `PATCH /stock/shopping-lists/:id`), `nextTripDate` and a suggested interval from the closed purchases.
+- Warning when a lot will expire before it runs out (`leftover`), with `POST|DELETE /stock/lots/:id/leftover-dismissal`; `GET /stock/items/:id/consumption-weeks` for the 12-week chart.
+- Lots keep the price paid and every discard records its value (`LOT`, `ITEM_LAST` or `NONE`); `GET /stock/waste` returns the month by reason, category and item, and the item detail the last 90 days of waste.
+
 ## [6.5.0] - 2026-11-23
 
 ### Added
