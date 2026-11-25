@@ -160,6 +160,23 @@ describe('reads', () => {
     ]);
   });
 
+  it('SHOULD keep the owner filter next to the pending OR (no purchase of another user is listed)', async () => {
+    models.stockPurchase.findMany.mockResolvedValue([]);
+
+    await setup.findPending(owners, at);
+
+    const where =
+      models.stockPurchase.findMany.mock.calls[
+        models.stockPurchase.findMany.mock.calls.length - 1
+      ][0].where;
+
+    expect(where.OR).toBeUndefined();
+    expect(where.AND[0].OR[0]).toMatchObject({
+      owner: expect.any(String),
+      owner_id: expect.any(String),
+    });
+  });
+
   it('SHOULD page the price history with a keyset AND a market filter', async () => {
     models.stockPriceHistory.findMany.mockResolvedValue([
       { date: at, id: 'h1', market_id: 'm', unit_price_cents: 100 },

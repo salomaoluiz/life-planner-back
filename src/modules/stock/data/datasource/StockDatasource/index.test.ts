@@ -407,7 +407,10 @@ describe('forecast refresh (spec 123)', () => {
 
     expect(ids).toEqual(['a', 'b']);
     expect(spies.stockFindMany.mock.calls[0][0].where).toMatchObject({
-      OR: [{ forecast_computed_on: null }, { forecast_computed_on: { lt: today } }],
+      AND: [
+        expect.objectContaining({ OR: expect.any(Array) }),
+        { OR: [{ forecast_computed_on: null }, { forecast_computed_on: { lt: today } }] },
+      ],
       stock_only: false,
     });
   });

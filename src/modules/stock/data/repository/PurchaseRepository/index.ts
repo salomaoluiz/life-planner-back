@@ -678,10 +678,15 @@ export class PurchaseRepository implements IPurchaseRepository {
       },
       orderBy: [{ last_activity_at: 'asc' }, { id: 'asc' }],
       where: {
-        ...toOwnerWhere(owners),
-        OR: [
-          { status: StockPurchaseStatus.ENDED },
-          { last_activity_at: { lt: idleBefore }, status: StockPurchaseStatus.OPEN },
+        // AND: a sibling `OR` next to the spread owner `OR` would replace it and list every user's purchases.
+        AND: [
+          toOwnerWhere(owners),
+          {
+            OR: [
+              { status: StockPurchaseStatus.ENDED },
+              { last_activity_at: { lt: idleBefore }, status: StockPurchaseStatus.OPEN },
+            ],
+          },
         ],
       },
     });

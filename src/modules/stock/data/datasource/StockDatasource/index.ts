@@ -426,8 +426,10 @@ export class StockDatasource implements IStockDatasource {
     const items = await this.db.client.stockItem.findMany({
       select: { id: true },
       where: {
-        ...toOwnerWhere(owners),
-        OR: [{ forecast_computed_on: null }, { forecast_computed_on: { lt: today } }],
+        AND: [
+          toOwnerWhere(owners),
+          { OR: [{ forecast_computed_on: null }, { forecast_computed_on: { lt: today } }] },
+        ],
         stock_only: false,
       },
     });
