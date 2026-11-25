@@ -20,6 +20,7 @@ import {
   StockGestureController,
   StockLotController,
   StockSuggestionController,
+  StockWasteController,
 } from '@api/stock/v1/stock.controller';
 import { StockService } from '@api/stock/v1/stock.service';
 import {
@@ -51,6 +52,7 @@ import { UserModule } from '@user/user.module';
     StockController,
     StockGestureController,
     StockLotController,
+    StockWasteController,
     StockCategoryController,
     StockLocationController,
     ShoppingListController,

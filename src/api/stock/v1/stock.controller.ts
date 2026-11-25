@@ -43,6 +43,8 @@ import {
   UndoGestureBody,
   UpdateStockItemApiSchema,
   UpdateStockItemBody,
+  WasteOutput,
+  WasteQuerySchema,
 } from '@api/stock/v1/dto/stock.dto';
 import { StockService } from '@api/stock/v1/stock.service';
 import { JwtPayload } from '@shared/infra/jwt/types';
@@ -183,6 +185,24 @@ export class StockFrequentController {
   @ZodResponse({ status: 200, type: StockFrequentOutput })
   async frequent(@Request() req: JwtPayload & Request, @Query() query: Record<string, unknown>) {
     return this.stockService.findFrequent(req.user.id, validate(FrequentQuerySchema, query));
+  }
+}
+
+// Spec 123 FR 29-31: the Waste screen of one month (no owner = every readable owner, archived families hidden).
+@ApiBearerAuth('JWT')
+@Controller({
+  path: 'stock/waste',
+  version: '1',
+})
+export class StockWasteController {
+  constructor(private readonly stockService: StockService) {}
+
+  @Get()
+  @ZodResponse({ status: 200, type: WasteOutput })
+  async find(@Request() req: JwtPayload & Request, @Query() query: Record<string, unknown>) {
+    const filters = validate(WasteQuerySchema, query);
+
+    return this.stockService.findWaste(req.user.id, filters);
   }
 }
 

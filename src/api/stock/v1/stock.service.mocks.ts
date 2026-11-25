@@ -26,6 +26,7 @@ import { GetStockItemsUseCase } from '@stock/application/use-case/GetStockItemsU
 import { GetStockLocationByIdUseCase } from '@stock/application/use-case/GetStockLocationByIdUseCase';
 import { GetStockLocationsUseCase } from '@stock/application/use-case/GetStockLocationsUseCase';
 import { GetStockMovementsUseCase } from '@stock/application/use-case/GetStockMovementsUseCase';
+import { GetWasteUseCase } from '@stock/application/use-case/GetWasteUseCase';
 import { SetGestureExpirationUseCase } from '@stock/application/use-case/SetGestureExpirationUseCase';
 import { SuggestStockItemsUseCase } from '@stock/application/use-case/SuggestStockItemsUseCase';
 import { UndoStockGestureUseCase } from '@stock/application/use-case/UndoStockGestureUseCase';
@@ -65,6 +66,7 @@ const uses = {
   getStockLocations: GetStockLocationsUseCase,
   getStockMovements: GetStockMovementsUseCase,
   getUserFamilyAccess: GetUserFamilyAccessUseCase,
+  getWaste: GetWasteUseCase,
   setGestureExpiration: SetGestureExpirationUseCase,
   suggestStockItems: SuggestStockItemsUseCase,
   undoStockGesture: UndoStockGestureUseCase,

@@ -410,3 +410,21 @@ describe('spec 123', () => {
     });
   });
 });
+
+describe('waste (spec 123)', () => {
+  it('SHOULD pass the month, owner and topLimit with the accessible owners', async () => {
+    useCases.getWaste.execute.mockResolvedValue({ month: '2026-11' });
+
+    expect(
+      await setup.findWaste(userId, { month: '2026-11', ownerId: 'o', topLimit: 'all' }),
+    ).toEqual({
+      month: '2026-11',
+    });
+    expect(useCases.getWaste.execute).toHaveBeenCalledWith({
+      accessibleOwners,
+      month: '2026-11',
+      ownerId: 'o',
+      topLimit: 'all',
+    });
+  });
+});

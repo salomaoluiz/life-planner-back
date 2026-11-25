@@ -11,6 +11,7 @@ import {
   UpdateStockCategoryApiInput,
   UpdateStockItemApiInput,
   UpdateStockLocationApiInput,
+  WasteApiOutput,
 } from '@api/stock/v1/dto/stock.dto';
 import { GetFamilyMembersUseCase } from '@family/application/use-case/GetFamilyMembersUseCase';
 import { GetUserFamilyAccessUseCase } from '@family/application/use-case/GetUserFamilyAccessUseCase';
@@ -37,6 +38,7 @@ import { GetStockItemsUseCase } from '@stock/application/use-case/GetStockItemsU
 import { GetStockLocationByIdUseCase } from '@stock/application/use-case/GetStockLocationByIdUseCase';
 import { GetStockLocationsUseCase } from '@stock/application/use-case/GetStockLocationsUseCase';
 import { GetStockMovementsUseCase } from '@stock/application/use-case/GetStockMovementsUseCase';
+import { GetWasteUseCase } from '@stock/application/use-case/GetWasteUseCase';
 import { SetGestureExpirationUseCase } from '@stock/application/use-case/SetGestureExpirationUseCase';
 import { SuggestStockItemsUseCase } from '@stock/application/use-case/SuggestStockItemsUseCase';
 import { UndoStockGestureUseCase } from '@stock/application/use-case/UndoStockGestureUseCase';
@@ -195,6 +197,7 @@ export class StockService {
     private readonly getStockLocationsUseCase: GetStockLocationsUseCase,
     private readonly getStockMovementsUseCase: GetStockMovementsUseCase,
     private readonly getUserFamilyAccessUseCase: GetUserFamilyAccessUseCase,
+    private readonly getWasteUseCase: GetWasteUseCase,
     private readonly setGestureExpirationUseCase: SetGestureExpirationUseCase,
     private readonly suggestStockItemsUseCase: SuggestStockItemsUseCase,
     private readonly undoStockGestureUseCase: UndoStockGestureUseCase,
@@ -372,6 +375,7 @@ export class StockService {
     return { items: roots };
   }
 
+  // Spec 123 FR 30: `owner` is accepted for symmetry with the other lists; the id decides (no owner = "Todas").
   async findConsumptionWeeks(userId: string, id: string, today?: string) {
     const weeks = await this.getConsumptionWeeksUseCase.execute({
       accessibleOwners: await this.getAccessibleOwners(userId),
@@ -427,6 +431,15 @@ export class StockService {
       items: await this.toMovementOutputs(userId, page.owner, page.items),
       nextCursor: page.nextCursor,
     };
+  }
+
+  async findWaste(userId: string, query: { month?: string; ownerId?: string; topLimit?: 'all' }) {
+    return this.getWasteUseCase.execute({
+      accessibleOwners: await this.getAccessibleOwners(userId),
+      month: query.month,
+      ownerId: query.ownerId,
+      topLimit: query.topLimit,
+    }) as Promise<WasteApiOutput>;
   }
 
   async ownerChangePreview(userId: string, id: string, owner: OwnerType, ownerId: string) {

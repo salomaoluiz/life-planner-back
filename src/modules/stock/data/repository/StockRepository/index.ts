@@ -189,6 +189,10 @@ export class StockRepository implements IStockRepository {
     return result.map((row) => StockMapper.toDomain(row));
   }
 
+  async findFirstDiscardDate(owners: OwnerAccess[]) {
+    return this.stockDatasource.findFirstDiscardDate(owners);
+  }
+
   async findFrequentItemIds(owners: OwnerAccess[], since: Date, limit: number): Promise<string[]> {
     return this.stockDatasource.findFrequentItemIds(owners, since, limit);
   }
@@ -209,6 +213,17 @@ export class StockRepository implements IStockRepository {
 
   async findStaleForecastItemIds(owners: OwnerAccess[], today: Date): Promise<string[]> {
     return this.stockDatasource.findStaleForecastItemIds(owners, today);
+  }
+
+  async findWasteGroups(
+    owners: OwnerAccess[],
+    range: { from: Date; previousFrom: Date; to: Date },
+  ) {
+    return this.stockDatasource.findWasteGroups(owners, range);
+  }
+
+  async findWasteItems(owners: OwnerAccess[], range: { from: Date; to: Date }) {
+    return this.stockDatasource.findWasteItems(owners, range);
   }
 
   async findWasteRows(itemId: string, since: Date) {

@@ -6,6 +6,7 @@ import {
   StockGestureController,
   StockLotController,
   StockSuggestionController,
+  StockWasteController,
 } from '@api/stock/v1/stock.controller';
 import { StockService } from '@api/stock/v1/stock.service';
 import {
@@ -38,6 +39,7 @@ const methods = [
   'findLocationById',
   'findCategories',
   'findLocations',
+  'findWaste',
   'findMovements',
   'ownerChangePreview',
   'setGestureExpiration',
@@ -62,6 +64,7 @@ async function setup() {
       StockFrequentController,
       StockGestureController,
       StockLotController,
+      StockWasteController,
       StockCategoryController,
       StockLocationController,
     ],
@@ -76,6 +79,7 @@ async function setup() {
     locations: module.get(StockLocationController),
     lots: module.get(StockLotController),
     suggestions: module.get(StockSuggestionController),
+    waste: module.get(StockWasteController),
   };
 }
 

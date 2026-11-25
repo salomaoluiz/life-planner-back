@@ -6,6 +6,7 @@ import StockMovementEntity, {
   StockMovementTypes,
 } from '@stock/domain/entity/StockMovementEntity';
 import { DayMovements } from '@stock/domain/service/ConsumptionForecast';
+import { WasteGroupRow, WasteItemRow } from '@stock/domain/service/WasteReport';
 import { WasteRow } from '@stock/domain/service/WasteSummary';
 
 export interface NewLotParams {
@@ -75,6 +76,14 @@ export type IStockRepository = {
     limit: number,
     cursor?: { createdAt: Date; id: string },
   ): Promise<StockMovementEntity[]>;
+  // Spec 123 FR 30: the date of the first discard of the owners (the earliest month of the Waste screen).
+  findFirstDiscardDate(owners: OwnerAccess[]): Promise<Date | null>;
+  // Totals, reasons and categories of the month and the previous month in ONE grouped statement.
+  findWasteGroups(
+    owners: OwnerAccess[],
+    range: { from: Date; previousFrom: Date; to: Date },
+  ): Promise<WasteGroupRow[]>;
+  findWasteItems(owners: OwnerAccess[], range: { from: Date; to: Date }): Promise<WasteItemRow[]>;
   findWasteRows(itemId: string, since: Date): Promise<WasteRow[]>;
   // Spec 123 FR 14: ids of the owners' items (not stock-only) whose forecast was not computed today.
   findStaleForecastItemIds(owners: OwnerAccess[], today: Date): Promise<string[]>;

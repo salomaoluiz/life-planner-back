@@ -523,3 +523,83 @@ describe('discard value (spec 123 FR 27)', () => {
     expect(spies.movementCreate.mock.calls[0][0].data).not.toHaveProperty('value_source');
   });
 });
+
+describe('waste reads (spec 123 FR 30)', () => {
+  const range = {
+    from: new Date('2026-11-01T00:00:00.000Z'),
+    previousFrom: new Date('2026-10-01T00:00:00.000Z'),
+    to: new Date('2026-12-01T00:00:00.000Z'),
+  };
+
+  it('SHOULD read totals, reasons, categories and the previous month in ONE grouped statement', async () => {
+    spies.queryRaw.mockResolvedValue([
+      {
+        category_id: null,
+        count: 3,
+        currency: 'BRL',
+        items: 2,
+        period: 'CURRENT',
+        reason: 'EXPIRED',
+        scope: 'REASON',
+        unpriced: 0,
+        value: 900,
+      },
+      {
+        category_id: 'c',
+        count: 1,
+        currency: null,
+        items: 1,
+        period: 'PREVIOUS',
+        reason: null,
+        scope: 'CATEGORY',
+        unpriced: 1,
+        value: 0,
+      },
+    ]);
+
+    const rows = await setup.findWasteGroups(mocks.owners, range);
+
+    expect(spies.queryRaw).toHaveBeenCalledTimes(1);
+    expect(spies.queryRaw.mock.calls[0][0].sql).toContain('GROUPING SETS');
+    expect(rows[0]).toMatchObject({ reason: 'EXPIRED', scope: 'REASON', valueCents: 900 });
+    expect(rows[0].categoryId).toBeUndefined();
+    expect(rows[1]).toMatchObject({
+      categoryId: 'c',
+      currency: null,
+      scope: 'CATEGORY',
+      unpriced: 1,
+    });
+  });
+
+  it('SHOULD map the item rows AND the first discard date', async () => {
+    spies.queryRaw.mockResolvedValueOnce([
+      {
+        count: 2,
+        currency: 'BRL',
+        description: 'Iogurte',
+        item_id: 'i',
+        quantity: 4,
+        reason: 'EXPIRED',
+        unit: 'unit',
+        value: 500,
+      },
+    ]);
+    spies.queryRaw.mockResolvedValueOnce([{ first: new Date('2026-03-10T00:00:00.000Z') }]);
+
+    expect((await setup.findWasteItems(mocks.owners, range))[0]).toMatchObject({
+      itemId: 'i',
+      quantity: 4,
+      valueCents: 500,
+    });
+    expect(await setup.findFirstDiscardDate(mocks.owners)).toEqual(
+      new Date('2026-03-10T00:00:00.000Z'),
+    );
+  });
+
+  it('SHOULD not query WHEN there are no owners', async () => {
+    expect(await setup.findWasteGroups([], range)).toEqual([]);
+    expect(await setup.findWasteItems([], range)).toEqual([]);
+    expect(await setup.findFirstDiscardDate([])).toBeNull();
+    expect(spies.queryRaw).not.toHaveBeenCalled();
+  });
+});

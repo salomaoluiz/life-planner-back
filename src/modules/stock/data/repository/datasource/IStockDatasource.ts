@@ -9,6 +9,7 @@ import {
 } from '@db/client';
 import { OwnerAccess } from '@stock/domain/entity/OwnerAccess';
 import { DayMovements } from '@stock/domain/service/ConsumptionForecast';
+import { WasteGroupRow, WasteItemRow } from '@stock/domain/service/WasteReport';
 import { WasteRow } from '@stock/domain/service/WasteSummary';
 
 export interface CreateStockDatasourceParams {
@@ -118,6 +119,7 @@ export interface IStockDatasource {
     owners: OwnerAccess[],
     filter?: StockFilterDatasourceParams,
   ): Promise<StockItemWithLots[]>;
+  findFirstDiscardDate(owners: OwnerAccess[]): Promise<Date | null>;
   findFrequentItemIds(owners: OwnerAccess[], since: Date, limit: number): Promise<string[]>;
   findMovementDays(itemId: string, today: Date, windowDays: number): Promise<DayMovements[]>;
   findMovements(
@@ -126,6 +128,11 @@ export interface IStockDatasource {
     cursor?: { createdAt: Date; id: string },
   ): Promise<StockMovement[]>;
   findStaleForecastItemIds(owners: OwnerAccess[], today: Date): Promise<string[]>;
+  findWasteGroups(
+    owners: OwnerAccess[],
+    range: { from: Date; previousFrom: Date; to: Date },
+  ): Promise<WasteGroupRow[]>;
+  findWasteItems(owners: OwnerAccess[], range: { from: Date; to: Date }): Promise<WasteItemRow[]>;
   findWasteRows(itemId: string, since: Date): Promise<WasteRow[]>;
   refreshForecasts(itemIds: string[], today: Date): Promise<void>;
   setLeftoverDismissal(lotId: string, quantity: null | number): Promise<void>;

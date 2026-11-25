@@ -46,6 +46,7 @@ import { GetStockItemsUseCase } from '@stock/application/use-case/GetStockItemsU
 import { GetStockLocationByIdUseCase } from '@stock/application/use-case/GetStockLocationByIdUseCase';
 import { GetStockLocationsUseCase } from '@stock/application/use-case/GetStockLocationsUseCase';
 import { GetStockMovementsUseCase } from '@stock/application/use-case/GetStockMovementsUseCase';
+import { GetWasteUseCase } from '@stock/application/use-case/GetWasteUseCase';
 import { HasStockItemsByOwnerUseCase } from '@stock/application/use-case/HasStockItemsByOwnerUseCase';
 import { MergePurchaseUseCase } from '@stock/application/use-case/MergePurchaseUseCase';
 import { RefreshStaleForecastsUseCase } from '@stock/application/use-case/RefreshStaleForecastsUseCase';
@@ -130,6 +131,7 @@ const useCases = [
   GetStockLocationByIdUseCase,
   GetStockLocationsUseCase,
   GetStockMovementsUseCase,
+  GetWasteUseCase,
   HasStockItemsByOwnerUseCase,
   RefreshStockEmbeddingUseCase,
   SetGestureExpirationUseCase,

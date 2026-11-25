@@ -19,11 +19,21 @@ import {
 import { OwnerAccess } from '@stock/domain/entity/OwnerAccess';
 import { discardValue } from '@stock/domain/service/LotPrice';
 import { todayUtc } from '@stock/domain/service/Today';
+import { WasteGroupRow, WasteItemRow } from '@stock/domain/service/WasteReport';
 import { WasteRow } from '@stock/domain/service/WasteSummary';
 
 const OPEN_LOTS = { lots: { orderBy: { id: 'asc' as const }, where: { quantity: { gt: 0 } } } };
 
 // Spec 123 FR 17/19: attaches the FORECAST row of each item (one indexed statement for all of them).
+function ownerClauses(owners: OwnerAccess[]): Prisma.Sql {
+  return Prisma.join(
+    owners.map(
+      (access) =>
+        Prisma.sql`(i."owner" = ${access.owner}::"OwnerType" AND i."owner_id" = ${access.ownerId})`,
+    ),
+    ' OR ',
+  );
+}
 async function withForecastRows<T extends { id: string }>(
   client: Pick<Prisma.TransactionClient, 'stockShoppingListRow'>,
   items: T[],
@@ -390,6 +400,20 @@ export class StockDatasource implements IStockDatasource {
     return lot ? this.findById(lot.item_id) : null;
   }
 
+  async findFirstDiscardDate(owners: OwnerAccess[]): Promise<Date | null> {
+    if (owners.length === 0) {
+      return null;
+    }
+
+    const [row] = await this.db.client.$queryRaw<{ first: Date | null }[]>(Prisma.sql`
+      SELECT MIN(m."created_at") AS "first"
+      FROM "stock_movements" m JOIN "stock_items" i ON i."id" = m."item_id"
+      WHERE m."type" = 'DISCARD' AND (${ownerClauses(owners)})
+    `);
+
+    return row?.first ?? null;
+  }
+
   async findMovementDays(itemId: string, today: Date, windowDays: number) {
     return readItemMovementDays(this.db.client, itemId, today, windowDays);
   }
@@ -409,6 +433,103 @@ export class StockDatasource implements IStockDatasource {
     });
 
     return items.map((item) => item.id);
+  }
+
+  // Spec 123 FR 30: totals (period x currency), reasons and categories of the month AND the previous month, one
+  // grouped statement over the partial DISCARD index.
+  async findWasteGroups(
+    owners: OwnerAccess[],
+    range: { from: Date; previousFrom: Date; to: Date },
+  ): Promise<WasteGroupRow[]> {
+    if (owners.length === 0) {
+      return [];
+    }
+
+    const rows = await this.db.client.$queryRaw<
+      {
+        category_id: null | string;
+        count: number;
+        currency: null | string;
+        items: number;
+        period: 'CURRENT' | 'PREVIOUS';
+        reason: null | string;
+        scope: 'CATEGORY' | 'REASON' | 'TOTAL';
+        unpriced: number;
+        value: number;
+      }[]
+    >(Prisma.sql`
+      SELECT t."period", t."currency",
+        CASE WHEN GROUPING(t."reason") = 0 THEN 'REASON' WHEN GROUPING(t."category_id") = 0 THEN 'CATEGORY' ELSE 'TOTAL' END AS "scope",
+        t."reason", t."category_id", COUNT(*)::int AS "count", COUNT(DISTINCT t."item_id")::int AS "items",
+        (COUNT(*) FILTER (WHERE t."value_source" = 'NONE'))::int AS "unpriced",
+        COALESCE(SUM(t."value_cents"), 0)::int AS "value"
+      FROM (
+        SELECT CASE WHEN m."created_at" >= ${range.from} THEN 'CURRENT' ELSE 'PREVIOUS' END AS "period",
+          m."reason"::text AS "reason", m."currency", m."value_cents", m."value_source"::text AS "value_source",
+          m."item_id", i."category_id"
+        FROM "stock_movements" m JOIN "stock_items" i ON i."id" = m."item_id"
+        WHERE m."type" = 'DISCARD' AND m."created_at" >= ${range.previousFrom} AND m."created_at" < ${range.to}
+          AND (${ownerClauses(owners)})
+      ) t
+      GROUP BY GROUPING SETS (
+        (t."period", t."currency"),
+        (t."period", t."reason", t."currency"),
+        (t."period", t."category_id", t."currency")
+      )
+    `);
+
+    return rows.map((row) => ({
+      categoryId: row.scope === 'CATEGORY' ? row.category_id : undefined,
+      count: row.count,
+      currency: row.currency,
+      items: row.items,
+      period: row.period,
+      reason: row.scope === 'REASON' ? (row.reason ?? undefined) : undefined,
+      scope: row.scope,
+      unpriced: row.unpriced,
+      valueCents: row.value,
+    }));
+  }
+
+  async findWasteItems(
+    owners: OwnerAccess[],
+    range: { from: Date; to: Date },
+  ): Promise<WasteItemRow[]> {
+    if (owners.length === 0) {
+      return [];
+    }
+
+    const rows = await this.db.client.$queryRaw<
+      {
+        count: number;
+        currency: null | string;
+        description: string;
+        item_id: string;
+        quantity: number;
+        reason: string;
+        unit: string;
+        value: number;
+      }[]
+    >(Prisma.sql`
+      SELECT m."item_id" AS "item_id", i."description" AS "description", i."unit"::text AS "unit",
+        m."reason"::text AS "reason", m."currency" AS "currency", COUNT(*)::int AS "count",
+        SUM(-m."quantity")::float8 AS "quantity", COALESCE(SUM(m."value_cents"), 0)::int AS "value"
+      FROM "stock_movements" m JOIN "stock_items" i ON i."id" = m."item_id"
+      WHERE m."type" = 'DISCARD' AND m."created_at" >= ${range.from} AND m."created_at" < ${range.to}
+        AND (${ownerClauses(owners)})
+      GROUP BY m."item_id", i."description", i."unit", m."reason", m."currency"
+    `);
+
+    return rows.map((row) => ({
+      count: row.count,
+      currency: row.currency,
+      description: row.description,
+      itemId: row.item_id,
+      quantity: row.quantity,
+      reason: row.reason,
+      unit: row.unit,
+      valueCents: row.value,
+    }));
   }
 
   async findWasteRows(itemId: string, since: Date): Promise<WasteRow[]> {

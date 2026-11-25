@@ -315,6 +315,68 @@ export const ListStockItemsQuerySchema = z.object({
   ownerId: z.uuid().optional(),
   today: DayApiSchema.optional(),
 });
+// Spec 123 FR 30: `month` is YYYY-MM; `topLimit=all` lists every item of the month.
+export const WasteQuerySchema = z.object({
+  month: z
+    .string()
+    .regex(/^\d{4}-(0[1-9]|1[0-2])$/)
+    .optional(),
+  owner: OwnerTypeApiSchema.optional(),
+  ownerId: z.uuid().optional(),
+  topLimit: z.literal('all').optional(),
+});
+const WasteTotalsSchema = z.array(z.object({ currency: z.string(), valueCents: z.number().int() }));
+export const WasteApiSchema = z.object({
+  byCategory: z.array(
+    z.object({
+      category: z.object({ id: z.uuid(), name: z.string() }).nullable(),
+      count: z.number().int(),
+      totals: WasteTotalsSchema,
+    }),
+  ),
+  byReason: z.array(
+    z.object({
+      count: z.number().int(),
+      reason: z.enum(StockMovementReasons),
+      totals: WasteTotalsSchema,
+    }),
+  ),
+  firstMonth: z.string().nullable(),
+  month: z.string(),
+  moreItemsCount: z.number().int(),
+  previousMonth: z.array(
+    z.object({
+      currency: z.string(),
+      discardCount: z.number().int(),
+      valueCents: z.number().int(),
+    }),
+  ),
+  summary: z.object({
+    discardCount: z.number().int(),
+    itemCount: z.number().int(),
+    unpricedCount: z.number().int(),
+  }),
+  topItems: z.array(
+    z.object({
+      count: z.number().int(),
+      description: z.string(),
+      itemId: z.uuid(),
+      mainReason: z.enum(StockMovementReasons),
+      quantity: z.number(),
+      totals: WasteTotalsSchema,
+      unit: StockUnitApiSchema,
+    }),
+  ),
+  totals: z.array(
+    z.object({
+      currency: z.string(),
+      discardCount: z.number().int(),
+      itemCount: z.number().int(),
+      unpricedCount: z.number().int(),
+      valueCents: z.number().int(),
+    }),
+  ),
+});
 export const DayQuerySchema = z.object({ today: DayApiSchema.optional() });
 export const MovementsQuerySchema = z.object({ cursor: z.string().min(1).max(200).optional() });
 // Spec 117 FR 29: without owner the search covers every owner the requester can write.
@@ -433,6 +495,7 @@ export type StockListItemApiOutput = z.infer<typeof StockListItemApiSchema>;
 export type UpdateStockCategoryApiInput = z.infer<typeof UpdateStockCategoryApiSchema>;
 export type UpdateStockItemApiInput = z.infer<typeof UpdateStockItemApiSchema>;
 export type UpdateStockLocationApiInput = z.infer<typeof UpdateStockLocationApiSchema>;
+export type WasteApiOutput = z.infer<typeof WasteApiSchema>;
 
 export class CreateStockCategoryBody extends createZodDto(CreateStockCategoryApiSchema) {}
 export class CreateStockItemBody extends createZodDto(CreateStockItemApiSchema) {}
@@ -462,3 +525,4 @@ export class UndoGestureBody extends createZodDto(z.looseObject({ gestureId: z.s
 export class UpdateStockCategoryBody extends createZodDto(UpdateStockCategoryApiSchema) {}
 export class UpdateStockItemBody extends createZodDto(UpdateStockItemApiSchema) {}
 export class UpdateStockLocationBody extends createZodDto(UpdateStockLocationApiSchema) {}
+export class WasteOutput extends createZodDto(WasteApiSchema) {}
