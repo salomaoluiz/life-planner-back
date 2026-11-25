@@ -151,6 +151,7 @@ export function stockRepositoryMock() {
     findMovementDays: jest.fn().mockResolvedValue([]),
     findMovements: jest.fn().mockResolvedValue([]),
     findStaleForecastItemIds: jest.fn().mockResolvedValue([]),
+    findWasteRows: jest.fn().mockResolvedValue([]),
     refreshForecasts: jest.fn().mockResolvedValue(undefined),
     setLeftoverDismissal: jest.fn().mockResolvedValue(undefined),
     update: jest.fn(),

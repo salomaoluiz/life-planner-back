@@ -17,7 +17,9 @@ import {
   UpdateStockDatasourceParams,
 } from '@stock/data/repository/datasource/IStockDatasource';
 import { OwnerAccess } from '@stock/domain/entity/OwnerAccess';
+import { discardValue } from '@stock/domain/service/LotPrice';
 import { todayUtc } from '@stock/domain/service/Today';
+import { WasteRow } from '@stock/domain/service/WasteSummary';
 
 const OPEN_LOTS = { lots: { orderBy: { id: 'asc' as const }, where: { quantity: { gt: 0 } } } };
 
@@ -39,6 +41,38 @@ async function withForecastRows<T extends { id: string }>(
 
     return { ...item, forecast_row: row ? { list_id: row.list_id, quantity: row.quantity } : null };
   });
+}
+
+// Spec 123 FR 27: the value of a DISCARD, recorded when it happens: lot price, else the last price paid for the item
+// (any market), else none. Never recomputed afterwards.
+async function discardFields(
+  tx: Prisma.TransactionClient,
+  itemId: string,
+  lot: { currency: null | string; unit_price_cents: null | number } | undefined,
+  quantity: number,
+) {
+  const last =
+    lot?.unit_price_cents === null || lot?.unit_price_cents === undefined
+      ? await tx.stockPriceHistory.findFirst({
+          orderBy: [{ date: 'desc' }, { created_at: 'desc' }],
+          select: { currency: true, unit_price_cents: true },
+          where: { item_id: itemId },
+        })
+      : null;
+  const value = discardValue({
+    lastPrice: last
+      ? { currency: last.currency, unitPriceCents: last.unit_price_cents }
+      : undefined,
+    lotCurrency: lot?.currency ?? undefined,
+    lotPriceCents: lot?.unit_price_cents ?? undefined,
+    quantity: Math.abs(quantity),
+  });
+
+  return {
+    currency: value.currency,
+    value_cents: value.valueCents,
+    value_source: value.source,
+  };
 }
 
 // Spec 123 FR 25: any movement on a lot clears its dismissed leftover warning.
@@ -146,6 +180,14 @@ export class StockDatasource implements IStockDatasource {
           await tx.stockMovement.create({
             data: {
               ...operation.movement,
+              ...(operation.movement.type === 'DISCARD'
+                ? await discardFields(
+                    tx,
+                    itemId,
+                    lots.find((candidate) => candidate.id === lotId),
+                    operation.movement.quantity,
+                  )
+                : {}),
               gesture_id: gestureId,
               item_id: itemId,
               lot_id: lotId,
@@ -251,6 +293,14 @@ export class StockDatasource implements IStockDatasource {
             await tx.stockMovement.create({
               data: {
                 ...operation.movement,
+                ...(operation.movement.type === 'DISCARD'
+                  ? await discardFields(
+                      tx,
+                      itemId,
+                      lots.find((candidate) => candidate.id === lotId),
+                      operation.movement.quantity,
+                    )
+                  : {}),
                 client_id: clientId,
                 gesture_id: options?.gesture_id,
                 item_id: itemId,
@@ -359,6 +409,26 @@ export class StockDatasource implements IStockDatasource {
     });
 
     return items.map((item) => item.id);
+  }
+
+  async findWasteRows(itemId: string, since: Date): Promise<WasteRow[]> {
+    const rows = await this.db.client.$queryRaw<
+      { count: number; currency: null | string; quantity: number; reason: string; value: number }[]
+    >(Prisma.sql`
+      SELECT m."reason"::text AS "reason", m."currency" AS "currency", COUNT(*)::int AS "count",
+        SUM(-m."quantity")::float8 AS "quantity", COALESCE(SUM(m."value_cents"), 0)::int AS "value"
+      FROM "stock_movements" m
+      WHERE m."item_id" = ${itemId} AND m."type" = 'DISCARD' AND m."created_at" >= ${since}
+      GROUP BY 1, 2
+    `);
+
+    return rows.map((row) => ({
+      count: row.count,
+      currency: row.currency ?? undefined,
+      quantity: row.quantity,
+      reason: row.reason,
+      valueCents: row.value,
+    }));
   }
 
   // The forecast of the items (one grouped read, one batched update) and their automatic rows, in one transaction.

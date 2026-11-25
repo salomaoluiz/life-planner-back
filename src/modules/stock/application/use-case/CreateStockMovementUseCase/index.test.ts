@@ -1,7 +1,7 @@
 import { ConflictException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 
 import { ValidationError } from '@shared/domain/error/ValidationError';
-import { archivedOwners, day } from '@stock/application/mocks/stock.mocks';
+import { archivedOwners, day, shoppingList } from '@stock/application/mocks/stock.mocks';
 import { StockUnits } from '@stock/domain/entity/StockEntity';
 
 import { item, lot, mocks, operationsOf, setup } from './index.mocks';
@@ -59,6 +59,54 @@ describe('ENTRY', () => {
     await expect(operationsOf(item([]), { quantity: 1.5, type: 'ENTRY' })).rejects.toThrow(
       UnprocessableEntityException,
     );
+  });
+});
+
+describe('ENTRY price (spec 123 FR 26)', () => {
+  it('SHOULD store the price on a new lot and the movement, with the default list currency', async () => {
+    mocks.catalog.findCatalogByOwners.mockResolvedValue({
+      categories: [],
+      locations: [],
+      shoppingLists: [shoppingList('l', { currency: 'EUR', isDefault: true })],
+    });
+
+    const [operation] = await operationsOf(item([]), {
+      quantity: 2,
+      type: 'ENTRY',
+      unitPriceCents: 250,
+    });
+
+    expect(operation.lot).toMatchObject({
+      create: { currency: 'EUR', quantity: 2, unitPriceCents: 250 },
+    });
+    expect(operation.movement).toMatchObject({ currency: 'EUR', unitPriceCents: 250 });
+  });
+
+  it('SHOULD average the lot price by quantity WHEN the entry goes into an existing lot', async () => {
+    const locked = item([lot('a', 3, { currency: 'BRL', unitPriceCents: 200 })]);
+    const [operation] = await operationsOf(locked, {
+      currency: 'BRL',
+      quantity: 1,
+      type: 'ENTRY',
+      unitPriceCents: 300,
+    });
+
+    expect(operation.update).toEqual({ currency: 'BRL', quantity: 4, unitPriceCents: 225 });
+  });
+
+  it('SHOULD keep the lot price WHEN the entry has no price', async () => {
+    const locked = item([lot('a', 3, { currency: 'BRL', unitPriceCents: 200 })]);
+    const [operation] = await operationsOf(locked, { quantity: 1, type: 'ENTRY' });
+
+    expect(operation.update).toEqual({ quantity: 4 });
+    expect(operation.movement).toMatchObject({ currency: undefined, unitPriceCents: undefined });
+  });
+
+  it('SHOULD copy the price of the source lot to the lot created by an OPEN split', async () => {
+    const locked = item([lot('a', 3, { currency: 'BRL', unitPriceCents: 200 })]);
+    const operations = await operationsOf(locked, { lotId: 'a', quantity: 1, type: 'OPEN' });
+
+    expect(operations[1].lot).toMatchObject({ create: { currency: 'BRL', unitPriceCents: 200 } });
   });
 });
 

@@ -19,6 +19,7 @@ import {
   toStockItemView,
 } from '@stock/application/service/StockView';
 import { hasOwnerAccess } from '@stock/domain/entity/OwnerAccess';
+import ShoppingListEntity from '@stock/domain/entity/ShoppingListEntity';
 import StockEntity from '@stock/domain/entity/StockEntity';
 import StockLotEntity from '@stock/domain/entity/StockLotEntity';
 import StockMovementEntity, {
@@ -38,6 +39,7 @@ import {
   planConsume,
   planOpen,
 } from '@stock/domain/service/LotAllocation';
+import { averageLotPrice } from '@stock/domain/service/LotPrice';
 import { fromMilli, quantityError, toMilli } from '@stock/domain/service/StockQuantity';
 
 export interface CreateStockMovementOutput {
@@ -99,11 +101,12 @@ export class CreateStockMovementUseCase implements UseCaseWithParams<
     }
 
     const today = input.today ?? todayUtc();
+    const catalog = await loadCatalogLookup(this.catalogRepository, [found]);
     // Throwing inside the planner aborts the transaction: a refused movement writes nothing.
     const result = await this.stockRepository.applyMovement(
       input.itemId,
       input.userId,
-      (item) => plan(input, item, today),
+      (item) => plan(input, item, today, defaultCurrency(catalog.shoppingLists, found)),
       { clientId: input.clientId, gestureId: input.gestureId },
     );
 
@@ -112,17 +115,26 @@ export class CreateStockMovementUseCase implements UseCaseWithParams<
     }
 
     return {
-      item: toStockItemView(
-        result.item,
-        today,
-        await loadCatalogLookup(this.catalogRepository, [result.item]),
-      ),
+      item: toStockItemView(result.item, today, catalog),
       movements: result.movements,
     };
   }
 }
 
-function plan(movement: Movement, item: StockEntity, today: Date): MovementOperation[] {
+// FR 26: the currency of an ENTRY price: the owner's default list, else BRL.
+function defaultCurrency(lists: ShoppingListEntity[], item: StockEntity): string {
+  return (
+    lists.find(
+      (list) => list.isDefault && list.owner === item.owner && list.ownerId === item.ownerId,
+    )?.currency ?? 'BRL'
+  );
+}
+function plan(
+  movement: Movement,
+  item: StockEntity,
+  today: Date,
+  fallbackCurrency: string,
+): MovementOperation[] {
   const note = movement.note;
 
   switch (movement.type) {
@@ -215,30 +227,51 @@ function plan(movement: Movement, item: StockEntity, today: Date): MovementOpera
         movement.expirationDate === undefined && movement.target === 'LATEST_CLOSED'
           ? latestClosedLot(item.lots)
           : findEntryLot(item.lots, movement.expirationDate);
+      const currency =
+        movement.unitPriceCents === undefined ? undefined : (movement.currency ?? fallbackCurrency);
       const entry = {
+        currency,
         note,
         quantity: movement.quantity,
         reason: movement.reason,
         type: StockMovementTypes.ENTRY,
+        unitPriceCents: movement.unitPriceCents,
       };
 
-      return [
-        lot
-          ? {
-              lot: { id: lot.id },
-              movement: entry,
-              update: { quantity: fromMilli(toMilli(lot.quantity) + toMilli(movement.quantity)) },
-            }
-          : {
-              lot: {
-                create: {
-                  expirationDate: movement.expirationDate,
-                  purchaseDate: movement.purchaseDate ?? today,
-                  quantity: movement.quantity,
-                },
+      if (!lot) {
+        return [
+          {
+            lot: {
+              create: {
+                currency,
+                expirationDate: movement.expirationDate,
+                purchaseDate: movement.purchaseDate ?? today,
+                quantity: movement.quantity,
+                unitPriceCents: movement.unitPriceCents,
               },
-              movement: entry,
             },
+            movement: entry,
+          },
+        ];
+      }
+
+      // FR 26: an entry into an existing lot averages the lot price by quantity.
+      const price = averageLotPrice(
+        { quantity: lot.quantity, unitPriceCents: lot.unitPriceCents },
+        { quantity: movement.quantity, unitPriceCents: movement.unitPriceCents },
+      );
+
+      return [
+        {
+          lot: { id: lot.id },
+          movement: entry,
+          update: {
+            ...(price === lot.unitPriceCents
+              ? {}
+              : { currency: currency ?? lot.currency, unitPriceCents: price }),
+            quantity: fromMilli(toMilli(lot.quantity) + toMilli(movement.quantity)),
+          },
+        },
       ];
     }
     case 'OPEN': {
@@ -263,10 +296,12 @@ function plan(movement: Movement, item: StockEntity, today: Date): MovementOpera
             {
               lot: {
                 create: {
+                  currency: lot.currency,
                   expirationDate: lot.expirationDate,
                   openedAt: today,
                   purchaseDate: lot.purchaseDate,
                   quantity: openedQuantity,
+                  unitPriceCents: lot.unitPriceCents,
                 },
               },
               movement: opened,

@@ -46,7 +46,9 @@ import { UpdateStockLocationUseCase } from '@stock/application/use-case/UpdateSt
 import { OwnerAccess } from '@stock/domain/entity/OwnerAccess';
 import StockCategoryEntity from '@stock/domain/entity/StockCategoryEntity';
 import StockLocationEntity from '@stock/domain/entity/StockLocationEntity';
-import StockMovementEntity from '@stock/domain/entity/StockMovementEntity';
+import StockMovementEntity, {
+  StockMovementReasons,
+} from '@stock/domain/entity/StockMovementEntity';
 import { FindUsersByIdsUseCase } from '@user/application/use-case/FindUsersByIdsUseCase';
 
 export function toListItemOutput(view: StockItemView): StockListItemApiOutput {
@@ -151,6 +153,9 @@ function toItemOutput(view: StockItemView): StockItemApiOutput {
         unitPriceCents: lot.unitPriceCents ?? null,
       }),
     ),
+    waste90d: view.waste90d
+      ? { ...view.waste90d, mainReason: view.waste90d.mainReason as StockMovementReasons }
+      : null,
   };
 }
 function toLocationOutput(location: StockLocationEntity, itemCount?: number) {
@@ -598,16 +603,20 @@ export class StockService {
 
       return {
         createdAt: movement.createdAt.toISOString(),
+        currency: movement.currency ?? null,
         id: movement.id,
         lotId: movement.lotId,
         note: movement.note ?? null,
         quantity: movement.quantity,
         reason: movement.reason ?? null,
         type: movement.type,
+        unitPriceCents: movement.unitPriceCents ?? null,
         user:
           movement.userId && name !== undefined && memberIds.has(movement.userId)
             ? { id: movement.userId, name }
             : null,
+        valueCents: movement.valueCents ?? null,
+        valueSource: movement.valueSource ?? null,
       };
     });
   }

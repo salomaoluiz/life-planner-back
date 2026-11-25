@@ -9,6 +9,7 @@ import {
 } from '@db/client';
 import { OwnerAccess } from '@stock/domain/entity/OwnerAccess';
 import { DayMovements } from '@stock/domain/service/ConsumptionForecast';
+import { WasteRow } from '@stock/domain/service/WasteSummary';
 
 export interface CreateStockDatasourceParams {
   barcode?: string;
@@ -55,18 +56,27 @@ export type GesturePlannerDatasource = (context: {
 export interface MovementOperationDatasource {
   lot: { create: NewLotDatasourceParams } | { id: string };
   movement?: {
+    currency?: string;
     note?: string;
     quantity: number;
     reason?: StockMovementReason;
     type: StockMovementType;
+    unit_price_cents?: number;
   };
-  update?: { opened_at?: Date | null; quantity?: number };
+  update?: {
+    currency?: string;
+    opened_at?: Date | null;
+    quantity?: number;
+    unit_price_cents?: number;
+  };
 }
 export interface NewLotDatasourceParams {
+  currency?: string;
   expiration_date?: Date;
   opened_at?: Date;
   purchase_date?: Date;
   quantity: number;
+  unit_price_cents?: number;
 }
 export interface StockFilterDatasourceParams {
   barcode?: string;
@@ -116,6 +126,7 @@ export interface IStockDatasource {
     cursor?: { createdAt: Date; id: string },
   ): Promise<StockMovement[]>;
   findStaleForecastItemIds(owners: OwnerAccess[], today: Date): Promise<string[]>;
+  findWasteRows(itemId: string, since: Date): Promise<WasteRow[]>;
   refreshForecasts(itemIds: string[], today: Date): Promise<void>;
   setLeftoverDismissal(lotId: string, quantity: null | number): Promise<void>;
   update(params: UpdateStockDatasourceParams): Promise<StockItemWithLots>;

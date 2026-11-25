@@ -422,7 +422,16 @@ describe('close', () => {
     expect(post).toHaveBeenCalledTimes(1);
     expect(result.newItemIds).toEqual(['new-item']);
     expect(models.stockLot.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { quantity: 3 }, where: { id: 'lot1' } }),
+      expect.objectContaining({
+        data: {
+          currency: 'BRL',
+          leftover_dismissed_at: null,
+          leftover_dismissed_quantity: null,
+          quantity: 3,
+          unit_price_cents: 300,
+        },
+        where: { id: 'lot1' },
+      }),
     );
     expect(result.lots).toBe(1);
     expect(models.stockPriceHistory.createMany.mock.calls[0][0].data).toEqual([
@@ -474,6 +483,36 @@ describe('updateClosed', () => {
       where: { purchase_id: 'p1' },
     });
     expect(result.rows).toHaveLength(1);
+  });
+
+  it('SHOULD rewrite the price of the ENTRY and reprice the lot it fed (spec 123 FR 26)', async () => {
+    models.stockPurchase.findUnique.mockResolvedValue(rawPurchase({ status: 'CLOSED' }));
+    models.stockPurchaseRow.findMany.mockResolvedValue([
+      rawRow({
+        entry_movement_id: 'mv1',
+        item_id: 'i1',
+        line_total_cents: 900,
+        unit_price_cents: 450,
+      }),
+    ]);
+    models.stockMovement.update.mockResolvedValue({ lot_id: 'lot1' });
+
+    await setup.updateClosed(
+      {
+        purchaseId: 'p1',
+        rowPrices: [{ lineTotalCents: 900, rowId: 'r1', unitPriceCents: 450 }],
+        userId: user,
+      },
+      jest.fn().mockResolvedValue({}),
+    );
+
+    expect(models.stockMovement.update).toHaveBeenCalledWith({
+      data: { currency: 'BRL', unit_price_cents: 450 },
+      select: { lot_id: true },
+      where: { id: 'mv1' },
+    });
+    // the weighted average of the priced entries, then the lots left without a priced entry
+    expect(raws.$executeRaw).toHaveBeenCalledTimes(2);
   });
 
   it('SHOULD answer 409 WHEN the purchase is not closed', async () => {

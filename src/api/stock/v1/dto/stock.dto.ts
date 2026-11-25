@@ -100,6 +100,7 @@ export const CreateStockMovementApiSchema = z.discriminatedUnion('type', [
   z
     .object({
       ...QuickFields,
+      currency: z.enum(['BRL', 'EUR', 'USD']).optional(),
       expirationDate: DayApiSchema.nullish(),
       note: MovementBase.note,
       purchaseDate: DayApiSchema.nullish(),
@@ -108,6 +109,7 @@ export const CreateStockMovementApiSchema = z.discriminatedUnion('type', [
       target: z.literal('LATEST_CLOSED').optional(),
       today: MovementBase.today,
       type: z.literal(StockMovementTypes.ENTRY),
+      unitPriceCents: PriceApiSchema.optional(),
     })
     .strict(),
   z
@@ -233,10 +235,18 @@ const ForecastRowApiSchema = z.object({
   listName: z.string().nullable(),
   quantity: z.number(),
 });
+// Spec 123 FR 32: "Descartado nos últimos 90 dias".
+const Waste90dApiSchema = z.object({
+  count: z.number().int(),
+  mainReason: z.enum(StockMovementReasons),
+  quantity: z.number(),
+  totals: z.array(z.object({ currency: z.string(), valueCents: z.number().int() })),
+});
 export const StockItemApiSchema = z.object({
   ...ItemFields,
   forecastRow: ForecastRowApiSchema.nullable(),
   lots: z.array(StockLotApiSchema),
+  waste90d: Waste90dApiSchema.nullable(),
 });
 export const ConsumptionWeeksApiSchema = z.object({
   weeks: z.array(z.object({ excluded: z.boolean(), quantity: z.number(), start: DayApiSchema })),
@@ -244,12 +254,17 @@ export const ConsumptionWeeksApiSchema = z.object({
 
 export const StockMovementApiSchema = z.object({
   createdAt: z.iso.datetime(),
+  // Spec 123: the ENTRY price and the DISCARD value (recorded when it happened); absent when not set.
+  currency: z.string().nullable(),
   id: z.uuid(),
   lotId: z.uuid(),
   note: z.string().nullable(),
   quantity: z.number(),
   reason: z.enum(StockMovementReasons).nullable(),
   type: z.enum(StockMovementTypes),
+  unitPriceCents: z.number().int().nullable(),
+  valueCents: z.number().int().nullable(),
+  valueSource: z.enum(['ITEM_LAST', 'LOT', 'NONE']).nullable(),
   // `null` for a user who left the family, was deleted or never existed ("Ex-membro" in the UI).
   user: z.object({ id: z.uuid(), name: z.string() }).nullable(),
 });

@@ -15,6 +15,10 @@ import {
 import { RefreshStaleForecastsUseCase } from '@stock/application/use-case/RefreshStaleForecastsUseCase';
 import { hasOwnerAccess } from '@stock/domain/entity/OwnerAccess';
 import { IStockCatalogRepository, IStockRepository } from '@stock/domain/repository';
+import { addDays } from '@stock/domain/service/LotExpiration';
+import { summarizeWaste } from '@stock/domain/service/WasteSummary';
+
+const WASTE_WINDOW_DAYS = 90;
 
 export class GetStockItemByIdUseCase implements UseCaseWithParams<
   GetStockItemByIdInput,
@@ -50,6 +54,11 @@ export class GetStockItemByIdUseCase implements UseCaseWithParams<
       item = (await this.stockRepository.findById(input.id)) ?? item;
     }
 
-    return toStockItemView(item, today, await loadCatalogLookup(this.catalogRepository, [item]));
+    const [catalog, wasteRows] = await Promise.all([
+      loadCatalogLookup(this.catalogRepository, [item]),
+      this.stockRepository.findWasteRows(item.id, addDays(today, -WASTE_WINDOW_DAYS)),
+    ]);
+
+    return { ...toStockItemView(item, today, catalog), waste90d: summarizeWaste(wasteRows) };
   }
 }

@@ -26,17 +26,28 @@ function toDatasourceOperation(operation: MovementOperation): MovementOperationD
       'create' in operation.lot
         ? {
             create: {
+              currency: operation.lot.create.currency,
               expiration_date: operation.lot.create.expirationDate,
               opened_at: operation.lot.create.openedAt,
               purchase_date: operation.lot.create.purchaseDate,
               quantity: operation.lot.create.quantity,
+              unit_price_cents: operation.lot.create.unitPriceCents,
             },
           }
         : operation.lot,
-    movement: operation.movement,
+    movement: operation.movement && {
+      currency: operation.movement.currency,
+      note: operation.movement.note,
+      quantity: operation.movement.quantity,
+      reason: operation.movement.reason,
+      type: operation.movement.type,
+      unit_price_cents: operation.movement.unitPriceCents,
+    },
     update: operation.update && {
+      currency: operation.update.currency,
       opened_at: operation.update.openedAt,
       quantity: operation.update.quantity,
+      unit_price_cents: operation.update.unitPriceCents,
     },
   };
 }
@@ -198,6 +209,10 @@ export class StockRepository implements IStockRepository {
 
   async findStaleForecastItemIds(owners: OwnerAccess[], today: Date): Promise<string[]> {
     return this.stockDatasource.findStaleForecastItemIds(owners, today);
+  }
+
+  async findWasteRows(itemId: string, since: Date) {
+    return this.stockDatasource.findWasteRows(itemId, since);
   }
 
   async refreshForecasts(itemIds: string[], today: Date): Promise<void> {

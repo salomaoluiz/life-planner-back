@@ -6,24 +6,31 @@ import StockMovementEntity, {
   StockMovementTypes,
 } from '@stock/domain/entity/StockMovementEntity';
 import { DayMovements } from '@stock/domain/service/ConsumptionForecast';
+import { WasteRow } from '@stock/domain/service/WasteSummary';
 
 export interface NewLotParams {
+  currency?: string;
   expirationDate?: Date;
   openedAt?: Date;
   purchaseDate?: Date;
   quantity: number;
+  unitPriceCents?: number;
 }
 
 // One step of a movement: touch a lot (existing or new) and/or record a movement on it.
 export interface MovementOperation {
   lot: { create: NewLotParams } | { id: string };
+  // `unitPriceCents` + `currency`: the price of an ENTRY (spec 123 FR 26). The value of a DISCARD is resolved by the
+  // datasource when it writes the movement (FR 27).
   movement?: {
+    currency?: string;
     note?: string;
     quantity: number;
     reason?: StockMovementReasons;
     type: StockMovementTypes;
+    unitPriceCents?: number;
   };
-  update?: { openedAt?: Date; quantity?: number };
+  update?: { currency?: string; openedAt?: Date; quantity?: number; unitPriceCents?: number };
 }
 
 // Runs inside the item lock with EVERY lot of the item (quantity 0 included). Throwing aborts without writing.
@@ -62,11 +69,13 @@ export type IStockRepository = {
   findByOwners(owners: OwnerAccess[], filter?: StockFilter): Promise<StockEntity[]>;
   // Spec 123 FR 19: the per-day consumption and net change of the item over the last `windowDays` days.
   findMovementDays(itemId: string, today: Date, windowDays: number): Promise<DayMovements[]>;
+  // Spec 123 FR 32: the item's discards since `since`, grouped by reason and currency (one query).
   findMovements(
     itemId: string,
     limit: number,
     cursor?: { createdAt: Date; id: string },
   ): Promise<StockMovementEntity[]>;
+  findWasteRows(itemId: string, since: Date): Promise<WasteRow[]>;
   // Spec 123 FR 14: ids of the owners' items (not stock-only) whose forecast was not computed today.
   findStaleForecastItemIds(owners: OwnerAccess[], today: Date): Promise<string[]>;
   // Recomputes the forecast and the automatic rows of the items in one transaction.

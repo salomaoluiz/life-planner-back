@@ -230,6 +230,7 @@ describe('Method applyMovement', () => {
         reason: 'EXPIRED',
         type: 'DISCARD',
         user_id: 'user',
+        value_source: 'NONE',
       },
     ]);
     expect(result?.movements).toHaveLength(2);
@@ -457,5 +458,68 @@ describe('forecast refresh (spec 123)', () => {
       data: { leftover_dismissed_at: null, leftover_dismissed_quantity: null },
       where: { id: { in: ['lot-a'] }, leftover_dismissed_at: { not: null } },
     });
+  });
+});
+
+describe('discard value (spec 123 FR 27)', () => {
+  const discard = { quantity: -2, reason: 'EXPIRED' as const, type: 'DISCARD' as const };
+
+  beforeEach(() => {
+    spies.queryRaw.mockResolvedValue([{ id: 'item' }]);
+    spies.stockFindUniqueOrThrow.mockResolvedValue({ ...mocks.stock, lots: [] });
+    spies.movementCreate.mockResolvedValue({ id: 'm' });
+  });
+
+  it('SHOULD record the lot price x quantity with source LOT', async () => {
+    spies.lotFindMany.mockResolvedValue([
+      { ...mocks.lot, currency: 'BRL', id: 'lot-a', unit_price_cents: 250 },
+    ]);
+
+    await setup.applyMovement('item', 'user', () => [{ lot: { id: 'lot-a' }, movement: discard }]);
+
+    expect(spies.movementCreate.mock.calls[0][0].data).toMatchObject({
+      currency: 'BRL',
+      value_cents: 500,
+      value_source: 'LOT',
+    });
+    expect(spies.priceFindFirst).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD fall back to the last price of the item (its own currency) with source ITEM_LAST', async () => {
+    spies.lotFindMany.mockResolvedValue([
+      { ...mocks.lot, currency: null, id: 'lot-a', unit_price_cents: null },
+    ]);
+    spies.priceFindFirst.mockResolvedValue({ currency: 'EUR', unit_price_cents: 300 });
+
+    await setup.applyMovement('item', 'user', () => [{ lot: { id: 'lot-a' }, movement: discard }]);
+
+    expect(spies.movementCreate.mock.calls[0][0].data).toMatchObject({
+      currency: 'EUR',
+      value_cents: 600,
+      value_source: 'ITEM_LAST',
+    });
+  });
+
+  it('SHOULD record NONE with no value WHEN there is no price at all', async () => {
+    spies.lotFindMany.mockResolvedValue([
+      { ...mocks.lot, currency: null, id: 'lot-a', unit_price_cents: null },
+    ]);
+
+    await setup.applyMovement('item', 'user', () => [{ lot: { id: 'lot-a' }, movement: discard }]);
+
+    const data = spies.movementCreate.mock.calls[0][0].data;
+
+    expect(data.value_source).toBe('NONE');
+    expect(data.value_cents).toBeUndefined();
+  });
+
+  it('SHOULD not add a value to a movement that is not a DISCARD', async () => {
+    spies.lotFindMany.mockResolvedValue([{ ...mocks.lot, id: 'lot-a' }]);
+
+    await setup.applyMovement('item', 'user', () => [
+      { lot: { id: 'lot-a' }, movement: { quantity: -1, type: 'CONSUME' as const } },
+    ]);
+
+    expect(spies.movementCreate.mock.calls[0][0].data).not.toHaveProperty('value_source');
   });
 });

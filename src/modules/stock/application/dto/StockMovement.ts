@@ -9,6 +9,8 @@ import {
 } from '@stock/application/dto/StockCommon';
 import { StockMovementReasons } from '@stock/domain/entity/StockMovementEntity';
 
+const MAX_UNIT_PRICE_CENTS = 99_999_999;
+
 const NoteSchema = z
   .string()
   .trim()
@@ -37,6 +39,8 @@ const base = {
 export const CreateStockMovementSchema = z.discriminatedUnion('type', [
   z.object({
     ...base,
+    // Spec 123 FR 26: the price paid per unit of an ENTRY (the currency defaults to the owner's default list, else BRL).
+    currency: z.enum(['BRL', 'EUR', 'USD']).optional(),
     expirationDate: OptionalDaySchema,
     purchaseDate: OptionalDaySchema,
     quantity: PositiveQuantitySchema,
@@ -45,6 +49,7 @@ export const CreateStockMovementSchema = z.discriminatedUnion('type', [
       .default(StockMovementReasons.PURCHASE),
     target: z.literal('LATEST_CLOSED').optional(),
     type: z.literal('ENTRY'),
+    unitPriceCents: z.number().int().min(1).max(MAX_UNIT_PRICE_CENTS).optional(),
   }),
   z.object({
     ...base,

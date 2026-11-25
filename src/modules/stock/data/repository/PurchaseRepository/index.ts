@@ -31,6 +31,7 @@ import {
   UpsertPurchaseRowParams,
   UpsertPurchaseRowResult,
 } from '@stock/domain/repository';
+import { averageLotPrice } from '@stock/domain/service/LotPrice';
 import { unitFromLine } from '@stock/domain/service/PurchaseMath';
 import { fromMilli, toMilli } from '@stock/domain/service/StockQuantity';
 
@@ -146,6 +147,55 @@ async function touch(tx: Tx, id: string): Promise<void> {
   await tx.stockPurchase.update({ data: { last_activity_at: new Date() }, where: { id } });
 }
 
+// Spec 123 FR 26: the ENTRY movements take the new row price; the lots they fed take the quantity-weighted average of
+// their priced entries (half-up), or lose the price when none is left.
+async function repriceEntries(
+  tx: Prisma.TransactionClient,
+  rows: PurchaseRowRecord[],
+  currency: string,
+): Promise<void> {
+  const lotIds = new Set<string>();
+
+  for (const row of rows) {
+    const paid = row.unknownPrice || !row.unitPriceCents ? undefined : row.unitPriceCents;
+    const movement = await tx.stockMovement.update({
+      data: {
+        currency: paid === undefined ? null : currency,
+        unit_price_cents: paid ?? null,
+      },
+      select: { lot_id: true },
+      where: { id: row.entryMovementId as string },
+    });
+
+    lotIds.add(movement.lot_id);
+  }
+
+  if (lotIds.size === 0) {
+    return;
+  }
+
+  const ids = Prisma.join([...lotIds]);
+
+  await tx.$executeRaw(Prisma.sql`
+    UPDATE "stock_lots" l SET "unit_price_cents" = s."price", "currency" = s."currency"
+    FROM (
+      SELECT m."lot_id", MAX(m."currency") AS "currency",
+        FLOOR(SUM(m."unit_price_cents"::numeric * m."quantity") / SUM(m."quantity") + 0.5)::integer AS "price"
+      FROM "stock_movements" m
+      WHERE m."lot_id" IN (${ids}) AND m."type" = 'ENTRY' AND m."unit_price_cents" IS NOT NULL AND m."quantity" > 0
+      GROUP BY m."lot_id" HAVING COUNT(DISTINCT m."currency") = 1
+    ) s
+    WHERE l."id" = s."lot_id"
+  `);
+  await tx.$executeRaw(Prisma.sql`
+    UPDATE "stock_lots" l SET "unit_price_cents" = NULL, "currency" = NULL
+    WHERE l."id" IN (${ids}) AND NOT EXISTS (
+      SELECT 1 FROM "stock_movements" m
+      WHERE m."lot_id" = l."id" AND m."type" = 'ENTRY' AND m."unit_price_cents" IS NOT NULL
+    )
+  `);
+}
+
 @Injectable()
 export class PurchaseRepository implements IPurchaseRepository {
   constructor(private readonly db: Database) {}
@@ -244,12 +294,28 @@ export class PurchaseRepository implements IPurchaseRepository {
             opened_at: null,
           },
         });
+        // Spec 123 FR 26: the price paid (unknown prices stay unpriced) goes on the entry and averages into the lot.
+        const paid =
+          entry.row.unknown_price || !entry.row.unit_price_cents
+            ? undefined
+            : entry.row.unit_price_cents;
         let lotId: string;
 
         if (lot) {
           lotId = lot.id;
+
+          const price = averageLotPrice(
+            { quantity: Number(lot.quantity), unitPriceCents: lot.unit_price_cents ?? undefined },
+            { quantity: entry.quantity, unitPriceCents: paid },
+          );
+
           await tx.stockLot.update({
             data: {
+              ...(price === (lot.unit_price_cents ?? undefined)
+                ? {}
+                : { currency: purchase.currency, unit_price_cents: price }),
+              leftover_dismissed_at: null,
+              leftover_dismissed_quantity: null,
               quantity: fromMilli(toMilli(Number(lot.quantity)) + toMilli(entry.quantity)),
             },
             where: { id: lot.id },
@@ -258,10 +324,12 @@ export class PurchaseRepository implements IPurchaseRepository {
           lotId = (
             await tx.stockLot.create({
               data: {
+                currency: paid === undefined ? undefined : purchase.currency,
                 expiration_date: expiration,
                 item_id: entry.itemId,
                 purchase_date: params.date,
                 quantity: entry.quantity,
+                unit_price_cents: paid,
               },
             })
           ).id;
@@ -270,11 +338,13 @@ export class PurchaseRepository implements IPurchaseRepository {
 
         const movement = await tx.stockMovement.create({
           data: {
+            currency: paid === undefined ? undefined : purchase.currency,
             item_id: entry.itemId,
             lot_id: lotId,
             quantity: entry.quantity,
             reason: 'PURCHASE',
             type: 'ENTRY',
+            unit_price_cents: paid,
             user_id: params.userId,
           },
         });
@@ -832,6 +902,15 @@ export class PurchaseRepository implements IPurchaseRepository {
           where: { purchase_id: purchase.id, state: PurchaseRowState.IN_CART },
         })
       ).map(toRow);
+
+      // Spec 123 FR 26: a repriced row rewrites the price of its ENTRY and of the lot it fed.
+      await repriceEntries(
+        tx,
+        rows.filter((row) =>
+          (params.rowPrices ?? []).some((price) => price.rowId === row.id && row.entryMovementId),
+        ),
+        purchase.currency,
+      );
 
       const reference = await repostFinance(rows);
 

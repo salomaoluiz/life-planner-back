@@ -37,6 +37,7 @@ const spies = {
   movementDeleteMany: jest.fn(),
   movementFindFirst: jest.fn(),
   movementFindMany: jest.fn(),
+  priceFindFirst: jest.fn(),
   queryRaw: jest.fn(),
   recompute: jest.mocked(recomputeForecasts),
   rowFindMany: jest.fn(),
@@ -77,6 +78,7 @@ const client = {
     findFirst: spies.movementFindFirst,
     findMany: spies.movementFindMany,
   },
+  stockPriceHistory: { findFirst: spies.priceFindFirst },
   stockShoppingListRow: { findMany: spies.rowFindMany },
 };
 // A transaction runs the callback against the same client.
@@ -90,6 +92,7 @@ let setup: StockDatasource;
 beforeEach(async () => {
   jest.clearAllMocks();
   spies.rowFindMany.mockResolvedValue([]);
+  spies.priceFindFirst.mockResolvedValue(null);
   client.$transaction.mockImplementation(async (callback: (tx: unknown) => unknown) =>
     callback(client),
   );

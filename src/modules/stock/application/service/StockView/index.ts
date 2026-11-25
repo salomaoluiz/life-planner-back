@@ -18,6 +18,7 @@ import { compareNullsLast } from '@stock/domain/service/NullsLast';
 import { fromMilli, toMilli } from '@stock/domain/service/StockQuantity';
 import { needsRestock, restockQuantity } from '@stock/domain/service/StockRestock';
 import { todayUtc } from '@stock/domain/service/Today';
+import { WasteSummary } from '@stock/domain/service/WasteSummary';
 
 export interface CatalogLookup {
   categories: StockCategoryEntity[];
@@ -35,6 +36,8 @@ export interface ForecastView {
   weeklyRate: number;
 }
 export interface StockItemView {
+  // Spec 123 FR 32: only on the detail; null when nothing was discarded in the last 90 days.
+  waste90d?: null | WasteSummary;
   // Spec 118 FR 6: the item's list when it is active, else the owner's default list (when it exists).
   effectiveShoppingListId?: string;
   expirationStatus: LotStatus;
