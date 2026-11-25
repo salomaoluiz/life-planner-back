@@ -144,3 +144,7 @@ Spec 119 migrations `20261119120000_split_system_key` and `20261119120100_split_
 ## Spec 120 tables
 
 `stock_markets`, `stock_purchases`, `stock_purchase_rows`, `stock_purchase_events` (bigserial id, unique `client_id`), `stock_price_history`; nullable `stock_purchase_id` (uuid FK, SET NULL) on `financial_splits` (unique) and `financial_transactions`; `default_market_id`/`default_finance_category_id` on `stock_shopping_lists`. Migration `20261123120000_stock_shopping_mode_and_closing`. Stock tables carry no owner-version trigger (no stock ETag yet).
+
+## Stock barcodes and AI usage (spec 121)
+
+Migration `20261123140000_stock_barcode_and_ai_usage`: normalizes `stock_items.barcode` (trim, no spaces/hyphens, 12 digits → 13, uppercase; codes that do not fit stay as typed), moves the code of duplicates inside one owner into their `notes` (the most recently updated item keeps it), creates the partial unique index `stock_items_owner_barcode_key (owner, owner_id, barcode) WHERE barcode IS NOT NULL` (SQL only, Prisma cannot model it), adds `stock_purchase_rows.barcode varchar(64)` and `ai_usage_daily (user_id, day, kind LIGHT|SEARCH, count, updated_at)` with PK `(user_id, day, kind)` and an FK cascade to `"User"`. Counters are incremented by one `INSERT … ON CONFLICT … DO UPDATE … WHERE count < limit RETURNING` statement; rows older than 30 days are deleted on the first call of a day.

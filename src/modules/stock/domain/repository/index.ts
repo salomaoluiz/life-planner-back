@@ -1,3 +1,4 @@
+export * from './IAiUsageRepository';
 export * from './IMarketRepository';
 export * from './IPurchaseRepository';
 export * from './IShoppingListRepository';

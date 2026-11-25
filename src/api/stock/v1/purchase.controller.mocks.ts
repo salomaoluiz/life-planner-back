@@ -35,6 +35,7 @@ const methods = [
   'start',
   'updateClosed',
   'updateMarket',
+  'addRowByCode',
   'upsertRow',
 ] as const;
 const service = Object.fromEntries(

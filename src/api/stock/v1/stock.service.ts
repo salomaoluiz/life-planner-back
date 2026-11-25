@@ -47,38 +47,7 @@ import StockLocationEntity from '@stock/domain/entity/StockLocationEntity';
 import StockMovementEntity from '@stock/domain/entity/StockMovementEntity';
 import { FindUsersByIdsUseCase } from '@user/application/use-case/FindUsersByIdsUseCase';
 
-function day(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
-function dayOrNull(date?: Date) {
-  return date ? day(date) : null;
-}
-function toCategoryOutput(category: StockCategoryEntity) {
-  return {
-    financeCategoryId: category.financeCategoryId ?? null,
-    id: category.id,
-    name: category.name,
-    owner: category.owner,
-    ownerId: category.ownerId,
-    parentId: category.parentId ?? null,
-    status: category.status,
-  };
-}
-function toItemOutput(view: StockItemView): StockItemApiOutput {
-  return {
-    ...toListItemOutput(view),
-    lots: view.lots.map(({ effectiveExpiration, expirationStatus, lot }) => ({
-      effectiveExpiration: dayOrNull(effectiveExpiration),
-      expirationDate: dayOrNull(lot.expirationDate),
-      expirationStatus,
-      id: lot.id,
-      openedAt: dayOrNull(lot.openedAt),
-      purchaseDate: dayOrNull(lot.purchaseDate),
-      quantity: lot.quantity,
-    })),
-  };
-}
-function toListItemOutput(view: StockItemView): StockListItemApiOutput {
+export function toListItemOutput(view: StockItemView): StockListItemApiOutput {
   const { item } = view;
 
   return {
@@ -117,6 +86,38 @@ function toListItemOutput(view: StockItemView): StockListItemApiOutput {
     updatedAt: item.updatedAt.toISOString(),
     warnDaysClosed: item.warnDaysClosed,
     warnDaysOpened: item.warnDaysOpened,
+  };
+}
+
+function day(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+function dayOrNull(date?: Date) {
+  return date ? day(date) : null;
+}
+function toCategoryOutput(category: StockCategoryEntity) {
+  return {
+    financeCategoryId: category.financeCategoryId ?? null,
+    id: category.id,
+    name: category.name,
+    owner: category.owner,
+    ownerId: category.ownerId,
+    parentId: category.parentId ?? null,
+    status: category.status,
+  };
+}
+function toItemOutput(view: StockItemView): StockItemApiOutput {
+  return {
+    ...toListItemOutput(view),
+    lots: view.lots.map(({ effectiveExpiration, expirationStatus, lot }) => ({
+      effectiveExpiration: dayOrNull(effectiveExpiration),
+      expirationDate: dayOrNull(lot.expirationDate),
+      expirationStatus,
+      id: lot.id,
+      openedAt: dayOrNull(lot.openedAt),
+      purchaseDate: dayOrNull(lot.purchaseDate),
+      quantity: lot.quantity,
+    })),
   };
 }
 function toLocationOutput(location: StockLocationEntity, itemCount?: number) {

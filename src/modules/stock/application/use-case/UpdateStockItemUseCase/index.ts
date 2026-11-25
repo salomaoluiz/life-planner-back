@@ -11,6 +11,7 @@ import {
   UpdateStockItemInput,
   UpdateStockItemSchema,
 } from '@stock/application/dto/UpdateStockItem';
+import { assertBarcodeFree, normalizeOrThrow } from '@stock/application/service/BarcodeRules';
 import { planOwnerChange } from '@stock/application/service/OwnerChange';
 import { ensureOwnerWritable } from '@stock/application/service/OwnerWritable';
 import { assertItemShoppingList } from '@stock/application/service/ShoppingListAccess';
@@ -121,8 +122,17 @@ export class UpdateStockItemUseCase implements UseCaseWithParams<
 
     await loadCatalogRefs(this.catalogRepository, target, { categoryId, locationId });
 
+    const barcode =
+      typeof input.barcode === 'string' ? normalizeOrThrow(input.barcode) : input.barcode;
+    const heldCode = barcode === undefined ? item.barcode : barcode;
+
+    // The code moves with the item, so a new owner is checked too (FR 2).
+    if (heldCode && (barcode !== undefined || ownerChanged)) {
+      await assertBarcodeFree(this.stockRepository, target, heldCode, item.id);
+    }
+
     const updated = await this.stockRepository.update({
-      barcode: input.barcode,
+      barcode,
       brand: input.brand,
       categoryId,
       description: input.description,

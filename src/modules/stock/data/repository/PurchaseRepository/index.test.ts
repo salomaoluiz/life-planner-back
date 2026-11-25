@@ -554,3 +554,52 @@ describe('upsertRow from a list row', () => {
     });
   });
 });
+
+describe('close with a barcode (spec 121 FR 26)', () => {
+  const params = {
+    date: day('2026-11-18'),
+    purchaseId: 'p1',
+    receiptTotalCents: 1000,
+    rows: [{ newItem: { description: 'Candle' }, quantity: 1, rowId: 'r2' }],
+    userId: user,
+  };
+
+  async function close() {
+    models.stockPurchaseRow.findMany
+      .mockResolvedValueOnce([rawRow({ barcode: '7891000100103', id: 'r2', quantity: 1 })])
+      .mockResolvedValueOnce([]);
+    models.stockPurchaseRow.update.mockImplementation(
+      async ({ data, where }: { data: object; where: { id: string } }) =>
+        rawRow({ id: where.id, ...(data as object) }),
+    );
+    models.stockItem.create.mockResolvedValue({ id: 'new-item' });
+    models.stockLot.findFirst.mockResolvedValue(null);
+    models.stockLot.create.mockResolvedValue({ id: 'lot' });
+    models.stockMovement.create.mockResolvedValue({ id: 'mv' });
+
+    return setup.close(params, jest.fn().mockResolvedValue({}));
+  }
+
+  it('SHOULD create the item WITH the code WHEN the owner has no item with it', async () => {
+    models.stockItem.findFirst.mockResolvedValue(null);
+
+    const result = await close();
+
+    expect(result.newItemIds).toEqual(['new-item']);
+    expect(models.stockItem.create.mock.calls[0][0].data).toMatchObject({
+      barcode: '7891000100103',
+    });
+  });
+
+  it('SHOULD link the row to the existing item instead of a duplicate WHEN the code is taken', async () => {
+    models.stockItem.findFirst.mockResolvedValue({ id: 'existing' });
+
+    const result = await close();
+
+    expect(result.newItemIds).toEqual([]);
+    expect(models.stockItem.create).not.toHaveBeenCalled();
+    expect(models.stockPurchaseRow.update.mock.calls[0][0].data).toMatchObject({
+      item_id: 'existing',
+    });
+  });
+});

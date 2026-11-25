@@ -20,6 +20,8 @@ import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 
 import {
+  AddRowByCodeApiSchema,
+  AddRowByCodeBody,
   ClosedPurchaseOutput,
   ClosePreviewOutput,
   ClosePreviewQuerySchema,
@@ -38,6 +40,7 @@ import {
   PendingPurchasesOutput,
   PricesQuerySchema,
   PurchaseHeaderOutput,
+  PurchaseRowByCodeOutput,
   PurchaseRowResultOutput,
   PurchaseViewOutput,
   StartPurchaseApiSchema,
@@ -117,6 +120,20 @@ export class PendingPurchaseController {
 @Controller({ path: 'stock/purchases', version: '1' })
 export class PurchaseController {
   constructor(private readonly purchaseService: PurchaseService) {}
+
+  @HttpCode(HttpStatus.OK)
+  @Post(':id/rows/by-code')
+  @ZodResponse({ type: PurchaseRowByCodeOutput })
+  async addRowByCode(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: AddRowByCodeBody,
+    @Headers('idempotency-key') key?: string,
+  ) {
+    const { code } = validate(AddRowByCodeApiSchema, body);
+
+    return this.purchaseService.addRowByCode(req.user.id, id, code, keyOf(key));
+  }
 
   @HttpCode(HttpStatus.OK)
   @Post(':id/close')

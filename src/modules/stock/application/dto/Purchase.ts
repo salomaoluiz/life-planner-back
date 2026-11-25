@@ -66,6 +66,7 @@ export const GetListPurchasesSchema = z.object({
 export const UpsertPurchaseRowSchema = z
   .object({
     ...OptionalUserSchema,
+    barcode: z.string().trim().min(1).max(80).optional(),
     clientId: UuidSchema.optional(),
     description: DescriptionSchema.optional(),
     expirationDate: DaySchema.nullable().optional(),
@@ -218,3 +219,13 @@ export type UpdateClosedPurchaseInput = z.input<typeof UpdateClosedPurchaseSchem
 export type UpdateMarketInput = z.input<typeof UpdateMarketSchema>;
 export type UpsertPurchaseRowInput = z.input<typeof UpsertPurchaseRowSchema>;
 export type UpsertPurchaseRowParsed = z.output<typeof UpsertPurchaseRowSchema>;
+
+// Spec 121 FR 25: "Ler código" in the shopping mode; the row id is the client's (offline) or generated.
+export const AddPurchaseRowByCodeSchema = z.object({
+  ...OptionalUserSchema,
+  clientId: UuidSchema.optional(),
+  code: z.string().trim().min(1).max(80),
+  purchaseId: IdSchema,
+  rowId: UuidSchema.optional(),
+});
+export type AddPurchaseRowByCodeInput = z.input<typeof AddPurchaseRowByCodeSchema>;

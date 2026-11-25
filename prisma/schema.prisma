@@ -33,6 +33,7 @@ model User {
   restock_dismissals StockRestockDismissal[]
   purchases_started  StockPurchase[]           @relation("PurchaseStarter")
   purchase_rows      StockPurchaseRow[]        @relation("PurchaseRowChecker")
+  ai_usage           AiUsageDaily[]
 }
 
 model Family {
@@ -1503,6 +1504,7 @@ model StockPurchaseRow {
   list_row_id       String?
   item_id           String?
   description       String?             @db.VarChar(100)
+  barcode           String?             @db.VarChar(64)
   unit              StockUnit?
   quantity          Decimal?            @db.Decimal(14, 3)
   unit_price_cents  Int?
@@ -1558,4 +1560,23 @@ model StockPriceHistory {
   @@index([item_id, market_id, date(sort: Desc)])
   @@index([item_id, date(sort: Desc)])
   @@map("stock_price_history")
+}
+
+enum AiUsageKind {
+  LIGHT
+  SEARCH
+}
+
+// Spec 121 FR 21: calls to the AI provider per user, kind and calendar day.
+model AiUsageDaily {
+  user_id    String
+  day        DateTime    @db.Date
+  kind       AiUsageKind
+  count      Int         @default(0)
+  updated_at DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, day, kind])
+  @@map("ai_usage_daily")
 }

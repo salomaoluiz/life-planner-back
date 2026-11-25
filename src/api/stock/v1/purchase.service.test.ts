@@ -334,3 +334,20 @@ describe('closed purchase edit and delete', () => {
     expect(owners).toHaveLength(2);
   });
 });
+
+describe('addRowByCode (spec 121)', () => {
+  it('SHOULD pass the owners, the code and the idempotency key AND answer the row with its source', async () => {
+    useCases.addRowByCode.execute.mockResolvedValue({
+      row: { ...view.rows[0] },
+      source: 'OPEN_FOOD_FACTS',
+    });
+
+    const result = await setup.addRowByCode(userId, 'p1', '7891000100103', 'key');
+
+    expect(useCases.addRowByCode.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ clientId: 'key', code: '7891000100103', purchaseId: 'p1', userId }),
+    );
+    expect(result.source).toBe('OPEN_FOOD_FACTS');
+    expect(result.row.id).toBe('r1');
+  });
+});

@@ -68,6 +68,7 @@ export interface NewLotDatasourceParams {
   quantity: number;
 }
 export interface StockFilterDatasourceParams {
+  barcode?: string;
   category_ids?: string[];
   location_ids?: string[];
 }

@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 
+import { AddPurchaseRowByCodeUseCase } from '@stock/application/use-case/AddPurchaseRowByCodeUseCase';
 import { AddShoppingListRowUseCase } from '@stock/application/use-case/AddShoppingListRowUseCase';
 import { BackfillStockEmbeddingsUseCase } from '@stock/application/use-case/BackfillStockEmbeddingsUseCase';
 import { ChangePurchaseStatusUseCase } from '@stock/application/use-case/ChangePurchaseStatusUseCase';
 import { ClosePurchaseUseCase } from '@stock/application/use-case/ClosePurchaseUseCase';
 import { ClosingLockUseCase } from '@stock/application/use-case/ClosingLockUseCase';
+import { ConsumeAiUsageUseCase } from '@stock/application/use-case/ConsumeAiUsageUseCase';
 import { CreateMarketUseCase } from '@stock/application/use-case/CreateMarketUseCase';
 import { CreateShoppingListUseCase } from '@stock/application/use-case/CreateShoppingListUseCase';
 import { CreateStockCategorySuggestionsUseCase } from '@stock/application/use-case/CreateStockCategorySuggestionsUseCase';
@@ -21,6 +23,8 @@ import { DeleteStockItemsByOwnerUseCase } from '@stock/application/use-case/Dele
 import { DeleteStockItemUseCase } from '@stock/application/use-case/DeleteStockItemUseCase';
 import { DeleteStockLocationUseCase } from '@stock/application/use-case/DeleteStockLocationUseCase';
 import { EnsureDefaultShoppingListUseCase } from '@stock/application/use-case/EnsureDefaultShoppingListUseCase';
+import { FindItemsByBarcodeUseCase } from '@stock/application/use-case/FindItemsByBarcodeUseCase';
+import { GetAiUsageUseCase } from '@stock/application/use-case/GetAiUsageUseCase';
 import { GetClosePreviewUseCase } from '@stock/application/use-case/GetClosePreviewUseCase';
 import { GetFrequentStockItemsUseCase } from '@stock/application/use-case/GetFrequentStockItemsUseCase';
 import { GetItemPricesUseCase } from '@stock/application/use-case/GetItemPricesUseCase';
@@ -45,6 +49,7 @@ import { RefreshStockEmbeddingUseCase } from '@stock/application/use-case/Refres
 import { SetGestureExpirationUseCase } from '@stock/application/use-case/SetGestureExpirationUseCase';
 import { StartPurchaseUseCase } from '@stock/application/use-case/StartPurchaseUseCase';
 import { SuggestStockItemsUseCase } from '@stock/application/use-case/SuggestStockItemsUseCase';
+import { SuggestStockItemUseCase } from '@stock/application/use-case/SuggestStockItemUseCase';
 import { UndoStockGestureUseCase } from '@stock/application/use-case/UndoStockGestureUseCase';
 import { UpdateClosedPurchaseUseCase } from '@stock/application/use-case/UpdateClosedPurchaseUseCase';
 import { UpdateMarketUseCase } from '@stock/application/use-case/UpdateMarketUseCase';
@@ -54,10 +59,12 @@ import { UpdateStockCategoryUseCase } from '@stock/application/use-case/UpdateSt
 import { UpdateStockItemUseCase } from '@stock/application/use-case/UpdateStockItemUseCase';
 import { UpdateStockLocationUseCase } from '@stock/application/use-case/UpdateStockLocationUseCase';
 import { UpsertPurchaseRowUseCase } from '@stock/application/use-case/UpsertPurchaseRowUseCase';
+import { AiUsageDatasource } from '@stock/data/datasource/AiUsageDatasource';
 import { ShoppingListDatasource } from '@stock/data/datasource/ShoppingListDatasource';
 import { StockCatalogDatasource } from '@stock/data/datasource/StockCatalogDatasource';
 import { StockDatasource } from '@stock/data/datasource/StockDatasource';
 import { StockSuggestionDatasource } from '@stock/data/datasource/StockSuggestionDatasource';
+import { AiUsageRepository } from '@stock/data/repository/AiUsageRepository';
 import { MarketRepository } from '@stock/data/repository/MarketRepository';
 import { PurchaseRepository } from '@stock/data/repository/PurchaseRepository';
 import { ShoppingListRepository } from '@stock/data/repository/ShoppingListRepository';
@@ -84,6 +91,7 @@ const useCases = [
   UpdateClosedPurchaseUseCase,
   UpdateMarketUseCase,
   UpsertPurchaseRowUseCase,
+  AddPurchaseRowByCodeUseCase,
   AddShoppingListRowUseCase,
   CreateShoppingListUseCase,
   DeleteShoppingListRowUseCase,
@@ -104,6 +112,9 @@ const useCases = [
   DeleteStockItemsByOwnerUseCase,
   DeleteStockItemUseCase,
   DeleteStockLocationUseCase,
+  ConsumeAiUsageUseCase,
+  FindItemsByBarcodeUseCase,
+  GetAiUsageUseCase,
   GetFrequentStockItemsUseCase,
   GetOwnerChangePreviewUseCase,
   GetStockCategoriesUseCase,
@@ -116,6 +127,7 @@ const useCases = [
   RefreshStockEmbeddingUseCase,
   SetGestureExpirationUseCase,
   SuggestStockItemsUseCase,
+  SuggestStockItemUseCase,
   UndoStockGestureUseCase,
   UpdateStockCategoryUseCase,
   UpdateStockItemUseCase,
@@ -126,6 +138,8 @@ const useCases = [
   exports: [...useCases],
   providers: [
     ...useCases,
+    { provide: 'IAiUsageDatasource', useClass: AiUsageDatasource },
+    { provide: 'IAiUsageRepository', useClass: AiUsageRepository },
     { provide: 'IMarketRepository', useClass: MarketRepository },
     { provide: 'IPurchaseRepository', useClass: PurchaseRepository },
     { provide: 'IShoppingListDatasource', useClass: ShoppingListDatasource },

@@ -87,6 +87,7 @@ export interface MovementOptions {
 }
 export type MovementPlanner = (item: StockEntity) => MovementOperation[];
 export interface StockFilter {
+  barcode?: string;
   categoryIds?: string[];
   locationIds?: string[];
 }

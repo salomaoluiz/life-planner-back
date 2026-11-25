@@ -147,6 +147,8 @@ export interface PurchaseEventRecord {
 }
 export type PurchasePriceInputs = 'LINE' | 'UNIT';
 export interface PurchaseRowRecord {
+  // Spec 121 FR 25: the normalized code of an outside-the-list row, kept for the closing.
+  barcode?: string;
   checkedAt: Date;
   checkedBy?: { id: string; name: string };
   description?: string;
@@ -177,6 +179,7 @@ export interface PurchaseWithRows {
   rows: PurchaseRowRecord[];
 }
 export interface UpsertPurchaseRowParams {
+  barcode?: string;
   clientId?: string;
   description?: string;
   expirationDate?: Date | null;

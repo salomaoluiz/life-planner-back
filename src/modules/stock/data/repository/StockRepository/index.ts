@@ -162,7 +162,11 @@ export class StockRepository implements IStockRepository {
   async findByOwners(owners: OwnerAccess[], filter?: StockFilter): Promise<StockEntity[]> {
     const result = await this.stockDatasource.findByOwners(
       owners,
-      filter && { category_ids: filter.categoryIds, location_ids: filter.locationIds },
+      filter && {
+        barcode: filter.barcode,
+        category_ids: filter.categoryIds,
+        location_ids: filter.locationIds,
+      },
     );
 
     return result.map((row) => StockMapper.toDomain(row));

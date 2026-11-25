@@ -7,6 +7,7 @@ import {
   UpsertPurchaseRowParsed,
   UpsertPurchaseRowSchema,
 } from '@stock/application/dto/Purchase';
+import { normalizeOrThrow } from '@stock/application/service/BarcodeRules';
 import {
   ensureRowsWritable,
   loadWritablePurchase,
@@ -126,6 +127,7 @@ export class UpsertPurchaseRowUseCase implements UseCaseWithParams<
     }
 
     const result = await this.purchaseRepository.upsertRow({
+      barcode: input.barcode === undefined ? undefined : normalizeOrThrow(input.barcode),
       clientId: input.clientId,
       description: input.description,
       expirationDate: input.expirationDate,
