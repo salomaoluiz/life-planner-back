@@ -23,6 +23,7 @@ export class ShoppingListMapper {
       name: raw.name,
       owner: OwnerType[raw.owner],
       ownerId: raw.owner_id,
+      purchaseIntervalDays: raw.purchase_interval_days,
       status: StockCatalogStatus[raw.status],
       updatedAt: raw.updated_at,
     });

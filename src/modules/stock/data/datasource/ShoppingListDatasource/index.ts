@@ -76,7 +76,10 @@ export class ShoppingListDatasource implements IShoppingListDatasource {
           rowId = existing.id;
           await tx.stockShoppingListRow.update({
             data: {
-              origin: existing.origin === 'AUTO' ? 'AUTO_EDITED' : existing.origin,
+              origin:
+                existing.origin === 'AUTO' || existing.origin === 'FORECAST'
+                  ? 'AUTO_EDITED'
+                  : existing.origin,
               quantity: fromMilli(toMilli(Number(existing.quantity)) + toMilli(params.quantity)),
             },
             where: { id: existing.id },
@@ -211,7 +214,10 @@ export class ShoppingListDatasource implements IShoppingListDatasource {
     return this.db.client.stockShoppingListRow.findMany({
       include: WITH_ITEM,
       orderBy: { id: 'asc' },
-      where: { list: { OR: keys, status: 'ACTIVE' }, origin: { in: ['AUTO', 'AUTO_EDITED'] } },
+      where: {
+        list: { OR: keys, status: 'ACTIVE' },
+        origin: { in: ['AUTO', 'AUTO_EDITED', 'FORECAST'] },
+      },
     });
   }
 
@@ -272,7 +278,7 @@ export class ShoppingListDatasource implements IShoppingListDatasource {
       const edited =
         data.quantity !== undefined &&
         toMilli(data.quantity) !== toMilli(Number(current.quantity)) &&
-        current.origin === 'AUTO';
+        (current.origin === 'AUTO' || current.origin === 'FORECAST');
 
       if (current.item_id) {
         if (price !== undefined) {

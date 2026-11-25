@@ -67,7 +67,7 @@ export const AddShoppingListRowSchema = z
     estimatedUnitPriceCents: PriceSchema.optional(),
     itemId: z.string().min(1).optional(),
     listId: z.string().min(1),
-    origin: z.enum(['AUTO', 'AUTO_EDITED', 'MANUAL']).optional(),
+    origin: z.enum(['AUTO', 'AUTO_EDITED', 'FORECAST', 'MANUAL']).optional(),
     quantity: PositiveQuantitySchema,
     restore: z.boolean().optional(),
     unit: UnitSchema.optional(),

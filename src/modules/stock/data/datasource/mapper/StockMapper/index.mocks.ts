@@ -13,6 +13,10 @@ const rawFull = {
   category_id: 'cat',
   created_at: faker.date.past(),
   description: 'Whole milk',
+  forecast_daily_rate: null,
+  forecast_leftover_quantity: null,
+  forecast_status: null,
+  forecast_waste_ratio_90d: null,
   id: faker.string.uuid(),
   ideal_quantity: decimal(5),
   location_id: 'loc',
@@ -43,12 +47,16 @@ const rawMinimal = {
 } as unknown as StockItem;
 const rawLot = {
   created_at: date,
+  currency: null,
   expiration_date: date,
   id: 'lot',
   item_id: 'item',
+  leftover_dismissed_at: null,
+  leftover_dismissed_quantity: null,
   opened_at: date,
   purchase_date: date,
   quantity: decimal(0.25),
+  unit_price_cents: null,
   updated_at: date,
 } as unknown as StockLot;
 const rawLotMinimal = {

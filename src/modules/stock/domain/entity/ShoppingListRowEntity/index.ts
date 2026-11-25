@@ -3,6 +3,7 @@ import { StockUnits } from '@stock/domain/entity/StockEntity';
 export enum ShoppingListRowOrigins {
   AUTO = 'AUTO',
   AUTO_EDITED = 'AUTO_EDITED',
+  FORECAST = 'FORECAST',
   MANUAL = 'MANUAL',
 }
 

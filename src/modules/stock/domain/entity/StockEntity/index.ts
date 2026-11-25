@@ -7,6 +7,19 @@ export enum StockUnits {
   UNIT = 'unit',
 }
 
+// Spec 123: the forecast stored on the item (written only by the forecast sync).
+export interface StockForecast {
+  computedOn?: Date;
+  dailyRate?: number;
+  emptyDate?: Date;
+  leftoverDate?: Date;
+  leftoverLotId?: string;
+  leftoverQuantity?: number;
+  minDate?: Date;
+  status: 'INSUFFICIENT_DATA' | 'NO_CONSUMPTION' | 'OK';
+  wasteRatio90d?: number;
+}
+
 interface IStockEntity {
   createdAt: Date;
   description: string;
@@ -23,6 +36,7 @@ interface IStockEntity {
   brand?: string;
   categoryId?: string;
   estimatedUnitPriceCents?: number;
+  forecast?: StockForecast;
   idealQuantity?: number;
   locationId?: string;
   // Only the lots with quantity > 0 (spec 116 FR 6).
@@ -42,6 +56,7 @@ class StockEntity {
   createdAt: Date;
   description: string;
   estimatedUnitPriceCents?: number;
+  forecast?: StockForecast;
   id: string;
   idealQuantity?: number;
   locationId?: string;
@@ -66,6 +81,7 @@ class StockEntity {
     this.createdAt = params.createdAt;
     this.description = params.description;
     this.estimatedUnitPriceCents = params.estimatedUnitPriceCents;
+    this.forecast = params.forecast;
     this.id = params.id;
     this.idealQuantity = params.idealQuantity;
     this.locationId = params.locationId;

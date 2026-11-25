@@ -9,6 +9,7 @@ interface IShoppingListEntity {
   name: string;
   owner: OwnerType;
   ownerId: string;
+  purchaseIntervalDays: number;
   status: StockCatalogStatus;
   updatedAt: Date;
   // Optional properties
@@ -27,6 +28,7 @@ class ShoppingListEntity {
   name: string;
   owner: OwnerType;
   ownerId: string;
+  purchaseIntervalDays: number;
   status: StockCatalogStatus;
   updatedAt: Date;
 
@@ -40,6 +42,7 @@ class ShoppingListEntity {
     this.name = params.name;
     this.owner = params.owner;
     this.ownerId = params.ownerId;
+    this.purchaseIntervalDays = params.purchaseIntervalDays;
     this.status = params.status;
     this.updatedAt = params.updatedAt;
   }

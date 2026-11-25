@@ -1,3 +1,8 @@
+export enum DiscardValueSources {
+  ITEM_LAST = 'ITEM_LAST',
+  LOT = 'LOT',
+  NONE = 'NONE',
+}
 export enum StockMovementReasons {
   EXPIRED = 'EXPIRED',
   MANUAL = 'MANUAL',
@@ -23,14 +28,19 @@ interface IStockMovementEntity {
   quantity: number;
   type: StockMovementTypes;
   // Optional properties
+  currency?: string;
   gestureId?: string;
   note?: string;
   reason?: StockMovementReasons;
+  unitPriceCents?: number;
   userId?: string;
+  valueCents?: number;
+  valueSource?: DiscardValueSources;
 }
 
 class StockMovementEntity {
   createdAt: Date;
+  currency?: string;
   gestureId?: string;
   id: string;
   itemId: string;
@@ -39,10 +49,17 @@ class StockMovementEntity {
   quantity: number;
   reason?: StockMovementReasons;
   type: StockMovementTypes;
+  unitPriceCents?: number;
   userId?: string;
+  valueCents?: number;
+  valueSource?: DiscardValueSources;
 
   constructor(params: IStockMovementEntity) {
     this.createdAt = params.createdAt;
+    this.currency = params.currency;
+    this.unitPriceCents = params.unitPriceCents;
+    this.valueCents = params.valueCents;
+    this.valueSource = params.valueSource;
     this.gestureId = params.gestureId;
     this.id = params.id;
     this.itemId = params.itemId;

@@ -112,6 +112,7 @@ export function shoppingList(id: string, extra: Partial<ShoppingListEntity> = {}
     name: `List ${id}`,
     owner: OwnerType.USER,
     ownerId: userId,
+    purchaseIntervalDays: 7,
     status: StockCatalogStatus.ACTIVE,
     updatedAt: date,
     ...extra,

@@ -13,6 +13,7 @@ it('SHOULD keep every property', () => {
     name: 'Groceries',
     owner: OwnerType.FAMILY,
     ownerId: 'f',
+    purchaseIntervalDays: 7,
     status: StockCatalogStatus.ACTIVE,
     updatedAt: date,
   });

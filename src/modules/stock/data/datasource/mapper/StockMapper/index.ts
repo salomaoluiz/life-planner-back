@@ -6,6 +6,7 @@ import StockEntity, { StockUnits } from '@stock/domain/entity/StockEntity';
 import StockLocationEntity from '@stock/domain/entity/StockLocationEntity';
 import StockLotEntity from '@stock/domain/entity/StockLotEntity';
 import StockMovementEntity, {
+  DiscardValueSources,
   StockMovementReasons,
   StockMovementTypes,
 } from '@stock/domain/entity/StockMovementEntity';
@@ -36,6 +37,26 @@ export class StockMapper {
       createdAt: raw.created_at,
       description: raw.description,
       estimatedUnitPriceCents: raw.estimated_unit_price_cents ?? undefined,
+      forecast: raw.forecast_status
+        ? {
+            computedOn: raw.forecast_computed_on ?? undefined,
+            dailyRate:
+              raw.forecast_daily_rate === null ? undefined : toNumber(raw.forecast_daily_rate),
+            emptyDate: raw.forecast_empty_date ?? undefined,
+            leftoverDate: raw.forecast_leftover_date ?? undefined,
+            leftoverLotId: raw.forecast_leftover_lot_id ?? undefined,
+            leftoverQuantity:
+              raw.forecast_leftover_quantity === null
+                ? undefined
+                : toNumber(raw.forecast_leftover_quantity),
+            minDate: raw.forecast_min_date ?? undefined,
+            status: raw.forecast_status,
+            wasteRatio90d:
+              raw.forecast_waste_ratio_90d === null
+                ? undefined
+                : toNumber(raw.forecast_waste_ratio_90d),
+          }
+        : undefined,
       id: raw.id,
       idealQuantity: raw.ideal_quantity === null ? undefined : toNumber(raw.ideal_quantity),
       locationId: raw.location_id ?? undefined,
@@ -71,18 +92,26 @@ export class StockMapper {
   static toLot(raw: StockLot): StockLotEntity {
     return new StockLotEntity({
       createdAt: raw.created_at,
+      currency: raw.currency ?? undefined,
       expirationDate: raw.expiration_date ?? undefined,
       id: raw.id,
       itemId: raw.item_id,
+      leftoverDismissedAt: raw.leftover_dismissed_at ?? undefined,
+      leftoverDismissedQuantity:
+        raw.leftover_dismissed_quantity === null
+          ? undefined
+          : toNumber(raw.leftover_dismissed_quantity),
       openedAt: raw.opened_at ?? undefined,
       purchaseDate: raw.purchase_date ?? undefined,
       quantity: toNumber(raw.quantity),
+      unitPriceCents: raw.unit_price_cents ?? undefined,
     });
   }
 
   static toMovement(raw: StockMovement): StockMovementEntity {
     return new StockMovementEntity({
       createdAt: raw.created_at,
+      currency: raw.currency ?? undefined,
       gestureId: raw.gesture_id ?? undefined,
       id: raw.id,
       itemId: raw.item_id,
@@ -91,7 +120,10 @@ export class StockMapper {
       quantity: toNumber(raw.quantity),
       reason: raw.reason ? StockMovementReasons[raw.reason] : undefined,
       type: StockMovementTypes[raw.type],
+      unitPriceCents: raw.unit_price_cents ?? undefined,
       userId: raw.user_id ?? undefined,
+      valueCents: raw.value_cents ?? undefined,
+      valueSource: raw.value_source ? DiscardValueSources[raw.value_source] : undefined,
     });
   }
 }

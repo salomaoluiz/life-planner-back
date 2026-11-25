@@ -18,7 +18,7 @@ const OwnerTypeApiSchema = z.enum(OwnerType);
 const CurrencyApiSchema = z.enum(SHOPPING_LIST_CURRENCIES);
 const PriceApiSchema = z.number().int().min(1).max(MAX_ESTIMATED_PRICE_CENTS);
 const UnitApiSchema = z.enum(StockUnits);
-const OriginApiSchema = z.enum(['AUTO', 'AUTO_EDITED', 'MANUAL']);
+const OriginApiSchema = z.enum(['AUTO', 'AUTO_EDITED', 'FORECAST', 'MANUAL']);
 const PriceSourceSchema = z.enum([
   'HISTORY_ANY_MARKET',
   'HISTORY_DEFAULT_MARKET',
