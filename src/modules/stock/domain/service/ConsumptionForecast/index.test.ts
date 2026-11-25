@@ -1,5 +1,6 @@
 import { StockUnits } from '@stock/domain/entity/StockEntity';
 import {
+  buildWindowDays,
   computeForecast,
   ConsumptionDay,
   forecastQuantity,
@@ -230,5 +231,25 @@ describe('wasteRatio', () => {
   it('is null when nothing entered', () => {
     expect(wasteRatio(2, 0)).toBeNull();
     expect(wasteRatio(2, 5)).toBe(0.4);
+  });
+});
+
+describe('buildWindowDays', () => {
+  it('rebuilds the start-of-day quantity backwards from the current quantity', () => {
+    // now 5; today +0; yesterday consumed 2 (delta -2): start of yesterday = 5 + 2 = 7, start of 2 days ago = 7 - 0
+    const days = buildWindowDays(5, [{ ageDays: 1, consumed: 2, delta: -2 }], 3);
+
+    expect(days).toEqual([
+      { ageDays: 1, consumed: 2, startQuantity: 7 },
+      { ageDays: 2, consumed: 0, startQuantity: 7 },
+      { ageDays: 3, consumed: 0, startQuantity: 7 },
+    ]);
+  });
+
+  it('counts today deltas and shows zero before the first entry', () => {
+    // 4 today after an entry of 4 five days ago... entry on age 3 (+4): before it the quantity was 0
+    const days = buildWindowDays(4, [{ ageDays: 3, consumed: 0, delta: 4 }], 4);
+
+    expect(days.map((day) => day.startQuantity)).toEqual([4, 4, 0, 0]);
   });
 });

@@ -2,6 +2,8 @@ import { Prisma } from '@db/client';
 
 import { dismissIfNeeded, syncOwnerRows, syncRestockRows } from './index';
 
+jest.mock('@stock/data/datasource/ForecastSync', () => ({ recomputeForecasts: jest.fn() }));
+
 function asTx(value: unknown) {
   return value as Prisma.TransactionClient;
 }
@@ -78,4 +80,17 @@ it('SHOULD record the dismissal only for an item that still needs restocking', a
 
   expect(sqlOf(client.$executeRaw.mock.calls[0])).toContain('f."needs"');
   expect(sqlOf(client.$executeRaw.mock.calls[0])).toContain('ON CONFLICT DO NOTHING');
+});
+
+describe('forecast refresh (spec 123 FR 13)', () => {
+  it('SHOULD recompute the forecast of the items first, unless told to reuse it', async () => {
+    const { recomputeForecasts } = jest.requireMock('@stock/data/datasource/ForecastSync');
+
+    recomputeForecasts.mockClear();
+    await syncRestockRows(asTx(tx()), ['a', 'b']);
+    await syncRestockRows(asTx(tx()), ['a'], { forecast: 'reuse' });
+
+    expect(recomputeForecasts).toHaveBeenCalledTimes(1);
+    expect(recomputeForecasts.mock.calls[0][1]).toEqual(['a', 'b']);
+  });
 });

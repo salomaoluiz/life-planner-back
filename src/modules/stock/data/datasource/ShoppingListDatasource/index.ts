@@ -138,7 +138,7 @@ export class ShoppingListDatasource implements IShoppingListDatasource {
       const created = await tx.stockShoppingList.create({ data: params });
 
       if (params.is_default) {
-        await syncRestockRows(tx, await itemsWithAutoRows(tx, key));
+        await syncRestockRows(tx, await itemsWithAutoRows(tx, key), { forecast: 'reuse' });
       }
 
       return created;
@@ -259,9 +259,9 @@ export class ShoppingListDatasource implements IShoppingListDatasource {
       const updated = await tx.stockShoppingList.update({ data, where: { id } });
 
       if (data.is_default && !current.is_default) {
-        await syncRestockRows(tx, await itemsWithAutoRows(tx, key));
+        await syncRestockRows(tx, await itemsWithAutoRows(tx, key), { forecast: 'reuse' });
       } else {
-        await syncRestockRows(tx, movedItems);
+        await syncRestockRows(tx, movedItems, { forecast: 'reuse' });
       }
 
       return updated;

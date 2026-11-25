@@ -1,4 +1,6 @@
 import { Prisma } from '@db/client';
+import { recomputeForecasts } from '@stock/data/datasource/ForecastSync';
+import { todayUtc } from '@stock/domain/service/Today';
 
 type Tx = Prisma.TransactionClient;
 
@@ -35,10 +37,21 @@ function facts(itemIds: string[]) {
 export async function syncRestockRows(
   tx: Tx,
   itemIds: string[],
-  options: { clearDismissal?: boolean; expanded?: boolean } = {},
+  options: {
+    clearDismissal?: boolean;
+    expanded?: boolean;
+    // Spec 123 FR 13: `recompute` (default) refreshes the stored forecast of the items first; `reuse` is for changes that
+    // do not move quantities (lists, intervals) and for the callers that just recomputed.
+    forecast?: 'recompute' | 'reuse';
+    today?: Date;
+  } = {},
 ): Promise<void> {
   if (itemIds.length === 0) {
     return;
+  }
+
+  if ((options.forecast ?? 'recompute') === 'recompute') {
+    await recomputeForecasts(tx, itemIds, options.today ?? todayUtc());
   }
 
   const clear = options.clearDismissal ?? false;
@@ -110,6 +123,6 @@ export async function syncOwnerRows(
   await syncRestockRows(
     tx,
     items.map((item) => item.id),
-    { expanded: true },
+    { expanded: true, forecast: 'reuse' },
   );
 }

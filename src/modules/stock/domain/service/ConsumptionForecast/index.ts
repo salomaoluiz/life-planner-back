@@ -183,6 +183,36 @@ export function projectedOnTrip(quantity: number, rate: number, daysToTrip: numb
 }
 
 // FR 33.
+export interface DayMovements {
+  // Days before today (0 = today).
+  ageDays: number;
+  // Positive CONSUME quantity of the day.
+  consumed: number;
+  // Net signed quantity change of the day (every type except OPEN).
+  delta: number;
+}
+
 export function wasteRatio(discarded: number, entered: number): null | number {
   return entered > 0 ? Math.round((discarded / entered) * 10_000) / 10_000 : null;
+}
+
+// FR 2-3: the 90 days up to yesterday with the quantity at the start of each day, rebuilt backwards from the current
+// quantity and the deltas of the window (today's included).
+export function buildWindowDays(
+  quantity: number,
+  perDay: DayMovements[],
+  windowDays = 90,
+): ConsumptionDay[] {
+  const byAge = new Map(perDay.map((entry) => [entry.ageDays, entry]));
+  const days: ConsumptionDay[] = [];
+  let start = toMilli(quantity) - toMilli(byAge.get(0)?.delta ?? 0);
+
+  for (let ageDays = 1; ageDays <= windowDays; ageDays += 1) {
+    const entry = byAge.get(ageDays);
+
+    start -= toMilli(entry?.delta ?? 0);
+    days.push({ ageDays, consumed: entry?.consumed ?? 0, startQuantity: fromMilli(start) });
+  }
+
+  return days;
 }
