@@ -221,7 +221,10 @@ describe('reads', () => {
     expect(spies.rowFindMany).toHaveBeenNthCalledWith(2, {
       include: expect.any(Object),
       orderBy: { id: 'asc' },
-      where: { list: { OR: [key], status: 'ACTIVE' }, origin: { in: ['AUTO', 'AUTO_EDITED'] } },
+      where: {
+        list: { OR: [key], status: 'ACTIVE' },
+        origin: { in: ['AUTO', 'AUTO_EDITED', 'FORECAST'] },
+      },
     });
   });
 
