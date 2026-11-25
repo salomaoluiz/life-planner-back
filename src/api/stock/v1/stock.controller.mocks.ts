@@ -4,6 +4,7 @@ import {
   StockController,
   StockFrequentController,
   StockGestureController,
+  StockLotController,
   StockSuggestionController,
 } from '@api/stock/v1/stock.controller';
 import { StockService } from '@api/stock/v1/stock.service';
@@ -29,7 +30,9 @@ const methods = [
   'delete',
   'deleteCategory',
   'deleteLocation',
+  'dismissLeftover',
   'findAll',
+  'findConsumptionWeeks',
   'findById',
   'findFrequent',
   'findLocationById',
@@ -58,6 +61,7 @@ async function setup() {
       StockSuggestionController,
       StockFrequentController,
       StockGestureController,
+      StockLotController,
       StockCategoryController,
       StockLocationController,
     ],
@@ -70,6 +74,7 @@ async function setup() {
     gestures: module.get(StockGestureController),
     items: module.get(StockController),
     locations: module.get(StockLocationController),
+    lots: module.get(StockLotController),
     suggestions: module.get(StockSuggestionController),
   };
 }

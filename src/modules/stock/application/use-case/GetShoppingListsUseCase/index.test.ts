@@ -48,3 +48,12 @@ it('SHOULD narrow to the owner id AND still reach an archived family explicitly,
   expect(mocks.lists.ensureDefault).not.toHaveBeenCalled();
   expect(mocks.lists.findByOwners).toHaveBeenCalledWith([mocks.archivedOwners[1]], true);
 });
+
+it('SHOULD refresh the stale forecasts before reading the lists and rows (spec 123 FR 14)', async () => {
+  await setup.execute({ accessibleOwners: mocks.accessibleOwners });
+
+  expect(mocks.refresh.execute).toHaveBeenCalledTimes(1);
+  expect(mocks.refresh.execute.mock.invocationCallOrder[0]).toBeLessThan(
+    mocks.lists.findByOwners.mock.invocationCallOrder[0],
+  );
+});

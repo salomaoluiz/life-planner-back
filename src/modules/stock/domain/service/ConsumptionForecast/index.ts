@@ -198,6 +198,12 @@ export function wasteRatio(discarded: number, entered: number): null | number {
 
 // FR 2-3: the 90 days up to yesterday with the quantity at the start of each day, rebuilt backwards from the current
 // quantity and the deltas of the window (today's included).
+export interface ConsumptionWeek {
+  excluded: boolean;
+  quantity: number;
+  start: Date;
+}
+
 export function buildWindowDays(
   quantity: number,
   perDay: DayMovements[],
@@ -215,4 +221,42 @@ export function buildWindowDays(
   }
 
   return days;
+}
+
+// Spec 123 FR 19: the last 12 weeks (Monday to Sunday, oldest first, the current week last) of CONSUME quantity; a
+// week with the item at zero on every day is `excluded` ("fora da média").
+export function weeklyConsumption(
+  quantity: number,
+  perDay: DayMovements[],
+  today: Date,
+  weeks = 12,
+): ConsumptionWeek[] {
+  const sinceMonday = (today.getUTCDay() + 6) % 7;
+  const windowDays = sinceMonday + weeks * 7;
+  const days = buildWindowDays(quantity, perDay, windowDays);
+  const todayConsumed = perDay.find((entry) => entry.ageDays === 0)?.consumed ?? 0;
+  const todayStart =
+    toMilli(quantity) - toMilli(perDay.find((entry) => entry.ageDays === 0)?.delta ?? 0);
+  const byAge = new Map<number, { consumed: number; start: number }>([
+    [0, { consumed: todayConsumed, start: fromMilli(todayStart) }],
+    ...days.map((day): [number, { consumed: number; start: number }] => [
+      day.ageDays,
+      { consumed: day.consumed, start: day.startQuantity },
+    ]),
+  ]);
+
+  return Array.from({ length: weeks }, (_, index) => {
+    const weeksBack = weeks - 1 - index;
+    const firstAge = sinceMonday + weeksBack * 7;
+    const ages = Array.from({ length: 7 }, (_unused, offset) => firstAge - offset).filter(
+      (age) => age >= 0,
+    );
+    const entries = ages.map((age) => byAge.get(age) ?? { consumed: 0, start: 0 });
+
+    return {
+      excluded: entries.every((entry) => entry.start <= 0),
+      quantity: fromMilli(entries.reduce((sum, entry) => sum + toMilli(entry.consumed), 0)),
+      start: addDays(today, -firstAge),
+    };
+  });
 }

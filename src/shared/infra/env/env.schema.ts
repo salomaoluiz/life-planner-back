@@ -50,6 +50,9 @@ export const envSchema = z.object({
   // Finance (spec 081): seconds-scale cache of the recurrence materialization check, 0 disables it
   FINANCE_MATERIALIZATION_GATE_TTL_MS: optionalInt(0, 60000),
 
+  // Stock forecast (spec 123): seconds-scale cache of the stale-forecast check on reads, 0 disables it
+  STOCK_FORECAST_GATE_TTL_MS: optionalInt(0, 60000),
+
   // Name embeddings for the stock suggestions (spec 116): an empty key disables them (trigram only)
   EMBEDDINGS_API_KEY: emptyToUndefined,
   EMBEDDINGS_API_URL: emptyToUndefined,

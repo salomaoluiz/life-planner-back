@@ -159,6 +159,12 @@ export class StockRepository implements IStockRepository {
       .map((row) => StockMapper.toDomain(row));
   }
 
+  async findByLotId(lotId: string): Promise<StockEntity | undefined> {
+    const result = await this.stockDatasource.findByLotId(lotId);
+
+    return result ? StockMapper.toDomain(result) : undefined;
+  }
+
   async findByOwners(owners: OwnerAccess[], filter?: StockFilter): Promise<StockEntity[]> {
     const result = await this.stockDatasource.findByOwners(
       owners,
@@ -176,6 +182,10 @@ export class StockRepository implements IStockRepository {
     return this.stockDatasource.findFrequentItemIds(owners, since, limit);
   }
 
+  async findMovementDays(itemId: string, today: Date, windowDays: number) {
+    return this.stockDatasource.findMovementDays(itemId, today, windowDays);
+  }
+
   async findMovements(
     itemId: string,
     limit: number,
@@ -184,6 +194,18 @@ export class StockRepository implements IStockRepository {
     const rows = await this.stockDatasource.findMovements(itemId, limit, cursor);
 
     return rows.map((row) => StockMapper.toMovement(row));
+  }
+
+  async findStaleForecastItemIds(owners: OwnerAccess[], today: Date): Promise<string[]> {
+    return this.stockDatasource.findStaleForecastItemIds(owners, today);
+  }
+
+  async refreshForecasts(itemIds: string[], today: Date): Promise<void> {
+    await this.stockDatasource.refreshForecasts(itemIds, today);
+  }
+
+  async setLeftoverDismissal(lotId: string, quantity: null | number): Promise<void> {
+    await this.stockDatasource.setLeftoverDismissal(lotId, quantity);
   }
 
   async update(params: UpdateStockRepositoryParams): Promise<StockEntity> {

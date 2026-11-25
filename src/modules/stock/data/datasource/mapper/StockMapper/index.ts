@@ -57,6 +57,10 @@ export class StockMapper {
                 : toNumber(raw.forecast_waste_ratio_90d),
           }
         : undefined,
+      forecastRow:
+        'forecast_row' in raw && raw.forecast_row
+          ? { listId: raw.forecast_row.list_id, quantity: toNumber(raw.forecast_row.quantity) }
+          : undefined,
       id: raw.id,
       idealQuantity: raw.ideal_quantity === null ? undefined : toNumber(raw.ideal_quantity),
       locationId: raw.location_id ?? undefined,

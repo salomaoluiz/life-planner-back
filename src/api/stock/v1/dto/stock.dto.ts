@@ -160,12 +160,30 @@ const CategoryRefSchema = z.object({
 const LocationRefSchema = z.object({ archived: z.boolean(), id: z.uuid(), name: z.string() });
 
 export const StockLotApiSchema = z.object({
+  currency: z.string().nullable(),
   effectiveExpiration: DayApiSchema.nullable(),
   expirationDate: DayApiSchema.nullable(),
   expirationStatus: LotStatusSchema,
   id: z.uuid(),
+  leftoverDismissed: z.boolean(),
+  leftoverQuantity: z.number().nullable(),
   openedAt: DayApiSchema.nullable(),
   purchaseDate: DayApiSchema.nullable(),
+  quantity: z.number(),
+  unitPriceCents: z.number().int().nullable(),
+});
+// Spec 123 FR 8: the stored forecast; `minDate`/`emptyDate` only with status OK.
+const ForecastApiSchema = z.object({
+  computedOn: DayApiSchema.nullable(),
+  dailyRate: z.number(),
+  emptyDate: DayApiSchema.nullable(),
+  minDate: DayApiSchema.nullable(),
+  status: z.enum(['INSUFFICIENT_DATA', 'NO_CONSUMPTION', 'OK']),
+  weeklyRate: z.number(),
+});
+const LeftoverApiSchema = z.object({
+  date: DayApiSchema,
+  lotId: z.uuid(),
   quantity: z.number(),
 });
 
@@ -180,10 +198,13 @@ const ItemFields = {
   effectiveShoppingListId: z.uuid().optional(),
   estimatedUnitPriceCents: z.number().int().optional(),
   expirationStatus: LotStatusSchema,
+  forecast: ForecastApiSchema.nullable(),
   hasExpiredLot: z.boolean(),
+  hasForecastRow: z.boolean(),
   hasOpenLot: z.boolean(),
   id: z.uuid(),
   idealQuantity: z.number().nullable(),
+  leftover: LeftoverApiSchema.nullable(),
   location: LocationRefSchema.nullable(),
   locationId: z.uuid().nullable(),
   minQuantity: z.number().nullable(),
@@ -206,7 +227,20 @@ const ItemFields = {
 
 // The list never carries lots or movements (FR 34); the detail adds the lots with quantity > 0 (FR 35).
 export const StockListItemApiSchema = z.object(ItemFields);
-export const StockItemApiSchema = z.object({ ...ItemFields, lots: z.array(StockLotApiSchema) });
+// Spec 123 FR 19: where the FORECAST row of the item sits ("Entrou na lista X como previsto · N").
+const ForecastRowApiSchema = z.object({
+  listId: z.uuid(),
+  listName: z.string().nullable(),
+  quantity: z.number(),
+});
+export const StockItemApiSchema = z.object({
+  ...ItemFields,
+  forecastRow: ForecastRowApiSchema.nullable(),
+  lots: z.array(StockLotApiSchema),
+});
+export const ConsumptionWeeksApiSchema = z.object({
+  weeks: z.array(z.object({ excluded: z.boolean(), quantity: z.number(), start: DayApiSchema })),
+});
 
 export const StockMovementApiSchema = z.object({
   createdAt: z.iso.datetime(),
@@ -389,6 +423,7 @@ export class CreateStockCategoryBody extends createZodDto(CreateStockCategoryApi
 export class CreateStockItemBody extends createZodDto(CreateStockItemApiSchema) {}
 export class CreateStockLocationBody extends createZodDto(CreateStockLocationApiSchema) {}
 // A union cannot be a DTO base: Swagger documents the discriminator, the schema above validates the body.
+export class ConsumptionWeeksOutput extends createZodDto(ConsumptionWeeksApiSchema) {}
 export class CreateStockMovementBody extends createZodDto(
   z.looseObject({ type: z.enum(StockMovementTypes) }),
 ) {}

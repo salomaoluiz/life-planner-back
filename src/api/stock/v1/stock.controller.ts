@@ -17,6 +17,7 @@ import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 
 import {
+  ConsumptionWeeksOutput,
   CreateStockItemApiSchema,
   CreateStockItemBody,
   CreateStockMovementApiSchema,
@@ -104,6 +105,18 @@ export class StockController {
     return this.stockService.findById(req.user.id, id, today);
   }
 
+  @Get(':id/consumption-weeks')
+  @ZodResponse({ status: 200, type: ConsumptionWeeksOutput })
+  async findConsumptionWeeks(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: Record<string, unknown>,
+  ) {
+    const { today } = validate(DayQuerySchema, query);
+
+    return this.stockService.findConsumptionWeeks(req.user.id, id, today);
+  }
+
   @Get(':id/movements')
   @ZodResponse({ status: 200, type: StockMovementPageOutput })
   async findMovements(
@@ -170,6 +183,33 @@ export class StockFrequentController {
   @ZodResponse({ status: 200, type: StockFrequentOutput })
   async frequent(@Request() req: JwtPayload & Request, @Query() query: Record<string, unknown>) {
     return this.stockService.findFrequent(req.user.id, validate(FrequentQuerySchema, query));
+  }
+}
+
+// Spec 123 FR 25: the leftover warning of a lot can be dismissed (204) and the dismissal undone (204).
+@ApiBearerAuth('JWT')
+@Controller({
+  path: 'stock/lots',
+  version: '1',
+})
+export class StockLotController {
+  constructor(private readonly stockService: StockService) {}
+
+  @ApiNoContentResponse()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post(':id/leftover-dismissal')
+  async dismiss(@Request() req: JwtPayload & Request, @Param('id', ParseUUIDPipe) id: string) {
+    await this.stockService.dismissLeftover(req.user.id, id, true);
+  }
+
+  @ApiNoContentResponse()
+  @Delete(':id/leftover-dismissal')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async undoDismissal(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    await this.stockService.dismissLeftover(req.user.id, id, false);
   }
 }
 

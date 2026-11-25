@@ -236,6 +236,12 @@ export class EnvService {
     return this.nestConfigService.get('FINANCE_MATERIALIZATION_GATE_TTL_MS');
   }
 
+  // Stock
+
+  get stockForecastGateTtlMs(): Env['STOCK_FORECAST_GATE_TTL_MS'] {
+    return this.nestConfigService.get('STOCK_FORECAST_GATE_TTL_MS');
+  }
+
   // Docs
 
   get swaggerEnabled(): Env['SWAGGER_ENABLED'] {

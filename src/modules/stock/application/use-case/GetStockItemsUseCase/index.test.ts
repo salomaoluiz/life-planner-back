@@ -74,3 +74,16 @@ it('SHOULD throw ValidationError WHEN the input is malformed', async () => {
     ValidationError,
   );
 });
+
+it('SHOULD refresh the stale forecasts of the owners before reading (spec 123 FR 14)', async () => {
+  await setup.execute({ accessibleOwners: mocks.accessibleOwners, today: '2026-11-25' });
+
+  expect(mocks.refresh.execute).toHaveBeenCalledTimes(1);
+  expect(mocks.refresh.execute).toHaveBeenCalledWith({
+    owners: expect.any(Array),
+    today: new Date('2026-11-25T00:00:00.000Z'),
+  });
+  expect(mocks.refresh.execute.mock.invocationCallOrder[0]).toBeLessThan(
+    mocks.stock.findByOwners.mock.invocationCallOrder[0],
+  );
+});

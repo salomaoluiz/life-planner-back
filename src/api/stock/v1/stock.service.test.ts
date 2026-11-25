@@ -373,3 +373,40 @@ describe('spec 117', () => {
     });
   });
 });
+
+describe('spec 123', () => {
+  it('SHOULD output the consumption weeks with days as YYYY-MM-DD', async () => {
+    useCases.getConsumptionWeeks.execute.mockResolvedValue([
+      { excluded: true, quantity: 0, start: new Date('2026-09-07T00:00:00.000Z') },
+      { excluded: false, quantity: 2.5, start: new Date('2026-09-14T00:00:00.000Z') },
+    ]);
+
+    expect(await setup.findConsumptionWeeks(userId, 'i', '2026-11-25')).toEqual({
+      weeks: [
+        { excluded: true, quantity: 0, start: '2026-09-07' },
+        { excluded: false, quantity: 2.5, start: '2026-09-14' },
+      ],
+    });
+    expect(useCases.getConsumptionWeeks.execute).toHaveBeenCalledWith({
+      accessibleOwners,
+      id: 'i',
+      today: '2026-11-25',
+    });
+  });
+
+  it('SHOULD dismiss and undo the dismissal of a lot warning', async () => {
+    await setup.dismissLeftover(userId, 'lot', true);
+    await setup.dismissLeftover(userId, 'lot', false);
+
+    expect(useCases.dismissLeftover.execute).toHaveBeenNthCalledWith(1, {
+      accessibleOwners,
+      dismissed: true,
+      lotId: 'lot',
+    });
+    expect(useCases.dismissLeftover.execute).toHaveBeenNthCalledWith(2, {
+      accessibleOwners,
+      dismissed: false,
+      lotId: 'lot',
+    });
+  });
+});

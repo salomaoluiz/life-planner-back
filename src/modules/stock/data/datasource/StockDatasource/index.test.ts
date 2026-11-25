@@ -149,6 +149,7 @@ describe('Method findMovements', () => {
 describe('Method update', () => {
   it('SHOULD pass the columns through (undefined = unchanged, null = clear) AND keep the lots', async () => {
     spies.stockUpdate.mockResolvedValue({ ...mocks.stock, lots: [] });
+    spies.stockFindUniqueOrThrow.mockResolvedValue({ ...mocks.stock, lots: [] });
 
     await setup.update({ id: 'x', min_quantity: null, notes: 'n' });
 
@@ -392,5 +393,69 @@ describe('Method findFrequentItemIds / findByIds', () => {
     const rows = await setup.findByIds([mocks.stock.id]);
 
     expect(rows[0].lots).toEqual([mocks.lot]);
+  });
+});
+
+describe('forecast refresh (spec 123)', () => {
+  const today = new Date('2026-11-25T00:00:00.000Z');
+
+  it('SHOULD list the owners items whose forecast was not computed today, stock-only excluded', async () => {
+    spies.stockFindMany.mockResolvedValue([{ id: 'a' }, { id: 'b' }]);
+
+    const ids = await setup.findStaleForecastItemIds(mocks.owners, today);
+
+    expect(ids).toEqual(['a', 'b']);
+    expect(spies.stockFindMany.mock.calls[0][0].where).toMatchObject({
+      OR: [{ forecast_computed_on: null }, { forecast_computed_on: { lt: today } }],
+      stock_only: false,
+    });
+  });
+
+  it('SHOULD refresh the items in one transaction through the shared sync', async () => {
+    await setup.refreshForecasts(['a', 'b'], today);
+
+    expect(spies.sync).toHaveBeenCalledTimes(1);
+    expect(spies.sync).toHaveBeenCalledWith(expect.anything(), ['a', 'b'], { today });
+  });
+
+  it('SHOULD not open a transaction for no items', async () => {
+    await setup.refreshForecasts([], today);
+
+    expect(spies.sync).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD store and clear the dismissed leftover of a lot, then recompute the item', async () => {
+    spies.lotUpdate.mockResolvedValue({ item_id: 'item' });
+
+    await setup.setLeftoverDismissal('lot', 2);
+    await setup.setLeftoverDismissal('lot', null);
+
+    expect(spies.lotUpdate).toHaveBeenNthCalledWith(1, {
+      data: { leftover_dismissed_at: expect.any(Date), leftover_dismissed_quantity: 2 },
+      select: { item_id: true },
+      where: { id: 'lot' },
+    });
+    expect(spies.lotUpdate).toHaveBeenNthCalledWith(2, {
+      data: { leftover_dismissed_at: null, leftover_dismissed_quantity: null },
+      select: { item_id: true },
+      where: { id: 'lot' },
+    });
+    expect(spies.recompute).toHaveBeenCalledTimes(2);
+  });
+
+  it('SHOULD clear the dismissed leftover of every lot a movement touches', async () => {
+    spies.stockFindUniqueOrThrow.mockResolvedValue(mocks.stock);
+    spies.stockFindMany.mockResolvedValue([]);
+    spies.queryRaw.mockResolvedValue([{ id: mocks.stock.id }]);
+    spies.lotFindMany.mockResolvedValue([mocks.lot]);
+
+    await setup.applyMovement('item', 'user', () => [
+      { lot: { id: 'lot-a' }, update: { quantity: 1 } },
+    ]);
+
+    expect(spies.lotUpdateMany).toHaveBeenCalledWith({
+      data: { leftover_dismissed_at: null, leftover_dismissed_quantity: null },
+      where: { id: { in: ['lot-a'] }, leftover_dismissed_at: { not: null } },
+    });
   });
 });

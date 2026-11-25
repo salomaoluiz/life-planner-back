@@ -3,15 +3,16 @@ import { HTTP_CODE_METADATA, PATH_METADATA, VERSION_METADATA } from '@nestjs/com
 import { StockAPIModule } from '@api/stock/stock.module';
 import { ValidationError } from '@shared/domain/error/ValidationError';
 
-import { StockController, StockSuggestionController } from './stock.controller';
+import { StockController, StockLotController, StockSuggestionController } from './stock.controller';
 import { mocks, setup } from './stock.controller.mocks';
 
 const { id, ownerId, request, stockService, userId } = mocks;
 let items: Awaited<ReturnType<typeof setup>>['items'];
+let lots: Awaited<ReturnType<typeof setup>>['lots'];
 let suggestions: Awaited<ReturnType<typeof setup>>['suggestions'];
 
 beforeEach(async () => {
-  ({ items, suggestions } = await setup());
+  ({ items, lots, suggestions } = await setup());
 });
 
 it('SHOULD be served at /stock/items under URI version 1', () => {
@@ -226,5 +227,23 @@ describe('spec 117 routes', () => {
     await suggestions.suggest(request, { q: 'leite' });
 
     expect(stockService.suggest).toHaveBeenCalledWith(userId, { q: 'leite' });
+  });
+});
+
+describe('spec 123', () => {
+  it('SHOULD read the consumption weeks of an item with an optional day', async () => {
+    await items.findConsumptionWeeks(request, id, { today: '2026-11-25' });
+
+    expect(stockService.findConsumptionWeeks).toHaveBeenCalledWith(userId, id, '2026-11-25');
+  });
+
+  it('SHOULD dismiss the leftover warning of a lot (204) AND undo it', async () => {
+    await lots.dismiss(request, id);
+    await lots.undoDismissal(request, id);
+
+    expect(stockService.dismissLeftover).toHaveBeenNthCalledWith(1, userId, id, true);
+    expect(stockService.dismissLeftover).toHaveBeenNthCalledWith(2, userId, id, false);
+    expect(Reflect.getMetadata(HTTP_CODE_METADATA, StockLotController.prototype.dismiss)).toBe(204);
+    expect(Reflect.getMetadata(PATH_METADATA, StockLotController)).toBe('stock/lots');
   });
 });

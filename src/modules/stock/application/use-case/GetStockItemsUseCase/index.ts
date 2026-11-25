@@ -9,6 +9,7 @@ import {
   todayUtc,
   toStockItemView,
 } from '@stock/application/service/StockView';
+import { RefreshStaleForecastsUseCase } from '@stock/application/use-case/RefreshStaleForecastsUseCase';
 import { narrowOwners } from '@stock/domain/entity/OwnerAccess';
 import { IStockCatalogRepository, IStockRepository } from '@stock/domain/repository';
 import { descendantIds } from '@stock/domain/service/CategoryTree';
@@ -24,6 +25,8 @@ export class GetStockItemsUseCase implements UseCaseWithParams<
     private readonly stockRepository: IStockRepository,
     @Inject('IStockCatalogRepository')
     private readonly catalogRepository: IStockCatalogRepository,
+    @Inject(RefreshStaleForecastsUseCase)
+    private readonly refreshStaleForecasts: RefreshStaleForecastsUseCase,
   ) {}
 
   async execute(params: GetStockItemsInput): Promise<StockItemView[]> {
@@ -34,6 +37,11 @@ export class GetStockItemsUseCase implements UseCaseWithParams<
       return [];
     }
 
+    const today = input.today ?? todayUtc();
+
+    // Spec 123 FR 14: stale forecasts are recomputed before the read.
+    await this.refreshStaleForecasts.execute({ owners, today });
+
     const catalog = await loadCatalogLookup(this.catalogRepository, owners);
     // FR 25: a category filter includes its subcategories; an id nobody knows is kept and matches nothing.
     const categoryIds = input.categoryIds && [
@@ -43,8 +51,6 @@ export class GetStockItemsUseCase implements UseCaseWithParams<
       categoryIds,
       locationIds: input.locationIds,
     });
-    const today = input.today ?? todayUtc();
-
     return items.map((item) => toStockItemView(item, today, catalog)).sort(compareViews);
   }
 }

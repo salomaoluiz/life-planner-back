@@ -7,6 +7,7 @@ import {
   GetRestockSummarySchema,
 } from '@stock/application/dto/ShoppingList';
 import { toRowView } from '@stock/application/service/ShoppingListView';
+import { RefreshStaleForecastsUseCase } from '@stock/application/use-case/RefreshStaleForecastsUseCase';
 import { narrowOwners } from '@stock/domain/entity/OwnerAccess';
 import ShoppingListEntity from '@stock/domain/entity/ShoppingListEntity';
 import { IShoppingListRepository } from '@stock/domain/repository';
@@ -31,11 +32,17 @@ export class GetRestockSummaryUseCase implements UseCaseWithParams<
   constructor(
     @Inject('IShoppingListRepository')
     private readonly listRepository: IShoppingListRepository,
+    @Inject(RefreshStaleForecastsUseCase)
+    private readonly refreshStaleForecasts: RefreshStaleForecastsUseCase,
   ) {}
 
   async execute(params: GetRestockSummaryInput): Promise<RestockSummary> {
     const input = validate(GetRestockSummarySchema, params);
-    const records = await this.listRepository.findRestockRows(narrowOwners(input.accessibleOwners));
+    const owners = narrowOwners(input.accessibleOwners);
+
+    await this.refreshStaleForecasts.execute({ owners });
+
+    const records = await this.listRepository.findRestockRows(owners);
     const views = records
       .map((record) => ({ list: record.list, view: toRowView(record) }))
       .sort(

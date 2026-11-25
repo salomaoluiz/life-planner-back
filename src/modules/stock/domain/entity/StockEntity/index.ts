@@ -20,6 +20,12 @@ export interface StockForecast {
   wasteRatio90d?: number;
 }
 
+// Spec 123 FR 17/19: the FORECAST row of the item on its list, when there is one.
+export interface StockForecastRow {
+  listId: string;
+  quantity: number;
+}
+
 interface IStockEntity {
   createdAt: Date;
   description: string;
@@ -37,6 +43,7 @@ interface IStockEntity {
   categoryId?: string;
   estimatedUnitPriceCents?: number;
   forecast?: StockForecast;
+  forecastRow?: StockForecastRow;
   idealQuantity?: number;
   locationId?: string;
   // Only the lots with quantity > 0 (spec 116 FR 6).
@@ -57,6 +64,7 @@ class StockEntity {
   description: string;
   estimatedUnitPriceCents?: number;
   forecast?: StockForecast;
+  forecastRow?: StockForecastRow;
   id: string;
   idealQuantity?: number;
   locationId?: string;
@@ -82,6 +90,7 @@ class StockEntity {
     this.description = params.description;
     this.estimatedUnitPriceCents = params.estimatedUnitPriceCents;
     this.forecast = params.forecast;
+    this.forecastRow = params.forecastRow;
     this.id = params.id;
     this.idealQuantity = params.idealQuantity;
     this.locationId = params.locationId;

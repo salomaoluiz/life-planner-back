@@ -145,9 +145,14 @@ export function stockRepositoryMock() {
     existsByOwner: jest.fn().mockResolvedValue(false),
     findById: jest.fn(),
     findByIds: jest.fn().mockResolvedValue([]),
+    findByLotId: jest.fn(),
     findByOwners: jest.fn().mockResolvedValue([]),
     findFrequentItemIds: jest.fn().mockResolvedValue([]),
+    findMovementDays: jest.fn().mockResolvedValue([]),
     findMovements: jest.fn().mockResolvedValue([]),
+    findStaleForecastItemIds: jest.fn().mockResolvedValue([]),
+    refreshForecasts: jest.fn().mockResolvedValue(undefined),
+    setLeftoverDismissal: jest.fn().mockResolvedValue(undefined),
     update: jest.fn(),
   };
 }

@@ -138,6 +138,16 @@ export async function recomputeForecasts(tx: Tx, itemIds: string[], today: Date)
   }
 }
 
+// The per-day consumption and net change of one item over `windowDays` (the weekly chart reads it, FR 19).
+export async function readItemMovementDays(
+  client: Pick<Tx, '$queryRaw'>,
+  itemId: string,
+  today: Date,
+  windowDays: number,
+): Promise<DayMovements[]> {
+  return summarize(await readMovements(client, [itemId], today, windowDays)).perDay;
+}
+
 function emptyRecord(itemId: string, today: Date): ForecastRecord {
   return {
     computedOn: today,
@@ -154,8 +164,13 @@ function emptyRecord(itemId: string, today: Date): ForecastRecord {
 }
 // One grouped statement for every item: the movements of the window by item, day and type (OPEN does not change the
 // quantity and is left out).
-async function readMovements(tx: Tx, itemIds: string[], today: Date): Promise<MovementRow[]> {
-  const from = addDays(today, -FORECAST_WINDOW_DAYS);
+async function readMovements(
+  tx: Pick<Tx, '$queryRaw'>,
+  itemIds: string[],
+  today: Date,
+  windowDays = FORECAST_WINDOW_DAYS,
+): Promise<MovementRow[]> {
+  const from = addDays(today, -windowDays);
 
   return tx.$queryRaw<MovementRow[]>(Prisma.sql`
     SELECT m."item_id" AS "item_id",

@@ -8,6 +8,7 @@ import {
   pickLeftover,
   projectedOnTrip,
   wasteRatio,
+  weeklyConsumption,
 } from '@stock/domain/service/ConsumptionForecast';
 
 const today = new Date('2026-11-25T00:00:00.000Z');
@@ -251,5 +252,27 @@ describe('buildWindowDays', () => {
     const days = buildWindowDays(4, [{ ageDays: 3, consumed: 0, delta: 4 }], 4);
 
     expect(days.map((day) => day.startQuantity)).toEqual([4, 4, 0, 0]);
+  });
+});
+
+describe('weeklyConsumption', () => {
+  // 2026-11-25 is a Wednesday: the current week starts on Monday 2026-11-23.
+  it('SHOULD return 12 Monday-based weeks, oldest first, with the consumed quantity', () => {
+    const weeks = weeklyConsumption(10, [{ ageDays: 3, consumed: 2, delta: -2 }], today);
+
+    expect(weeks).toHaveLength(12);
+    expect(weeks[11].start).toEqual(new Date('2026-11-23T00:00:00.000Z'));
+    expect(weeks[0].start).toEqual(new Date('2026-09-07T00:00:00.000Z'));
+    // age 3 from Wednesday is Sunday 2026-11-22: the week of 2026-11-16
+    expect(weeks[10]).toMatchObject({ excluded: false, quantity: 2 });
+    expect(weeks[11].quantity).toBe(0);
+  });
+
+  it('SHOULD mark a week where the item was at zero as excluded', () => {
+    // the entry of 10 happened 8 days ago (Tuesday 2026-11-17): the week of 2026-11-09 starts and ends at 0
+    const weeks = weeklyConsumption(10, [{ ageDays: 8, consumed: 0, delta: 10 }], today);
+
+    expect(weeks[9].excluded).toBe(true);
+    expect(weeks[10].excluded).toBe(false);
   });
 });

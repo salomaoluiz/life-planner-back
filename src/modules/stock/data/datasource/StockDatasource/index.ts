@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { Prisma, StockMovement } from '@db/client';
 import { Database } from '@shared/infra/db/Database';
+import { readItemMovementDays, recomputeForecasts } from '@stock/data/datasource/ForecastSync';
 import { toOwnerWhere } from '@stock/data/datasource/mapper/OwnerWhere';
 import { syncRestockRows } from '@stock/data/datasource/RestockSync';
 import {
@@ -16,8 +17,44 @@ import {
   UpdateStockDatasourceParams,
 } from '@stock/data/repository/datasource/IStockDatasource';
 import { OwnerAccess } from '@stock/domain/entity/OwnerAccess';
+import { todayUtc } from '@stock/domain/service/Today';
 
 const OPEN_LOTS = { lots: { orderBy: { id: 'asc' as const }, where: { quantity: { gt: 0 } } } };
+
+// Spec 123 FR 17/19: attaches the FORECAST row of each item (one indexed statement for all of them).
+async function withForecastRows<T extends { id: string }>(
+  client: Pick<Prisma.TransactionClient, 'stockShoppingListRow'>,
+  items: T[],
+): Promise<({ forecast_row: { list_id: string; quantity: Prisma.Decimal } | null } & T)[]> {
+  const rows =
+    items.length === 0
+      ? []
+      : await client.stockShoppingListRow.findMany({
+          select: { item_id: true, list_id: true, quantity: true },
+          where: { item_id: { in: items.map((item) => item.id) }, origin: 'FORECAST' },
+        });
+
+  return items.map((item) => {
+    const row = rows.find((candidate) => candidate.item_id === item.id);
+
+    return { ...item, forecast_row: row ? { list_id: row.list_id, quantity: row.quantity } : null };
+  });
+}
+
+// Spec 123 FR 25: any movement on a lot clears its dismissed leftover warning.
+async function clearLeftoverDismissals(
+  tx: Prisma.TransactionClient,
+  lotIds: string[],
+): Promise<void> {
+  if (lotIds.length === 0) {
+    return;
+  }
+
+  await tx.stockLot.updateMany({
+    data: { leftover_dismissed_at: null, leftover_dismissed_quantity: null },
+    where: { id: { in: lotIds }, leftover_dismissed_at: { not: null } },
+  });
+}
 
 @Injectable()
 export class StockDatasource implements IStockDatasource {
@@ -87,6 +124,8 @@ export class StockDatasource implements IStockDatasource {
         });
       }
 
+      const touched = new Set<string>(plan.lot_updates.map((update) => update.id));
+
       for (const operation of plan.create) {
         let lotId: string;
 
@@ -100,6 +139,8 @@ export class StockDatasource implements IStockDatasource {
             await tx.stockLot.update({ data: operation.update, where: { id: lotId } });
           }
         }
+
+        touched.add(lotId);
 
         if (operation.movement) {
           await tx.stockMovement.create({
@@ -118,6 +159,7 @@ export class StockDatasource implements IStockDatasource {
         await tx.stockLot.deleteMany({ where: { id: { in: plan.delete_lot_ids } } });
       }
 
+      await clearLeftoverDismissals(tx, [...touched]);
       // Spec 118 FR 10: undoing an entry lowers the quantity (a dismissed row may come back).
       await syncRestockRows(tx, [itemId], {
         clearDismissal: movements.some(
@@ -125,7 +167,11 @@ export class StockDatasource implements IStockDatasource {
         ),
       });
 
-      return tx.stockItem.findUniqueOrThrow({ include: OPEN_LOTS, where: { id: itemId } });
+      return (
+        await withForecastRows(tx, [
+          await tx.stockItem.findUniqueOrThrow({ include: OPEN_LOTS, where: { id: itemId } }),
+        ])
+      )[0];
     });
   }
 
@@ -163,7 +209,11 @@ export class StockDatasource implements IStockDatasource {
             where: { id: itemId },
           });
 
-          return { item: current, movements: stored, replayed: true };
+          return {
+            item: (await withForecastRows(tx, [current]))[0],
+            movements: stored,
+            replayed: true,
+          };
         }
       }
 
@@ -175,6 +225,7 @@ export class StockDatasource implements IStockDatasource {
       const movements: StockMovement[] = [];
 
       let clientId = options?.client_id;
+      const touched = new Set<string>();
 
       for (const operation of planner(item, lots)) {
         let lotId: string;
@@ -192,6 +243,8 @@ export class StockDatasource implements IStockDatasource {
             await tx.stockLot.update({ data: operation.update, where: { id: lotId } });
           }
         }
+
+        touched.add(lotId);
 
         if (operation.movement) {
           movements.push(
@@ -211,6 +264,7 @@ export class StockDatasource implements IStockDatasource {
         }
       }
 
+      await clearLeftoverDismissals(tx, [...touched]);
       // Spec 118 FR 10/11: the smart row follows the new quantity; a lowering movement clears the dismissal.
       await syncRestockRows(tx, [itemId], {
         clearDismissal: movements.some((movement) => Number(movement.quantity) < 0),
@@ -221,7 +275,7 @@ export class StockDatasource implements IStockDatasource {
         where: { id: itemId },
       });
 
-      return { item: after, movements, replayed: false };
+      return { item: (await withForecastRows(tx, [after]))[0], movements, replayed: false };
     });
   }
 
@@ -276,8 +330,51 @@ export class StockDatasource implements IStockDatasource {
     return found !== null;
   }
 
+  // Spec 123 FR 14: the items of the owners whose forecast was not computed today (stock-only items have none).
+  async findByLotId(lotId: string): Promise<null | StockItemWithLots> {
+    const lot = await this.db.client.stockLot.findUnique({
+      select: { item_id: true },
+      where: { id: lotId },
+    });
+
+    return lot ? this.findById(lot.item_id) : null;
+  }
+
+  async findMovementDays(itemId: string, today: Date, windowDays: number) {
+    return readItemMovementDays(this.db.client, itemId, today, windowDays);
+  }
+
+  async findStaleForecastItemIds(owners: OwnerAccess[], today: Date): Promise<string[]> {
+    if (owners.length === 0) {
+      return [];
+    }
+
+    const items = await this.db.client.stockItem.findMany({
+      select: { id: true },
+      where: {
+        ...toOwnerWhere(owners),
+        OR: [{ forecast_computed_on: null }, { forecast_computed_on: { lt: today } }],
+        stock_only: false,
+      },
+    });
+
+    return items.map((item) => item.id);
+  }
+
+  // The forecast of the items (one grouped read, one batched update) and their automatic rows, in one transaction.
+  async refreshForecasts(itemIds: string[], today: Date): Promise<void> {
+    if (itemIds.length === 0) {
+      return;
+    }
+
+    await this.db.client.$transaction(async (tx) => syncRestockRows(tx, itemIds, { today }));
+  }
+
+  // Spec 123 FR 25: `quantity` null clears the dismissal.
   async findById(id: string): Promise<null | StockItemWithLots> {
-    return this.db.client.stockItem.findUnique({ include: OPEN_LOTS, where: { id } });
+    const item = await this.db.client.stockItem.findUnique({ include: OPEN_LOTS, where: { id } });
+
+    return item ? (await withForecastRows(this.db.client, [item]))[0] : null;
   }
 
   async findByIds(ids: string[]): Promise<StockItemWithLots[]> {
@@ -291,7 +388,26 @@ export class StockDatasource implements IStockDatasource {
       where: { item_id: { in: ids }, quantity: { gt: 0 } },
     });
 
-    return items.map((item) => ({ ...item, lots: lots.filter((lot) => lot.item_id === item.id) }));
+    return withForecastRows(
+      this.db.client,
+      items.map((item) => ({ ...item, lots: lots.filter((lot) => lot.item_id === item.id) })),
+    );
+  }
+
+  async setLeftoverDismissal(lotId: string, quantity: null | number): Promise<void> {
+    await this.db.client.$transaction(async (tx) => {
+      const lot = await tx.stockLot.update({
+        data:
+          quantity === null
+            ? { leftover_dismissed_at: null, leftover_dismissed_quantity: null }
+            : { leftover_dismissed_at: new Date(), leftover_dismissed_quantity: quantity },
+        select: { item_id: true },
+        where: { id: lotId },
+      });
+
+      // The stored leftover follows the dismissal (the forecast is the only place the warning is read from).
+      await recomputeForecasts(tx, [lot.item_id], todayUtc());
+    });
   }
 
   // One grouped statement over the movements of the period, joined to the owner's items.
@@ -341,7 +457,10 @@ export class StockDatasource implements IStockDatasource {
       where: { item_id: { in: items.map((item) => item.id) }, quantity: { gt: 0 } },
     });
 
-    return items.map((item) => ({ ...item, lots: lots.filter((lot) => lot.item_id === item.id) }));
+    return withForecastRows(
+      this.db.client,
+      items.map((item) => ({ ...item, lots: lots.filter((lot) => lot.item_id === item.id) })),
+    );
   }
 
   async findMovements(
@@ -385,7 +504,11 @@ export class StockDatasource implements IStockDatasource {
       await tx.stockItem.update({ data, where: { id } });
       await syncRestockRows(tx, [id]);
 
-      return tx.stockItem.findUniqueOrThrow({ include: OPEN_LOTS, where: { id } });
+      return (
+        await withForecastRows(tx, [
+          await tx.stockItem.findUniqueOrThrow({ include: OPEN_LOTS, where: { id } }),
+        ])
+      )[0];
     });
   }
 }

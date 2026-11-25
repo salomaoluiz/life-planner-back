@@ -4,11 +4,13 @@ import { Test } from '@nestjs/testing';
 import { StockItem, StockLot, StockMovement } from '@db/client';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { Database } from '@shared/infra/db/Database';
+import { recomputeForecasts } from '@stock/data/datasource/ForecastSync';
 import { syncRestockRows } from '@stock/data/datasource/RestockSync';
 
 import { StockDatasource } from './index';
 
 jest.mock('@stock/data/datasource/RestockSync');
+jest.mock('@stock/data/datasource/ForecastSync');
 
 const stockMock = {
   id: faker.string.uuid(),
@@ -28,12 +30,16 @@ const spies = {
   lotCreate: jest.fn(),
   lotDeleteMany: jest.fn(),
   lotFindMany: jest.fn(),
+  lotFindUnique: jest.fn(),
   lotUpdate: jest.fn(),
+  lotUpdateMany: jest.fn(),
   movementCreate: jest.fn(),
   movementDeleteMany: jest.fn(),
   movementFindFirst: jest.fn(),
   movementFindMany: jest.fn(),
   queryRaw: jest.fn(),
+  recompute: jest.mocked(recomputeForecasts),
+  rowFindMany: jest.fn(),
   stockCreate: jest.fn(),
   stockDeleteMany: jest.fn(),
   stockFindFirst: jest.fn(),
@@ -61,7 +67,9 @@ const client = {
     create: spies.lotCreate,
     deleteMany: spies.lotDeleteMany,
     findMany: spies.lotFindMany,
+    findUnique: spies.lotFindUnique,
     update: spies.lotUpdate,
+    updateMany: spies.lotUpdateMany,
   },
   stockMovement: {
     create: spies.movementCreate,
@@ -69,6 +77,7 @@ const client = {
     findFirst: spies.movementFindFirst,
     findMany: spies.movementFindMany,
   },
+  stockShoppingListRow: { findMany: spies.rowFindMany },
 };
 // A transaction runs the callback against the same client.
 client.$transaction.mockImplementation(async (callback: (tx: unknown) => unknown) =>
@@ -80,6 +89,7 @@ let setup: StockDatasource;
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  spies.rowFindMany.mockResolvedValue([]);
   client.$transaction.mockImplementation(async (callback: (tx: unknown) => unknown) =>
     callback(client),
   );

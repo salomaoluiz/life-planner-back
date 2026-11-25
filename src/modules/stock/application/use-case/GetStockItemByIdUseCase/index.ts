@@ -12,6 +12,7 @@ import {
   todayUtc,
   toStockItemView,
 } from '@stock/application/service/StockView';
+import { RefreshStaleForecastsUseCase } from '@stock/application/use-case/RefreshStaleForecastsUseCase';
 import { hasOwnerAccess } from '@stock/domain/entity/OwnerAccess';
 import { IStockCatalogRepository, IStockRepository } from '@stock/domain/repository';
 
@@ -24,21 +25,31 @@ export class GetStockItemByIdUseCase implements UseCaseWithParams<
     private readonly stockRepository: IStockRepository,
     @Inject('IStockCatalogRepository')
     private readonly catalogRepository: IStockCatalogRepository,
+    @Inject(RefreshStaleForecastsUseCase)
+    private readonly refreshStaleForecasts: RefreshStaleForecastsUseCase,
   ) {}
 
   async execute(params: GetStockItemByIdInput): Promise<StockItemView> {
     const input = validate(GetStockItemByIdSchema, params);
 
-    const item = await this.stockRepository.findById(input.id);
+    const today = input.today ?? todayUtc();
+    let item = await this.stockRepository.findById(input.id);
 
     if (!item || !hasOwnerAccess(input.accessibleOwners, item)) {
       throw new NotFoundException();
     }
 
-    return toStockItemView(
-      item,
-      input.today ?? todayUtc(),
-      await loadCatalogLookup(this.catalogRepository, [item]),
-    );
+    // Spec 123 FR 14: a stale forecast is recomputed before the item is returned.
+    if (!item.stockOnly && item.forecast?.computedOn?.getTime() !== today.getTime()) {
+      await this.refreshStaleForecasts.execute({
+        owners: input.accessibleOwners.filter(
+          (owner) => owner.owner === item?.owner && owner.ownerId === item.ownerId,
+        ),
+        today,
+      });
+      item = (await this.stockRepository.findById(input.id)) ?? item;
+    }
+
+    return toStockItemView(item, today, await loadCatalogLookup(this.catalogRepository, [item]));
   }
 }
