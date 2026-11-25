@@ -10,7 +10,7 @@ it('SHOULD return the item view with its lots', async () => {
 
   expect(view.quantity).toBe(2);
   expect(view.lots).toHaveLength(1);
-  expect(mocks.stock.findById).toHaveBeenCalledWith('item');
+  expect(mocks.stock.findById).toHaveBeenCalledWith('item', true);
 });
 
 it.each([

@@ -562,10 +562,10 @@ export class StockDatasource implements IStockDatasource {
   }
 
   // Spec 123 FR 25: `quantity` null clears the dismissal.
-  async findById(id: string): Promise<null | StockItemWithLots> {
+  async findById(id: string, withForecastRow = false): Promise<null | StockItemWithLots> {
     const item = await this.db.client.stockItem.findUnique({ include: OPEN_LOTS, where: { id } });
 
-    return item ? (await withForecastRows(this.db.client, [item]))[0] : null;
+    return item && withForecastRow ? (await withForecastRows(this.db.client, [item]))[0] : item;
   }
 
   async findByIds(ids: string[]): Promise<StockItemWithLots[]> {

@@ -200,13 +200,15 @@ const ItemFields = {
   effectiveShoppingListId: z.uuid().optional(),
   estimatedUnitPriceCents: z.number().int().optional(),
   expirationStatus: LotStatusSchema,
-  forecast: ForecastApiSchema.nullable(),
+  // Spec 123: absent (not null) to keep the 1000-item list lean; the list carries `forecast` only for an item with a
+  // forecast row, the detail always.
+  forecast: ForecastApiSchema.optional(),
   hasExpiredLot: z.boolean(),
-  hasForecastRow: z.boolean(),
+  hasForecastRow: z.boolean().optional(),
   hasOpenLot: z.boolean(),
   id: z.uuid(),
   idealQuantity: z.number().nullable(),
-  leftover: LeftoverApiSchema.nullable(),
+  leftover: LeftoverApiSchema.optional(),
   location: LocationRefSchema.nullable(),
   locationId: z.uuid().nullable(),
   minQuantity: z.number().nullable(),

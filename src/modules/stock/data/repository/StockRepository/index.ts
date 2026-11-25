@@ -155,8 +155,8 @@ export class StockRepository implements IStockRepository {
     return this.stockDatasource.exists({ owner: access.owner, owner_id: access.ownerId });
   }
 
-  async findById(id: string): Promise<StockEntity | undefined> {
-    const result = await this.stockDatasource.findById(id);
+  async findById(id: string, withForecastRow = false): Promise<StockEntity | undefined> {
+    const result = await this.stockDatasource.findById(id, withForecastRow);
 
     return result ? StockMapper.toDomain(result) : undefined;
   }

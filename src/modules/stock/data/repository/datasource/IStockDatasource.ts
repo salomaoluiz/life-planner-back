@@ -112,7 +112,7 @@ export interface IStockDatasource {
   // Rows deleted; idempotent.
   deleteByOwner(params: DeleteByOwnerStockDatasourceParams): Promise<number>;
   exists(params: ExistsStockDatasourceParams): Promise<boolean>;
-  findById(id: string): Promise<null | StockItemWithLots>;
+  findById(id: string, withForecastRow?: boolean): Promise<null | StockItemWithLots>;
   findByIds(ids: string[]): Promise<StockItemWithLots[]>;
   findByLotId(lotId: string): Promise<null | StockItemWithLots>;
   findByOwners(

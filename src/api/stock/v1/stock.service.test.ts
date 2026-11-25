@@ -428,3 +428,32 @@ describe('waste (spec 123)', () => {
     });
   });
 });
+
+describe('lean list (spec 123)', () => {
+  it('SHOULD omit forecast, leftover and hasForecastRow from a list item without a forecast row', async () => {
+    useCases.getStockItems.execute.mockResolvedValue([mocks.view]);
+
+    const [row] = await setup.findAll(userId, {});
+
+    expect(row).not.toHaveProperty('forecast');
+    expect(row).not.toHaveProperty('leftover');
+    expect(row).not.toHaveProperty('hasForecastRow');
+  });
+
+  it('SHOULD carry the forecast and the flag WHEN the item has a forecast row, AND always on the detail', async () => {
+    const view = {
+      ...mocks.view,
+      forecast: { dailyRate: 1, status: 'OK', weeklyRate: 7 },
+      hasForecastRow: true,
+    };
+
+    useCases.getStockItems.execute.mockResolvedValue([view]);
+    useCases.getStockItemById.execute.mockResolvedValue({ ...mocks.view, forecast: view.forecast });
+
+    const [row] = await setup.findAll(userId, {});
+    const detail = await setup.findById(userId, 'i');
+
+    expect(row).toMatchObject({ forecast: { status: 'OK', weeklyRate: 7 }, hasForecastRow: true });
+    expect(detail).toMatchObject({ forecast: { status: 'OK' }, hasForecastRow: false });
+  });
+});

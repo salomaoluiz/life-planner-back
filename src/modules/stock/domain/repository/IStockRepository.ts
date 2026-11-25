@@ -59,7 +59,8 @@ export type IStockRepository = {
   // Deletes every item of the owner (lots and movements cascade). Idempotent; returns the rows deleted.
   deleteByOwner(access: OwnerAccess): Promise<number>;
   existsByOwner(access: OwnerAccess): Promise<boolean>;
-  findById(id: string): Promise<StockEntity | undefined>;
+  // `withForecastRow` adds the FORECAST row of the item (one more statement; only the detail needs it).
+  findById(id: string, withForecastRow?: boolean): Promise<StockEntity | undefined>;
   // The item (open lots only) that owns the lot.
   findByLotId(lotId: string): Promise<StockEntity | undefined>;
   // The items (open lots only) in the order of `ids`; unknown ids are skipped.

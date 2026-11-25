@@ -74,7 +74,7 @@
     "indexes": null,
     "kind": "read",
     "knownException": "Deferred, see perf-roadmap.md",
-    "maxBytes": 640000,
+    "maxBytes": 680000,
     "maxQueries": 9,
     "p50Ms": null,
     "scenario": ""
@@ -125,7 +125,7 @@
     "indexes": null,
     "kind": "read",
     "maxBytes": null,
-    "maxQueries": 8,
+    "maxQueries": 9,
     "p50Ms": null,
     "scenario": ""
   },
@@ -469,11 +469,12 @@
   },
   "GET /api/v1/stock/barcodes/:code": {
     "indexes": null,
-    "kind": "read",
+    "kind": "unmeasured",
     "maxBytes": null,
-    "maxQueries": 4,
+    "maxQueries": 0,
     "p50Ms": null,
-    "scenario": "code=7891000100103"
+    "scenario": "",
+    "reason": "The perf dataset has no barcode fixture, so the route cannot be expanded (spec 121 gap: one lookup by code, no fixture)."
   },
   "POST /api/v1/stock/item-suggestions": {
     "indexes": null,

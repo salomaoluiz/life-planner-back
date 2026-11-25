@@ -37,7 +37,7 @@ export class GetStockItemByIdUseCase implements UseCaseWithParams<
     const input = validate(GetStockItemByIdSchema, params);
 
     const today = input.today ?? todayUtc();
-    let item = await this.stockRepository.findById(input.id);
+    let item = await this.stockRepository.findById(input.id, true);
 
     if (!item || !hasOwnerAccess(input.accessibleOwners, item)) {
       throw new NotFoundException();
@@ -51,7 +51,7 @@ export class GetStockItemByIdUseCase implements UseCaseWithParams<
         ),
         today,
       });
-      item = (await this.stockRepository.findById(input.id)) ?? item;
+      item = (await this.stockRepository.findById(input.id, true)) ?? item;
     }
 
     const [catalog, wasteRows] = await Promise.all([

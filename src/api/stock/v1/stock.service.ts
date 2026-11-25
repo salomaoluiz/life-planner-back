@@ -70,28 +70,21 @@ export function toListItemOutput(view: StockItemView): StockListItemApiOutput {
       ? {}
       : { estimatedUnitPriceCents: item.estimatedUnitPriceCents }),
     expirationStatus: view.expirationStatus,
-    forecast: view.forecast
-      ? {
-          computedOn: dayOrNull(view.forecast.computedOn),
-          dailyRate: view.forecast.dailyRate,
-          emptyDate: dayOrNull(view.forecast.emptyDate),
-          minDate: dayOrNull(view.forecast.minDate),
-          status: view.forecast.status,
-          weeklyRate: view.forecast.weeklyRate,
-        }
-      : null,
     hasExpiredLot: view.hasExpiredLot,
-    hasForecastRow: view.hasForecastRow,
+    ...(view.hasForecastRow ? { hasForecastRow: true } : {}),
+    ...(view.hasForecastRow ? forecastOutput(view) : {}),
     hasOpenLot: view.hasOpenLot,
     id: item.id,
     idealQuantity: item.idealQuantity ?? null,
-    leftover: view.leftover
+    ...(view.leftover
       ? {
-          date: day(view.leftover.date),
-          lotId: view.leftover.lotId,
-          quantity: view.leftover.quantity,
+          leftover: {
+            date: day(view.leftover.date),
+            lotId: view.leftover.lotId,
+            quantity: view.leftover.quantity,
+          },
         }
-      : null,
+      : {}),
     location: view.location ?? null,
     locationId: item.locationId ?? null,
     minQuantity: item.minQuantity ?? null,
@@ -113,11 +106,26 @@ export function toListItemOutput(view: StockItemView): StockListItemApiOutput {
   };
 }
 
+// The list carries the forecast of an item only when it has a forecast row; the detail always (`toItemOutput`).
 function day(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 function dayOrNull(date?: Date) {
   return date ? day(date) : null;
+}
+function forecastOutput(view: StockItemView) {
+  return view.forecast
+    ? {
+        forecast: {
+          computedOn: dayOrNull(view.forecast.computedOn),
+          dailyRate: view.forecast.dailyRate,
+          emptyDate: dayOrNull(view.forecast.emptyDate),
+          minDate: dayOrNull(view.forecast.minDate),
+          status: view.forecast.status,
+          weeklyRate: view.forecast.weeklyRate,
+        },
+      }
+    : {};
 }
 function toCategoryOutput(category: StockCategoryEntity) {
   return {
@@ -133,6 +141,8 @@ function toCategoryOutput(category: StockCategoryEntity) {
 function toItemOutput(view: StockItemView): StockItemApiOutput {
   return {
     ...toListItemOutput(view),
+    ...forecastOutput(view),
+    ...(view.hasForecastRow ? {} : { hasForecastRow: false }),
     forecastRow: view.forecastRow
       ? {
           listId: view.forecastRow.listId,
