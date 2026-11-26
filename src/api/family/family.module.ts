@@ -8,13 +8,21 @@ import { HasFinanceDataByOwnerUseCase } from '@finance/application/use-case/HasF
 import { FinanceModule } from '@finance/finance.module';
 import { HasInvestmentsByOwnerUseCase } from '@investment/application/use-case/HasInvestmentsByOwnerUseCase';
 import { InvestmentModule } from '@investment/investment.module';
+import { NotificationModule } from '@notification/notification.module';
 import { HasStockItemsByOwnerUseCase } from '@stock/application/use-case/HasStockItemsByOwnerUseCase';
 import { StockModule } from '@stock/stock.module';
 import { UserModule } from '@user/user.module';
 
 @Module({
   controllers: [FamilyController],
-  imports: [FamilyModule, FinanceModule, InvestmentModule, StockModule, UserModule],
+  imports: [
+    FamilyModule,
+    FinanceModule,
+    InvestmentModule,
+    NotificationModule,
+    StockModule,
+    UserModule,
+  ],
   providers: [
     FamilyService,
     {

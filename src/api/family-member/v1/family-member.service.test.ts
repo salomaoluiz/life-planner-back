@@ -180,6 +180,15 @@ describe('delete', () => {
     });
   });
 
+  it('SHOULD drop the family notice items of the removed user (spec 124)', async () => {
+    await setup.delete(mocks.userId, 'member-id');
+
+    expect(mocks.removeFamilyNotifications.execute).toHaveBeenCalledWith({
+      familyId: mocks.familyId,
+      userId: mocks.otherUserId,
+    });
+  });
+
   it('SHOULD skip the categories WHEN a pending invite (no user) is cancelled', async () => {
     mocks.deleteFamilyMemberUseCase.execute.mockResolvedValueOnce({ familyId: mocks.familyId });
 
@@ -188,6 +197,7 @@ describe('delete', () => {
     expect(mocks.detachCategoryCreator.execute).not.toHaveBeenCalled();
     expect(mocks.detachTagCreator.execute).not.toHaveBeenCalled();
     expect(mocks.removeFamilyAccountFavorites.execute).not.toHaveBeenCalled();
+    expect(mocks.removeFamilyNotifications.execute).not.toHaveBeenCalled();
   });
 });
 

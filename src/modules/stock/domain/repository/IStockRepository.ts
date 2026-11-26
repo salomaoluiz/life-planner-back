@@ -1,4 +1,5 @@
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
+import { ExpiringLot } from '@stock/domain/entity/ExpiringLot';
 import { OwnerAccess } from '@stock/domain/entity/OwnerAccess';
 import StockEntity, { StockUnits } from '@stock/domain/entity/StockEntity';
 import StockMovementEntity, {
@@ -66,6 +67,8 @@ export type IStockRepository = {
   // The items (open lots only) in the order of `ids`; unknown ids are skipped.
   findByIds(ids: string[]): Promise<StockEntity[]>;
   // Spec 117 FR 28: item ids ranked by movement count since `since` (ties by latest movement).
+  // Spec 124 FR 29: the lots of these owners inside their item's warning window, expired ones included.
+  findExpiringLots(owners: OwnerAccess[], today: string): Promise<ExpiringLot[]>;
   findFrequentItemIds(owners: OwnerAccess[], since: Date, limit: number): Promise<string[]>;
   // Newest first; the caller asks for `limit + 1` rows to know whether another page exists.
   findByOwners(owners: OwnerAccess[], filter?: StockFilter): Promise<StockEntity[]>;

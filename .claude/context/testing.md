@@ -70,3 +70,7 @@ Counts the SQL statements of one HTTP call per route and blocks a PR that adds q
 - **Pool waiting (spec 069):** the concurrency scenario also records `maxPoolWaiting` (header `x-perf-pool-max-waiting`, API started with `PERF_COUNT_QUERIES=1`); it fails above 1.25× the baseline and more than 2 connections over it, `null` = not checked, `--update-baseline` stores the median.
 - **Ratchet:** a budget may only go up with a written reason in the PR description. A spec that improves an endpoint lowers its budget in the same PR (`--update-baseline`, review the diff). A seed config change needs `--update-baseline` in the same PR.
 - **Unmeasured routes:** auth writes, account deletion, invites/members, CSV import, invoice payment, prepayment, card refunds/early payments, balance adjustment and recurrence occurrence edits have no safe create-then-delete cycle yet; they are registered as `unmeasured` with a reason so the coverage test still sees them.
+
+## Notification job tests (spec 124)
+
+The tick is tested with a fixed clock: `NotificationTickService.run(now)` takes the instant, `NotificationClock` and the composers are pure, and the job test only checks the cron, the lock and the disabled flag. Per-user local dates are exercised with São Paulo (no DST) and New York (DST). `perf/budgets/notification.json` lists every route (reads are ceilings, not measured here; writes are `unmeasured`).

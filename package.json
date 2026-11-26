@@ -1,6 +1,6 @@
 {
   "name": "life-planner-back",
-  "version": "6.6.0",
+  "version": "6.7.0",
   "description": "",
   "author": "",
   "private": true,
@@ -49,6 +49,7 @@
     "bcrypt": "^6.0.0",
     "compression": "^1.8.1",
     "date-fns": "^4.1.0",
+    "expo-server-sdk": "^3",
     "jsonwebtoken": "^9.0.3",
     "nestjs-zod": "^5.0.1",
     "pg": "^8.16.3",
@@ -58,6 +59,7 @@
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
     "uuid": "^13.0.0",
+    "web-push": "^4.0.0",
     "zod": "^4.1.13"
   },
   "devDependencies": {
@@ -73,6 +75,7 @@
     "@types/node": "^24.10.1",
     "@types/pg": "^8.15.6",
     "@types/supertest": "^6.0.0",
+    "@types/web-push": "^3.6.4",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "eslint": "^8.0.0",

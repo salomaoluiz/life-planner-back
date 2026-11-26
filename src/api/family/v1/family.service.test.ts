@@ -62,6 +62,14 @@ describe('create', () => {
     });
   });
 
+  it('SHOULD drop the notice items of the deleted family for every member (spec 124)', async () => {
+    await setup.delete(mocks.userId, mocks.familyId);
+
+    expect(mocks.removeFamilyNotifications.execute).toHaveBeenCalledWith({
+      familyId: mocks.familyId,
+    });
+  });
+
   it('SHOULD propagate NotFoundException WHEN the JWT user no longer exists AND create nothing', async () => {
     mocks.findUserByIdUseCase.execute.mockRejectedValueOnce(new NotFoundException());
 

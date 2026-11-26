@@ -95,6 +95,26 @@ export const envSchema = z.object({
     .optional()
     .transform((value) => value !== 'false'),
 
+  // Notifications (spec 124): the tick job and the push providers (empty VAPID keys disable Web Push)
+  EXPO_ACCESS_TOKEN: emptyToUndefined,
+  NOTIFICATION_JOB_ENABLED: z
+    .enum(['true', 'false', ''])
+    .optional()
+    .transform((value) => value !== 'false'),
+  NOTIFICATION_TICK_MINUTES: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.coerce
+      .number()
+      .int()
+      .refine((value) => [1, 10, 15, 20, 30, 5, 60].includes(value), {
+        message: 'NOTIFICATION_TICK_MINUTES must be one of 1, 5, 10, 15, 20, 30, 60',
+      })
+      .default(15),
+  ),
+  VAPID_PRIVATE_KEY: emptyToUndefined,
+  VAPID_PUBLIC_KEY: emptyToUndefined,
+  VAPID_SUBJECT: emptyToUndefined,
+
   // JWT
   JWT_EXPIRES_IN: z.coerce.number().default(3600),
   JWT_SECRET: z.string().min(10),

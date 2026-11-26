@@ -7,6 +7,7 @@ import {
   StockMovementType,
   StockUnit,
 } from '@db/client';
+import { ExpiringLotRow } from '@stock/domain/entity/ExpiringLot';
 import { OwnerAccess } from '@stock/domain/entity/OwnerAccess';
 import { DayMovements } from '@stock/domain/service/ConsumptionForecast';
 import { WasteGroupRow, WasteItemRow } from '@stock/domain/service/WasteReport';
@@ -119,6 +120,8 @@ export interface IStockDatasource {
     owners: OwnerAccess[],
     filter?: StockFilterDatasourceParams,
   ): Promise<StockItemWithLots[]>;
+  // Spec 124 FR 29: lots with quantity > 0 whose effective expiration is inside the item's window (or past), one statement.
+  findExpiringLots(owners: OwnerAccess[], today: string): Promise<ExpiringLotRow[]>;
   findFirstDiscardDate(owners: OwnerAccess[]): Promise<Date | null>;
   findFrequentItemIds(owners: OwnerAccess[], since: Date, limit: number): Promise<string[]>;
   findMovementDays(itemId: string, today: Date, windowDays: number): Promise<DayMovements[]>;

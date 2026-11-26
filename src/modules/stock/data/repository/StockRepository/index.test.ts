@@ -223,3 +223,44 @@ describe('spec 117', () => {
     expect(await setup.findFrequentItemIds([owner], new Date(), 5)).toEqual(['a']);
   });
 });
+
+describe('findExpiringLots (spec 124)', () => {
+  const row = {
+    description: 'Iogurte',
+    expiration_date: new Date('2026-11-25T00:00:00.000Z'),
+    item_id: 'item-1',
+    location: 'Geladeira',
+    lot_id: 'lot-1',
+    opened_at: null,
+    opened_shelf_life_days: null,
+    owner: 'USER',
+    owner_id: 'user-1',
+    quantity: 2,
+    unit: 'unit',
+    warn_days_closed: 7,
+    warn_days_opened: 1,
+  };
+
+  it('SHOULD derive the effective expiration AND the days left from the row', async () => {
+    mocks.datasource.findExpiringLots.mockResolvedValue([row]);
+
+    expect(await setup.findExpiringLots([owner], '2026-11-23')).toEqual([
+      expect.objectContaining({
+        daysLeft: 2,
+        expiresOn: '2026-11-25',
+        lotId: 'lot-1',
+        opened: false,
+      }),
+    ]);
+  });
+
+  it('SHOULD use the opening date plus the shelf life WHEN it comes first, AND report expired lots as negative', async () => {
+    mocks.datasource.findExpiringLots.mockResolvedValue([
+      { ...row, opened_at: new Date('2026-11-20T00:00:00.000Z'), opened_shelf_life_days: 1 },
+    ]);
+
+    expect(await setup.findExpiringLots([owner], '2026-11-23')).toEqual([
+      expect.objectContaining({ daysLeft: -2, expiresOn: '2026-11-21', opened: true }),
+    ]);
+  });
+});

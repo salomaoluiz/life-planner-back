@@ -66,3 +66,7 @@ Spec 116: `@shared/infra/embeddings` (`IEmbeddings`, token `'IEmbeddings'`): `em
 ## Notifier (spec 120)
 
 `@shared/infra/notifier` (`INotifier`, `PgNotifier`): one dedicated `pg` connection per API instance that `LISTEN`s to the channels in use and reconnects (5 s) when it drops; `subscribe(channel, handler)` returns the unsubscribe function. `Database.runInTransaction` (see `data.md`). The compression filter never compresses `text/event-stream`.
+
+## `@shared/infra/push` and the advisory lock (spec 124)
+
+`IPushSender` (`'IPushSender'`, `PushSender`, global): `sendExpo(messages) -> tickets[]` (chunks of the SDK, a failed chunk answers `RequestFailed` per message), `getExpoReceipts(ids)`, `sendWeb(subscription, payload) -> { ok } | { gone } | { retry }` (404/410 gone; 429/5xx/network or missing VAPID keys retry). Only this wrapper imports `expo-server-sdk` (v3, CommonJS) and `web-push`; it logs nothing. Env: `EXPO_ACCESS_TOKEN`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `NOTIFICATION_JOB_ENABLED`, `NOTIFICATION_TICK_MINUTES` (1, 5, 10, 15, 20, 30, 60). `Database.withAdvisoryLock(key, work, timeoutMs)` holds `pg_try_advisory_xact_lock` in a transaction for the whole `work` (which uses the pool) and answers `false` when another instance has it.

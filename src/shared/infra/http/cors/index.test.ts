@@ -40,6 +40,7 @@ describe('GIVEN buildCorsOptions', () => {
       'sentry-trace',
       'baggage',
       'Idempotency-Key',
+      'X-Device-Id',
     ]);
     expect(options.credentials).toBe(false);
   });

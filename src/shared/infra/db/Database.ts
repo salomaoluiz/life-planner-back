@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
-import { PrismaClient } from '@db/client';
+import { Prisma, PrismaClient } from '@db/client';
 import { EnvService } from '@shared/infra/env/env.service';
 
 import { QueryCounter } from './QueryCounter';
@@ -56,6 +56,32 @@ export class Database {
         return this.ambient.run(scoped, work);
       },
       { maxWait: timeoutMs, timeout: timeoutMs },
+    );
+  }
+
+  // Spec 124 FR 26: runs `work` only when this instance gets the transaction-level advisory lock `key`; it is released
+  // when the transaction ends, even after a crash. `false` = another instance holds it and `work` did not run. The work
+  // itself uses the pool, not this transaction (it only holds the lock).
+  async withAdvisoryLock(
+    key: number,
+    work: () => Promise<void>,
+    timeoutMs = 300_000,
+  ): Promise<boolean> {
+    return this.prisma.$transaction(
+      async (tx) => {
+        const [row] = await tx.$queryRaw<{ locked: boolean }[]>(
+          Prisma.sql`SELECT pg_try_advisory_xact_lock(${key}) AS locked`,
+        );
+
+        if (!row?.locked) {
+          return false;
+        }
+
+        await work();
+
+        return true;
+      },
+      { maxWait: 5000, timeout: timeoutMs },
     );
   }
 }

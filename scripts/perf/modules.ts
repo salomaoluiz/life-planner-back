@@ -3,6 +3,7 @@ export type PerfModule =
   | 'finance'
   | 'health'
   | 'investment'
+  | 'notification'
   | 'stock'
   | 'user'
   | 'version';
@@ -12,6 +13,7 @@ export const PERF_MODULES: PerfModule[] = [
   'finance',
   'health',
   'investment',
+  'notification',
   'stock',
   'user',
   'version',
@@ -25,6 +27,7 @@ const FOLDER_TO_MODULE: Record<string, PerfModule> = {
   finance: 'finance',
   health: 'health',
   investment: 'investment',
+  notification: 'notification',
   stock: 'stock',
   user: 'user',
   version: 'version',

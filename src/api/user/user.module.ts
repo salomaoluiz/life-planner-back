@@ -9,13 +9,22 @@ import { DeleteFinanceDataByOwnerUseCase } from '@finance/application/use-case/D
 import { FinanceModule } from '@finance/finance.module';
 import { DeleteInvestmentsByOwnerUseCase } from '@investment/application/use-case/DeleteInvestmentsByOwnerUseCase';
 import { InvestmentModule } from '@investment/investment.module';
+import { DeleteNotificationsByUserUseCase } from '@notification/application/use-case/DeleteNotificationsByUserUseCase';
+import { NotificationModule } from '@notification/notification.module';
 import { DeleteStockItemsByOwnerUseCase } from '@stock/application/use-case/DeleteStockItemsByOwnerUseCase';
 import { StockModule } from '@stock/stock.module';
 import { UserModule } from '@user/user.module';
 
 @Module({
   controllers: [UserController],
-  imports: [FamilyModule, FinanceModule, InvestmentModule, StockModule, UserModule],
+  imports: [
+    FamilyModule,
+    FinanceModule,
+    InvestmentModule,
+    NotificationModule,
+    StockModule,
+    UserModule,
+  ],
   providers: [
     AccountDeletionService,
     {
@@ -24,16 +33,19 @@ import { UserModule } from '@user/user.module';
         DeleteFinanceDataByOwnerUseCase,
         DeleteStockItemsByOwnerUseCase,
         DeleteInvestmentsByOwnerUseCase,
+        DeleteNotificationsByUserUseCase,
       ],
       provide: OWNED_RECORDS_PURGES,
       useFactory: (
         deleteFinanceData: DeleteFinanceDataByOwnerUseCase,
         deleteStockItems: DeleteStockItemsByOwnerUseCase,
         deleteInvestments: DeleteInvestmentsByOwnerUseCase,
+        deleteNotifications: DeleteNotificationsByUserUseCase,
       ): OwnedRecordsPurgeEntry[] => [
         { module: 'finance', purge: deleteFinanceData },
         { module: 'stock', purge: deleteStockItems },
         { module: 'investment', purge: deleteInvestments },
+        { module: 'notification', purge: deleteNotifications },
       ],
     },
     UserService,

@@ -107,6 +107,10 @@ export class EnvService {
     return this.nestConfigService.get('BRAPI_TOKEN');
   }
 
+  get expoAccessToken(): Env['EXPO_ACCESS_TOKEN'] {
+    return this.nestConfigService.get('EXPO_ACCESS_TOKEN');
+  }
+
   get finnhubToken(): Env['FINNHUB_TOKEN'] {
     return this.nestConfigService.get('FINNHUB_TOKEN');
   }
@@ -133,6 +137,26 @@ export class EnvService {
 
   get marketIndexJobEnabled(): Env['MARKET_INDEX_JOB_ENABLED'] {
     return this.nestConfigService.get('MARKET_INDEX_JOB_ENABLED');
+  }
+
+  get notificationJobEnabled(): Env['NOTIFICATION_JOB_ENABLED'] {
+    return this.nestConfigService.get('NOTIFICATION_JOB_ENABLED');
+  }
+
+  get notificationTickMinutes(): Env['NOTIFICATION_TICK_MINUTES'] {
+    return this.nestConfigService.get('NOTIFICATION_TICK_MINUTES');
+  }
+
+  get vapidPrivateKey(): Env['VAPID_PRIVATE_KEY'] {
+    return this.nestConfigService.get('VAPID_PRIVATE_KEY');
+  }
+
+  get vapidPublicKey(): Env['VAPID_PUBLIC_KEY'] {
+    return this.nestConfigService.get('VAPID_PUBLIC_KEY');
+  }
+
+  get vapidSubject(): Env['VAPID_SUBJECT'] {
+    return this.nestConfigService.get('VAPID_SUBJECT');
   }
 
   // Database
