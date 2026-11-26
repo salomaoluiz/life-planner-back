@@ -1,5 +1,7 @@
 import { HttpException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 
+import { TEST_PUSH_LIMIT } from '@notification/domain/service/DeliveryRetry';
+
 import { mocks, setup } from './index.mocks';
 
 it('SHOULD send the localized test push to the chosen Expo device WITHOUT storing anything', async () => {
@@ -53,10 +55,10 @@ it("SHOULD answer 404 for another user's device or no device at all, AND 422 for
   expect(mocks.pushSender.sendExpo).not.toHaveBeenCalled();
 });
 
-it('SHOULD answer 429 on the 6th test push in one hour AND allow it again later', async () => {
+it('SHOULD answer 429 once the hourly test push limit is reached AND allow it again later', async () => {
   const at = new Date('2026-11-23T11:00:00Z');
 
-  for (let index = 0; index < 5; index += 1) {
+  for (let index = 0; index < TEST_PUSH_LIMIT; index += 1) {
     await setup.execute({ deviceId: 'd-1', now: at, userId: 'user-1' });
   }
 
