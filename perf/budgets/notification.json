@@ -11,25 +11,25 @@
   "GET /api/v1/notifications": {
     "indexes": null,
     "kind": "read",
-    "maxBytes": null,
-    "maxQueries": 3,
-    "p50Ms": null,
+    "maxBytes": 224383,
+    "maxQueries": 2,
+    "p50Ms": 34,
     "scenario": ""
   },
   "GET /api/v1/notifications/devices": {
     "indexes": null,
     "kind": "read",
-    "maxBytes": null,
+    "maxBytes": 14,
     "maxQueries": 2,
-    "p50Ms": null,
+    "p50Ms": 4,
     "scenario": ""
   },
   "GET /api/v1/notifications/preferences": {
     "indexes": null,
     "kind": "read",
-    "maxBytes": null,
-    "maxQueries": 5,
-    "p50Ms": null,
+    "maxBytes": 615,
+    "maxQueries": 4,
+    "p50Ms": 5,
     "scenario": ""
   },
   "GET /api/v1/notifications/summary-preview": {
@@ -44,9 +44,9 @@
   "GET /api/v1/notifications/unread-count": {
     "indexes": null,
     "kind": "read",
-    "maxBytes": null,
+    "maxBytes": 13,
     "maxQueries": 2,
-    "p50Ms": null,
+    "p50Ms": 3,
     "scenario": ""
   },
   "GET /api/v1/notifications/web-push-key": {
