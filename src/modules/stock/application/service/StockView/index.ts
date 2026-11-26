@@ -53,7 +53,7 @@ export interface StockItemView {
   leftover?: { date: Date; lotId: string; quantity: number };
   // Open lots first, then by effective expiration (nulls last).
   category?: { archived: boolean; id: string; name: string; path: string };
-  location?: { archived: boolean; id: string; name: string };
+  location?: { archived: boolean; id: string; name: string; parentId?: string; path: string };
   lots: StockLotView[];
   nearestExpiration?: Date;
   needsRestock: boolean;
@@ -156,6 +156,8 @@ export function toStockItemView(
       archived: location.status === 'ARCHIVED',
       id: location.id,
       name: location.name,
+      parentId: location.parentId,
+      path: pathOf(catalog.locations, location.id),
     },
     lots: lotViews,
     nearestExpiration: nearestExpiration(lots, item.openedShelfLifeDays),

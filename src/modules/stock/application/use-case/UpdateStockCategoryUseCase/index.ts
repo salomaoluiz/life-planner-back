@@ -12,6 +12,7 @@ import {
   UpdateStockCategorySchema,
 } from '@stock/application/dto/StockCatalog';
 import { ensureCatalogWritable } from '@stock/application/service/CatalogAccess';
+import { assertIcon, buildCascade } from '@stock/application/service/CatalogAppearance';
 import { assertFinanceMapping } from '@stock/application/service/FinanceMapping';
 import StockCategoryEntity, { StockCatalogStatus } from '@stock/domain/entity/StockCategoryEntity';
 import { IStockCatalogRepository } from '@stock/domain/repository';
@@ -80,6 +81,7 @@ export class UpdateStockCategoryUseCase implements UseCaseWithParams<
 
     ensureCatalogWritable(input.accessibleOwners, target);
     assertFinanceMapping(input.financeCategoryId, input.financeCategories);
+    assertIcon(input.icon, input.iconCatalog);
 
     const categories = await this.catalogRepository.findCategories(target);
     const parentId =
@@ -112,12 +114,23 @@ export class UpdateStockCategoryUseCase implements UseCaseWithParams<
       }
     }
 
+    const subtree = descendantIds(categories, category.id);
+    const cascade = buildCascade(
+      categories,
+      subtree.filter((id) => id !== category.id),
+      input,
+    );
     const updated =
       input.name !== undefined ||
       input.parentId !== undefined ||
-      input.financeCategoryId !== undefined
+      input.financeCategoryId !== undefined ||
+      input.color !== undefined ||
+      input.icon !== undefined
         ? await this.catalogRepository.updateCategory({
+            cascade,
+            color: input.color,
             financeCategoryId: input.financeCategoryId,
+            icon: input.icon,
             id: category.id,
             name: input.name,
             parentId: input.parentId,
@@ -125,10 +138,7 @@ export class UpdateStockCategoryUseCase implements UseCaseWithParams<
         : category;
 
     if (input.status !== undefined && input.status !== category.status) {
-      await this.catalogRepository.setCategoryStatus(
-        descendantIds(categories, category.id),
-        input.status,
-      );
+      await this.catalogRepository.setCategoryStatus(subtree, input.status);
 
       return { ...updated, status: input.status };
     }

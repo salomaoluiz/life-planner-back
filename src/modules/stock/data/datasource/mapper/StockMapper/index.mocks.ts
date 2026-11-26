@@ -83,8 +83,10 @@ const rawMovementMinimal = {
   user_id: null,
 } as unknown as StockMovement;
 const rawCategory = {
+  color: '#F59E0B',
   created_at: date,
   finance_category_id: 'fin',
+  icon: 'cart',
   id: 'cat',
   name: 'Dairy',
   owner: 'USER',
@@ -94,11 +96,14 @@ const rawCategory = {
   updated_at: date,
 } as unknown as StockCategory;
 const rawLocation = {
+  color: '#3B82F6',
   created_at: date,
+  icon: 'fridge',
   id: 'loc',
   name: 'Pantry',
   owner: 'FAMILY',
   owner_id: 'family',
+  parent_id: 'kitchen',
   status: 'ARCHIVED',
   updated_at: date,
 } as unknown as StockLocation;

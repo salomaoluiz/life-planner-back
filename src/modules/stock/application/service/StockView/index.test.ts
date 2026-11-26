@@ -19,7 +19,9 @@ function lot(id: string, quantity: number, extra: object = {}) {
 const catalog = {
   categories: [
     new StockCategoryEntity({
+      color: '#8A8F98',
       createdAt: date,
+      icon: 'package-variant',
       id: 'dairy',
       name: 'Dairy',
       owner: OwnerType.USER,
@@ -28,7 +30,9 @@ const catalog = {
       updatedAt: date,
     }),
     new StockCategoryEntity({
+      color: '#8A8F98',
       createdAt: date,
+      icon: 'package-variant',
       id: 'cheese',
       name: 'Cheese',
       owner: OwnerType.USER,
@@ -40,7 +44,9 @@ const catalog = {
   ],
   locations: [
     new StockLocationEntity({
+      color: '#8A8F98',
       createdAt: date,
+      icon: 'package-variant',
       id: 'fridge',
       name: 'Fridge',
       owner: OwnerType.USER,
@@ -91,7 +97,13 @@ it('SHOULD flag restock, pick the category path and archived flags, and the loca
     name: 'Cheese',
     path: 'Dairy / Cheese',
   });
-  expect(view.location).toEqual({ archived: false, id: 'fridge', name: 'Fridge' });
+  expect(view.location).toEqual({
+    archived: false,
+    id: 'fridge',
+    name: 'Fridge',
+    parentId: undefined,
+    path: 'Fridge',
+  });
 });
 
 it('SHOULD handle an item with no lots, category or location', () => {

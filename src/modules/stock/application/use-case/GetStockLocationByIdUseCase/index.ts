@@ -9,10 +9,14 @@ import {
 import { hasOwnerAccess } from '@stock/domain/entity/OwnerAccess';
 import StockLocationEntity from '@stock/domain/entity/StockLocationEntity';
 import { IStockCatalogRepository } from '@stock/domain/repository';
+import { descendantIds, pathOf } from '@stock/domain/service/CategoryTree';
 
 export interface StockLocationRow {
+  // The location and its sub-locations (spec 125 FR 18).
   itemCount: number;
   location: StockLocationEntity;
+  // "Kitchen / Fridge" (the same format as the category path).
+  path: string;
 }
 
 // Spec 117 FR 30: the QR route header. Unreadable and deleted both answer 404, so nothing leaks.
@@ -33,8 +37,18 @@ export class GetStockLocationByIdUseCase implements UseCaseWithParams<
       throw new NotFoundException();
     }
 
-    const counts = await this.catalogRepository.countItemsByLocation(location);
+    const [locations, counts] = await Promise.all([
+      this.catalogRepository.findLocations(location),
+      this.catalogRepository.countItemsByLocation(location),
+    ]);
 
-    return { itemCount: counts.get(location.id) ?? 0, location };
+    return {
+      itemCount: descendantIds(locations, location.id).reduce(
+        (sum, id) => sum + (counts.get(id) ?? 0),
+        0,
+      ),
+      location,
+      path: pathOf(locations, location.id),
+    };
   }
 }

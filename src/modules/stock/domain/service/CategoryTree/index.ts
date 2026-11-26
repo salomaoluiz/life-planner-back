@@ -1,4 +1,6 @@
 export const MAX_CATEGORY_DEPTH = 3;
+// Spec 125 FR 14: a sub-location cannot have children.
+export const MAX_LOCATION_DEPTH = 2;
 
 export interface TreeCategory {
   financeCategoryId?: string;

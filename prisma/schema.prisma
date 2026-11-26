@@ -611,6 +611,9 @@ model StockCategory {
   parent_id           String?
   name                String        @db.VarChar(50)
   finance_category_id String?
+  // Spec 125: appearance (hex `#RRGGBB` + a `category_icons.name`); CHECK on color in the migration.
+  color               String        @db.VarChar(7)
+  icon                String        @db.VarChar(64)
   status              AccountStatus @default(ACTIVE)
   created_at          DateTime      @default(now()) @db.Timestamptz(6)
   updated_at          DateTime      @updatedAt @db.Timestamptz(6)
@@ -628,12 +631,18 @@ model StockLocation {
   id         String        @id @default(uuid())
   owner      OwnerType
   owner_id   String
+  parent_id  String?
   name       String        @db.VarChar(50)
+  // Spec 125: appearance as on categories; sub-locations go one level deep (use case).
+  color      String        @db.VarChar(7)
+  icon       String        @db.VarChar(64)
   status     AccountStatus @default(ACTIVE)
   created_at DateTime      @default(now()) @db.Timestamptz(6)
   updated_at DateTime      @updatedAt @db.Timestamptz(6)
 
-  items StockItem[]
+  parent   StockLocation?  @relation("StockLocationTree", fields: [parent_id], references: [id], onDelete: Cascade)
+  children StockLocation[] @relation("StockLocationTree")
+  items    StockItem[]
 
   @@index([owner, owner_id])
   @@map("stock_locations")

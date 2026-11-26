@@ -174,6 +174,8 @@ describe('movements', () => {
   });
 });
 
+const appearance = { color: '#112233', icon: 'cart' };
+
 describe('categories', () => {
   it('SHOULD nest the categories into a tree with counts and the inherited mapping', async () => {
     useCases.getStockCategories.execute.mockResolvedValue([
@@ -214,10 +216,21 @@ describe('categories', () => {
       { id: 'inc', status: 'ARCHIVED', type: 'INCOME' },
     ]);
 
-    await setup.createCategory(userId, { name: 'A', owner: OwnerType.USER, ownerId: userId });
-    expect(useCases.getCategories.execute).not.toHaveBeenCalled();
+    useCases.getCategoryIcons.execute.mockResolvedValue([{ name: 'cart' }]);
 
     await setup.createCategory(userId, {
+      ...appearance,
+      name: 'A',
+      owner: OwnerType.USER,
+      ownerId: userId,
+    });
+    expect(useCases.getCategories.execute).not.toHaveBeenCalled();
+    expect(useCases.createStockCategory.execute).toHaveBeenLastCalledWith(
+      expect.objectContaining({ iconCatalog: ['cart'] }),
+    );
+
+    await setup.createCategory(userId, {
+      ...appearance,
       financeCategoryId: 'fin',
       name: 'A',
       owner: OwnerType.USER,
@@ -261,6 +274,7 @@ describe('categories', () => {
     expect(useCases.updateStockCategory.execute).toHaveBeenLastCalledWith({
       accessibleOwners,
       financeCategories: undefined,
+      iconCatalog: undefined,
       id: 'target',
       name: 'x',
     });
@@ -274,7 +288,7 @@ describe('categories', () => {
       { owner: OwnerType.USER, ownerId: userId },
       'pt-BR',
     );
-    await setup.deleteCategory(userId, 'a');
+    await setup.deleteCategory(userId, 'a', 'none');
 
     expect(result.items[0]).toMatchObject({ financeCategoryId: null, id: 'a', parentId: null });
     expect(useCases.createStockCategorySuggestions.execute).toHaveBeenCalledWith({
@@ -286,6 +300,7 @@ describe('categories', () => {
     expect(useCases.deleteStockCategory.execute).toHaveBeenCalledWith({
       accessibleOwners,
       id: 'a',
+      moveTo: 'none',
     });
   });
 });
@@ -294,7 +309,9 @@ describe('locations', () => {
   it('SHOULD list with item counts, create, update, delete and create suggestions', async () => {
     useCases.getStockLocations.execute.mockResolvedValue([
       { itemCount: 2, location: location('a') },
+      { itemCount: 1, location: location('kid', { parentId: 'a' }) },
     ]);
+    useCases.getCategoryIcons.execute.mockResolvedValue([{ name: 'archive' }]);
     useCases.createStockLocation.execute.mockResolvedValue(location('b'));
     useCases.updateStockLocation.execute.mockResolvedValue(location('b'));
     useCases.createStockLocationSuggestions.execute.mockResolvedValue([location('c')]);
@@ -306,13 +323,25 @@ describe('locations', () => {
         ownerId: userId,
       }),
     ).toEqual({
-      items: [expect.objectContaining({ id: 'a', itemCount: 2 })],
+      items: [
+        expect.objectContaining({
+          children: [expect.objectContaining({ id: 'kid', parentId: 'a' })],
+          id: 'a',
+          itemCount: 2,
+        }),
+      ],
     });
     expect(
-      await setup.createLocation(userId, { name: 'x', owner: OwnerType.USER, ownerId: userId }),
+      await setup.createLocation(userId, {
+        color: '#112233',
+        icon: 'archive',
+        name: 'x',
+        owner: OwnerType.USER,
+        ownerId: userId,
+      }),
     ).not.toHaveProperty('itemCount');
     await setup.updateLocation(userId, 'b', { name: 'y' });
-    await setup.deleteLocation(userId, 'b');
+    await setup.deleteLocation(userId, 'b', 'a');
     expect(
       (
         await setup.createLocationSuggestions(
@@ -325,13 +354,18 @@ describe('locations', () => {
 
     expect(useCases.updateStockLocation.execute).toHaveBeenCalledWith({
       accessibleOwners,
+      iconCatalog: undefined,
       id: 'b',
       name: 'y',
     });
     expect(useCases.deleteStockLocation.execute).toHaveBeenCalledWith({
       accessibleOwners,
       id: 'b',
+      moveTo: 'a',
     });
+    expect(useCases.createStockLocation.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ iconCatalog: ['archive'] }),
+    );
   });
 });
 

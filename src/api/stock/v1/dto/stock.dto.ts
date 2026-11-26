@@ -159,7 +159,13 @@ const CategoryRefSchema = z.object({
   name: z.string(),
   path: z.string(),
 });
-const LocationRefSchema = z.object({ archived: z.boolean(), id: z.uuid(), name: z.string() });
+const LocationRefSchema = z.object({
+  archived: z.boolean(),
+  id: z.uuid(),
+  name: z.string(),
+  parentId: z.uuid().nullable(),
+  path: z.string(),
+});
 
 export const StockLotApiSchema = z.object({
   currency: z.string().nullable(),
@@ -400,20 +406,43 @@ export const OwnerChangePreviewQuerySchema = z.object({
   ownerId: z.uuid(),
 });
 
-export const CatalogOwnerQuerySchema = z.object({
-  includeArchived: z
-    .enum(['true', 'false'])
-    .optional()
-    .transform((value) => value === 'true'),
-  owner: OwnerTypeApiSchema,
-  ownerId: z.uuid(),
-});
+// Spec 125 section 7: no owner = every owner the user can read; owner and ownerId come together.
+export const CatalogOwnerQuerySchema = z
+  .object({
+    includeArchived: z
+      .enum(['true', 'false'])
+      .optional()
+      .transform((value) => value === 'true'),
+    owner: OwnerTypeApiSchema.optional(),
+    ownerId: z.uuid().optional(),
+  })
+  .refine((value) => (value.owner === undefined) === (value.ownerId === undefined), {
+    message: 'owner and ownerId go together',
+  });
 export const CatalogSuggestionsBodySchema = z
-  .object({ owner: OwnerTypeApiSchema, ownerId: z.uuid() })
+  .object({
+    keys: z.array(z.string().min(1)).max(50).optional(),
+    owner: OwnerTypeApiSchema,
+    ownerId: z.uuid(),
+  })
   .strict();
+// Spec 125 FR 21-23: an item decision for the delete of something in use.
+export const DeleteCatalogQuerySchema = z.object({
+  moveTo: z.union([z.uuid(), z.literal('none')]).optional(),
+});
+const ColorApiSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Color must be #RRGGBB');
+const IconApiSchema = z.string().min(1).max(64);
+const AppearanceUpdateFields = {
+  applyToChildren: z.boolean(),
+  childColors: z.record(z.uuid(), ColorApiSchema),
+  color: ColorApiSchema,
+  icon: IconApiSchema,
+};
 export const CreateStockCategoryApiSchema = z
   .object({
+    color: ColorApiSchema,
     financeCategoryId: z.uuid().nullish(),
+    icon: IconApiSchema,
     name: CatalogNameSchema,
     owner: OwnerTypeApiSchema,
     ownerId: z.uuid(),
@@ -422,6 +451,7 @@ export const CreateStockCategoryApiSchema = z
   .strict();
 export const UpdateStockCategoryApiSchema = z
   .object({
+    ...AppearanceUpdateFields,
     financeCategoryId: z.uuid().nullable(),
     name: CatalogNameSchema,
     parentId: z.uuid().nullable(),
@@ -433,10 +463,22 @@ export const UpdateStockCategoryApiSchema = z
     message: 'At least one field is required',
   });
 export const CreateStockLocationApiSchema = z
-  .object({ name: CatalogNameSchema, owner: OwnerTypeApiSchema, ownerId: z.uuid() })
+  .object({
+    color: ColorApiSchema,
+    icon: IconApiSchema,
+    name: CatalogNameSchema,
+    owner: OwnerTypeApiSchema,
+    ownerId: z.uuid(),
+    parentId: z.uuid().nullish(),
+  })
   .strict();
 export const UpdateStockLocationApiSchema = z
-  .object({ name: CatalogNameSchema, status: z.enum(StockCatalogStatus) })
+  .object({
+    ...AppearanceUpdateFields,
+    name: CatalogNameSchema,
+    parentId: z.uuid().nullable(),
+    status: z.enum(StockCatalogStatus),
+  })
   .partial()
   .strict()
   .refine((value) => Object.values(value).some((field) => field !== undefined), {
@@ -445,29 +487,66 @@ export const UpdateStockLocationApiSchema = z
 
 export interface StockCategoryNodeOutput {
   children: StockCategoryNodeOutput[];
+  color: string;
   effectiveFinanceCategoryId: null | string;
   financeCategoryId: null | string;
+  icon: string;
   id: string;
   itemCount: number;
   name: string;
+  owner: 'FAMILY' | 'USER';
+  ownerId: string;
+  parentId: null | string;
+  status: 'ACTIVE' | 'ARCHIVED';
+}
+export interface StockLocationNodeOutput {
+  children: StockLocationNodeOutput[];
+  color: string;
+  icon: string;
+  id: string;
+  itemCount: number;
+  name: string;
+  owner: 'FAMILY' | 'USER';
+  ownerId: string;
   parentId: null | string;
   status: 'ACTIVE' | 'ARCHIVED';
 }
 export const StockCategoryNodeApiSchema: z.ZodType<StockCategoryNodeOutput> = z.lazy(() =>
   z.object({
     children: z.array(StockCategoryNodeApiSchema),
+    color: z.string(),
     effectiveFinanceCategoryId: z.uuid().nullable(),
     financeCategoryId: z.uuid().nullable(),
+    icon: z.string(),
     id: z.uuid(),
     itemCount: z.number().int(),
     name: z.string(),
+    owner: OwnerTypeApiSchema,
+    ownerId: z.uuid(),
     parentId: z.uuid().nullable(),
     status: z.enum(StockCatalogStatus),
   }),
 );
+export const StockLocationNodeApiSchema: z.ZodType<StockLocationNodeOutput> = z.lazy(() =>
+  z.object({
+    children: z.array(StockLocationNodeApiSchema),
+    color: z.string(),
+    icon: z.string(),
+    id: z.uuid(),
+    itemCount: z.number().int(),
+    name: z.string(),
+    owner: OwnerTypeApiSchema,
+    ownerId: z.uuid(),
+    parentId: z.uuid().nullable(),
+    status: z.enum(StockCatalogStatus),
+  }),
+);
+export const StockLocationTreeApiSchema = z.object({ items: z.array(StockLocationNodeApiSchema) });
 export const StockCategoryTreeApiSchema = z.object({ items: z.array(StockCategoryNodeApiSchema) });
 export const StockCategoryApiSchema = z.object({
+  color: z.string(),
   financeCategoryId: z.uuid().nullable(),
+  icon: z.string(),
   id: z.uuid(),
   name: z.string(),
   owner: OwnerTypeApiSchema,
@@ -477,11 +556,16 @@ export const StockCategoryApiSchema = z.object({
 });
 export const StockCategoryListApiSchema = z.object({ items: z.array(StockCategoryApiSchema) });
 export const StockLocationApiSchema = z.object({
+  color: z.string(),
+  icon: z.string(),
   id: z.uuid(),
   itemCount: z.number().int().optional(),
   name: z.string(),
   owner: OwnerTypeApiSchema,
   ownerId: z.uuid(),
+  parentId: z.uuid().nullable(),
+  // Only on `GET /stock/locations/:id` ("Kitchen / Fridge").
+  path: z.string().optional(),
   status: z.enum(StockCatalogStatus),
 });
 export const StockItemResultApiSchema = z.object({ item: StockItemApiSchema });
@@ -520,6 +604,7 @@ export class StockItemResultOutput extends createZodDto(StockItemResultApiSchema
 export class StockListItemOutput extends createZodDto(StockListItemApiSchema) {}
 export class StockLocationListOutput extends createZodDto(StockLocationListApiSchema) {}
 export class StockLocationOutput extends createZodDto(StockLocationApiSchema) {}
+export class StockLocationTreeOutput extends createZodDto(StockLocationTreeApiSchema) {}
 export class StockMovementPageOutput extends createZodDto(StockMovementPageApiSchema) {}
 export class StockMovementResultOutput extends createZodDto(StockMovementResultApiSchema) {}
 export class StockSuggestionOutput extends createZodDto(StockSuggestionApiSchema) {}

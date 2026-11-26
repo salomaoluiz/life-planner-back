@@ -25,3 +25,13 @@ it('SHOULD answer 409 WHEN the owner already has locations', async () => {
 
   await expect(setup.execute(input)).rejects.toThrow(ConflictException);
 });
+
+it('SHOULD create the chosen keys with their color and icon', async () => {
+  mocks.catalog.findLocations.mockResolvedValue([]);
+
+  await setup.execute({ ...input, keys: ['FRIDGE'] });
+
+  expect(mocks.catalog.createLocations.mock.calls[0][0]).toEqual([
+    { color: '#3B82F6', icon: 'fridge', name: 'Geladeira', owner: 'USER', ownerId: 'user-id' },
+  ]);
+});

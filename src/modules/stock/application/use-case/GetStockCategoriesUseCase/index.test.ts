@@ -27,7 +27,7 @@ it('SHOULD return the active categories with item counts and the inherited finan
   expect(
     rows.map((row) => [row.category.id, row.itemCount, row.effectiveFinanceCategoryId]),
   ).toEqual([
-    ['dairy', 0, 'fin'],
+    ['dairy', 4, 'fin'],
     ['cheese', 4, 'fin'],
   ]);
 });
@@ -40,4 +40,11 @@ it('SHOULD include archived categories WHEN asked', async () => {
 
 it('SHOULD answer 404 for an owner the caller cannot reach', async () => {
   await expect(setup.execute({ ...input, ownerId: 'other' })).rejects.toThrow(NotFoundException);
+});
+
+it('SHOULD read every owner the user can reach WHEN no owner is given', async () => {
+  const rows = await setup.execute({ accessibleOwners: mocks.accessibleOwners });
+
+  expect(mocks.catalog.findCategories).toHaveBeenCalledTimes(mocks.accessibleOwners.length);
+  expect(rows.length).toBe(2 * mocks.accessibleOwners.length);
 });

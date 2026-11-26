@@ -1,4 +1,4 @@
-import { ConflictException, Inject, NotFoundException } from '@nestjs/common';
+import { Inject, NotFoundException } from '@nestjs/common';
 
 import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
@@ -7,11 +7,12 @@ import {
   DeleteStockCatalogSchema,
 } from '@stock/application/dto/StockCatalog';
 import { ensureCatalogWritable } from '@stock/application/service/CatalogAccess';
+import { planDelete } from '@stock/application/service/CatalogAppearance';
 import { hasOwnerAccess } from '@stock/domain/entity/OwnerAccess';
 import { IStockCatalogRepository } from '@stock/domain/repository';
 import { descendantIds } from '@stock/domain/service/CategoryTree';
 
-// FR 24: only when no item (subtree included) uses it, else 409 with `{ itemCount }`.
+// FR 24 + spec 125 FR 20-23: free when no item (subtree included) uses it; else `moveTo` decides, or 409 `{ itemCount }`.
 export class DeleteStockCategoryUseCase implements UseCaseWithParams<
   DeleteStockCatalogInput,
   void
@@ -37,15 +38,13 @@ export class DeleteStockCategoryUseCase implements UseCaseWithParams<
       this.catalogRepository.findCategories(target),
       this.catalogRepository.countItemsByCategory(target),
     ]);
-    const itemCount = descendantIds(categories, category.id).reduce(
-      (sum, id) => sum + (counts.get(id) ?? 0),
-      0,
-    );
+    const subtree = descendantIds(categories, category.id);
+    const itemCount = subtree.reduce((sum, id) => sum + (counts.get(id) ?? 0), 0);
+    const move = planDelete(categories, subtree, itemCount, {
+      inUseMessage: 'Category is in use',
+      moveTo: input.moveTo,
+    });
 
-    if (itemCount > 0) {
-      throw new ConflictException({ itemCount, message: 'Category is in use', statusCode: 409 });
-    }
-
-    await this.catalogRepository.deleteCategory(category.id);
+    await this.catalogRepository.deleteCategory(category.id, move);
   }
 }

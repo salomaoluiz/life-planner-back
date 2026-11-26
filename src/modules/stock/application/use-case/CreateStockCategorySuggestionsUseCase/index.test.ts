@@ -18,7 +18,13 @@ it('SHOULD create the nine defaults in the requested language, unmapped', async 
   const created = mocks.catalog.createCategories.mock.calls[0][0];
 
   expect(created).toHaveLength(9);
-  expect(created[0]).toEqual({ name: 'Mercearia', owner: 'USER', ownerId: 'user-id' });
+  expect(created[0]).toEqual({
+    color: '#F59E0B',
+    icon: 'cart',
+    name: 'Mercearia',
+    owner: 'USER',
+    ownerId: 'user-id',
+  });
 });
 
 it('SHOULD use English names for en-US', async () => {
@@ -36,4 +42,14 @@ it('SHOULD answer 409 WHEN the owner already has categories (the second call)', 
 
 it('SHOULD answer 404 for an owner the caller cannot reach', async () => {
   await expect(setup.execute({ ...input, ownerId: 'other' })).rejects.toThrow(NotFoundException);
+});
+
+it('SHOULD create only the chosen keys', async () => {
+  mocks.catalog.findCategories.mockResolvedValue([]);
+
+  await setup.execute({ ...input, keys: ['DAIRY', 'MEAT'] });
+
+  expect(
+    mocks.catalog.createCategories.mock.calls[0][0].map((row: { name: string }) => row.name),
+  ).toEqual(['Laticínios', 'Carnes']);
 });

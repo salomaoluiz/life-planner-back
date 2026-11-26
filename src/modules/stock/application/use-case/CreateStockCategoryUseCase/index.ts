@@ -7,6 +7,7 @@ import {
   CreateStockCategorySchema,
 } from '@stock/application/dto/StockCatalog';
 import { ensureCatalogWritable } from '@stock/application/service/CatalogAccess';
+import { assertIcon } from '@stock/application/service/CatalogAppearance';
 import { assertFinanceMapping } from '@stock/application/service/FinanceMapping';
 import StockCategoryEntity, { StockCatalogStatus } from '@stock/domain/entity/StockCategoryEntity';
 import { IStockCatalogRepository } from '@stock/domain/repository';
@@ -27,6 +28,7 @@ export class CreateStockCategoryUseCase implements UseCaseWithParams<
 
     ensureCatalogWritable(input.accessibleOwners, target);
     assertFinanceMapping(input.financeCategoryId, input.financeCategories);
+    assertIcon(input.icon, input.iconCatalog);
 
     const categories = await this.catalogRepository.findCategories(target);
 
@@ -57,7 +59,9 @@ export class CreateStockCategoryUseCase implements UseCaseWithParams<
     }
 
     return this.catalogRepository.createCategory({
+      color: input.color,
       financeCategoryId: input.financeCategoryId,
+      icon: input.icon,
       name: input.name,
       owner: input.owner,
       ownerId: input.ownerId,

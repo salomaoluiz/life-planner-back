@@ -6,7 +6,9 @@ import StockLocationEntity from './index';
 it('SHOULD keep every property', () => {
   const date = new Date('2026-11-10T00:00:00.000Z');
   const location = new StockLocationEntity({
+    color: '#8A8F98',
     createdAt: date,
+    icon: 'package-variant',
     id: 'l',
     name: 'Pantry',
     owner: OwnerType.FAMILY,

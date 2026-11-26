@@ -50,30 +50,38 @@ describe('categories', () => {
       owner: 'USER',
       ownerId,
     });
-    await expect(controllers.categories.findAll(request, {})).rejects.toThrow(ValidationError);
+    await controllers.categories.findAll(request, {});
+    expect(stockService.findCategories).toHaveBeenLastCalledWith(userId, {
+      includeArchived: false,
+    });
+    await expect(controllers.categories.findAll(request, { owner: 'USER' })).rejects.toThrow(
+      ValidationError,
+    );
   });
 
   it('SHOULD create, update (partial) and delete', async () => {
-    await controllers.categories.create(request, {
-      name: 'Dairy',
-      owner: 'USER',
-      ownerId,
-    } as never);
-    await controllers.categories.update(request, id, { status: 'ARCHIVED' } as never);
-    await controllers.categories.delete(request, id);
+    const body = { color: '#F59E0B', icon: 'cart', name: 'Dairy', owner: 'USER', ownerId };
 
-    expect(stockService.createCategory).toHaveBeenCalledWith(userId, {
-      name: 'Dairy',
-      owner: 'USER',
-      ownerId,
-    });
+    await controllers.categories.create(request, body as never);
+    await controllers.categories.update(request, id, { status: 'ARCHIVED' } as never);
+    await controllers.categories.delete(request, id, {});
+    await controllers.categories.delete(request, id, { moveTo: 'none' });
+
+    expect(stockService.createCategory).toHaveBeenCalledWith(userId, body);
     expect(stockService.updateCategory).toHaveBeenCalledWith(userId, id, { status: 'ARCHIVED' });
-    expect(stockService.deleteCategory).toHaveBeenCalledWith(userId, id);
+    expect(stockService.deleteCategory).toHaveBeenCalledWith(userId, id, undefined);
+    expect(stockService.deleteCategory).toHaveBeenLastCalledWith(userId, id, 'none');
+    await expect(controllers.categories.delete(request, id, { moveTo: 'x' })).rejects.toThrow(
+      ValidationError,
+    );
+    await expect(
+      controllers.categories.create(request, { ...body, color: 'red' } as never),
+    ).rejects.toThrow(ValidationError);
     await expect(controllers.categories.update(request, id, {} as never)).rejects.toThrow(
       ValidationError,
     );
     await expect(
-      controllers.categories.create(request, { name: '', owner: 'USER', ownerId } as never),
+      controllers.categories.create(request, { ...body, name: '' } as never),
     ).rejects.toThrow(ValidationError);
   });
 
@@ -91,13 +99,11 @@ describe('categories', () => {
 describe('locations', () => {
   it('SHOULD list, create, update, delete and create suggestions', async () => {
     await controllers.locations.findAll(request, { owner: 'FAMILY', ownerId });
-    await controllers.locations.create(request, {
-      name: 'Pantry',
-      owner: 'USER',
-      ownerId,
-    } as never);
+    const body = { color: '#F59E0B', icon: 'archive', name: 'Pantry', owner: 'USER', ownerId };
+
+    await controllers.locations.create(request, body as never);
     await controllers.locations.update(request, id, { name: 'Garage' } as never);
-    await controllers.locations.delete(request, id);
+    await controllers.locations.delete(request, id, { moveTo: id });
     await controllers.locations.createSuggestions(request, { owner: 'USER', ownerId });
 
     expect(stockService.findLocations).toHaveBeenCalledWith(userId, {
@@ -105,13 +111,9 @@ describe('locations', () => {
       owner: 'FAMILY',
       ownerId,
     });
-    expect(stockService.createLocation).toHaveBeenCalledWith(userId, {
-      name: 'Pantry',
-      owner: 'USER',
-      ownerId,
-    });
+    expect(stockService.createLocation).toHaveBeenCalledWith(userId, body);
     expect(stockService.updateLocation).toHaveBeenCalledWith(userId, id, { name: 'Garage' });
-    expect(stockService.deleteLocation).toHaveBeenCalledWith(userId, id);
+    expect(stockService.deleteLocation).toHaveBeenCalledWith(userId, id, id);
     expect(stockService.createLocationSuggestions).toHaveBeenCalledWith(
       userId,
       { owner: 'USER', ownerId },

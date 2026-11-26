@@ -3,6 +3,8 @@ import { Injectable } from '@nestjs/common';
 import { AccountStatus, StockCategory, StockLocation, StockShoppingList } from '@db/client';
 import { Database } from '@shared/infra/db/Database';
 import {
+  AppearanceCascadeDatasource,
+  CatalogMoveDatasource,
   CreateStockCategoryDatasourceParams,
   CreateStockLocationDatasourceParams,
   IStockCatalogDatasource,
@@ -80,12 +82,31 @@ export class StockCatalogDatasource implements IStockCatalogDatasource {
     ]);
   }
 
-  async deleteCategory(id: string): Promise<void> {
-    await this.db.client.stockCategory.deleteMany({ where: { id } });
+  // Spec 125 FR 22: the items of the subtree move (set-based) and the subtree goes in ONE transaction.
+  async deleteCategory(id: string, move?: CatalogMoveDatasource): Promise<void> {
+    await this.db.client.$transaction(async (tx) => {
+      if (move) {
+        await tx.stockItem.updateMany({
+          data: { category_id: move.to },
+          where: { category_id: { in: move.from } },
+        });
+      }
+
+      await tx.stockCategory.deleteMany({ where: { id } });
+    });
   }
 
-  async deleteLocation(id: string): Promise<void> {
-    await this.db.client.stockLocation.deleteMany({ where: { id } });
+  async deleteLocation(id: string, move?: CatalogMoveDatasource): Promise<void> {
+    await this.db.client.$transaction(async (tx) => {
+      if (move) {
+        await tx.stockItem.updateMany({
+          data: { location_id: move.to },
+          where: { location_id: { in: move.from } },
+        });
+      }
+
+      await tx.stockLocation.deleteMany({ where: { id } });
+    });
   }
 
   async findCatalogByOwners(keys: OwnerKey[]): Promise<{
@@ -127,15 +148,53 @@ export class StockCatalogDatasource implements IStockCatalogDatasource {
     await this.db.client.stockCategory.updateMany({ data: { status }, where: { id: { in: ids } } });
   }
 
-  async updateCategory(params: UpdateStockCategoryDatasourceParams): Promise<StockCategory> {
-    const { id, ...data } = params;
+  async setLocationStatus(ids: string[], status: AccountStatus): Promise<void> {
+    await this.db.client.stockLocation.updateMany({ data: { status }, where: { id: { in: ids } } });
+  }
 
-    return this.db.client.stockCategory.update({ data, where: { id } });
+  // Spec 125 FR 12: the row and the appearance of its descendants change together.
+  private async cascadeAppearance(
+    cascade: AppearanceCascadeDatasource | undefined,
+    write: (ids: string[], patch: { color?: string; icon?: string }) => Promise<unknown>,
+  ): Promise<void> {
+    if (!cascade) {
+      return;
+    }
+
+    if (cascade.icon !== undefined && cascade.ids.length > 0) {
+      await write(cascade.ids, { icon: cascade.icon });
+    }
+
+    for (const [childId, color] of Object.entries(cascade.colors)) {
+      await write([childId], { color });
+    }
+  }
+
+  async updateCategory(params: UpdateStockCategoryDatasourceParams): Promise<StockCategory> {
+    const { cascade, id, ...data } = params;
+
+    return this.db.client.$transaction(async (tx) => {
+      const row = await tx.stockCategory.update({ data, where: { id } });
+
+      await this.cascadeAppearance(cascade, async (ids, patch) =>
+        tx.stockCategory.updateMany({ data: patch, where: { id: { in: ids } } }),
+      );
+
+      return row;
+    });
   }
 
   async updateLocation(params: UpdateStockLocationDatasourceParams): Promise<StockLocation> {
-    const { id, ...data } = params;
+    const { cascade, id, ...data } = params;
 
-    return this.db.client.stockLocation.update({ data, where: { id } });
+    return this.db.client.$transaction(async (tx) => {
+      const row = await tx.stockLocation.update({ data, where: { id } });
+
+      await this.cascadeAppearance(cascade, async (ids, patch) =>
+        tx.stockLocation.updateMany({ data: patch, where: { id: { in: ids } } }),
+      );
+
+      return row;
+    });
   }
 }

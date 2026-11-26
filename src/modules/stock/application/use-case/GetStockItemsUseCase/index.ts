@@ -47,10 +47,11 @@ export class GetStockItemsUseCase implements UseCaseWithParams<
     const categoryIds = input.categoryIds && [
       ...new Set(input.categoryIds.flatMap((id) => descendantIds(catalog.categories, id))),
     ];
-    const items = await this.stockRepository.findByOwners(owners, {
-      categoryIds,
-      locationIds: input.locationIds,
-    });
+    // Spec 125 FR 16: a location filter includes its sub-locations the same way.
+    const locationIds = input.locationIds && [
+      ...new Set(input.locationIds.flatMap((id) => descendantIds(catalog.locations, id))),
+    ];
+    const items = await this.stockRepository.findByOwners(owners, { categoryIds, locationIds });
     return items.map((item) => toStockItemView(item, today, catalog)).sort(compareViews);
   }
 }

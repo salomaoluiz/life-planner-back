@@ -9,7 +9,7 @@ import {
 import { ensureCatalogWritable } from '@stock/application/service/CatalogAccess';
 import StockLocationEntity from '@stock/domain/entity/StockLocationEntity';
 import { IStockCatalogRepository } from '@stock/domain/repository';
-import { defaultLocationNames } from '@stock/domain/service/StockDefaults';
+import { locationSuggestions, pickSuggestions } from '@stock/domain/service/StockDefaults';
 
 export class CreateStockLocationSuggestionsUseCase implements UseCaseWithParams<
   CreateStockSuggestionsInput,
@@ -31,11 +31,15 @@ export class CreateStockLocationSuggestionsUseCase implements UseCaseWithParams<
     }
 
     return this.catalogRepository.createLocations(
-      defaultLocationNames(input.language).map((name) => ({
-        name,
-        owner: input.owner,
-        ownerId: input.ownerId,
-      })),
+      pickSuggestions(locationSuggestions(input.language), input.keys).map(
+        ({ color, icon, name }) => ({
+          color,
+          icon,
+          name,
+          owner: input.owner,
+          ownerId: input.ownerId,
+        }),
+      ),
     );
   }
 }

@@ -1,5 +1,5 @@
 import { ValidationError } from '@shared/domain/error/ValidationError';
-import { category, day, item, lot } from '@stock/application/mocks/stock.mocks';
+import { category, day, item, location, lot } from '@stock/application/mocks/stock.mocks';
 
 import { mocks, setup } from './index.mocks';
 
@@ -86,4 +86,19 @@ it('SHOULD refresh the stale forecasts of the owners before reading (spec 123 FR
   expect(mocks.refresh.execute.mock.invocationCallOrder[0]).toBeLessThan(
     mocks.stock.findByOwners.mock.invocationCallOrder[0],
   );
+});
+
+it('SHOULD expand a location filter to its sub-locations (spec 125 FR 16)', async () => {
+  mocks.catalog.findCatalogByOwners.mockResolvedValue({
+    categories: [],
+    locations: [location('kitchen'), location('fridge', { parentId: 'kitchen' })],
+    shoppingLists: [],
+  });
+
+  await setup.execute({ accessibleOwners: mocks.accessibleOwners, locationIds: ['kitchen'] });
+
+  expect(mocks.stock.findByOwners).toHaveBeenCalledWith(mocks.accessibleOwners, {
+    categoryIds: undefined,
+    locationIds: ['kitchen', 'fridge'],
+  });
 });

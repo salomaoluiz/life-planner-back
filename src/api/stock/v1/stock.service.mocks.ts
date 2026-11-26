@@ -4,6 +4,7 @@ import { StockService } from '@api/stock/v1/stock.service';
 import { GetFamilyMembersUseCase } from '@family/application/use-case/GetFamilyMembersUseCase';
 import { GetUserFamilyAccessUseCase } from '@family/application/use-case/GetUserFamilyAccessUseCase';
 import { GetCategoriesUseCase } from '@finance/application/use-case/GetCategoriesUseCase';
+import { GetCategoryIconsUseCase } from '@finance/application/use-case/GetCategoryIconsUseCase';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { category, day, item, location, lot } from '@stock/application/mocks/stock.mocks';
 import { toStockItemView } from '@stock/application/service/StockView';
@@ -55,6 +56,7 @@ const uses = {
   dismissLeftover: DismissLeftoverUseCase,
   findUsersByIds: FindUsersByIdsUseCase,
   getCategories: GetCategoriesUseCase,
+  getCategoryIcons: GetCategoryIconsUseCase,
   getConsumptionWeeks: GetConsumptionWeeksUseCase,
   getFamilyMembers: GetFamilyMembersUseCase,
   getFrequentStockItems: GetFrequentStockItemsUseCase,

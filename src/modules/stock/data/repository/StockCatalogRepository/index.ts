@@ -9,6 +9,7 @@ import ShoppingListEntity from '@stock/domain/entity/ShoppingListEntity';
 import StockCategoryEntity, { StockCatalogStatus } from '@stock/domain/entity/StockCategoryEntity';
 import StockLocationEntity from '@stock/domain/entity/StockLocationEntity';
 import {
+  CatalogMove,
   CreateStockCategoryParams,
   CreateStockLocationParams,
   IStockCatalogRepository,
@@ -21,7 +22,9 @@ function key(access: OwnerAccess) {
 }
 function toCategoryData(params: CreateStockCategoryParams) {
   return {
+    color: params.color,
     finance_category_id: params.financeCategoryId,
+    icon: params.icon,
     name: params.name,
     owner: params.owner,
     owner_id: params.ownerId,
@@ -30,9 +33,12 @@ function toCategoryData(params: CreateStockCategoryParams) {
 }
 function toLocationData(params: CreateStockLocationParams) {
   return {
+    color: params.color,
+    icon: params.icon,
     name: params.name,
     owner: params.owner,
     owner_id: params.ownerId,
+    parent_id: params.parentId,
   };
 }
 
@@ -79,12 +85,12 @@ export class StockCatalogRepository implements IStockCatalogRepository {
     await this.datasource.deleteByOwner(key(access));
   }
 
-  async deleteCategory(id: string): Promise<void> {
-    await this.datasource.deleteCategory(id);
+  async deleteCategory(id: string, move?: CatalogMove): Promise<void> {
+    await this.datasource.deleteCategory(id, move);
   }
 
-  async deleteLocation(id: string): Promise<void> {
-    await this.datasource.deleteLocation(id);
+  async deleteLocation(id: string, move?: CatalogMove): Promise<void> {
+    await this.datasource.deleteLocation(id, move);
   }
 
   async findCatalogByOwners(owners: OwnerAccess[]): Promise<{
@@ -131,9 +137,16 @@ export class StockCatalogRepository implements IStockCatalogRepository {
     await this.datasource.setCategoryStatus(ids, status as AccountStatus);
   }
 
+  async setLocationStatus(ids: string[], status: StockCatalogStatus): Promise<void> {
+    await this.datasource.setLocationStatus(ids, status as AccountStatus);
+  }
+
   async updateCategory(params: UpdateStockCategoryParams): Promise<StockCategoryEntity> {
     const row = await this.datasource.updateCategory({
+      cascade: params.cascade,
+      color: params.color,
       finance_category_id: params.financeCategoryId,
+      icon: params.icon,
       id: params.id,
       name: params.name,
       parent_id: params.parentId,
@@ -144,9 +157,12 @@ export class StockCatalogRepository implements IStockCatalogRepository {
 
   async updateLocation(params: UpdateStockLocationParams): Promise<StockLocationEntity> {
     const row = await this.datasource.updateLocation({
+      cascade: params.cascade,
+      color: params.color,
+      icon: params.icon,
       id: params.id,
       name: params.name,
-      status: params.status as AccountStatus | undefined,
+      parent_id: params.parentId,
     });
 
     return StockMapper.toLocation(row);
