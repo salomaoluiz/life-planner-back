@@ -3,6 +3,18 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [7.0.0] - 2026-11-26
+
+### Changed
+
+- **Breaking:** `GET /stock/locations` returns a tree (`children`, `parentId`, `color`, `icon`, `owner`, `ownerId`) and the location name is unique per sibling; `owner`/`ownerId` are optional on the category and location lists (none = every readable owner) and `itemCount` counts the subtree (spec 125).
+
+### Added
+
+- Stock categories and locations carry `color` and `icon` (required on create, `ICON_NOT_FOUND` 422); locations nest one level (`parentId`), archive with their children, and the item list filter, owner change and `GET /stock/locations/:id` (`parentId`, `path`) follow the tree (spec 125).
+- `PATCH` on a category or location takes `applyToChildren` + `childColors` to restyle the active descendants in one transaction; suggestions take `keys` and create with their color and icon; stock/home icons join the shared catalog (spec 125).
+- `DELETE /stock/categories|locations/:id?moveTo=<id>|none` moves the items of the subtree and deletes it in one transaction (`INVALID_MOVE_TARGET` 422; no `moveTo` with items stays 409 `{ itemCount }`) (spec 125).
+
 ## [6.7.0] - 2026-11-25
 
 ### Added

@@ -24,6 +24,7 @@ const datasource = {
   findLocationById: jest.fn(),
   findLocations: jest.fn(),
   setCategoryStatus: jest.fn(),
+  setLocationStatus: jest.fn(),
   updateCategory: jest.fn(),
   updateLocation: jest.fn(),
 };

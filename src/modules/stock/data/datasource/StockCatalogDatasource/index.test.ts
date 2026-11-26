@@ -18,11 +18,13 @@ describe('categories', () => {
   it('SHOULD create one and many (in one transaction)', async () => {
     spies.categoryCreate.mockImplementation(async ({ data }) => data);
 
-    expect(await setup.createCategory({ ...mocks.key, name: 'A' })).toMatchObject({ name: 'A' });
+    expect(
+      await setup.createCategory({ ...mocks.key, color: '#112233', icon: 'cart', name: 'A' }),
+    ).toMatchObject({ name: 'A' });
     expect(
       await setup.createCategories([
-        { ...mocks.key, name: 'B' },
-        { ...mocks.key, name: 'C' },
+        { ...mocks.key, color: '#112233', icon: 'cart', name: 'B' },
+        { ...mocks.key, color: '#112233', icon: 'cart', name: 'C' },
       ]),
     ).toHaveLength(2);
     expect(spies.transaction).toHaveBeenCalledTimes(1);
@@ -60,14 +62,18 @@ describe('locations', () => {
   it('SHOULD create one and many', async () => {
     spies.locationCreate.mockImplementation(async ({ data }) => data);
 
-    expect(await setup.createLocation({ ...mocks.key, name: 'A' })).toMatchObject({ name: 'A' });
-    expect(await setup.createLocations([{ ...mocks.key, name: 'B' }])).toHaveLength(1);
+    expect(
+      await setup.createLocation({ ...mocks.key, color: '#112233', icon: 'archive', name: 'A' }),
+    ).toMatchObject({ name: 'A' });
+    expect(
+      await setup.createLocations([{ ...mocks.key, color: '#112233', icon: 'archive', name: 'B' }]),
+    ).toHaveLength(1);
   });
 
   it('SHOULD find, update and delete', async () => {
     await setup.findLocations(mocks.key);
     await setup.findLocationById('l');
-    await setup.updateLocation({ id: 'l', status: 'ARCHIVED' });
+    await setup.updateLocation({ id: 'l', name: 'N' });
     await setup.deleteLocation('l');
 
     expect(spies.locationFindMany).toHaveBeenCalledWith({
@@ -76,7 +82,7 @@ describe('locations', () => {
     });
     expect(spies.locationFindUnique).toHaveBeenCalledWith({ where: { id: 'l' } });
     expect(spies.locationUpdate).toHaveBeenCalledWith({
-      data: { status: 'ARCHIVED' },
+      data: { name: 'N' },
       where: { id: 'l' },
     });
     expect(spies.locationDeleteMany).toHaveBeenCalledWith({ where: { id: 'l' } });
@@ -108,5 +114,70 @@ it('SHOULD read the categories and locations of several owners in two statements
   expect(spies.categoryFindMany).toHaveBeenCalledWith({
     orderBy: { name: 'asc' },
     where: { OR: [mocks.key, { owner: 'FAMILY', owner_id: 'f' }] },
+  });
+});
+
+describe('delete with move (spec 125 FR 22)', () => {
+  it('SHOULD move the items of the subtree and delete the category in one transaction', async () => {
+    await setup.deleteCategory('c', { from: ['c', 'k'], to: 'other' });
+
+    expect(spies.itemUpdateMany).toHaveBeenCalledWith({
+      data: { category_id: 'other' },
+      where: { category_id: { in: ['c', 'k'] } },
+    });
+    expect(spies.categoryDeleteMany).toHaveBeenCalledWith({ where: { id: 'c' } });
+    expect(spies.transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it('SHOULD clear the location of the items WHEN the target is none', async () => {
+    await setup.deleteLocation('l', { from: ['l'], to: null });
+
+    expect(spies.itemUpdateMany).toHaveBeenCalledWith({
+      data: { location_id: null },
+      where: { location_id: { in: ['l'] } },
+    });
+    expect(spies.locationDeleteMany).toHaveBeenCalledWith({ where: { id: 'l' } });
+  });
+});
+
+describe('appearance cascade (spec 125 FR 12)', () => {
+  const cascade = { colors: { k1: '#111111', k2: '#222222' }, icon: 'fridge', ids: ['k1', 'k2'] };
+
+  it('SHOULD update the category and push the icon and each tone in the same transaction', async () => {
+    await setup.updateCategory({ cascade, color: '#000000', icon: 'fridge', id: 'c' });
+
+    expect(spies.categoryUpdate).toHaveBeenCalledWith({
+      data: { color: '#000000', icon: 'fridge' },
+      where: { id: 'c' },
+    });
+    expect(spies.categoryUpdateMany).toHaveBeenCalledWith({
+      data: { icon: 'fridge' },
+      where: { id: { in: ['k1', 'k2'] } },
+    });
+    expect(spies.categoryUpdateMany).toHaveBeenCalledWith({
+      data: { color: '#222222' },
+      where: { id: { in: ['k2'] } },
+    });
+    expect(spies.transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it('SHOULD do the same for a location and set the status of many', async () => {
+    await setup.updateLocation({ cascade, id: 'l' });
+    await setup.setLocationStatus(['l', 'k1'], 'ARCHIVED');
+
+    expect(spies.locationUpdateMany).toHaveBeenCalledWith({
+      data: { icon: 'fridge' },
+      where: { id: { in: ['k1', 'k2'] } },
+    });
+    expect(spies.locationUpdateMany).toHaveBeenCalledWith({
+      data: { status: 'ARCHIVED' },
+      where: { id: { in: ['l', 'k1'] } },
+    });
+  });
+
+  it('SHOULD skip the icon write WHEN only tones were sent', async () => {
+    await setup.updateCategory({ cascade: { colors: { k1: '#111111' }, ids: ['k1'] }, id: 'c' });
+
+    expect(spies.categoryUpdateMany).toHaveBeenCalledTimes(1);
   });
 });

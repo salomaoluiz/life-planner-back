@@ -19,7 +19,9 @@ it('SHOULD create categories (one and many) translating the columns AND map them
   datasource.createCategory.mockResolvedValue({});
   datasource.createCategories.mockResolvedValue([{}, {}]);
   const params = {
+    color: '#112233',
     financeCategoryId: 'f',
+    icon: 'cart',
     name: 'Dairy',
     owner: OwnerType.USER,
     ownerId: 'user',
@@ -28,7 +30,9 @@ it('SHOULD create categories (one and many) translating the columns AND map them
 
   expect(await setup.createCategory(params)).toEqual({ id: 'category' });
   expect(datasource.createCategory).toHaveBeenCalledWith({
+    color: '#112233',
     finance_category_id: 'f',
+    icon: 'cart',
     name: 'Dairy',
     owner: 'USER',
     owner_id: 'user',
@@ -40,25 +44,35 @@ it('SHOULD create categories (one and many) translating the columns AND map them
 it('SHOULD create locations (one and many) AND map them', async () => {
   datasource.createLocation.mockResolvedValue({});
   datasource.createLocations.mockResolvedValue([{}]);
-  const params = { name: 'Pantry', owner: OwnerType.USER, ownerId: 'user' };
+  const params = {
+    color: '#112233',
+    icon: 'archive',
+    name: 'Pantry',
+    owner: OwnerType.USER,
+    ownerId: 'user',
+    parentId: 'p',
+  };
 
   expect(await setup.createLocation(params)).toEqual({ id: 'location' });
   expect(await setup.createLocations([params])).toEqual([{ id: 'location' }]);
   expect(datasource.createLocation).toHaveBeenCalledWith({
+    color: '#112233',
+    icon: 'archive',
     name: 'Pantry',
     owner: 'USER',
     owner_id: 'user',
+    parent_id: 'p',
   });
 });
 
 it('SHOULD delegate deletes and the purge by owner', async () => {
   await setup.deleteByOwner(owner);
-  await setup.deleteCategory('c');
+  await setup.deleteCategory('c', { from: ['c'], to: 'o' });
   await setup.deleteLocation('l');
 
   expect(datasource.deleteByOwner).toHaveBeenCalledWith(key);
-  expect(datasource.deleteCategory).toHaveBeenCalledWith('c');
-  expect(datasource.deleteLocation).toHaveBeenCalledWith('l');
+  expect(datasource.deleteCategory).toHaveBeenCalledWith('c', { from: ['c'], to: 'o' });
+  expect(datasource.deleteLocation).toHaveBeenCalledWith('l', undefined);
 });
 
 it('SHOULD find and map, returning undefined for a missing row', async () => {
@@ -83,22 +97,37 @@ it('SHOULD update and set statuses', async () => {
     await setup.updateCategory({ financeCategoryId: null, id: 'c', name: 'N', parentId: 'p' }),
   ).toEqual({ id: 'category' });
   expect(datasource.updateCategory).toHaveBeenCalledWith({
+    cascade: undefined,
+    color: undefined,
     finance_category_id: null,
+    icon: undefined,
     id: 'c',
     name: 'N',
     parent_id: 'p',
   });
-  expect(await setup.updateLocation({ id: 'l', status: StockCatalogStatus.ARCHIVED })).toEqual({
-    id: 'location',
-  });
+  expect(
+    await setup.updateLocation({
+      cascade: { colors: {}, ids: ['k'] },
+      color: '#112233',
+      icon: 'fridge',
+      id: 'l',
+      parentId: null,
+    }),
+  ).toEqual({ id: 'location' });
   expect(datasource.updateLocation).toHaveBeenCalledWith({
+    cascade: { colors: {}, ids: ['k'] },
+    color: '#112233',
+    icon: 'fridge',
     id: 'l',
     name: undefined,
-    status: 'ARCHIVED',
+    parent_id: null,
   });
 
   await setup.setCategoryStatus(['a'], StockCatalogStatus.ACTIVE);
   expect(datasource.setCategoryStatus).toHaveBeenCalledWith(['a'], 'ACTIVE');
+
+  await setup.setLocationStatus(['b'], StockCatalogStatus.ARCHIVED);
+  expect(datasource.setLocationStatus).toHaveBeenCalledWith(['b'], 'ARCHIVED');
 });
 
 it('SHOULD read the catalog of several owners at once AND map both lists', async () => {

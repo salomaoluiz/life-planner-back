@@ -1,4 +1,11 @@
-import { depthOf, descendantIds, effectiveFinanceCategoryId, pathOf, subtreeHeight } from './index';
+import {
+  depthOf,
+  descendantIds,
+  effectiveFinanceCategoryId,
+  MAX_LOCATION_DEPTH,
+  pathOf,
+  subtreeHeight,
+} from './index';
 
 const categories = [
   { financeCategoryId: 'fin-1', id: 'dairy', name: 'Dairy' },
@@ -27,4 +34,8 @@ it('SHOULD inherit the finance mapping from the closest mapped ancestor', () => 
 it('SHOULD measure the subtree height', () => {
   expect(subtreeHeight(categories, 'dairy')).toBe(2);
   expect(subtreeHeight(categories, 'meat')).toBe(0);
+});
+
+it('SHOULD limit locations to two levels', () => {
+  expect(MAX_LOCATION_DEPTH).toBe(2);
 });

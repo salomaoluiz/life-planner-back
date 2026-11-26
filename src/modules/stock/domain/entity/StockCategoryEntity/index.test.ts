@@ -4,7 +4,9 @@ import StockCategoryEntity, { StockCatalogStatus } from './index';
 
 const date = new Date('2026-11-10T00:00:00.000Z');
 const base = {
+  color: '#8A8F98',
   createdAt: date,
+  icon: 'package-variant',
   id: 'c',
   name: 'Dairy',
   owner: OwnerType.USER,

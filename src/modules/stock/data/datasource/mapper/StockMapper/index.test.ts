@@ -76,7 +76,9 @@ describe('toMovement', () => {
 describe('toCategory / toLocation', () => {
   it('SHOULD map a category with its parent and finance mapping', () => {
     expect(StockMapper.toCategory(mocks.rawCategory)).toMatchObject({
+      color: '#F59E0B',
       financeCategoryId: 'fin',
+      icon: 'cart',
       name: 'Dairy',
       parentId: 'parent',
       status: 'ACTIVE',
@@ -89,10 +91,16 @@ describe('toCategory / toLocation', () => {
 
   it('SHOULD map a location', () => {
     expect(StockMapper.toLocation(mocks.rawLocation)).toMatchObject({
+      color: '#3B82F6',
+      icon: 'fridge',
       name: 'Pantry',
       owner: 'FAMILY',
+      parentId: 'kitchen',
       status: 'ARCHIVED',
     });
+    expect(
+      StockMapper.toLocation({ ...mocks.rawLocation, parent_id: null }).parentId,
+    ).toBeUndefined();
   });
 });
 

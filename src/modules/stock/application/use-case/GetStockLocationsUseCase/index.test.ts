@@ -32,3 +32,21 @@ it('SHOULD return the active locations with item counts, and the archived ones o
 it('SHOULD answer 404 for an owner the caller cannot reach', async () => {
   await expect(setup.execute({ ...input, ownerId: 'other' })).rejects.toThrow(NotFoundException);
 });
+
+it('SHOULD count the sub-locations in the parent and read every owner WHEN none is given', async () => {
+  mocks.catalog.findLocations.mockResolvedValue([
+    location('kitchen'),
+    location('fridge', { parentId: 'kitchen' }),
+  ]);
+  mocks.catalog.countItemsByLocation.mockResolvedValue(
+    new Map([
+      ['fridge', 2],
+      ['kitchen', 1],
+    ]),
+  );
+
+  const rows = await setup.execute({ accessibleOwners: mocks.accessibleOwners });
+
+  expect(mocks.catalog.findLocations).toHaveBeenCalledTimes(mocks.accessibleOwners.length);
+  expect(rows[0]).toMatchObject({ itemCount: 3 });
+});

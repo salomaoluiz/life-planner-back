@@ -6,7 +6,9 @@ export enum StockCatalogStatus {
 }
 
 interface IStockCategoryEntity {
+  color: string;
   createdAt: Date;
+  icon: string;
   id: string;
   name: string;
   owner: OwnerType;
@@ -19,8 +21,10 @@ interface IStockCategoryEntity {
 }
 
 class StockCategoryEntity {
+  color: string;
   createdAt: Date;
   financeCategoryId?: string;
+  icon: string;
   id: string;
   name: string;
   owner: OwnerType;
@@ -30,8 +34,10 @@ class StockCategoryEntity {
   updatedAt: Date;
 
   constructor(params: IStockCategoryEntity) {
+    this.color = params.color;
     this.createdAt = params.createdAt;
     this.financeCategoryId = params.financeCategoryId;
+    this.icon = params.icon;
     this.id = params.id;
     this.name = params.name;
     this.owner = params.owner;

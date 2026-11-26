@@ -8,6 +8,8 @@ import { mocks, setup } from './index.mocks';
 
 const input = {
   accessibleOwners: mocks.accessibleOwners,
+  color: '#F59E0B',
+  icon: 'cart',
   name: 'Dairy',
   owner: OwnerType.USER,
   ownerId: 'user-id',
@@ -26,7 +28,9 @@ it('SHOULD create a root category with a finance mapping to an active expense ca
   });
 
   expect(mocks.catalog.createCategory).toHaveBeenCalledWith({
+    color: '#F59E0B',
     financeCategoryId: 'fin',
+    icon: 'cart',
     name: 'Dairy',
     owner: 'USER',
     ownerId: 'user-id',
@@ -88,4 +92,12 @@ it('SHOULD answer 404 for a foreign owner and 422 for an archived family', async
       ownerId: 'family-id',
     }),
   ).rejects.toThrow(UnprocessableEntityException);
+});
+
+it('SHOULD refuse an icon missing from the catalog with 422 ICON_NOT_FOUND, and an invalid color', async () => {
+  await expect(setup.execute({ ...input, icon: 'nope', iconCatalog: ['cart'] })).rejects.toThrow(
+    UnprocessableEntityException,
+  );
+  await expect(setup.execute({ ...input, color: 'red' })).rejects.toThrow();
+  expect(mocks.catalog.createCategory).not.toHaveBeenCalled();
 });

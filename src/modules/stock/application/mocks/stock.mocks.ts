@@ -61,13 +61,16 @@ export function catalogRepositoryMock() {
     findLocationById: jest.fn(),
     findLocations: jest.fn().mockResolvedValue([]),
     setCategoryStatus: jest.fn().mockResolvedValue(undefined),
+    setLocationStatus: jest.fn().mockResolvedValue(undefined),
     updateCategory: jest.fn(),
     updateLocation: jest.fn(),
   };
 }
 export function category(id: string, extra: Partial<StockCategoryEntity> = {}) {
   return new StockCategoryEntity({
+    color: '#8A8F98',
     createdAt: date,
+    icon: 'package-variant',
     id,
     name: `Category ${id}`,
     owner: OwnerType.USER,
@@ -90,7 +93,9 @@ export function item(
 }
 export function location(id: string, extra: Partial<StockLocationEntity> = {}) {
   return new StockLocationEntity({
+    color: '#8A8F98',
     createdAt: date,
+    icon: 'package-variant',
     id,
     name: `Location ${id}`,
     owner: OwnerType.USER,

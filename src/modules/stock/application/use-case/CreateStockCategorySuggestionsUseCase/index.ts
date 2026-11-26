@@ -9,9 +9,10 @@ import {
 import { ensureCatalogWritable } from '@stock/application/service/CatalogAccess';
 import StockCategoryEntity from '@stock/domain/entity/StockCategoryEntity';
 import { IStockCatalogRepository } from '@stock/domain/repository';
-import { defaultCategoryNames } from '@stock/domain/service/StockDefaults';
+import { categorySuggestions, pickSuggestions } from '@stock/domain/service/StockDefaults';
 
-// FR 23: "Use suggestions" creates the editable defaults for an owner with no categories (409 otherwise).
+// FR 23 + spec 125 FR 24: creates the chosen (default: all) editable suggestions, with their color and icon, for an
+// owner with no categories (409 otherwise).
 export class CreateStockCategorySuggestionsUseCase implements UseCaseWithParams<
   CreateStockSuggestionsInput,
   StockCategoryEntity[]
@@ -32,11 +33,15 @@ export class CreateStockCategorySuggestionsUseCase implements UseCaseWithParams<
     }
 
     return this.catalogRepository.createCategories(
-      defaultCategoryNames(input.language).map((name) => ({
-        name,
-        owner: input.owner,
-        ownerId: input.ownerId,
-      })),
+      pickSuggestions(categorySuggestions(input.language), input.keys).map(
+        ({ color, icon, name }) => ({
+          color,
+          icon,
+          name,
+          owner: input.owner,
+          ownerId: input.ownerId,
+        }),
+      ),
     );
   }
 }

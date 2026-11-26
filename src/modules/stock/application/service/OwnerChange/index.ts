@@ -18,7 +18,7 @@ function same(a: string, b: string) {
   return a.toLowerCase() === b.toLowerCase();
 }
 
-// Spec 116 FR 27: the category (by full path) and the location (by name) are replaced by the ACTIVE row with the
+// Spec 116 FR 27 and spec 125 FR 17: the category and the location (both by full path) are replaced by the ACTIVE row with the
 // same name (case-insensitive) in the new owner, or cleared.
 export function planOwnerChange(
   item: { categoryId?: string; locationId?: string; shoppingListId?: string },
@@ -34,7 +34,7 @@ export function planOwnerChange(
   },
 ): OwnerChangePlan {
   const fromCategory = item.categoryId ? pathOf(source.categories, item.categoryId) : null;
-  const fromLocation = source.locations.find((row) => row.id === item.locationId)?.name ?? null;
+  const fromLocation = item.locationId ? pathOf(source.locations, item.locationId) || null : null;
   const toCategory = fromCategory
     ? target.categories.find(
         (row) =>
@@ -44,7 +44,9 @@ export function planOwnerChange(
     : undefined;
   const toLocation = fromLocation
     ? target.locations.find(
-        (row) => row.status === StockCatalogStatus.ACTIVE && same(row.name, fromLocation),
+        (row) =>
+          row.status === StockCatalogStatus.ACTIVE &&
+          same(pathOf(target.locations, row.id), fromLocation),
       )
     : undefined;
 
@@ -64,7 +66,10 @@ export function planOwnerChange(
         from: fromCategory,
         to: toCategory ? pathOf(target.categories, toCategory.id) : null,
       },
-      location: { from: fromLocation, to: toLocation?.name ?? null },
+      location: {
+        from: fromLocation,
+        to: toLocation ? pathOf(target.locations, toLocation.id) : null,
+      },
       shoppingList: { from: fromList, to: toList?.name ?? null },
     },
     shoppingListId: toList?.id ?? null,

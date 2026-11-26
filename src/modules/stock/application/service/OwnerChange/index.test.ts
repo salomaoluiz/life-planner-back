@@ -8,7 +8,9 @@ import { planOwnerChange } from './index';
 const date = new Date('2026-01-01T00:00:00.000Z');
 function category(id: string, name: string, extra: Partial<StockCategoryEntity> = {}) {
   return new StockCategoryEntity({
+    color: '#8A8F98',
     createdAt: date,
+    icon: 'package-variant',
     id,
     name,
     owner: OwnerType.USER,
@@ -20,7 +22,9 @@ function category(id: string, name: string, extra: Partial<StockCategoryEntity> 
 }
 function location(id: string, name: string, status = StockCatalogStatus.ACTIVE) {
   return new StockLocationEntity({
+    color: '#8A8F98',
     createdAt: date,
+    icon: 'package-variant',
     id,
     name,
     owner: OwnerType.USER,
@@ -123,4 +127,27 @@ it('SHOULD replace the shopping list by the active one with the same name in the
     preview: { shoppingList: { from: 'Pharmacy', to: null } },
     shoppingListId: null,
   });
+});
+
+it('SHOULD match a sub-location by its full path (spec 125 FR 17)', () => {
+  const sourceWithPath = {
+    ...source,
+    locations: [
+      location('s-kitchen', 'Kitchen'),
+      { ...location('s-fridge', 'Fridge'), parentId: 's-kitchen' },
+    ],
+  };
+  const target = {
+    categories: [],
+    locations: [
+      location('t-kitchen', 'kitchen'),
+      { ...location('t-fridge', 'FRIDGE'), parentId: 't-kitchen' },
+      location('t-fridge-root', 'Fridge'),
+    ],
+    shoppingLists: [],
+  };
+  const plan = planOwnerChange({ locationId: 's-fridge' }, sourceWithPath, target);
+
+  expect(plan.locationId).toBe('t-fridge');
+  expect(plan.preview.location).toEqual({ from: 'Kitchen / Fridge', to: 'kitchen / FRIDGE' });
 });

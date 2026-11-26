@@ -8,6 +8,7 @@ import {
   StockCategoryNodeOutput,
   StockItemApiOutput,
   StockListItemApiOutput,
+  StockLocationNodeOutput,
   UpdateStockCategoryApiInput,
   UpdateStockItemApiInput,
   UpdateStockLocationApiInput,
@@ -16,6 +17,7 @@ import {
 import { GetFamilyMembersUseCase } from '@family/application/use-case/GetFamilyMembersUseCase';
 import { GetUserFamilyAccessUseCase } from '@family/application/use-case/GetUserFamilyAccessUseCase';
 import { GetCategoriesUseCase } from '@finance/application/use-case/GetCategoriesUseCase';
+import { GetCategoryIconsUseCase } from '@finance/application/use-case/GetCategoryIconsUseCase';
 import { AccountStatus, TransactionType } from '@finance/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { StockItemView } from '@stock/application/service/StockView';
@@ -85,7 +87,7 @@ export function toListItemOutput(view: StockItemView): StockListItemApiOutput {
           },
         }
       : {}),
-    location: view.location ?? null,
+    location: view.location ? { ...view.location, parentId: view.location.parentId ?? null } : null,
     locationId: item.locationId ?? null,
     minQuantity: item.minQuantity ?? null,
     nearestExpiration: dayOrNull(view.nearestExpiration),
@@ -129,7 +131,9 @@ function forecastOutput(view: StockItemView) {
 }
 function toCategoryOutput(category: StockCategoryEntity) {
   return {
+    color: category.color,
     financeCategoryId: category.financeCategoryId ?? null,
+    icon: category.icon,
     id: category.id,
     name: category.name,
     owner: category.owner,
@@ -170,13 +174,17 @@ function toItemOutput(view: StockItemView): StockItemApiOutput {
       : null,
   };
 }
-function toLocationOutput(location: StockLocationEntity, itemCount?: number) {
+function toLocationOutput(location: StockLocationEntity, itemCount?: number, path?: string) {
   return {
+    color: location.color,
+    icon: location.icon,
     id: location.id,
     ...(itemCount === undefined ? {} : { itemCount }),
     name: location.name,
     owner: location.owner,
     ownerId: location.ownerId,
+    parentId: location.parentId ?? null,
+    ...(path === undefined ? {} : { path }),
     status: location.status,
   };
 }
@@ -196,6 +204,7 @@ export class StockService {
     private readonly findUsersByIdsUseCase: FindUsersByIdsUseCase,
     private readonly dismissLeftoverUseCase: DismissLeftoverUseCase,
     private readonly getCategoriesUseCase: GetCategoriesUseCase,
+    private readonly getCategoryIconsUseCase: GetCategoryIconsUseCase,
     private readonly getConsumptionWeeksUseCase: GetConsumptionWeeksUseCase,
     private readonly getFamilyMembersUseCase: GetFamilyMembersUseCase,
     private readonly getFrequentStockItemsUseCase: GetFrequentStockItemsUseCase,
@@ -235,13 +244,14 @@ export class StockService {
         ...input,
         accessibleOwners,
         financeCategories,
+        iconCatalog: await this.iconCatalog(input.icon),
       }),
     );
   }
 
   async createCategorySuggestions(
     userId: string,
-    input: { owner: OwnerType; ownerId: string },
+    input: { keys?: string[]; owner: OwnerType; ownerId: string },
     language: 'en-US' | 'pt-BR',
   ) {
     const accessibleOwners = await this.getAccessibleOwners(userId);
@@ -258,13 +268,17 @@ export class StockService {
     const accessibleOwners = await this.getAccessibleOwners(userId);
 
     return toLocationOutput(
-      await this.createStockLocationUseCase.execute({ ...input, accessibleOwners }),
+      await this.createStockLocationUseCase.execute({
+        ...input,
+        accessibleOwners,
+        iconCatalog: await this.iconCatalog(input.icon),
+      }),
     );
   }
 
   async createLocationSuggestions(
     userId: string,
-    input: { owner: OwnerType; ownerId: string },
+    input: { keys?: string[]; owner: OwnerType; ownerId: string },
     language: 'en-US' | 'pt-BR',
   ) {
     const accessibleOwners = await this.getAccessibleOwners(userId);
@@ -304,17 +318,19 @@ export class StockService {
     await this.deleteStockItemUseCase.execute({ accessibleOwners, id });
   }
 
-  async deleteCategory(userId: string, id: string): Promise<void> {
+  async deleteCategory(userId: string, id: string, moveTo?: string): Promise<void> {
     await this.deleteStockCategoryUseCase.execute({
       accessibleOwners: await this.getAccessibleOwners(userId),
       id,
+      moveTo,
     });
   }
 
-  async deleteLocation(userId: string, id: string): Promise<void> {
+  async deleteLocation(userId: string, id: string, moveTo?: string): Promise<void> {
     await this.deleteStockLocationUseCase.execute({
       accessibleOwners: await this.getAccessibleOwners(userId),
       id,
+      moveTo,
     });
   }
 
@@ -353,7 +369,7 @@ export class StockService {
 
   async findCategories(
     userId: string,
-    query: { includeArchived: boolean; owner: OwnerType; ownerId: string },
+    query: { includeArchived: boolean; owner?: OwnerType; ownerId?: string },
   ) {
     const rows = await this.getStockCategoriesUseCase.execute({
       ...query,
@@ -364,11 +380,15 @@ export class StockService {
         category.id,
         {
           children: [],
+          color: category.color,
           effectiveFinanceCategoryId: effectiveFinanceCategoryId ?? null,
           financeCategoryId: category.financeCategoryId ?? null,
+          icon: category.icon,
           id: category.id,
           itemCount,
           name: category.name,
+          owner: category.owner,
+          ownerId: category.ownerId,
           parentId: category.parentId ?? null,
           status: category.status,
         },
@@ -413,24 +433,49 @@ export class StockService {
   }
 
   async findLocationById(userId: string, id: string) {
-    const { itemCount, location } = await this.getStockLocationByIdUseCase.execute({
+    const { itemCount, location, path } = await this.getStockLocationByIdUseCase.execute({
       accessibleOwners: await this.getAccessibleOwners(userId),
       id,
     });
 
-    return toLocationOutput(location, itemCount);
+    return toLocationOutput(location, itemCount, path);
   }
 
   async findLocations(
     userId: string,
-    query: { includeArchived: boolean; owner: OwnerType; ownerId: string },
+    query: { includeArchived: boolean; owner?: OwnerType; ownerId?: string },
   ) {
     const rows = await this.getStockLocationsUseCase.execute({
       ...query,
       accessibleOwners: await this.getAccessibleOwners(userId),
     });
 
-    return { items: rows.map(({ itemCount, location }) => toLocationOutput(location, itemCount)) };
+    const nodes = new Map<string, StockLocationNodeOutput>(
+      rows.map(({ itemCount, location }) => [
+        location.id,
+        {
+          children: [],
+          color: location.color,
+          icon: location.icon,
+          id: location.id,
+          itemCount,
+          name: location.name,
+          owner: location.owner,
+          ownerId: location.ownerId,
+          parentId: location.parentId ?? null,
+          status: location.status,
+        },
+      ]),
+    );
+    const roots: StockLocationNodeOutput[] = [];
+
+    for (const node of nodes.values()) {
+      const parent = node.parentId ? nodes.get(node.parentId) : undefined;
+
+      (parent ? parent.children : roots).push(node);
+    }
+
+    return { items: roots };
   }
 
   async findMovements(userId: string, itemId: string, cursor?: string) {
@@ -527,6 +572,7 @@ export class StockService {
         ...input,
         accessibleOwners,
         financeCategories,
+        iconCatalog: await this.iconCatalog(input.icon),
         id,
       }),
     );
@@ -537,6 +583,7 @@ export class StockService {
       await this.updateStockLocationUseCase.execute({
         ...input,
         accessibleOwners: await this.getAccessibleOwners(userId),
+        iconCatalog: await this.iconCatalog(input.icon),
         id,
       }),
     );
@@ -557,6 +604,7 @@ export class StockService {
   }
 
   // The finance categories the owner can use, as the rules need them (type and archived flag).
+  // Spec 125 section 6: the names of the shared icon catalog, read only when a request sends an icon.
   private async getFinanceCategories(accessibleOwners: OwnerAccess[], ownerId: string) {
     const categories = await this.getCategoriesUseCase.execute({
       accessibleOwners,
@@ -568,6 +616,16 @@ export class StockService {
       id: category.id,
       isExpense: category.type === TransactionType.EXPENSE,
     }));
+  }
+
+  private async iconCatalog(icon: string | undefined): Promise<string[] | undefined> {
+    if (icon === undefined) {
+      return undefined;
+    }
+
+    const icons = await this.getCategoryIconsUseCase.execute({});
+
+    return icons.map((entry) => entry.name);
   }
 
   // The owner of a stock category, to scope the finance categories of an update (404 stays the use case's job).

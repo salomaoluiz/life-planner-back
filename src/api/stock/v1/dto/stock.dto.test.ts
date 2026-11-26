@@ -1,10 +1,15 @@
 import {
   CatalogOwnerQuerySchema,
+  CatalogSuggestionsBodySchema,
+  CreateStockCategoryApiSchema,
   CreateStockItemApiSchema,
+  CreateStockLocationApiSchema,
   CreateStockMovementApiSchema,
+  DeleteCatalogQuerySchema,
   ListStockItemsQuerySchema,
   UpdateStockCategoryApiSchema,
   UpdateStockItemApiSchema,
+  UpdateStockLocationApiSchema,
 } from './stock.dto';
 
 const ownerId = '0b6a1e7c-3f4d-4b2a-8c9d-1e2f3a4b5c6d';
@@ -140,5 +145,53 @@ describe('query schemas', () => {
     ).toBe(true);
     expect(CatalogOwnerQuerySchema.parse({ owner: 'USER', ownerId }).includeArchived).toBe(false);
     expect(UpdateStockCategoryApiSchema.safeParse({}).success).toBe(false);
+  });
+});
+
+describe('spec 125 catalog schemas', () => {
+  const base = { color: '#F59E0B', icon: 'cart', name: 'Dairy', owner: 'USER', ownerId };
+
+  it('SHOULD accept no owner (all owners) but not only one of owner and ownerId', () => {
+    expect(CatalogOwnerQuerySchema.safeParse({}).success).toBe(true);
+    expect(CatalogOwnerQuerySchema.safeParse({ owner: 'USER' }).success).toBe(false);
+    expect(CatalogOwnerQuerySchema.safeParse({ ownerId }).success).toBe(false);
+  });
+
+  it('SHOULD require a #RRGGBB color and an icon on create', () => {
+    expect(CreateStockCategoryApiSchema.safeParse(base).success).toBe(true);
+    expect(CreateStockCategoryApiSchema.safeParse({ ...base, color: 'red' }).success).toBe(false);
+    expect(CreateStockCategoryApiSchema.safeParse({ ...base, icon: undefined }).success).toBe(
+      false,
+    );
+    expect(CreateStockLocationApiSchema.safeParse({ ...base, parentId: ownerId }).success).toBe(
+      true,
+    );
+    expect(CreateStockLocationApiSchema.safeParse({ ...base, color: undefined }).success).toBe(
+      false,
+    );
+  });
+
+  it('SHOULD accept appearance, parent and child tones on update', () => {
+    expect(
+      UpdateStockCategoryApiSchema.safeParse({
+        applyToChildren: true,
+        childColors: { [ownerId]: '#112233' },
+        color: '#445566',
+        icon: 'fridge',
+      }).success,
+    ).toBe(true);
+    expect(UpdateStockLocationApiSchema.safeParse({ parentId: null }).success).toBe(true);
+    expect(
+      UpdateStockLocationApiSchema.safeParse({ childColors: { [ownerId]: 'x' } }).success,
+    ).toBe(false);
+  });
+
+  it('SHOULD take a uuid or none as the delete decision, and optional suggestion keys', () => {
+    expect(DeleteCatalogQuerySchema.parse({}).moveTo).toBeUndefined();
+    expect(DeleteCatalogQuerySchema.parse({ moveTo: 'none' }).moveTo).toBe('none');
+    expect(DeleteCatalogQuerySchema.safeParse({ moveTo: 'x' }).success).toBe(false);
+    expect(
+      CatalogSuggestionsBodySchema.parse({ keys: ['DAIRY'], owner: 'USER', ownerId }).keys,
+    ).toEqual(['DAIRY']);
   });
 });

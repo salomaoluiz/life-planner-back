@@ -23,11 +23,13 @@ import {
   CreateStockCategoryBody,
   CreateStockLocationApiSchema,
   CreateStockLocationBody,
+  DeleteCatalogQuerySchema,
   StockCategoryListOutput,
   StockCategoryOutput,
   StockCategoryTreeOutput,
   StockLocationListOutput,
   StockLocationOutput,
+  StockLocationTreeOutput,
   UpdateStockCategoryApiSchema,
   UpdateStockCategoryBody,
   UpdateStockLocationApiSchema,
@@ -73,8 +75,16 @@ export class StockCategoryController {
   @ApiNoContentResponse()
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async delete(@Request() req: JwtPayload & Request, @Param('id', ParseUUIDPipe) id: string) {
-    await this.stockService.deleteCategory(req.user.id, id);
+  async delete(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: Record<string, unknown>,
+  ) {
+    await this.stockService.deleteCategory(
+      req.user.id,
+      id,
+      validate(DeleteCatalogQuerySchema, query).moveTo,
+    );
   }
 
   @Get()
@@ -129,12 +139,20 @@ export class StockLocationController {
   @ApiNoContentResponse()
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async delete(@Request() req: JwtPayload & Request, @Param('id', ParseUUIDPipe) id: string) {
-    await this.stockService.deleteLocation(req.user.id, id);
+  async delete(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: Record<string, unknown>,
+  ) {
+    await this.stockService.deleteLocation(
+      req.user.id,
+      id,
+      validate(DeleteCatalogQuerySchema, query).moveTo,
+    );
   }
 
   @Get()
-  @ZodResponse({ status: 200, type: StockLocationListOutput })
+  @ZodResponse({ status: 200, type: StockLocationTreeOutput })
   async findAll(@Request() req: JwtPayload & Request, @Query() query: Record<string, unknown>) {
     return this.stockService.findLocations(req.user.id, validate(CatalogOwnerQuerySchema, query));
   }

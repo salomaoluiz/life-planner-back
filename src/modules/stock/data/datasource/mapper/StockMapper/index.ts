@@ -15,8 +15,10 @@ import StockMovementEntity, {
 export class StockMapper {
   static toCategory(raw: StockCategory): StockCategoryEntity {
     return new StockCategoryEntity({
+      color: raw.color,
       createdAt: raw.created_at,
       financeCategoryId: raw.finance_category_id ?? undefined,
+      icon: raw.icon,
       id: raw.id,
       name: raw.name,
       owner: OwnerType[raw.owner],
@@ -83,11 +85,14 @@ export class StockMapper {
 
   static toLocation(raw: StockLocation): StockLocationEntity {
     return new StockLocationEntity({
+      color: raw.color,
       createdAt: raw.created_at,
+      icon: raw.icon,
       id: raw.id,
       name: raw.name,
       owner: OwnerType[raw.owner],
       ownerId: raw.owner_id,
+      parentId: raw.parent_id ?? undefined,
       status: StockCatalogStatus[raw.status],
       updatedAt: raw.updated_at,
     });

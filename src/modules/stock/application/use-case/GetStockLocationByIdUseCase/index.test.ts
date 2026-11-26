@@ -23,3 +23,29 @@ it('SHOULD answer 404 WHEN the location is missing or belongs to an owner the us
     NotFoundException,
   );
 });
+
+it('SHOULD count the sub-locations and return the path (spec 125 FR 16, 18)', async () => {
+  mocks.catalog.findLocationById.mockResolvedValue(location('kitchen', { name: 'Kitchen' }));
+  mocks.catalog.findLocations.mockResolvedValue([
+    location('kitchen', { name: 'Kitchen' }),
+    location('fridge', { name: 'Fridge', parentId: 'kitchen' }),
+  ]);
+  mocks.catalog.countItemsByLocation.mockResolvedValue(
+    new Map([
+      ['fridge', 2],
+      ['kitchen', 1],
+    ]),
+  );
+
+  const parent = await setup.execute({ accessibleOwners: mocks.accessibleOwners, id: 'kitchen' });
+
+  expect(parent).toMatchObject({ itemCount: 3, path: 'Kitchen' });
+
+  mocks.catalog.findLocationById.mockResolvedValue(
+    location('fridge', { name: 'Fridge', parentId: 'kitchen' }),
+  );
+
+  expect(
+    (await setup.execute({ accessibleOwners: mocks.accessibleOwners, id: 'fridge' })).path,
+  ).toBe('Kitchen / Fridge');
+});
