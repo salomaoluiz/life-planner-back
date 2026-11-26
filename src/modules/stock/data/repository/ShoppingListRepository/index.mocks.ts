@@ -14,6 +14,7 @@ const datasource = {
   ensureDefault: jest.fn(),
   findById: jest.fn(),
   findByOwners: jest.fn(),
+  findClosedPurchaseDates: jest.fn(),
   findRestockRows: jest.fn(),
   findRowById: jest.fn(),
   findRowsByLists: jest.fn(),

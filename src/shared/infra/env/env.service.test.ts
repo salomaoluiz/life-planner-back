@@ -53,6 +53,7 @@ const testCases: { key: EnvVarKey; method: EnvServiceKey }[] = [
   { key: 'DB_USER', method: 'dbUser' },
   { key: 'FINANCE_MATERIALIZATION_GATE_TTL_MS', method: 'financeMaterializationGateTtlMs' },
   { key: 'JWT_EXPIRES_IN', method: 'jwtExpiresIn' },
+  { key: 'STOCK_FORECAST_GATE_TTL_MS', method: 'stockForecastGateTtlMs' },
   { key: 'JWT_SECRET', method: 'jwtSecret' },
   { key: 'SENTRY_DSN', method: 'sentryDsn' },
   { key: 'SENTRY_ENABLED', method: 'sentryEnabled' },

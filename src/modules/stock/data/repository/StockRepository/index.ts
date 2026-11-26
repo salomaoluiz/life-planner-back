@@ -26,17 +26,28 @@ function toDatasourceOperation(operation: MovementOperation): MovementOperationD
       'create' in operation.lot
         ? {
             create: {
+              currency: operation.lot.create.currency,
               expiration_date: operation.lot.create.expirationDate,
               opened_at: operation.lot.create.openedAt,
               purchase_date: operation.lot.create.purchaseDate,
               quantity: operation.lot.create.quantity,
+              unit_price_cents: operation.lot.create.unitPriceCents,
             },
           }
         : operation.lot,
-    movement: operation.movement,
+    movement: operation.movement && {
+      currency: operation.movement.currency,
+      note: operation.movement.note,
+      quantity: operation.movement.quantity,
+      reason: operation.movement.reason,
+      type: operation.movement.type,
+      unit_price_cents: operation.movement.unitPriceCents,
+    },
     update: operation.update && {
+      currency: operation.update.currency,
       opened_at: operation.update.openedAt,
       quantity: operation.update.quantity,
+      unit_price_cents: operation.update.unitPriceCents,
     },
   };
 }
@@ -144,8 +155,8 @@ export class StockRepository implements IStockRepository {
     return this.stockDatasource.exists({ owner: access.owner, owner_id: access.ownerId });
   }
 
-  async findById(id: string): Promise<StockEntity | undefined> {
-    const result = await this.stockDatasource.findById(id);
+  async findById(id: string, withForecastRow = false): Promise<StockEntity | undefined> {
+    const result = await this.stockDatasource.findById(id, withForecastRow);
 
     return result ? StockMapper.toDomain(result) : undefined;
   }
@@ -157,6 +168,12 @@ export class StockRepository implements IStockRepository {
       .map((id) => rows.find((row) => row.id === id))
       .filter((row): row is NonNullable<typeof row> => row !== undefined)
       .map((row) => StockMapper.toDomain(row));
+  }
+
+  async findByLotId(lotId: string): Promise<StockEntity | undefined> {
+    const result = await this.stockDatasource.findByLotId(lotId);
+
+    return result ? StockMapper.toDomain(result) : undefined;
   }
 
   async findByOwners(owners: OwnerAccess[], filter?: StockFilter): Promise<StockEntity[]> {
@@ -172,8 +189,16 @@ export class StockRepository implements IStockRepository {
     return result.map((row) => StockMapper.toDomain(row));
   }
 
+  async findFirstDiscardDate(owners: OwnerAccess[]) {
+    return this.stockDatasource.findFirstDiscardDate(owners);
+  }
+
   async findFrequentItemIds(owners: OwnerAccess[], since: Date, limit: number): Promise<string[]> {
     return this.stockDatasource.findFrequentItemIds(owners, since, limit);
+  }
+
+  async findMovementDays(itemId: string, today: Date, windowDays: number) {
+    return this.stockDatasource.findMovementDays(itemId, today, windowDays);
   }
 
   async findMovements(
@@ -184,6 +209,33 @@ export class StockRepository implements IStockRepository {
     const rows = await this.stockDatasource.findMovements(itemId, limit, cursor);
 
     return rows.map((row) => StockMapper.toMovement(row));
+  }
+
+  async findStaleForecastItemIds(owners: OwnerAccess[], today: Date): Promise<string[]> {
+    return this.stockDatasource.findStaleForecastItemIds(owners, today);
+  }
+
+  async findWasteGroups(
+    owners: OwnerAccess[],
+    range: { from: Date; previousFrom: Date; to: Date },
+  ) {
+    return this.stockDatasource.findWasteGroups(owners, range);
+  }
+
+  async findWasteItems(owners: OwnerAccess[], range: { from: Date; to: Date }) {
+    return this.stockDatasource.findWasteItems(owners, range);
+  }
+
+  async findWasteRows(itemId: string, since: Date) {
+    return this.stockDatasource.findWasteRows(itemId, since);
+  }
+
+  async refreshForecasts(itemIds: string[], today: Date): Promise<void> {
+    await this.stockDatasource.refreshForecasts(itemIds, today);
+  }
+
+  async setLeftoverDismissal(lotId: string, quantity: null | number): Promise<void> {
+    await this.stockDatasource.setLeftoverDismissal(lotId, quantity);
   }
 
   async update(params: UpdateStockRepositoryParams): Promise<StockEntity> {

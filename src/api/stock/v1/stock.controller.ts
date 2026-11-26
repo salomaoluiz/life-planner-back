@@ -17,6 +17,7 @@ import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 
 import {
+  ConsumptionWeeksOutput,
   CreateStockItemApiSchema,
   CreateStockItemBody,
   CreateStockMovementApiSchema,
@@ -42,6 +43,8 @@ import {
   UndoGestureBody,
   UpdateStockItemApiSchema,
   UpdateStockItemBody,
+  WasteOutput,
+  WasteQuerySchema,
 } from '@api/stock/v1/dto/stock.dto';
 import { StockService } from '@api/stock/v1/stock.service';
 import { JwtPayload } from '@shared/infra/jwt/types';
@@ -102,6 +105,18 @@ export class StockController {
     const { today } = validate(DayQuerySchema, query);
 
     return this.stockService.findById(req.user.id, id, today);
+  }
+
+  @Get(':id/consumption-weeks')
+  @ZodResponse({ status: 200, type: ConsumptionWeeksOutput })
+  async findConsumptionWeeks(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: Record<string, unknown>,
+  ) {
+    const { today } = validate(DayQuerySchema, query);
+
+    return this.stockService.findConsumptionWeeks(req.user.id, id, today);
   }
 
   @Get(':id/movements')
@@ -170,6 +185,51 @@ export class StockFrequentController {
   @ZodResponse({ status: 200, type: StockFrequentOutput })
   async frequent(@Request() req: JwtPayload & Request, @Query() query: Record<string, unknown>) {
     return this.stockService.findFrequent(req.user.id, validate(FrequentQuerySchema, query));
+  }
+}
+
+// Spec 123 FR 29-31: the Waste screen of one month (no owner = every readable owner, archived families hidden).
+@ApiBearerAuth('JWT')
+@Controller({
+  path: 'stock/waste',
+  version: '1',
+})
+export class StockWasteController {
+  constructor(private readonly stockService: StockService) {}
+
+  @Get()
+  @ZodResponse({ status: 200, type: WasteOutput })
+  async find(@Request() req: JwtPayload & Request, @Query() query: Record<string, unknown>) {
+    const filters = validate(WasteQuerySchema, query);
+
+    return this.stockService.findWaste(req.user.id, filters);
+  }
+}
+
+// Spec 123 FR 25: the leftover warning of a lot can be dismissed (204) and the dismissal undone (204).
+@ApiBearerAuth('JWT')
+@Controller({
+  path: 'stock/lots',
+  version: '1',
+})
+export class StockLotController {
+  constructor(private readonly stockService: StockService) {}
+
+  @ApiNoContentResponse()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post(':id/leftover-dismissal')
+  async dismiss(@Request() req: JwtPayload & Request, @Param('id', ParseUUIDPipe) id: string) {
+    await this.stockService.dismissLeftover(req.user.id, id, true);
+  }
+
+  @ApiNoContentResponse()
+  @Delete(':id/leftover-dismissal')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async undoDismissal(
+    @Request() req: JwtPayload & Request,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    await this.stockService.dismissLeftover(req.user.id, id, false);
   }
 }
 

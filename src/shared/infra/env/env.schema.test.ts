@@ -36,6 +36,7 @@ describe('validateEnvironment', () => {
       SENTRY_ENABLED: false,
       SENTRY_TRACES_SAMPLE_RATE: 0,
       SESSION_IDLE_TTL_SECONDS: 172800,
+      STOCK_FORECAST_GATE_TTL_MS: 60000,
       SWAGGER_ENABLED: true,
       VERSION_CHECK_TTL_SECONDS: 600,
     });
@@ -94,6 +95,18 @@ describe('validateEnvironment', () => {
       PORT: 3000,
       SESSION_IDLE_TTL_SECONDS: 172800,
     });
+  });
+
+  it('SHOULD coerce the stock forecast gate TTL AND reject negative values (spec 123)', () => {
+    expect(
+      setup({ ...mocks.validConfig, STOCK_FORECAST_GATE_TTL_MS: '0' }).STOCK_FORECAST_GATE_TTL_MS,
+    ).toBe(0);
+    expect(
+      setup({ ...mocks.validConfig, STOCK_FORECAST_GATE_TTL_MS: '' }).STOCK_FORECAST_GATE_TTL_MS,
+    ).toBe(60000);
+    expect(
+      throwableSetup({ ...mocks.validConfig, STOCK_FORECAST_GATE_TTL_MS: '-1' }),
+    ).toBeInstanceOf(Error);
   });
 
   it('SHOULD coerce the materialization gate TTL AND reject negative values (spec 081)', () => {

@@ -405,6 +405,18 @@ enum StockMovementType {
   INITIAL
 }
 
+enum StockForecastStatus {
+  OK
+  INSUFFICIENT_DATA
+  NO_CONSUMPTION
+}
+
+enum StockDiscardValueSource {
+  LOT
+  ITEM_LAST
+  NONE
+}
+
 enum StockMovementReason {
   PURCHASE
   MANUAL
@@ -437,6 +449,16 @@ model StockItem {
   shopping_list_id           String?
   estimated_unit_price_cents Int?
   name_embedding             Unsupported("vector(1024)")?
+  // Spec 123: the forecast is stored here and written only by the forecast sync (movement transactions and the lazy refresh).
+  forecast_status            StockForecastStatus?
+  forecast_daily_rate        Decimal?                     @db.Decimal(14, 6)
+  forecast_min_date          DateTime?                    @db.Date
+  forecast_empty_date        DateTime?                    @db.Date
+  forecast_leftover_lot_id   String?
+  forecast_leftover_quantity Decimal?                     @db.Decimal(14, 3)
+  forecast_leftover_date     DateTime?                    @db.Date
+  forecast_waste_ratio_90d   Decimal?                     @db.Decimal(6, 4)
+  forecast_computed_on       DateTime?                    @db.Date
   created_at                 DateTime                     @default(now()) @db.Timestamptz(6)
   updated_at                 DateTime                     @updatedAt @db.Timestamptz(6)
 
@@ -445,6 +467,7 @@ model StockItem {
   lots               StockLot[]
   movements          StockMovement[]
   shopping_list      StockShoppingList?     @relation(fields: [shopping_list_id], references: [id], onDelete: SetNull)
+  leftover_lot       StockLot?              @relation("ItemLeftoverLot", fields: [forecast_leftover_lot_id], references: [id], onDelete: SetNull)
   shopping_list_rows StockShoppingListRow[]
   restock_dismissal  StockRestockDismissal?
   purchase_rows      StockPurchaseRow[]
@@ -460,6 +483,7 @@ enum ShoppingListRowOrigin {
   AUTO
   AUTO_EDITED
   MANUAL
+  FORECAST
 }
 
 // Spec 118: the partial unique indexes (one active default and one active name per owner) live in the migration.
@@ -473,6 +497,8 @@ model StockShoppingList {
   currency                    String        @default("BRL") @db.VarChar(3)
   default_market_id           String?
   default_finance_category_id String?
+  // Spec 123 FR 9: "I shop every N days" (CHECK 1-90 in the migration).
+  purchase_interval_days      Int           @default(7)
   created_at                  DateTime      @default(now()) @db.Timestamptz(6)
   updated_at                  DateTime      @updatedAt @db.Timestamptz(6)
 
@@ -520,17 +546,23 @@ model StockRestockDismissal {
 }
 
 model StockLot {
-  id              String    @id @default(uuid())
-  item_id         String
-  quantity        Decimal   @db.Decimal(14, 3)
-  expiration_date DateTime? @db.Date
-  purchase_date   DateTime? @db.Date
-  opened_at       DateTime? @db.Date
-  created_at      DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime  @updatedAt @db.Timestamptz(6)
+  id                          String    @id @default(uuid())
+  item_id                     String
+  quantity                    Decimal   @db.Decimal(14, 3)
+  expiration_date             DateTime? @db.Date
+  purchase_date               DateTime? @db.Date
+  opened_at                   DateTime? @db.Date
+  // Spec 123 FR 26: price per unit paid for the lot (CHECKs in the migration) and the dismissed leftover warning (FR 25).
+  unit_price_cents            Int?
+  currency                    String?   @db.VarChar(3)
+  leftover_dismissed_at       DateTime? @db.Timestamptz(6)
+  leftover_dismissed_quantity Decimal?  @db.Decimal(14, 3)
+  created_at                  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                  DateTime  @updatedAt @db.Timestamptz(6)
 
-  item      StockItem       @relation(fields: [item_id], references: [id], onDelete: Cascade)
-  movements StockMovement[]
+  item           StockItem       @relation(fields: [item_id], references: [id], onDelete: Cascade)
+  movements      StockMovement[]
+  leftover_items StockItem[]     @relation("ItemLeftoverLot")
 
   @@index([item_id])
   @@map("stock_lots")
@@ -538,17 +570,22 @@ model StockLot {
 
 // Immutable: no `updated_at`, no update or delete route.
 model StockMovement {
-  id         String               @id @default(uuid())
-  item_id    String
-  lot_id     String
-  type       StockMovementType
-  reason     StockMovementReason?
-  quantity   Decimal              @db.Decimal(14, 3)
-  note       String?              @db.VarChar(200)
-  user_id    String?
-  gesture_id String?              @db.Uuid
-  client_id  String?              @db.Uuid
-  created_at DateTime             @default(now()) @db.Timestamptz(6)
+  id               String                   @id @default(uuid())
+  item_id          String
+  lot_id           String
+  type             StockMovementType
+  reason           StockMovementReason?
+  quantity         Decimal                  @db.Decimal(14, 3)
+  note             String?                  @db.VarChar(200)
+  user_id          String?
+  gesture_id       String?                  @db.Uuid
+  client_id        String?                  @db.Uuid
+  // Spec 123: ENTRY price per unit; DISCARD value recorded at the moment (never recomputed), CHECKs in the migration.
+  unit_price_cents Int?
+  value_cents      Int?
+  currency         String?                  @db.VarChar(3)
+  value_source     StockDiscardValueSource?
+  created_at       DateTime                 @default(now()) @db.Timestamptz(6)
 
   item          StockItem          @relation(fields: [item_id], references: [id], onDelete: Cascade)
   lot           StockLot           @relation(fields: [lot_id], references: [id], onDelete: Cascade)

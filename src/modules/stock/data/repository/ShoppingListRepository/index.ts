@@ -79,6 +79,17 @@ export class ShoppingListRepository implements IShoppingListRepository {
     return rows.map((row) => ShoppingListMapper.toList(row));
   }
 
+  async findClosedPurchaseDates(listIds: string[]): Promise<Map<string, Date[]>> {
+    const rows = await this.datasource.findClosedPurchaseDates(listIds);
+    const byList = new Map<string, Date[]>();
+
+    for (const row of rows) {
+      byList.set(row.list_id, [...(byList.get(row.list_id) ?? []), row.purchase_date]);
+    }
+
+    return byList;
+  }
+
   async findRestockRows(owners: OwnerAccess[]): Promise<ShoppingRowRecord[]> {
     const rows = await this.datasource.findRestockRows(owners.map(toKey));
 
@@ -106,6 +117,7 @@ export class ShoppingListRepository implements IShoppingListRepository {
         id: params.id,
         is_default: params.isDefault,
         name: params.name,
+        purchase_interval_days: params.purchaseIntervalDays,
         status: params.status,
       }),
     );

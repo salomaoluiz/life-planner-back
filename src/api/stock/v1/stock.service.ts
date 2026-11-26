@@ -11,6 +11,7 @@ import {
   UpdateStockCategoryApiInput,
   UpdateStockItemApiInput,
   UpdateStockLocationApiInput,
+  WasteApiOutput,
 } from '@api/stock/v1/dto/stock.dto';
 import { GetFamilyMembersUseCase } from '@family/application/use-case/GetFamilyMembersUseCase';
 import { GetUserFamilyAccessUseCase } from '@family/application/use-case/GetUserFamilyAccessUseCase';
@@ -27,6 +28,8 @@ import { CreateStockMovementUseCase } from '@stock/application/use-case/CreateSt
 import { DeleteStockCategoryUseCase } from '@stock/application/use-case/DeleteStockCategoryUseCase';
 import { DeleteStockItemUseCase } from '@stock/application/use-case/DeleteStockItemUseCase';
 import { DeleteStockLocationUseCase } from '@stock/application/use-case/DeleteStockLocationUseCase';
+import { DismissLeftoverUseCase } from '@stock/application/use-case/DismissLeftoverUseCase';
+import { GetConsumptionWeeksUseCase } from '@stock/application/use-case/GetConsumptionWeeksUseCase';
 import { GetFrequentStockItemsUseCase } from '@stock/application/use-case/GetFrequentStockItemsUseCase';
 import { GetOwnerChangePreviewUseCase } from '@stock/application/use-case/GetOwnerChangePreviewUseCase';
 import { GetStockCategoriesUseCase } from '@stock/application/use-case/GetStockCategoriesUseCase';
@@ -35,6 +38,7 @@ import { GetStockItemsUseCase } from '@stock/application/use-case/GetStockItemsU
 import { GetStockLocationByIdUseCase } from '@stock/application/use-case/GetStockLocationByIdUseCase';
 import { GetStockLocationsUseCase } from '@stock/application/use-case/GetStockLocationsUseCase';
 import { GetStockMovementsUseCase } from '@stock/application/use-case/GetStockMovementsUseCase';
+import { GetWasteUseCase } from '@stock/application/use-case/GetWasteUseCase';
 import { SetGestureExpirationUseCase } from '@stock/application/use-case/SetGestureExpirationUseCase';
 import { SuggestStockItemsUseCase } from '@stock/application/use-case/SuggestStockItemsUseCase';
 import { UndoStockGestureUseCase } from '@stock/application/use-case/UndoStockGestureUseCase';
@@ -44,7 +48,9 @@ import { UpdateStockLocationUseCase } from '@stock/application/use-case/UpdateSt
 import { OwnerAccess } from '@stock/domain/entity/OwnerAccess';
 import StockCategoryEntity from '@stock/domain/entity/StockCategoryEntity';
 import StockLocationEntity from '@stock/domain/entity/StockLocationEntity';
-import StockMovementEntity from '@stock/domain/entity/StockMovementEntity';
+import StockMovementEntity, {
+  StockMovementReasons,
+} from '@stock/domain/entity/StockMovementEntity';
 import { FindUsersByIdsUseCase } from '@user/application/use-case/FindUsersByIdsUseCase';
 
 export function toListItemOutput(view: StockItemView): StockListItemApiOutput {
@@ -65,9 +71,20 @@ export function toListItemOutput(view: StockItemView): StockListItemApiOutput {
       : { estimatedUnitPriceCents: item.estimatedUnitPriceCents }),
     expirationStatus: view.expirationStatus,
     hasExpiredLot: view.hasExpiredLot,
+    ...(view.hasForecastRow ? { hasForecastRow: true } : {}),
+    ...(view.hasForecastRow ? forecastOutput(view) : {}),
     hasOpenLot: view.hasOpenLot,
     id: item.id,
     idealQuantity: item.idealQuantity ?? null,
+    ...(view.leftover
+      ? {
+          leftover: {
+            date: day(view.leftover.date),
+            lotId: view.leftover.lotId,
+            quantity: view.leftover.quantity,
+          },
+        }
+      : {}),
     location: view.location ?? null,
     locationId: item.locationId ?? null,
     minQuantity: item.minQuantity ?? null,
@@ -89,11 +106,26 @@ export function toListItemOutput(view: StockItemView): StockListItemApiOutput {
   };
 }
 
+// The list carries the forecast of an item only when it has a forecast row; the detail always (`toItemOutput`).
 function day(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 function dayOrNull(date?: Date) {
   return date ? day(date) : null;
+}
+function forecastOutput(view: StockItemView) {
+  return view.forecast
+    ? {
+        forecast: {
+          computedOn: dayOrNull(view.forecast.computedOn),
+          dailyRate: view.forecast.dailyRate,
+          emptyDate: dayOrNull(view.forecast.emptyDate),
+          minDate: dayOrNull(view.forecast.minDate),
+          status: view.forecast.status,
+          weeklyRate: view.forecast.weeklyRate,
+        },
+      }
+    : {};
 }
 function toCategoryOutput(category: StockCategoryEntity) {
   return {
@@ -109,15 +141,33 @@ function toCategoryOutput(category: StockCategoryEntity) {
 function toItemOutput(view: StockItemView): StockItemApiOutput {
   return {
     ...toListItemOutput(view),
-    lots: view.lots.map(({ effectiveExpiration, expirationStatus, lot }) => ({
-      effectiveExpiration: dayOrNull(effectiveExpiration),
-      expirationDate: dayOrNull(lot.expirationDate),
-      expirationStatus,
-      id: lot.id,
-      openedAt: dayOrNull(lot.openedAt),
-      purchaseDate: dayOrNull(lot.purchaseDate),
-      quantity: lot.quantity,
-    })),
+    ...forecastOutput(view),
+    ...(view.hasForecastRow ? {} : { hasForecastRow: false }),
+    forecastRow: view.forecastRow
+      ? {
+          listId: view.forecastRow.listId,
+          listName: view.forecastRow.listName ?? null,
+          quantity: view.forecastRow.quantity,
+        }
+      : null,
+    lots: view.lots.map(
+      ({ effectiveExpiration, expirationStatus, leftoverDismissed, leftoverQuantity, lot }) => ({
+        currency: lot.currency ?? null,
+        effectiveExpiration: dayOrNull(effectiveExpiration),
+        expirationDate: dayOrNull(lot.expirationDate),
+        expirationStatus,
+        id: lot.id,
+        leftoverDismissed,
+        leftoverQuantity: leftoverQuantity ?? null,
+        openedAt: dayOrNull(lot.openedAt),
+        purchaseDate: dayOrNull(lot.purchaseDate),
+        quantity: lot.quantity,
+        unitPriceCents: lot.unitPriceCents ?? null,
+      }),
+    ),
+    waste90d: view.waste90d
+      ? { ...view.waste90d, mainReason: view.waste90d.mainReason as StockMovementReasons }
+      : null,
   };
 }
 function toLocationOutput(location: StockLocationEntity, itemCount?: number) {
@@ -144,7 +194,9 @@ export class StockService {
     private readonly deleteStockItemUseCase: DeleteStockItemUseCase,
     private readonly deleteStockLocationUseCase: DeleteStockLocationUseCase,
     private readonly findUsersByIdsUseCase: FindUsersByIdsUseCase,
+    private readonly dismissLeftoverUseCase: DismissLeftoverUseCase,
     private readonly getCategoriesUseCase: GetCategoriesUseCase,
+    private readonly getConsumptionWeeksUseCase: GetConsumptionWeeksUseCase,
     private readonly getFamilyMembersUseCase: GetFamilyMembersUseCase,
     private readonly getFrequentStockItemsUseCase: GetFrequentStockItemsUseCase,
     private readonly getOwnerChangePreviewUseCase: GetOwnerChangePreviewUseCase,
@@ -155,6 +207,7 @@ export class StockService {
     private readonly getStockLocationsUseCase: GetStockLocationsUseCase,
     private readonly getStockMovementsUseCase: GetStockMovementsUseCase,
     private readonly getUserFamilyAccessUseCase: GetUserFamilyAccessUseCase,
+    private readonly getWasteUseCase: GetWasteUseCase,
     private readonly setGestureExpirationUseCase: SetGestureExpirationUseCase,
     private readonly suggestStockItemsUseCase: SuggestStockItemsUseCase,
     private readonly undoStockGestureUseCase: UndoStockGestureUseCase,
@@ -281,6 +334,15 @@ export class StockService {
     return views.map((view) => toListItemOutput(view));
   }
 
+  // Spec 123 FR 25: 204 on both; the dismissal hides the warning of that lot until it moves or the leftover grows.
+  async dismissLeftover(userId: string, lotId: string, dismissed: boolean): Promise<void> {
+    await this.dismissLeftoverUseCase.execute({
+      accessibleOwners: await this.getAccessibleOwners(userId),
+      dismissed,
+      lotId,
+    });
+  }
+
   async findById(userId: string, id: string, today?: string): Promise<StockItemApiOutput> {
     const accessibleOwners = await this.getAccessibleOwners(userId);
 
@@ -323,6 +385,23 @@ export class StockService {
     return { items: roots };
   }
 
+  // Spec 123 FR 30: `owner` is accepted for symmetry with the other lists; the id decides (no owner = "Todas").
+  async findConsumptionWeeks(userId: string, id: string, today?: string) {
+    const weeks = await this.getConsumptionWeeksUseCase.execute({
+      accessibleOwners: await this.getAccessibleOwners(userId),
+      id,
+      today,
+    });
+
+    return {
+      weeks: weeks.map((week) => ({
+        excluded: week.excluded,
+        quantity: week.quantity,
+        start: day(week.start),
+      })),
+    };
+  }
+
   async findFrequent(userId: string, query: { limit?: number; today?: string }) {
     const views = await this.getFrequentStockItemsUseCase.execute({
       accessibleOwners: await this.getAccessibleOwners(userId),
@@ -362,6 +441,15 @@ export class StockService {
       items: await this.toMovementOutputs(userId, page.owner, page.items),
       nextCursor: page.nextCursor,
     };
+  }
+
+  async findWaste(userId: string, query: { month?: string; ownerId?: string; topLimit?: 'all' }) {
+    return this.getWasteUseCase.execute({
+      accessibleOwners: await this.getAccessibleOwners(userId),
+      month: query.month,
+      ownerId: query.ownerId,
+      topLimit: query.topLimit,
+    }) as Promise<WasteApiOutput>;
   }
 
   async ownerChangePreview(userId: string, id: string, owner: OwnerType, ownerId: string) {
@@ -538,16 +626,20 @@ export class StockService {
 
       return {
         createdAt: movement.createdAt.toISOString(),
+        currency: movement.currency ?? null,
         id: movement.id,
         lotId: movement.lotId,
         note: movement.note ?? null,
         quantity: movement.quantity,
         reason: movement.reason ?? null,
         type: movement.type,
+        unitPriceCents: movement.unitPriceCents ?? null,
         user:
           movement.userId && name !== undefined && memberIds.has(movement.userId)
             ? { id: movement.userId, name }
             : null,
+        valueCents: movement.valueCents ?? null,
+        valueSource: movement.valueSource ?? null,
       };
     });
   }

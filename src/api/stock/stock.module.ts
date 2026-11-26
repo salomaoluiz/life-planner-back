@@ -18,7 +18,9 @@ import {
   StockController,
   StockFrequentController,
   StockGestureController,
+  StockLotController,
   StockSuggestionController,
+  StockWasteController,
 } from '@api/stock/v1/stock.controller';
 import { StockService } from '@api/stock/v1/stock.service';
 import {
@@ -49,6 +51,8 @@ import { UserModule } from '@user/user.module';
     StockFrequentController,
     StockController,
     StockGestureController,
+    StockLotController,
+    StockWasteController,
     StockCategoryController,
     StockLocationController,
     ShoppingListController,

@@ -100,6 +100,7 @@ export const CreateStockMovementApiSchema = z.discriminatedUnion('type', [
   z
     .object({
       ...QuickFields,
+      currency: z.enum(['BRL', 'EUR', 'USD']).optional(),
       expirationDate: DayApiSchema.nullish(),
       note: MovementBase.note,
       purchaseDate: DayApiSchema.nullish(),
@@ -108,6 +109,7 @@ export const CreateStockMovementApiSchema = z.discriminatedUnion('type', [
       target: z.literal('LATEST_CLOSED').optional(),
       today: MovementBase.today,
       type: z.literal(StockMovementTypes.ENTRY),
+      unitPriceCents: PriceApiSchema.optional(),
     })
     .strict(),
   z
@@ -160,12 +162,30 @@ const CategoryRefSchema = z.object({
 const LocationRefSchema = z.object({ archived: z.boolean(), id: z.uuid(), name: z.string() });
 
 export const StockLotApiSchema = z.object({
+  currency: z.string().nullable(),
   effectiveExpiration: DayApiSchema.nullable(),
   expirationDate: DayApiSchema.nullable(),
   expirationStatus: LotStatusSchema,
   id: z.uuid(),
+  leftoverDismissed: z.boolean(),
+  leftoverQuantity: z.number().nullable(),
   openedAt: DayApiSchema.nullable(),
   purchaseDate: DayApiSchema.nullable(),
+  quantity: z.number(),
+  unitPriceCents: z.number().int().nullable(),
+});
+// Spec 123 FR 8: the stored forecast; `minDate`/`emptyDate` only with status OK.
+const ForecastApiSchema = z.object({
+  computedOn: DayApiSchema.nullable(),
+  dailyRate: z.number(),
+  emptyDate: DayApiSchema.nullable(),
+  minDate: DayApiSchema.nullable(),
+  status: z.enum(['INSUFFICIENT_DATA', 'NO_CONSUMPTION', 'OK']),
+  weeklyRate: z.number(),
+});
+const LeftoverApiSchema = z.object({
+  date: DayApiSchema,
+  lotId: z.uuid(),
   quantity: z.number(),
 });
 
@@ -180,10 +200,15 @@ const ItemFields = {
   effectiveShoppingListId: z.uuid().optional(),
   estimatedUnitPriceCents: z.number().int().optional(),
   expirationStatus: LotStatusSchema,
+  // Spec 123: absent (not null) to keep the 1000-item list lean; the list carries `forecast` only for an item with a
+  // forecast row, the detail always.
+  forecast: ForecastApiSchema.optional(),
   hasExpiredLot: z.boolean(),
+  hasForecastRow: z.boolean().optional(),
   hasOpenLot: z.boolean(),
   id: z.uuid(),
   idealQuantity: z.number().nullable(),
+  leftover: LeftoverApiSchema.optional(),
   location: LocationRefSchema.nullable(),
   locationId: z.uuid().nullable(),
   minQuantity: z.number().nullable(),
@@ -206,16 +231,42 @@ const ItemFields = {
 
 // The list never carries lots or movements (FR 34); the detail adds the lots with quantity > 0 (FR 35).
 export const StockListItemApiSchema = z.object(ItemFields);
-export const StockItemApiSchema = z.object({ ...ItemFields, lots: z.array(StockLotApiSchema) });
+// Spec 123 FR 19: where the FORECAST row of the item sits ("Entrou na lista X como previsto · N").
+const ForecastRowApiSchema = z.object({
+  listId: z.uuid(),
+  listName: z.string().nullable(),
+  quantity: z.number(),
+});
+// Spec 123 FR 32: "Descartado nos últimos 90 dias".
+const Waste90dApiSchema = z.object({
+  count: z.number().int(),
+  mainReason: z.enum(StockMovementReasons),
+  quantity: z.number(),
+  totals: z.array(z.object({ currency: z.string(), valueCents: z.number().int() })),
+});
+export const StockItemApiSchema = z.object({
+  ...ItemFields,
+  forecastRow: ForecastRowApiSchema.nullable(),
+  lots: z.array(StockLotApiSchema),
+  waste90d: Waste90dApiSchema.nullable(),
+});
+export const ConsumptionWeeksApiSchema = z.object({
+  weeks: z.array(z.object({ excluded: z.boolean(), quantity: z.number(), start: DayApiSchema })),
+});
 
 export const StockMovementApiSchema = z.object({
   createdAt: z.iso.datetime(),
+  // Spec 123: the ENTRY price and the DISCARD value (recorded when it happened); absent when not set.
+  currency: z.string().nullable(),
   id: z.uuid(),
   lotId: z.uuid(),
   note: z.string().nullable(),
   quantity: z.number(),
   reason: z.enum(StockMovementReasons).nullable(),
   type: z.enum(StockMovementTypes),
+  unitPriceCents: z.number().int().nullable(),
+  valueCents: z.number().int().nullable(),
+  valueSource: z.enum(['ITEM_LAST', 'LOT', 'NONE']).nullable(),
   // `null` for a user who left the family, was deleted or never existed ("Ex-membro" in the UI).
   user: z.object({ id: z.uuid(), name: z.string() }).nullable(),
 });
@@ -265,6 +316,68 @@ export const ListStockItemsQuerySchema = z.object({
   owner: OwnerTypeApiSchema.optional(),
   ownerId: z.uuid().optional(),
   today: DayApiSchema.optional(),
+});
+// Spec 123 FR 30: `month` is YYYY-MM; `topLimit=all` lists every item of the month.
+export const WasteQuerySchema = z.object({
+  month: z
+    .string()
+    .regex(/^\d{4}-(0[1-9]|1[0-2])$/)
+    .optional(),
+  owner: OwnerTypeApiSchema.optional(),
+  ownerId: z.uuid().optional(),
+  topLimit: z.literal('all').optional(),
+});
+const WasteTotalsSchema = z.array(z.object({ currency: z.string(), valueCents: z.number().int() }));
+export const WasteApiSchema = z.object({
+  byCategory: z.array(
+    z.object({
+      category: z.object({ id: z.uuid(), name: z.string() }).nullable(),
+      count: z.number().int(),
+      totals: WasteTotalsSchema,
+    }),
+  ),
+  byReason: z.array(
+    z.object({
+      count: z.number().int(),
+      reason: z.enum(StockMovementReasons),
+      totals: WasteTotalsSchema,
+    }),
+  ),
+  firstMonth: z.string().nullable(),
+  month: z.string(),
+  moreItemsCount: z.number().int(),
+  previousMonth: z.array(
+    z.object({
+      currency: z.string(),
+      discardCount: z.number().int(),
+      valueCents: z.number().int(),
+    }),
+  ),
+  summary: z.object({
+    discardCount: z.number().int(),
+    itemCount: z.number().int(),
+    unpricedCount: z.number().int(),
+  }),
+  topItems: z.array(
+    z.object({
+      count: z.number().int(),
+      description: z.string(),
+      itemId: z.uuid(),
+      mainReason: z.enum(StockMovementReasons),
+      quantity: z.number(),
+      totals: WasteTotalsSchema,
+      unit: StockUnitApiSchema,
+    }),
+  ),
+  totals: z.array(
+    z.object({
+      currency: z.string(),
+      discardCount: z.number().int(),
+      itemCount: z.number().int(),
+      unpricedCount: z.number().int(),
+      valueCents: z.number().int(),
+    }),
+  ),
 });
 export const DayQuerySchema = z.object({ today: DayApiSchema.optional() });
 export const MovementsQuerySchema = z.object({ cursor: z.string().min(1).max(200).optional() });
@@ -384,11 +497,13 @@ export type StockListItemApiOutput = z.infer<typeof StockListItemApiSchema>;
 export type UpdateStockCategoryApiInput = z.infer<typeof UpdateStockCategoryApiSchema>;
 export type UpdateStockItemApiInput = z.infer<typeof UpdateStockItemApiSchema>;
 export type UpdateStockLocationApiInput = z.infer<typeof UpdateStockLocationApiSchema>;
+export type WasteApiOutput = z.infer<typeof WasteApiSchema>;
 
 export class CreateStockCategoryBody extends createZodDto(CreateStockCategoryApiSchema) {}
 export class CreateStockItemBody extends createZodDto(CreateStockItemApiSchema) {}
 export class CreateStockLocationBody extends createZodDto(CreateStockLocationApiSchema) {}
 // A union cannot be a DTO base: Swagger documents the discriminator, the schema above validates the body.
+export class ConsumptionWeeksOutput extends createZodDto(ConsumptionWeeksApiSchema) {}
 export class CreateStockMovementBody extends createZodDto(
   z.looseObject({ type: z.enum(StockMovementTypes) }),
 ) {}
@@ -412,3 +527,4 @@ export class UndoGestureBody extends createZodDto(z.looseObject({ gestureId: z.s
 export class UpdateStockCategoryBody extends createZodDto(UpdateStockCategoryApiSchema) {}
 export class UpdateStockItemBody extends createZodDto(UpdateStockItemApiSchema) {}
 export class UpdateStockLocationBody extends createZodDto(UpdateStockLocationApiSchema) {}
+export class WasteOutput extends createZodDto(WasteApiSchema) {}

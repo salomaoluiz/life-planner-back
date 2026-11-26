@@ -373,3 +373,87 @@ describe('spec 117', () => {
     });
   });
 });
+
+describe('spec 123', () => {
+  it('SHOULD output the consumption weeks with days as YYYY-MM-DD', async () => {
+    useCases.getConsumptionWeeks.execute.mockResolvedValue([
+      { excluded: true, quantity: 0, start: new Date('2026-09-07T00:00:00.000Z') },
+      { excluded: false, quantity: 2.5, start: new Date('2026-09-14T00:00:00.000Z') },
+    ]);
+
+    expect(await setup.findConsumptionWeeks(userId, 'i', '2026-11-25')).toEqual({
+      weeks: [
+        { excluded: true, quantity: 0, start: '2026-09-07' },
+        { excluded: false, quantity: 2.5, start: '2026-09-14' },
+      ],
+    });
+    expect(useCases.getConsumptionWeeks.execute).toHaveBeenCalledWith({
+      accessibleOwners,
+      id: 'i',
+      today: '2026-11-25',
+    });
+  });
+
+  it('SHOULD dismiss and undo the dismissal of a lot warning', async () => {
+    await setup.dismissLeftover(userId, 'lot', true);
+    await setup.dismissLeftover(userId, 'lot', false);
+
+    expect(useCases.dismissLeftover.execute).toHaveBeenNthCalledWith(1, {
+      accessibleOwners,
+      dismissed: true,
+      lotId: 'lot',
+    });
+    expect(useCases.dismissLeftover.execute).toHaveBeenNthCalledWith(2, {
+      accessibleOwners,
+      dismissed: false,
+      lotId: 'lot',
+    });
+  });
+});
+
+describe('waste (spec 123)', () => {
+  it('SHOULD pass the month, owner and topLimit with the accessible owners', async () => {
+    useCases.getWaste.execute.mockResolvedValue({ month: '2026-11' });
+
+    expect(
+      await setup.findWaste(userId, { month: '2026-11', ownerId: 'o', topLimit: 'all' }),
+    ).toEqual({
+      month: '2026-11',
+    });
+    expect(useCases.getWaste.execute).toHaveBeenCalledWith({
+      accessibleOwners,
+      month: '2026-11',
+      ownerId: 'o',
+      topLimit: 'all',
+    });
+  });
+});
+
+describe('lean list (spec 123)', () => {
+  it('SHOULD omit forecast, leftover and hasForecastRow from a list item without a forecast row', async () => {
+    useCases.getStockItems.execute.mockResolvedValue([mocks.view]);
+
+    const [row] = await setup.findAll(userId, {});
+
+    expect(row).not.toHaveProperty('forecast');
+    expect(row).not.toHaveProperty('leftover');
+    expect(row).not.toHaveProperty('hasForecastRow');
+  });
+
+  it('SHOULD carry the forecast and the flag WHEN the item has a forecast row, AND always on the detail', async () => {
+    const view = {
+      ...mocks.view,
+      forecast: { dailyRate: 1, status: 'OK', weeklyRate: 7 },
+      hasForecastRow: true,
+    };
+
+    useCases.getStockItems.execute.mockResolvedValue([view]);
+    useCases.getStockItemById.execute.mockResolvedValue({ ...mocks.view, forecast: view.forecast });
+
+    const [row] = await setup.findAll(userId, {});
+    const detail = await setup.findById(userId, 'i');
+
+    expect(row).toMatchObject({ forecast: { status: 'OK', weeklyRate: 7 }, hasForecastRow: true });
+    expect(detail).toMatchObject({ forecast: { status: 'OK' }, hasForecastRow: false });
+  });
+});

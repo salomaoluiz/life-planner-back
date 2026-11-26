@@ -67,6 +67,7 @@ class EnvServiceFixture {
       sentryEnvironment: undefined,
       sentryTracesSampleRate: 0,
       sessionIdleTtlSeconds: 172800,
+      stockForecastGateTtlMs: 60000,
       swaggerEnabled: true,
       versionCheckTtlSeconds: 600,
       versionRepoApi: undefined,

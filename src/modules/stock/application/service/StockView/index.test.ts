@@ -128,3 +128,69 @@ it('SHOULD order lots with equal dates by id and undated lots last', () => {
 it('SHOULD return today at UTC midnight', () => {
   expect(todayUtc().toISOString()).toMatch(/T00:00:00.000Z$/);
 });
+
+describe('forecast (spec 123)', () => {
+  function forecastItem(lots: ReturnType<typeof lot>[], extra: object = {}) {
+    const item = new StockEntityFixture().withLots(lots).build();
+
+    item.forecast = {
+      computedOn: today,
+      dailyRate: 0.5,
+      emptyDate: day('2026-11-20'),
+      leftoverDate: day('2026-11-14'),
+      leftoverLotId: 'a',
+      leftoverQuantity: 1,
+      minDate: day('2026-11-18'),
+      status: 'OK',
+    };
+
+    return Object.assign(item, extra);
+  }
+
+  it('SHOULD expose the stored forecast with the weekly rate, the leftover and the leftover of each lot', () => {
+    // 3 units expiring in 4 days at 0.5/day: 2 consumed, 1 left
+    const item = forecastItem([lot('a', 3, { expirationDate: day('2026-11-14') })]);
+    const view = toStockItemView(item, today, catalog);
+
+    expect(view.forecast).toMatchObject({ dailyRate: 0.5, status: 'OK', weeklyRate: 3.5 });
+    expect(view.leftover).toEqual({ date: day('2026-11-14'), lotId: 'a', quantity: 1 });
+    expect(view.lots[0]).toMatchObject({ leftoverDismissed: false, leftoverQuantity: 1 });
+    expect(view.hasForecastRow).toBe(false);
+  });
+
+  it('SHOULD mark the lot as dismissed WHEN its leftover has not grown since', () => {
+    const item = forecastItem([
+      lot('a', 3, {
+        expirationDate: day('2026-11-14'),
+        leftoverDismissedAt: today,
+        leftoverDismissedQuantity: 1,
+      }),
+    ]);
+    const view = toStockItemView(item, today, catalog);
+
+    expect(view.lots[0].leftoverDismissed).toBe(true);
+  });
+
+  it('SHOULD flag the forecast row with its list name', () => {
+    const item = forecastItem([lot('a', 1)], { forecastRow: { listId: 'list', quantity: 6 } });
+    const view = toStockItemView(item, today, {
+      ...catalog,
+      shoppingLists: [{ id: 'list', name: 'Mercado' } as never],
+    });
+
+    expect(view.hasForecastRow).toBe(true);
+    expect(view.forecastRow).toEqual({ listId: 'list', listName: 'Mercado', quantity: 6 });
+  });
+
+  it('SHOULD have no forecast, leftover or lot leftover WHEN it was never computed', () => {
+    const view = toStockItemView(
+      new StockEntityFixture().withLots([lot('a', 1)]).build(),
+      today,
+      catalog,
+    );
+
+    expect(view.forecast).toBeUndefined();
+    expect(view.leftover).toBeUndefined();
+    expect(view.lots[0].leftoverQuantity).toBeUndefined();
+  });
+});

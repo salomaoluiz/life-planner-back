@@ -9,7 +9,8 @@ export function mergeRow(
 ): { origin: ShoppingListRowOrigins; quantity: number } {
   return {
     origin:
-      current.origin === ShoppingListRowOrigins.AUTO
+      current.origin === ShoppingListRowOrigins.AUTO ||
+      current.origin === ShoppingListRowOrigins.FORECAST
         ? ShoppingListRowOrigins.AUTO_EDITED
         : current.origin,
     quantity: fromMilli(toMilli(current.quantity) + toMilli(added)),

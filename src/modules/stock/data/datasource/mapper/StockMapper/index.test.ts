@@ -95,3 +95,71 @@ describe('toCategory / toLocation', () => {
     });
   });
 });
+
+describe('spec 123 columns', () => {
+  const day = new Date('2026-11-25T00:00:00.000Z');
+
+  it('SHOULD map the stored forecast, converting decimals and keeping dates', () => {
+    const result = StockMapper.toDomain({
+      ...mocks.rawFull,
+      forecast_computed_on: day,
+      forecast_daily_rate: { toString: () => '0.571429' },
+      forecast_empty_date: day,
+      forecast_leftover_date: day,
+      forecast_leftover_lot_id: 'lot',
+      forecast_leftover_quantity: { toString: () => '1.000' },
+      forecast_min_date: day,
+      forecast_status: 'OK',
+      forecast_waste_ratio_90d: { toString: () => '0.3333' },
+      lots: [],
+    } as never);
+
+    expect(result.forecast).toEqual({
+      computedOn: day,
+      dailyRate: 0.571429,
+      emptyDate: day,
+      leftoverDate: day,
+      leftoverLotId: 'lot',
+      leftoverQuantity: 1,
+      minDate: day,
+      status: 'OK',
+      wasteRatio90d: 0.3333,
+    });
+  });
+
+  it('SHOULD leave the forecast undefined WHEN it was never computed', () => {
+    expect(
+      StockMapper.toDomain({ ...mocks.rawMinimal, forecast_status: null } as never).forecast,
+    ).toBeUndefined();
+  });
+
+  it('SHOULD map the movement price and discard value', () => {
+    const result = StockMapper.toMovement({
+      ...mocks.rawMovement,
+      currency: 'BRL',
+      unit_price_cents: null,
+      value_cents: 489,
+      value_source: 'LOT',
+    } as never);
+
+    expect(result).toMatchObject({ currency: 'BRL', valueCents: 489, valueSource: 'LOT' });
+    expect(result.unitPriceCents).toBeUndefined();
+  });
+
+  it('SHOULD map the lot price and the dismissed leftover', () => {
+    const result = StockMapper.toLot({
+      ...mocks.rawLot,
+      currency: 'BRL',
+      leftover_dismissed_at: day,
+      leftover_dismissed_quantity: { toString: () => '2.000' },
+      unit_price_cents: 250,
+    } as never);
+
+    expect(result).toMatchObject({
+      currency: 'BRL',
+      leftoverDismissedAt: day,
+      leftoverDismissedQuantity: 2,
+      unitPriceCents: 250,
+    });
+  });
+});

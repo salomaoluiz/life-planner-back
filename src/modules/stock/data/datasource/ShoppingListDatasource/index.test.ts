@@ -1,5 +1,7 @@
 import { key, setup, spies } from './index.mocks';
 
+jest.mock('@stock/data/datasource/ForecastSync', () => ({ recomputeForecasts: jest.fn() }));
+
 describe('addRow', () => {
   it('SHOULD create an item row as MANUAL and store the typed price on the item', async () => {
     spies.itemFindUniqueOrThrow.mockResolvedValue({ id: 'i' });
@@ -115,7 +117,7 @@ describe('create', () => {
       data: { is_default: false },
       where: { ...key, is_default: true },
     });
-    expect(spies.sync).toHaveBeenCalledWith(expect.anything(), ['i']);
+    expect(spies.sync).toHaveBeenCalledWith(expect.anything(), ['i'], { forecast: 'reuse' });
   });
 
   it('SHOULD only insert WHEN it is not the default', async () => {
@@ -221,7 +223,10 @@ describe('reads', () => {
     expect(spies.rowFindMany).toHaveBeenNthCalledWith(2, {
       include: expect.any(Object),
       orderBy: { id: 'asc' },
-      where: { list: { OR: [key], status: 'ACTIVE' }, origin: { in: ['AUTO', 'AUTO_EDITED'] } },
+      where: {
+        list: { OR: [key], status: 'ACTIVE' },
+        origin: { in: ['AUTO', 'AUTO_EDITED', 'FORECAST'] },
+      },
     });
   });
 
@@ -248,7 +253,7 @@ describe('update', () => {
       data: { status: 'ARCHIVED' },
       where: { id: 'l' },
     });
-    expect(spies.sync).toHaveBeenCalledWith(expect.anything(), ['i']);
+    expect(spies.sync).toHaveBeenCalledWith(expect.anything(), ['i'], { forecast: 'reuse' });
   });
 
   it('SHOULD clear the previous default and re-home every AUTO row WHEN promoting a list', async () => {
@@ -266,7 +271,7 @@ describe('update', () => {
       data: { is_default: false },
       where: { ...key, id: { not: 'l' }, is_default: true },
     });
-    expect(spies.sync).toHaveBeenCalledWith(expect.anything(), ['a', 'b']);
+    expect(spies.sync).toHaveBeenCalledWith(expect.anything(), ['a', 'b'], { forecast: 'reuse' });
   });
 
   it('SHOULD only write WHEN renaming (nothing to re-home)', async () => {
@@ -280,7 +285,39 @@ describe('update', () => {
     await setup.update({ id: 'l', name: 'New' });
 
     expect(spies.rowFindMany).not.toHaveBeenCalled();
-    expect(spies.sync).toHaveBeenCalledWith(expect.anything(), []);
+    expect(spies.sync).toHaveBeenCalledWith(expect.anything(), [], { forecast: 'reuse' });
+  });
+});
+
+describe('update interval (spec 123 FR 12)', () => {
+  it('SHOULD re-evaluate the items that can hold a FORECAST row WHEN the interval changes', async () => {
+    spies.listFindUniqueOrThrow.mockResolvedValue({
+      ...key,
+      id: 'l',
+      is_default: false,
+      purchase_interval_days: 7,
+      status: 'ACTIVE',
+    });
+    spies.itemFindMany.mockResolvedValue([{ id: 'x' }, { id: 'y' }]);
+
+    await setup.update({ id: 'l', purchase_interval_days: 14 });
+
+    expect(spies.itemFindMany).toHaveBeenCalledTimes(1);
+    expect(spies.sync).toHaveBeenCalledWith(expect.anything(), ['x', 'y'], { forecast: 'reuse' });
+  });
+
+  it('SHOULD not look for items WHEN the interval stays the same', async () => {
+    spies.listFindUniqueOrThrow.mockResolvedValue({
+      ...key,
+      id: 'l',
+      is_default: false,
+      purchase_interval_days: 7,
+      status: 'ACTIVE',
+    });
+
+    await setup.update({ id: 'l', purchase_interval_days: 7 });
+
+    expect(spies.itemFindMany).not.toHaveBeenCalled();
   });
 });
 

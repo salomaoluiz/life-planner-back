@@ -47,6 +47,7 @@ export const UpdateShoppingListSchema = z
     id: z.string().min(1),
     isDefault: z.boolean().optional(),
     name: CatalogNameSchema.optional(),
+    purchaseIntervalDays: z.number().int().min(1).max(90).optional(),
     status: z.enum(StockCatalogStatus).optional(),
   })
   .refine(
@@ -56,6 +57,7 @@ export const UpdateShoppingListSchema = z
       input.defaultMarketId !== undefined ||
       input.isDefault !== undefined ||
       input.name !== undefined ||
+      input.purchaseIntervalDays !== undefined ||
       input.status !== undefined,
     { message: 'At least one field is required' },
   );
@@ -67,7 +69,7 @@ export const AddShoppingListRowSchema = z
     estimatedUnitPriceCents: PriceSchema.optional(),
     itemId: z.string().min(1).optional(),
     listId: z.string().min(1),
-    origin: z.enum(['AUTO', 'AUTO_EDITED', 'MANUAL']).optional(),
+    origin: z.enum(['AUTO', 'AUTO_EDITED', 'FORECAST', 'MANUAL']).optional(),
     quantity: PositiveQuantitySchema,
     restore: z.boolean().optional(),
     unit: UnitSchema.optional(),

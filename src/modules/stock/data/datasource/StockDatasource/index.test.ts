@@ -149,6 +149,7 @@ describe('Method findMovements', () => {
 describe('Method update', () => {
   it('SHOULD pass the columns through (undefined = unchanged, null = clear) AND keep the lots', async () => {
     spies.stockUpdate.mockResolvedValue({ ...mocks.stock, lots: [] });
+    spies.stockFindUniqueOrThrow.mockResolvedValue({ ...mocks.stock, lots: [] });
 
     await setup.update({ id: 'x', min_quantity: null, notes: 'n' });
 
@@ -229,6 +230,7 @@ describe('Method applyMovement', () => {
         reason: 'EXPIRED',
         type: 'DISCARD',
         user_id: 'user',
+        value_source: 'NONE',
       },
     ]);
     expect(result?.movements).toHaveLength(2);
@@ -392,5 +394,215 @@ describe('Method findFrequentItemIds / findByIds', () => {
     const rows = await setup.findByIds([mocks.stock.id]);
 
     expect(rows[0].lots).toEqual([mocks.lot]);
+  });
+});
+
+describe('forecast refresh (spec 123)', () => {
+  const today = new Date('2026-11-25T00:00:00.000Z');
+
+  it('SHOULD list the owners items whose forecast was not computed today, stock-only excluded', async () => {
+    spies.stockFindMany.mockResolvedValue([{ id: 'a' }, { id: 'b' }]);
+
+    const ids = await setup.findStaleForecastItemIds(mocks.owners, today);
+
+    expect(ids).toEqual(['a', 'b']);
+    expect(spies.stockFindMany.mock.calls[0][0].where).toMatchObject({
+      AND: [
+        expect.objectContaining({ OR: expect.any(Array) }),
+        { OR: [{ forecast_computed_on: null }, { forecast_computed_on: { lt: today } }] },
+      ],
+      stock_only: false,
+    });
+  });
+
+  it('SHOULD refresh the items in one transaction through the shared sync', async () => {
+    await setup.refreshForecasts(['a', 'b'], today);
+
+    expect(spies.sync).toHaveBeenCalledTimes(1);
+    expect(spies.sync).toHaveBeenCalledWith(expect.anything(), ['a', 'b'], { today });
+  });
+
+  it('SHOULD not open a transaction for no items', async () => {
+    await setup.refreshForecasts([], today);
+
+    expect(spies.sync).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD store and clear the dismissed leftover of a lot, then recompute the item', async () => {
+    spies.lotUpdate.mockResolvedValue({ item_id: 'item' });
+
+    await setup.setLeftoverDismissal('lot', 2);
+    await setup.setLeftoverDismissal('lot', null);
+
+    expect(spies.lotUpdate).toHaveBeenNthCalledWith(1, {
+      data: { leftover_dismissed_at: expect.any(Date), leftover_dismissed_quantity: 2 },
+      select: { item_id: true },
+      where: { id: 'lot' },
+    });
+    expect(spies.lotUpdate).toHaveBeenNthCalledWith(2, {
+      data: { leftover_dismissed_at: null, leftover_dismissed_quantity: null },
+      select: { item_id: true },
+      where: { id: 'lot' },
+    });
+    expect(spies.recompute).toHaveBeenCalledTimes(2);
+  });
+
+  it('SHOULD clear the dismissed leftover of every lot a movement touches', async () => {
+    spies.stockFindUniqueOrThrow.mockResolvedValue(mocks.stock);
+    spies.stockFindMany.mockResolvedValue([]);
+    spies.queryRaw.mockResolvedValue([{ id: mocks.stock.id }]);
+    spies.lotFindMany.mockResolvedValue([mocks.lot]);
+
+    await setup.applyMovement('item', 'user', () => [
+      { lot: { id: 'lot-a' }, update: { quantity: 1 } },
+    ]);
+
+    expect(spies.lotUpdateMany).toHaveBeenCalledWith({
+      data: { leftover_dismissed_at: null, leftover_dismissed_quantity: null },
+      where: { id: { in: ['lot-a'] }, leftover_dismissed_at: { not: null } },
+    });
+  });
+});
+
+describe('discard value (spec 123 FR 27)', () => {
+  const discard = { quantity: -2, reason: 'EXPIRED' as const, type: 'DISCARD' as const };
+
+  beforeEach(() => {
+    spies.queryRaw.mockResolvedValue([{ id: 'item' }]);
+    spies.stockFindUniqueOrThrow.mockResolvedValue({ ...mocks.stock, lots: [] });
+    spies.movementCreate.mockResolvedValue({ id: 'm' });
+  });
+
+  it('SHOULD record the lot price x quantity with source LOT', async () => {
+    spies.lotFindMany.mockResolvedValue([
+      { ...mocks.lot, currency: 'BRL', id: 'lot-a', unit_price_cents: 250 },
+    ]);
+
+    await setup.applyMovement('item', 'user', () => [{ lot: { id: 'lot-a' }, movement: discard }]);
+
+    expect(spies.movementCreate.mock.calls[0][0].data).toMatchObject({
+      currency: 'BRL',
+      value_cents: 500,
+      value_source: 'LOT',
+    });
+    expect(spies.priceFindFirst).not.toHaveBeenCalled();
+  });
+
+  it('SHOULD fall back to the last price of the item (its own currency) with source ITEM_LAST', async () => {
+    spies.lotFindMany.mockResolvedValue([
+      { ...mocks.lot, currency: null, id: 'lot-a', unit_price_cents: null },
+    ]);
+    spies.priceFindFirst.mockResolvedValue({ currency: 'EUR', unit_price_cents: 300 });
+
+    await setup.applyMovement('item', 'user', () => [{ lot: { id: 'lot-a' }, movement: discard }]);
+
+    expect(spies.movementCreate.mock.calls[0][0].data).toMatchObject({
+      currency: 'EUR',
+      value_cents: 600,
+      value_source: 'ITEM_LAST',
+    });
+  });
+
+  it('SHOULD record NONE with no value WHEN there is no price at all', async () => {
+    spies.lotFindMany.mockResolvedValue([
+      { ...mocks.lot, currency: null, id: 'lot-a', unit_price_cents: null },
+    ]);
+
+    await setup.applyMovement('item', 'user', () => [{ lot: { id: 'lot-a' }, movement: discard }]);
+
+    const data = spies.movementCreate.mock.calls[0][0].data;
+
+    expect(data.value_source).toBe('NONE');
+    expect(data.value_cents).toBeUndefined();
+  });
+
+  it('SHOULD not add a value to a movement that is not a DISCARD', async () => {
+    spies.lotFindMany.mockResolvedValue([{ ...mocks.lot, id: 'lot-a' }]);
+
+    await setup.applyMovement('item', 'user', () => [
+      { lot: { id: 'lot-a' }, movement: { quantity: -1, type: 'CONSUME' as const } },
+    ]);
+
+    expect(spies.movementCreate.mock.calls[0][0].data).not.toHaveProperty('value_source');
+  });
+});
+
+describe('waste reads (spec 123 FR 30)', () => {
+  const range = {
+    from: new Date('2026-11-01T00:00:00.000Z'),
+    previousFrom: new Date('2026-10-01T00:00:00.000Z'),
+    to: new Date('2026-12-01T00:00:00.000Z'),
+  };
+
+  it('SHOULD read totals, reasons, categories and the previous month in ONE grouped statement', async () => {
+    spies.queryRaw.mockResolvedValue([
+      {
+        category_id: null,
+        count: 3,
+        currency: 'BRL',
+        items: 2,
+        period: 'CURRENT',
+        reason: 'EXPIRED',
+        scope: 'REASON',
+        unpriced: 0,
+        value: 900,
+      },
+      {
+        category_id: 'c',
+        count: 1,
+        currency: null,
+        items: 1,
+        period: 'PREVIOUS',
+        reason: null,
+        scope: 'CATEGORY',
+        unpriced: 1,
+        value: 0,
+      },
+    ]);
+
+    const rows = await setup.findWasteGroups(mocks.owners, range);
+
+    expect(spies.queryRaw).toHaveBeenCalledTimes(1);
+    expect(spies.queryRaw.mock.calls[0][0].sql).toContain('GROUPING SETS');
+    expect(rows[0]).toMatchObject({ reason: 'EXPIRED', scope: 'REASON', valueCents: 900 });
+    expect(rows[0].categoryId).toBeUndefined();
+    expect(rows[1]).toMatchObject({
+      categoryId: 'c',
+      currency: null,
+      scope: 'CATEGORY',
+      unpriced: 1,
+    });
+  });
+
+  it('SHOULD map the item rows AND the first discard date', async () => {
+    spies.queryRaw.mockResolvedValueOnce([
+      {
+        count: 2,
+        currency: 'BRL',
+        description: 'Iogurte',
+        item_id: 'i',
+        quantity: 4,
+        reason: 'EXPIRED',
+        unit: 'unit',
+        value: 500,
+      },
+    ]);
+    spies.queryRaw.mockResolvedValueOnce([{ first: new Date('2026-03-10T00:00:00.000Z') }]);
+
+    expect((await setup.findWasteItems(mocks.owners, range))[0]).toMatchObject({
+      itemId: 'i',
+      quantity: 4,
+      valueCents: 500,
+    });
+    expect(await setup.findFirstDiscardDate(mocks.owners)).toEqual(
+      new Date('2026-03-10T00:00:00.000Z'),
+    );
+  });
+
+  it('SHOULD not query WHEN there are no owners', async () => {
+    expect(await setup.findWasteGroups([], range)).toEqual([]);
+    expect(await setup.findWasteItems([], range)).toEqual([]);
+    expect(await setup.findFirstDiscardDate([])).toBeNull();
+    expect(spies.queryRaw).not.toHaveBeenCalled();
   });
 });

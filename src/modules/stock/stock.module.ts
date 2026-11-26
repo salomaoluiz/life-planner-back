@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { StockForecastGate } from '@stock/application/service/StockForecastGate';
 import { AddPurchaseRowByCodeUseCase } from '@stock/application/use-case/AddPurchaseRowByCodeUseCase';
 import { AddShoppingListRowUseCase } from '@stock/application/use-case/AddShoppingListRowUseCase';
 import { BackfillStockEmbeddingsUseCase } from '@stock/application/use-case/BackfillStockEmbeddingsUseCase';
@@ -22,10 +23,12 @@ import { DeleteStockCategoryUseCase } from '@stock/application/use-case/DeleteSt
 import { DeleteStockItemsByOwnerUseCase } from '@stock/application/use-case/DeleteStockItemsByOwnerUseCase';
 import { DeleteStockItemUseCase } from '@stock/application/use-case/DeleteStockItemUseCase';
 import { DeleteStockLocationUseCase } from '@stock/application/use-case/DeleteStockLocationUseCase';
+import { DismissLeftoverUseCase } from '@stock/application/use-case/DismissLeftoverUseCase';
 import { EnsureDefaultShoppingListUseCase } from '@stock/application/use-case/EnsureDefaultShoppingListUseCase';
 import { FindItemsByBarcodeUseCase } from '@stock/application/use-case/FindItemsByBarcodeUseCase';
 import { GetAiUsageUseCase } from '@stock/application/use-case/GetAiUsageUseCase';
 import { GetClosePreviewUseCase } from '@stock/application/use-case/GetClosePreviewUseCase';
+import { GetConsumptionWeeksUseCase } from '@stock/application/use-case/GetConsumptionWeeksUseCase';
 import { GetFrequentStockItemsUseCase } from '@stock/application/use-case/GetFrequentStockItemsUseCase';
 import { GetItemPricesUseCase } from '@stock/application/use-case/GetItemPricesUseCase';
 import { GetListPurchasesUseCase } from '@stock/application/use-case/GetListPurchasesUseCase';
@@ -43,8 +46,10 @@ import { GetStockItemsUseCase } from '@stock/application/use-case/GetStockItemsU
 import { GetStockLocationByIdUseCase } from '@stock/application/use-case/GetStockLocationByIdUseCase';
 import { GetStockLocationsUseCase } from '@stock/application/use-case/GetStockLocationsUseCase';
 import { GetStockMovementsUseCase } from '@stock/application/use-case/GetStockMovementsUseCase';
+import { GetWasteUseCase } from '@stock/application/use-case/GetWasteUseCase';
 import { HasStockItemsByOwnerUseCase } from '@stock/application/use-case/HasStockItemsByOwnerUseCase';
 import { MergePurchaseUseCase } from '@stock/application/use-case/MergePurchaseUseCase';
+import { RefreshStaleForecastsUseCase } from '@stock/application/use-case/RefreshStaleForecastsUseCase';
 import { RefreshStockEmbeddingUseCase } from '@stock/application/use-case/RefreshStockEmbeddingUseCase';
 import { SetGestureExpirationUseCase } from '@stock/application/use-case/SetGestureExpirationUseCase';
 import { StartPurchaseUseCase } from '@stock/application/use-case/StartPurchaseUseCase';
@@ -115,14 +120,18 @@ const useCases = [
   ConsumeAiUsageUseCase,
   FindItemsByBarcodeUseCase,
   GetAiUsageUseCase,
+  DismissLeftoverUseCase,
+  GetConsumptionWeeksUseCase,
   GetFrequentStockItemsUseCase,
   GetOwnerChangePreviewUseCase,
+  RefreshStaleForecastsUseCase,
   GetStockCategoriesUseCase,
   GetStockItemByIdUseCase,
   GetStockItemsUseCase,
   GetStockLocationByIdUseCase,
   GetStockLocationsUseCase,
   GetStockMovementsUseCase,
+  GetWasteUseCase,
   HasStockItemsByOwnerUseCase,
   RefreshStockEmbeddingUseCase,
   SetGestureExpirationUseCase,
@@ -138,6 +147,7 @@ const useCases = [
   exports: [...useCases],
   providers: [
     ...useCases,
+    StockForecastGate,
     { provide: 'IAiUsageDatasource', useClass: AiUsageDatasource },
     { provide: 'IAiUsageRepository', useClass: AiUsageRepository },
     { provide: 'IMarketRepository', useClass: MarketRepository },

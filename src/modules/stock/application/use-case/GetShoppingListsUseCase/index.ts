@@ -4,6 +4,7 @@ import { UseCaseWithParams } from '@shared/application/use-case/types';
 import { validate } from '@shared/infra/validation';
 import { GetShoppingListsInput, GetShoppingListsSchema } from '@stock/application/dto/ShoppingList';
 import { ShoppingListCard, toListCards } from '@stock/application/service/ShoppingListView';
+import { RefreshStaleForecastsUseCase } from '@stock/application/use-case/RefreshStaleForecastsUseCase';
 import { narrowOwners } from '@stock/domain/entity/OwnerAccess';
 import { IShoppingListRepository } from '@stock/domain/repository';
 import { defaultListName } from '@stock/domain/service/DefaultListName';
@@ -17,6 +18,8 @@ export class GetShoppingListsUseCase implements UseCaseWithParams<
   constructor(
     @Inject('IShoppingListRepository')
     private readonly listRepository: IShoppingListRepository,
+    @Inject(RefreshStaleForecastsUseCase)
+    private readonly refreshStaleForecasts: RefreshStaleForecastsUseCase,
   ) {}
 
   async execute(params: GetShoppingListsInput): Promise<ShoppingListCard[]> {
@@ -31,9 +34,16 @@ export class GetShoppingListsUseCase implements UseCaseWithParams<
         ),
     );
 
-    const lists = await this.listRepository.findByOwners(owners, input.includeArchived);
-    const rows = await this.listRepository.findRowsByLists(lists.map((list) => list.id));
+    // Spec 123 FR 14: stale forecasts (and their FORECAST rows) are recomputed before the read.
+    await this.refreshStaleForecasts.execute({ owners });
 
-    return toListCards(lists, rows);
+    const lists = await this.listRepository.findByOwners(owners, input.includeArchived);
+    const listIds = lists.map((list) => list.id);
+    const [rows, closedDates] = await Promise.all([
+      this.listRepository.findRowsByLists(listIds),
+      this.listRepository.findClosedPurchaseDates(listIds),
+    ]);
+
+    return toListCards(lists, rows, closedDates);
   }
 }

@@ -8,6 +8,9 @@ import {
   StockUnit,
 } from '@db/client';
 import { OwnerAccess } from '@stock/domain/entity/OwnerAccess';
+import { DayMovements } from '@stock/domain/service/ConsumptionForecast';
+import { WasteGroupRow, WasteItemRow } from '@stock/domain/service/WasteReport';
+import { WasteRow } from '@stock/domain/service/WasteSummary';
 
 export interface CreateStockDatasourceParams {
   barcode?: string;
@@ -54,25 +57,38 @@ export type GesturePlannerDatasource = (context: {
 export interface MovementOperationDatasource {
   lot: { create: NewLotDatasourceParams } | { id: string };
   movement?: {
+    currency?: string;
     note?: string;
     quantity: number;
     reason?: StockMovementReason;
     type: StockMovementType;
+    unit_price_cents?: number;
   };
-  update?: { opened_at?: Date | null; quantity?: number };
+  update?: {
+    currency?: string;
+    opened_at?: Date | null;
+    quantity?: number;
+    unit_price_cents?: number;
+  };
 }
 export interface NewLotDatasourceParams {
+  currency?: string;
   expiration_date?: Date;
   opened_at?: Date;
   purchase_date?: Date;
   quantity: number;
+  unit_price_cents?: number;
 }
 export interface StockFilterDatasourceParams {
   barcode?: string;
   category_ids?: string[];
   location_ids?: string[];
 }
-export type StockItemWithLots = { lots: StockLot[] } & StockItem;
+// `forecast_row`: the FORECAST row of the item on its list (spec 123), attached by the reads that return items.
+export type StockItemWithLots = {
+  forecast_row?: { list_id: string; quantity: { toString(): string } } | null;
+  lots: StockLot[];
+} & StockItem;
 // Receives the locked item and ALL its lots (quantity 0 included).
 export type MovementPlannerDatasource = (
   item: StockItem,
@@ -96,18 +112,30 @@ export interface IStockDatasource {
   // Rows deleted; idempotent.
   deleteByOwner(params: DeleteByOwnerStockDatasourceParams): Promise<number>;
   exists(params: ExistsStockDatasourceParams): Promise<boolean>;
-  findById(id: string): Promise<null | StockItemWithLots>;
+  findById(id: string, withForecastRow?: boolean): Promise<null | StockItemWithLots>;
   findByIds(ids: string[]): Promise<StockItemWithLots[]>;
+  findByLotId(lotId: string): Promise<null | StockItemWithLots>;
   findByOwners(
     owners: OwnerAccess[],
     filter?: StockFilterDatasourceParams,
   ): Promise<StockItemWithLots[]>;
+  findFirstDiscardDate(owners: OwnerAccess[]): Promise<Date | null>;
   findFrequentItemIds(owners: OwnerAccess[], since: Date, limit: number): Promise<string[]>;
+  findMovementDays(itemId: string, today: Date, windowDays: number): Promise<DayMovements[]>;
   findMovements(
     itemId: string,
     limit: number,
     cursor?: { createdAt: Date; id: string },
   ): Promise<StockMovement[]>;
+  findStaleForecastItemIds(owners: OwnerAccess[], today: Date): Promise<string[]>;
+  findWasteGroups(
+    owners: OwnerAccess[],
+    range: { from: Date; previousFrom: Date; to: Date },
+  ): Promise<WasteGroupRow[]>;
+  findWasteItems(owners: OwnerAccess[], range: { from: Date; to: Date }): Promise<WasteItemRow[]>;
+  findWasteRows(itemId: string, since: Date): Promise<WasteRow[]>;
+  refreshForecasts(itemIds: string[], today: Date): Promise<void>;
+  setLeftoverDismissal(lotId: string, quantity: null | number): Promise<void>;
   update(params: UpdateStockDatasourceParams): Promise<StockItemWithLots>;
 }
 export interface UpdateStockDatasourceParams {

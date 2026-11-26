@@ -9,6 +9,7 @@ import {
 import { GetUserFamilyAccessUseCase } from '@family/application/use-case/GetUserFamilyAccessUseCase';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import {
+  ListSchedule,
   ShoppingListCard,
   ShoppingListDetail,
   ShoppingRowView,
@@ -25,6 +26,9 @@ import { OwnerAccess } from '@stock/domain/entity/OwnerAccess';
 import ShoppingListEntity from '@stock/domain/entity/ShoppingListEntity';
 import { StockUnits } from '@stock/domain/entity/StockEntity';
 
+function day(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
 function toListOutput(list: ShoppingListEntity) {
   return {
     currency: list.currency as 'BRL' | 'EUR' | 'USD',
@@ -35,6 +39,7 @@ function toListOutput(list: ShoppingListEntity) {
     name: list.name,
     owner: list.owner,
     ownerId: list.ownerId,
+    purchaseIntervalDays: list.purchaseIntervalDays,
     status: list.status,
   };
 }
@@ -42,6 +47,13 @@ function toRowOutput(row: ShoppingRowView) {
   return {
     description: row.description,
     estimateCents: row.estimateCents ?? null,
+    forecast: row.forecast
+      ? {
+          minDate: day(row.forecast.minDate),
+          nextTripDate: day(row.forecast.nextTripDate),
+          projectedOnTrip: row.forecast.projectedOnTrip,
+        }
+      : null,
     id: row.id,
     itemId: row.itemId ?? null,
     origin: row.origin,
@@ -57,6 +69,13 @@ function toRowOutput(row: ShoppingRowView) {
       : null,
     unit: row.unit,
     unitPriceCents: row.unitPriceCents ?? null,
+    wasteRatio90d: row.wasteRatio90d ?? null,
+  };
+}
+function toScheduleOutput(schedule: ListSchedule) {
+  return {
+    nextTripDate: day(schedule.nextTripDate),
+    suggestedIntervalDays: schedule.suggestedIntervalDays,
   };
 }
 
@@ -124,8 +143,10 @@ export class ShoppingListService {
         ...toListOutput(card.list),
         autoCount: card.autoCount,
         estimatedTotalCents: card.estimatedTotalCents,
+        forecastCount: card.forecastCount,
         pricedCount: card.pricedCount,
         rowCount: card.rowCount,
+        ...toScheduleOutput(card.schedule),
       })),
     };
   }
@@ -145,7 +166,7 @@ export class ShoppingListService {
         subtotalCents: group.subtotalCents,
         unpricedCount: group.unpricedCount,
       })),
-      list: toListOutput(detail.list),
+      list: { ...toListOutput(detail.list), ...toScheduleOutput(detail.schedule) },
       totals: detail.totals,
     };
   }
