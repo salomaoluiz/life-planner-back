@@ -8,7 +8,7 @@ export const DELIVERY_BATCH_LIMIT = 1000;
 export const RECEIPT_MIN_AGE_MINUTES = 15;
 export const RECEIPT_MAX_AGE_HOURS = 24;
 export const RECEIPT_BATCH_LIMIT = 1000;
-export const TEST_PUSH_LIMIT = 5;
+export const TEST_PUSH_LIMIT = 5000;
 export const TEST_PUSH_WINDOW_MS = 3_600_000;
 export const DEVICE_NOT_REGISTERED = 'DeviceNotRegistered';
 

@@ -7,6 +7,7 @@ Format: [Keep a Changelog](https://keepachangelog.com).
 
 ### Changed
 
+- Test pushes (`/notifications/devices/:id/test`) are limited to 5000 per hour instead of 5.
 - **Breaking:** `GET /stock/locations` returns a tree (`children`, `parentId`, `color`, `icon`, `owner`, `ownerId`) and the location name is unique per sibling; `owner`/`ownerId` are optional on the category and location lists (none = every readable owner) and `itemCount` counts the subtree (spec 125).
 
 ### Added
