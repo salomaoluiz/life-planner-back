@@ -131,6 +131,12 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer <staging-jwt>
 
 - Set `BRAPI_TOKEN` and `FINNHUB_TOKEN` in the stack environment (both optional: a missing token turns that market into manual values). `INVESTMENT_QUOTES_JOB_ENABLED=false` stops the hourly job; `INVESTMENT_QUOTES_MIN_INTERVAL_MS` (e.g. `14400000` for about 4 runs a day) skips ticks that come sooner than that after the last run of the same market (in memory, resets on restart).
 
+### Notifications (spec 124)
+
+- Generate the Web Push (VAPID) key pair once with `npx web-push generate-vapid-keys` and set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` (a `mailto:` contact) in the stack environment; the public key is served to the web app by `GET /api/v1/notifications/web-push-key`. `EXPO_ACCESS_TOKEN` is optional (Expo enhanced push security). The native push credentials (APNs key, FCM v1) live in EAS, never in the repo.
+- `NOTIFICATION_JOB_ENABLED` (default `true` here, `false` in staging) runs the tick every `NOTIFICATION_TICK_MINUTES` (1, 5, 10, 15, 20, 30 or 60) under a Postgres advisory lock, so a second API instance never runs it too. Rollback: set it to `false`; the tables and endpoints can stay.
+- Without the VAPID keys Web Push deliveries are retried and end as `FAILED`; Expo push works without extra variables. Logs never carry tokens, endpoints, keys or notice text.
+
 ## 7. Release and rollback
 
 - **Release:** merge to `main` → wait for the `release` workflow (it tags `vX.Y.Z` and publishes the GitHub release; the API reports it as the latest version) → Portainer "Pull and redeploy" of the affected stack (API and web together when the API contract changes) → new APK only when the app changed. `main` must stay deployable: PRs merge green and migrations are additive.

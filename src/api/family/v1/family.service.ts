@@ -21,6 +21,7 @@ import { GetFamilyArchiveBlockersUseCase } from '@finance/application/use-case/G
 import { RemoveFamilyAccountFavoritesUseCase } from '@finance/application/use-case/RemoveFamilyAccountFavoritesUseCase';
 import { RemoveFamilyFromCategoryScopesUseCase } from '@finance/application/use-case/RemoveFamilyFromCategoryScopesUseCase';
 import { RemoveFamilyFromTagScopesUseCase } from '@finance/application/use-case/RemoveFamilyFromTagScopesUseCase';
+import { RemoveFamilyNotificationsUseCase } from '@notification/application/use-case/RemoveFamilyNotificationsUseCase';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { FindUserByIdUseCase } from '@user/application/use-case/FindUserByIdUseCase';
 
@@ -51,6 +52,7 @@ export class FamilyService {
     private readonly removeFamilyAccountFavoritesUseCase: RemoveFamilyAccountFavoritesUseCase,
     private readonly removeFamilyFromCategoryScopesUseCase: RemoveFamilyFromCategoryScopesUseCase,
     private readonly removeFamilyFromTagScopesUseCase: RemoveFamilyFromTagScopesUseCase,
+    private readonly removeFamilyNotificationsUseCase: RemoveFamilyNotificationsUseCase,
     private readonly updateFamilyUseCase: UpdateFamilyUseCase,
     @Inject(FAMILY_OWNED_RECORDS_CHECKS)
     private readonly ownedRecordsChecks: IOwnedRecordsCheck[],
@@ -119,6 +121,8 @@ export class FamilyService {
     await this.removeFamilyFromTagScopesUseCase.execute({ familyId });
     // Spec 094 FR 6: nobody keeps a favorite pointing to an account of the deleted family.
     await this.removeFamilyAccountFavoritesUseCase.execute({ familyId });
+    // Spec 124 section 4: nobody keeps notice items of the deleted family.
+    await this.removeFamilyNotificationsUseCase.execute({ familyId });
   }
 
   async findAll(userId: string): Promise<FamilyOutput[]> {

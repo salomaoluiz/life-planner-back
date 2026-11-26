@@ -19,6 +19,7 @@
       "@finance/*": ["src/modules/finance/*"],
       "@family/*": ["src/modules/family/*"],
       "@investment/*": ["src/modules/investment/*"],
+      "@notification/*": ["src/modules/notification/*"],
       "@stock/*": ["src/modules/stock/*"],
       "@user/*": ["src/modules/user/*"],
       "@auth/*": ["src/modules/auth/*"],

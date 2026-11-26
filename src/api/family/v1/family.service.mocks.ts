@@ -17,6 +17,7 @@ import { GetFamilyArchiveBlockersUseCase } from '@finance/application/use-case/G
 import { RemoveFamilyAccountFavoritesUseCase } from '@finance/application/use-case/RemoveFamilyAccountFavoritesUseCase';
 import { RemoveFamilyFromCategoryScopesUseCase } from '@finance/application/use-case/RemoveFamilyFromCategoryScopesUseCase';
 import { RemoveFamilyFromTagScopesUseCase } from '@finance/application/use-case/RemoveFamilyFromTagScopesUseCase';
+import { RemoveFamilyNotificationsUseCase } from '@notification/application/use-case/RemoveFamilyNotificationsUseCase';
 import { FindUserByIdUseCase } from '@user/application/use-case/FindUserByIdUseCase';
 
 // region Mocks
@@ -42,6 +43,7 @@ const familyApiMock = {
 const addFamilyToCategoryScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const addFamilyToTagScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const removeFamilyAccountFavoritesMock = { execute: jest.fn().mockResolvedValue(undefined) };
+const removeFamilyNotificationsMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const removeFamilyFromTagScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const removeFamilyFromCategoryScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const createFamilyUseCaseMock = { execute: jest.fn().mockResolvedValue(familyResultMock) };
@@ -87,6 +89,7 @@ beforeEach(async () => {
         useValue: removeFamilyAccountFavoritesMock,
       },
       { provide: RemoveFamilyFromTagScopesUseCase, useValue: removeFamilyFromTagScopesMock },
+      { provide: RemoveFamilyNotificationsUseCase, useValue: removeFamilyNotificationsMock },
       {
         provide: RemoveFamilyFromCategoryScopesUseCase,
         useValue: removeFamilyFromCategoryScopesMock,
@@ -126,6 +129,7 @@ const mocks = {
   removeFamilyAccountFavorites: removeFamilyAccountFavoritesMock,
   removeFamilyFromCategoryScopes: removeFamilyFromCategoryScopesMock,
   removeFamilyFromTagScopes: removeFamilyFromTagScopesMock,
+  removeFamilyNotifications: removeFamilyNotificationsMock,
   updateFamilyUseCase: updateFamilyUseCaseMock,
   userId,
 };

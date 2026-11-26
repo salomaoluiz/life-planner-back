@@ -4,11 +4,12 @@ import { FamilyMemberController } from '@api/family-member/v1/family-member.cont
 import { FamilyMemberService } from '@api/family-member/v1/family-member.service';
 import { FamilyModule } from '@family/family.module';
 import { FinanceModule } from '@finance/finance.module';
+import { NotificationModule } from '@notification/notification.module';
 import { UserModule } from '@user/user.module';
 
 @Module({
   controllers: [FamilyMemberController],
-  imports: [FamilyModule, FinanceModule, UserModule],
+  imports: [FamilyModule, FinanceModule, NotificationModule, UserModule],
   providers: [FamilyMemberService],
 })
 export class FamilyMemberAPIModule {}

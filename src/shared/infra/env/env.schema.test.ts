@@ -28,6 +28,8 @@ describe('validateEnvironment', () => {
       LLM_TIMEOUT_SEARCH_MS: 15000,
       LLM_USAGE_TIMEZONE: 'America/Sao_Paulo',
       MARKET_INDEX_JOB_ENABLED: true,
+      NOTIFICATION_JOB_ENABLED: true,
+      NOTIFICATION_TICK_MINUTES: 15,
       OPEN_FOOD_FACTS_TIMEOUT_MS: 2000,
       OPEN_FOOD_FACTS_URL: 'https://world.openfoodfacts.org',
       OPEN_FOOD_FACTS_USER_AGENT: 'LifePlanner/1.0',
@@ -261,5 +263,25 @@ describe('GIVEN the monitoring variables (spec 106)', () => {
     expect(throwableSetup({ ...mocks.validConfig, SENTRY_TRACES_SAMPLE_RATE: '2' })).toBeInstanceOf(
       Error,
     );
+  });
+});
+
+describe('GIVEN the notification variables (spec 124)', () => {
+  it('SHOULD accept only tick intervals that land on the same minutes every hour', () => {
+    expect(setup({ ...mocks.validConfig, NOTIFICATION_TICK_MINUTES: '30' })).toEqual(
+      expect.objectContaining({ NOTIFICATION_TICK_MINUTES: 30 }),
+    );
+    expect(() => setup({ ...mocks.validConfig, NOTIFICATION_TICK_MINUTES: '7' })).toThrow();
+  });
+
+  it('SHOULD turn the job off only with false AND treat empty VAPID keys as unset', () => {
+    const result = setup({
+      ...mocks.validConfig,
+      NOTIFICATION_JOB_ENABLED: 'false',
+      VAPID_PUBLIC_KEY: '',
+    });
+
+    expect(result.NOTIFICATION_JOB_ENABLED).toBe(false);
+    expect(result.VAPID_PUBLIC_KEY).toBeUndefined();
   });
 });

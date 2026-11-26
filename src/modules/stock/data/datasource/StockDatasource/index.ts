@@ -16,6 +16,7 @@ import {
   StockItemWithLots,
   UpdateStockDatasourceParams,
 } from '@stock/data/repository/datasource/IStockDatasource';
+import { ExpiringLotRow } from '@stock/domain/entity/ExpiringLot';
 import { OwnerAccess } from '@stock/domain/entity/OwnerAccess';
 import { discardValue } from '@stock/domain/service/LotPrice';
 import { todayUtc } from '@stock/domain/service/Today';
@@ -601,6 +602,36 @@ export class StockDatasource implements IStockDatasource {
       // The stored leftover follows the dismissal (the forecast is the only place the warning is read from).
       await recomputeForecasts(tx, [lot.item_id], todayUtc());
     });
+  }
+
+  // Spec 124 FR 29: the window is each item's own (116 FR 20), in SQL so the page of owners costs one statement.
+  async findExpiringLots(owners: OwnerAccess[], today: string): Promise<ExpiringLotRow[]> {
+    if (owners.length === 0) {
+      return [];
+    }
+
+    const ownerClauses = owners.map(
+      (access) =>
+        Prisma.sql`(i."owner" = ${access.owner}::"OwnerType" AND i."owner_id" = ${access.ownerId})`,
+    );
+
+    return this.db.client.$queryRaw<ExpiringLotRow[]>(Prisma.sql`
+      SELECT l."id" AS "lot_id", i."id" AS "item_id", i."description" AS "description",
+        l."quantity"::float8 AS "quantity", i."unit"::text AS "unit", loc."name" AS "location",
+        i."owner"::text AS "owner", i."owner_id" AS "owner_id", l."expiration_date" AS "expiration_date",
+        l."opened_at" AS "opened_at", i."opened_shelf_life_days" AS "opened_shelf_life_days",
+        i."warn_days_closed" AS "warn_days_closed", i."warn_days_opened" AS "warn_days_opened"
+      FROM "stock_lots" l
+      JOIN "stock_items" i ON i."id" = l."item_id"
+      LEFT JOIN "stock_locations" loc ON loc."id" = i."location_id"
+      WHERE l."quantity" > 0 AND (${Prisma.join(ownerClauses, ' OR ')})
+        AND LEAST(
+          l."expiration_date",
+          CASE WHEN l."opened_at" IS NOT NULL AND i."opened_shelf_life_days" IS NOT NULL
+            THEN l."opened_at" + i."opened_shelf_life_days" END
+        ) <= ${today}::date + (CASE WHEN l."opened_at" IS NULL THEN i."warn_days_closed" ELSE i."warn_days_opened" END)
+      ORDER BY l."id" ASC
+    `);
   }
 
   // One grouped statement over the movements of the period, joined to the owner's items.

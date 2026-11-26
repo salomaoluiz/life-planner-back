@@ -11,7 +11,14 @@ export function buildCorsOptions(raw: string): CorsOptions | undefined {
   }
 
   return {
-    allowedHeaders: ['Authorization', 'Content-Type', 'sentry-trace', 'baggage', 'Idempotency-Key'],
+    allowedHeaders: [
+      'Authorization',
+      'Content-Type',
+      'sentry-trace',
+      'baggage',
+      'Idempotency-Key',
+      'X-Device-Id',
+    ],
     credentials: false,
     maxAge: 86400,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],

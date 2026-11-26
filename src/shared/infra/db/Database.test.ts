@@ -116,4 +116,42 @@ describe('Database', () => {
       expect(transaction).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('withAdvisoryLock', () => {
+    function mockLock(locked: boolean | undefined) {
+      const tx = {
+        $queryRaw: jest.fn().mockResolvedValue(locked === undefined ? [] : [{ locked }]),
+      };
+      const transaction = jest.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
+        callback(tx),
+      );
+
+      Object.assign(mocks.prismaClientInstance, { $transaction: transaction });
+
+      return { transaction, tx };
+    }
+
+    it('SHOULD run the work AND report true WHEN the lock is taken', async () => {
+      const { transaction } = mockLock(true);
+      const work = jest.fn().mockResolvedValue(undefined);
+
+      expect(await setup.withAdvisoryLock(124001, work)).toBe(true);
+      expect(work).toHaveBeenCalledTimes(1);
+      expect(transaction).toHaveBeenCalledWith(expect.any(Function), {
+        maxWait: 5000,
+        timeout: 300000,
+      });
+    });
+
+    it.each([false, undefined])(
+      'SHOULD skip the work AND report false WHEN the lock row is %s',
+      async (locked) => {
+        mockLock(locked);
+        const work = jest.fn();
+
+        expect(await setup.withAdvisoryLock(124001, work)).toBe(false);
+        expect(work).not.toHaveBeenCalled();
+      },
+    );
+  });
 });

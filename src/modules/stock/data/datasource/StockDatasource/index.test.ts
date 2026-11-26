@@ -375,6 +375,18 @@ describe('Method applyGestureChange', () => {
   });
 });
 
+describe('Method findExpiringLots (spec 124)', () => {
+  it('SHOULD skip the query without owners AND read every owner in ONE statement', async () => {
+    spies.queryRaw.mockResolvedValue([{ lot_id: 'lot-1' }]);
+
+    expect(await setup.findExpiringLots([], '2026-11-23')).toEqual([]);
+    expect(spies.queryRaw).not.toHaveBeenCalled();
+    expect(await setup.findExpiringLots(mocks.owners, '2026-11-23')).toEqual([{ lot_id: 'lot-1' }]);
+    expect(spies.queryRaw).toHaveBeenCalledTimes(1);
+    expect(spies.queryRaw.mock.calls[0][0].sql).toContain('"warn_days_closed"');
+  });
+});
+
 describe('Method findFrequentItemIds / findByIds', () => {
   it('SHOULD rank in one grouped statement and skip the query without owners', async () => {
     spies.queryRaw.mockResolvedValue([{ item_id: 'a' }, { item_id: 'b' }]);

@@ -3,6 +3,14 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [6.7.0] - 2026-11-25
+
+### Added
+
+- Notifications (spec 124): a daily summary push at the time each user chooses (what expires and what is due, urgent first) plus a push on the day for things that become urgent later, with quiet hours; kept for 30 days in a notice center (`GET /notifications`, unread count with ETag, read / read all).
+- Preferences (`/notifications/preferences`: types, lead days for bills and invoices, summary time, quiet hours, families) and devices (`/notifications/devices`, test push, Web Push key) for Expo push (iOS/Android) and Web Push.
+- Four notice types: closed lot expiring, opened lot expiring (each item's own warning window), bill due and card invoice due. The job is `NOTIFICATION_JOB_ENABLED` (off in staging until `VAPID_*` and `EXPO_ACCESS_TOKEN` are set); removing a member or deleting a family drops their notices.
+
 ## [6.6.0] - 2026-11-25
 
 ### Added

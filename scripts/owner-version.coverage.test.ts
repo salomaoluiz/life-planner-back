@@ -24,6 +24,7 @@ const EXEMPT = new Set([
   'stock_shopping_lists', // not finance, same as stock_categories (spec 118: no stock ETag yet)
   'stock_markets', // not finance, same as stock_categories (spec 120: no stock ETag yet)
   'stock_purchases', // not finance, same as stock_categories (spec 120: no stock ETag yet)
+  'notification_items', // not finance: user-scoped notices, read by their user and never by a finance GET (spec 124)
   'investment_assets', // not finance: investment reads carry no ETag; the finance rows an operation writes are bumped
 ]);
 

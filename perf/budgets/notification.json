@@ -1,0 +1,124 @@
+{
+  "DELETE /api/v1/notifications/devices/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "GET /api/v1/notifications": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 3,
+    "p50Ms": null,
+    "scenario": ""
+  },
+  "GET /api/v1/notifications/devices": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 2,
+    "p50Ms": null,
+    "scenario": ""
+  },
+  "GET /api/v1/notifications/preferences": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 5,
+    "p50Ms": null,
+    "scenario": ""
+  },
+  "GET /api/v1/notifications/summary-preview": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Collects stock and finance rows for the caller (the same collectors as the tick); its cost follows the stock and finance budgets, measured there.",
+    "scenario": ""
+  },
+  "GET /api/v1/notifications/unread-count": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": null,
+    "maxQueries": 2,
+    "p50Ms": null,
+    "scenario": ""
+  },
+  "GET /api/v1/notifications/web-push-key": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Answers 404 until the VAPID keys are configured, which the perf environment does not do.",
+    "scenario": ""
+  },
+  "PATCH /api/v1/notifications/devices/:id": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "PATCH /api/v1/notifications/devices/:id/seen": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "PATCH /api/v1/notifications/preferences": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "POST /api/v1/notifications/:id/read": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "POST /api/v1/notifications/devices": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "POST /api/v1/notifications/read-all": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Writes are not measured: perf tests only read (spec 093).",
+    "scenario": ""
+  },
+  "POST /api/v1/notifications/test": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Sends a real push through the providers (limited to 5 per hour).",
+    "scenario": ""
+  }
+}

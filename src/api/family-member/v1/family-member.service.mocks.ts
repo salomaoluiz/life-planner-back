@@ -12,6 +12,7 @@ import { AddFamilyToTagScopesUseCase } from '@finance/application/use-case/AddFa
 import { DetachCategoryCreatorFromFamilyUseCase } from '@finance/application/use-case/DetachCategoryCreatorFromFamilyUseCase';
 import { DetachTagCreatorFromFamilyUseCase } from '@finance/application/use-case/DetachTagCreatorFromFamilyUseCase';
 import { RemoveFamilyAccountFavoritesUseCase } from '@finance/application/use-case/RemoveFamilyAccountFavoritesUseCase';
+import { RemoveFamilyNotificationsUseCase } from '@notification/application/use-case/RemoveFamilyNotificationsUseCase';
 import { FindUserByIdUseCase } from '@user/application/use-case/FindUserByIdUseCase';
 import { FindUsersByIdsUseCase } from '@user/application/use-case/FindUsersByIdsUseCase';
 
@@ -60,6 +61,7 @@ const addFamilyToCategoryScopesMock = { execute: jest.fn().mockResolvedValue(und
 const detachCategoryCreatorMock = { execute: jest.fn().mockResolvedValue(0) };
 const addFamilyToTagScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const removeFamilyAccountFavoritesMock = { execute: jest.fn().mockResolvedValue(undefined) };
+const removeFamilyNotificationsMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const detachTagCreatorMock = { execute: jest.fn().mockResolvedValue(0) };
 const deleteFamilyMemberUseCaseMock = { execute: jest.fn() };
 const findUserByIdUseCaseMock = { execute: jest.fn() };
@@ -99,6 +101,7 @@ beforeEach(async () => {
       { provide: AddFamilyToCategoryScopesUseCase, useValue: addFamilyToCategoryScopesMock },
       { provide: AddFamilyToTagScopesUseCase, useValue: addFamilyToTagScopesMock },
       { provide: DetachTagCreatorFromFamilyUseCase, useValue: detachTagCreatorMock },
+      { provide: RemoveFamilyNotificationsUseCase, useValue: removeFamilyNotificationsMock },
       {
         provide: RemoveFamilyAccountFavoritesUseCase,
         useValue: removeFamilyAccountFavoritesMock,
@@ -137,6 +140,7 @@ const mocks = {
   logger: loggerMock,
   otherUserId,
   removeFamilyAccountFavorites: removeFamilyAccountFavoritesMock,
+  removeFamilyNotifications: removeFamilyNotificationsMock,
   rows: { joined: joinedRow, owner: ownerRow, pending: pendingRow },
   userId,
 };

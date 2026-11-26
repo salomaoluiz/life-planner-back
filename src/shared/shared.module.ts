@@ -19,6 +19,7 @@ import { BcbIndexes } from './infra/market-index/bcb';
 import { PgNotifier } from './infra/notifier';
 import { OpenFoodFacts } from './infra/open-food-facts';
 import { BcryptHasher } from './infra/password-hasher/bcrypt/BcryptHasher';
+import { PushSender } from './infra/push';
 import { BrapiQuotes } from './infra/quotes/brapi';
 import { FinnhubQuotes } from './infra/quotes/finnhub';
 import { FxRates } from './infra/quotes/fx';
@@ -41,6 +42,7 @@ import { Scheduler } from './infra/scheduler';
     'IOpenFoodFacts',
     'IScheduler',
     'INotifier',
+    'IPushSender',
     Database,
     EnvModule,
   ],
@@ -53,6 +55,7 @@ import { Scheduler } from './infra/scheduler';
     { provide: 'IGithubReleases', useClass: GithubReleases },
     { provide: 'IBuildInfo', useClass: BuildInfoReader },
     { provide: 'INotifier', useClass: PgNotifier },
+    { provide: 'IPushSender', useClass: PushSender },
     { provide: 'IBrapiQuotes', useClass: BrapiQuotes },
     { provide: 'IFinnhubQuotes', useClass: FinnhubQuotes },
     { provide: 'IFxRates', useClass: FxRates },

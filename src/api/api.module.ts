@@ -7,6 +7,7 @@ import { FamilyAPIModule } from '@api/family/family.module';
 import { ExternalProjectionModule } from '@api/finance/external-projection.module';
 import { FinanceAPIModule } from '@api/finance/finance.module';
 import { InvestmentAPIModule } from '@api/investment/investment.module';
+import { NotificationAPIModule } from '@api/notification/notification.module';
 import { StockAPIModule } from '@api/stock/stock.module';
 import { UserAPIModule } from '@api/user/user.module';
 import { VersionAPIModule } from '@api/version/version.module';
@@ -22,6 +23,7 @@ import { HealthModule } from './health/health.module';
     FamilyMemberAPIModule,
     FinanceAPIModule,
     InvestmentAPIModule,
+    NotificationAPIModule,
     StockAPIModule,
     UserAPIModule,
     UserExistsCheckModule,

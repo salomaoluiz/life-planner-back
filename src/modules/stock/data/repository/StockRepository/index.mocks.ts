@@ -19,6 +19,7 @@ const datasource = {
   findById: jest.fn(),
   findByIds: jest.fn(),
   findByOwners: jest.fn(),
+  findExpiringLots: jest.fn(),
   findFrequentItemIds: jest.fn(),
   findMovements: jest.fn(),
   update: jest.fn(),

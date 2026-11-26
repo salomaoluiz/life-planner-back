@@ -1,11 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import { StockUnit } from '@db/client';
+import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 import { StockMapper } from '@stock/data/datasource/mapper/StockMapper';
 import {
   IStockDatasource,
   MovementOperationDatasource,
 } from '@stock/data/repository/datasource/IStockDatasource';
+import { ExpiringLot } from '@stock/domain/entity/ExpiringLot';
 import { OwnerAccess } from '@stock/domain/entity/OwnerAccess';
 import StockEntity from '@stock/domain/entity/StockEntity';
 import StockMovementEntity from '@stock/domain/entity/StockMovementEntity';
@@ -19,6 +21,7 @@ import {
   StockFilter,
   UpdateStockRepositoryParams,
 } from '@stock/domain/repository';
+import { daysBetween, effectiveExpiration } from '@stock/domain/service/LotExpiration';
 
 function toDatasourceOperation(operation: MovementOperation): MovementOperationDatasource {
   return {
@@ -187,6 +190,32 @@ export class StockRepository implements IStockRepository {
     );
 
     return result.map((row) => StockMapper.toDomain(row));
+  }
+
+  async findExpiringLots(owners: OwnerAccess[], today: string): Promise<ExpiringLot[]> {
+    const rows = await this.stockDatasource.findExpiringLots(owners, today);
+    const day = new Date(`${today}T00:00:00.000Z`);
+
+    return rows.map((row) => {
+      const expiration = effectiveExpiration(
+        { expirationDate: row.expiration_date ?? undefined, openedAt: row.opened_at ?? undefined },
+        row.opened_shelf_life_days ?? undefined,
+      ) as Date;
+
+      return {
+        daysLeft: daysBetween(day, expiration),
+        description: row.description,
+        expiresOn: expiration.toISOString().slice(0, 10),
+        itemId: row.item_id,
+        location: row.location,
+        lotId: row.lot_id,
+        opened: row.opened_at !== null,
+        owner: row.owner as OwnerType,
+        ownerId: row.owner_id,
+        quantity: row.quantity,
+        unit: row.unit,
+      };
+    });
   }
 
   async findFirstDiscardDate(owners: OwnerAccess[]) {

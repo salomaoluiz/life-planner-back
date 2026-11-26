@@ -17,6 +17,7 @@ import { AddFamilyToTagScopesUseCase } from '@finance/application/use-case/AddFa
 import { DetachCategoryCreatorFromFamilyUseCase } from '@finance/application/use-case/DetachCategoryCreatorFromFamilyUseCase';
 import { DetachTagCreatorFromFamilyUseCase } from '@finance/application/use-case/DetachTagCreatorFromFamilyUseCase';
 import { RemoveFamilyAccountFavoritesUseCase } from '@finance/application/use-case/RemoveFamilyAccountFavoritesUseCase';
+import { RemoveFamilyNotificationsUseCase } from '@notification/application/use-case/RemoveFamilyNotificationsUseCase';
 import { ILogger, LogLevel } from '@shared/infra/logger/types';
 import { FindUserByIdUseCase } from '@user/application/use-case/FindUserByIdUseCase';
 import { FindUsersByIdsUseCase } from '@user/application/use-case/FindUsersByIdsUseCase';
@@ -51,6 +52,7 @@ export class FamilyMemberService {
     private readonly detachCategoryCreatorFromFamilyUseCase: DetachCategoryCreatorFromFamilyUseCase,
     private readonly detachTagCreatorFromFamilyUseCase: DetachTagCreatorFromFamilyUseCase,
     private readonly removeFamilyAccountFavoritesUseCase: RemoveFamilyAccountFavoritesUseCase,
+    private readonly removeFamilyNotificationsUseCase: RemoveFamilyNotificationsUseCase,
     private readonly findUserByIdUseCase: FindUserByIdUseCase,
     private readonly findUsersByIdsUseCase: FindUsersByIdsUseCase,
     private readonly getFamilyInvitePreviewUseCase: GetFamilyInvitePreviewUseCase,
@@ -91,6 +93,11 @@ export class FamilyMemberService {
       });
       // Spec 094 FR 6: the favorite that pointed to an account of this family goes away.
       await this.removeFamilyAccountFavoritesUseCase.execute({
+        familyId: removed.familyId,
+        userId: removed.userId,
+      });
+      // Spec 124 section 4: their family switch and the notice items of this family leave their center.
+      await this.removeFamilyNotificationsUseCase.execute({
         familyId: removed.familyId,
         userId: removed.userId,
       });

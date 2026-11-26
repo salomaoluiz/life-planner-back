@@ -6,6 +6,7 @@ export const internalModules = [
   '@family',
   '@finance',
   '@investment',
+  '@notification',
   '@stock',
   '@user',
   '@version',

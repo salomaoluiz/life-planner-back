@@ -25,6 +25,7 @@ import { DeleteStockItemUseCase } from '@stock/application/use-case/DeleteStockI
 import { DeleteStockLocationUseCase } from '@stock/application/use-case/DeleteStockLocationUseCase';
 import { DismissLeftoverUseCase } from '@stock/application/use-case/DismissLeftoverUseCase';
 import { EnsureDefaultShoppingListUseCase } from '@stock/application/use-case/EnsureDefaultShoppingListUseCase';
+import { FindExpiringLotsForOwnersUseCase } from '@stock/application/use-case/FindExpiringLotsForOwnersUseCase';
 import { FindItemsByBarcodeUseCase } from '@stock/application/use-case/FindItemsByBarcodeUseCase';
 import { GetAiUsageUseCase } from '@stock/application/use-case/GetAiUsageUseCase';
 import { GetClosePreviewUseCase } from '@stock/application/use-case/GetClosePreviewUseCase';
@@ -122,6 +123,7 @@ const useCases = [
   GetAiUsageUseCase,
   DismissLeftoverUseCase,
   GetConsumptionWeeksUseCase,
+  FindExpiringLotsForOwnersUseCase,
   GetFrequentStockItemsUseCase,
   GetOwnerChangePreviewUseCase,
   RefreshStaleForecastsUseCase,
