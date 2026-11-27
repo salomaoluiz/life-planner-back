@@ -38,6 +38,7 @@ model User {
   notification_preferences        NotificationPreference?
   notification_family_preferences NotificationFamilyPreference[]
   notifications                   Notification[]
+  activity_entries                ActivityEntry[]
   notification_items              NotificationItem[]
 }
 
@@ -1791,4 +1792,85 @@ model NotificationDelivery {
   @@index([device_id])
   @@index([notification_id])
   @@map("notification_deliveries")
+}
+
+enum ActivityModule {
+  FINANCE
+  INVESTMENT
+}
+
+enum ActivityAction {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+enum ActivityEntityType {
+  TRANSACTION
+  TRANSFER
+  SPLIT
+  RECURRENCE
+  INSTALLMENT_PLAN
+  INSTALLMENT_PREPAYMENT
+  CARD_REFUND
+  CARD_EARLY_PAYMENT
+  INVOICE_PAYMENT
+  BALANCE_ADJUSTMENT
+  ACCOUNT
+  CREDIT_CARD
+  CATEGORY
+  TAG
+  TRANSACTION_IMPORT
+  STOCK_PURCHASE_POSTING
+  ASSET
+  OPERATION
+  VALUATION
+  FIXED_INCOME_TERMS
+  INCOME
+  INCOME_SERIES
+  CORPORATE_EVENT
+  CONVERSION
+}
+
+// Spec 127: immutable record of a user action in Finance or Investments.
+model ActivityEntry {
+  id          String             @id @default(uuid())
+  owner       OwnerType
+  owner_id    String
+  modules     ActivityModule[]
+  action      ActivityAction
+  batch       Boolean            @default(false)
+  entity_type ActivityEntityType
+  entity_id   String?
+  actor_id    String?
+  actor_name  String
+  occurred_at DateTime           @default(now()) @db.Timestamptz(6)
+  summary     Json
+  changes     Json?
+  search_text String
+
+  actor User?                @relation(fields: [actor_id], references: [id], onDelete: SetNull)
+  items ActivityEntryItem[]
+
+  @@index([owner, owner_id, occurred_at(sort: Desc), id])
+  @@index([occurred_at])
+  @@map("activity_entries")
+}
+
+model ActivityEntryItem {
+  id           String             @id @default(uuid())
+  entry_id     String
+  action       ActivityAction
+  entity_type  ActivityEntityType
+  entity_id    String
+  label        String
+  amount_cents BigInt?
+  currency     String?
+  booking_date DateTime?          @db.Date
+  source_name  String?
+
+  entry ActivityEntry @relation(fields: [entry_id], references: [id], onDelete: Cascade)
+
+  @@index([entry_id, booking_date(sort: Desc), id])
+  @@map("activity_entry_items")
 }
