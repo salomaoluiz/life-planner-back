@@ -17,6 +17,19 @@ export function valueStream<T>(value: T): Observable<T> {
   });
 }
 
+// An Observable of the result of `work` (interceptors that wrap a handler in async work).
+export function fromPromise<T>(work: () => Promise<T>): Observable<T> {
+  return new Observable<T>((subscriber) => {
+    work().then(
+      (value) => {
+        subscriber.next(value);
+        subscriber.complete();
+      },
+      (error: unknown) => subscriber.error(error),
+    );
+  });
+}
+
 // A value that travels with the async work of ONE request (the handler and everything it awaits).
 export class RequestContextStore<T> {
   private readonly storage = new AsyncLocalStorage<T>();
