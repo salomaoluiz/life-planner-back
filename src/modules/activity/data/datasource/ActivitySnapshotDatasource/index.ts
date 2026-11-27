@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 
 import { FINANCE_SNAPSHOTS } from '@activity/data/datasource/ActivitySnapshotDatasource/finance';
+import { GROUP_READERS } from '@activity/data/datasource/ActivitySnapshotDatasource/groups';
 import { SnapshotReader } from '@activity/data/datasource/ActivitySnapshotDatasource/helpers';
 import { INVESTMENT_SNAPSHOTS } from '@activity/data/datasource/ActivitySnapshotDatasource/investment';
+import { ActivityItemInput } from '@activity/domain/entity/ActivityEntry';
 import { ActivitySnapshot } from '@activity/domain/entity/ActivitySnapshot';
-import { ActivityEntityType } from '@activity/domain/enum';
+import { ActivityEntityType, ActivityGroupKind } from '@activity/domain/enum';
 import { Database } from '@shared/infra/db/Database';
 
 const READERS: Partial<Record<ActivityEntityType, SnapshotReader>> = {
@@ -27,5 +29,9 @@ export class ActivitySnapshotDatasource {
     }
 
     return reader(this.db.client, id);
+  }
+
+  async readGroup(kind: ActivityGroupKind, id: string): Promise<ActivityItemInput[]> {
+    return GROUP_READERS[kind](this.db.client, id);
   }
 }

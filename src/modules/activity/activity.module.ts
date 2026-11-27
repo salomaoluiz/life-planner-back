@@ -4,6 +4,7 @@ import { CleanupActivityUseCase } from '@activity/application/use-case/CleanupAc
 import { ListActivityItemsUseCase } from '@activity/application/use-case/ListActivityItemsUseCase';
 import { ListActivityUseCase } from '@activity/application/use-case/ListActivityUseCase';
 import { PurgeActivityByOwnerUseCase } from '@activity/application/use-case/PurgeActivityByOwnerUseCase';
+import { ReadActivityGroupUseCase } from '@activity/application/use-case/ReadActivityGroupUseCase';
 import { ReadActivitySnapshotUseCase } from '@activity/application/use-case/ReadActivitySnapshotUseCase';
 import { RecordActivityUseCase } from '@activity/application/use-case/RecordActivityUseCase';
 import { ActivityDatasource } from '@activity/data/datasource/ActivityDatasource';
@@ -17,6 +18,7 @@ const useCases = [
   ListActivityItemsUseCase,
   ListActivityUseCase,
   PurgeActivityByOwnerUseCase,
+  ReadActivityGroupUseCase,
   ReadActivitySnapshotUseCase,
   RecordActivityUseCase,
 ];

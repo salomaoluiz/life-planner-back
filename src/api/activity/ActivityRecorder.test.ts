@@ -1,6 +1,6 @@
 import { CallHandler, ExecutionContext } from '@nestjs/common';
 
-import { ActivityAction, ActivityEntityType } from '@activity/domain/enum';
+import { ActivityAction, ActivityEntityType, ActivityGroupKind } from '@activity/domain/enum';
 import { fromPromise, lastValueFrom, valueStream } from '@shared/infra/http/request-context';
 
 import { ActivityDescriptor, ActivityRecorderInterceptor } from './ActivityRecorder';
@@ -8,11 +8,13 @@ import { ActivityDescriptor, ActivityRecorderInterceptor } from './ActivityRecor
 const reflector = { get: jest.fn() };
 const database = { runInTransaction: jest.fn(async (work: () => Promise<unknown>) => work()) };
 const reader = { execute: jest.fn() };
+const group = { execute: jest.fn() };
 const record = { execute: jest.fn() };
 const findUser = { execute: jest.fn() };
 const setup = new ActivityRecorderInterceptor(
   reflector as never,
   database as never,
+  group as never,
   reader as never,
   record as never,
   findUser as never,
@@ -121,29 +123,44 @@ describe('ActivityRecorderInterceptor', () => {
     expect(record.execute).not.toHaveBeenCalled();
   });
 
-  it('SHOULD use the batch predicate, the items AND the extra of the descriptor', async () => {
-    const item = {
-      action: ActivityAction.UPDATE,
-      entityId: 'o',
-      entityType: ActivityEntityType.TRANSACTION,
-      label: 'l',
-    };
+  it('SHOULD list the rows that changed WHEN the route is a batch (group read before and after)', async () => {
+    function row(id: string, amountCents: number) {
+      return {
+        action: ActivityAction.CREATE,
+        amountCents,
+        entityId: id,
+        entityType: ActivityEntityType.TRANSACTION,
+        label: id,
+      };
+    }
 
     reflector.get.mockReturnValue(
       descriptor({
-        batch: (ctx) => ctx.query.scope === undefined,
         extra: () => ({ scope: 'ALL' }),
-        items: async () => [item],
+        group: (ctx) => ({ id: ctx.params.id, kind: ActivityGroupKind.RECURRENCE_ROWS }),
       }),
     );
+    group.execute
+      .mockResolvedValueOnce([row('a', 1), row('b', 1)])
+      .mockResolvedValueOnce([row('a', 2), row('b', 1)]);
 
     await run(async () => ({}));
 
+    expect(group.execute).toHaveBeenCalledWith({ id: 't-1', kind: 'RECURRENCE_ROWS' });
     expect(record.execute.mock.calls[0][0]).toMatchObject({
       batch: true,
       extra: { scope: 'ALL' },
-      items: [item],
+      items: [expect.objectContaining({ action: 'UPDATE', entityId: 'a' })],
     });
+  });
+
+  it('SHOULD be a single entry WHEN the group function returns undefined (scope ONLY_THIS)', async () => {
+    reflector.get.mockReturnValue(descriptor({ group: () => undefined }));
+
+    await run(async () => ({}));
+
+    expect(group.execute).not.toHaveBeenCalled();
+    expect(record.execute.mock.calls[0][0]).toMatchObject({ batch: false, items: [] });
   });
 
   it('SHOULD use the snapshot override instead of reading the after item', async () => {

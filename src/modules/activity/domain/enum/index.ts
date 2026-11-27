@@ -43,3 +43,16 @@ export enum ActivityEntityType {
 }
 
 export const ACTIVITY_PAGE_SIZE = 50;
+
+// A set of rows a batch request writes together; the recorder reads it before and after the request and lists what
+// changed (spec 127 FR 3, 8).
+export enum ActivityGroupKind {
+  CATEGORY_SUBTREE = 'CATEGORY_SUBTREE',
+  CONVERSION_ROWS = 'CONVERSION_ROWS',
+  INCOME_SERIES_ROWS = 'INCOME_SERIES_ROWS',
+  INSTALLMENT_PLAN_ROWS = 'INSTALLMENT_PLAN_ROWS',
+  PREPAYMENT_ROWS = 'PREPAYMENT_ROWS',
+  RECURRENCE_ROWS = 'RECURRENCE_ROWS',
+  SPLIT_ROWS = 'SPLIT_ROWS',
+  TRANSACTION_IDS = 'TRANSACTION_IDS',
+}
