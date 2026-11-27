@@ -108,6 +108,26 @@ describe('Database', () => {
       expect(transaction).toHaveBeenCalledTimes(1);
     });
 
+    it('SHOULD run the array form of $transaction inside the open one, in order', async () => {
+      mockTransaction();
+      const order: string[] = [];
+      function query(name: string) {
+        return {
+          then: (resolve: (value: string) => void) => {
+            order.push(name);
+            resolve(name);
+          },
+        };
+      }
+
+      const received = await setup.runInTransaction(async () =>
+        setup.client.$transaction([query('a'), query('b')] as never),
+      );
+
+      expect(received).toEqual(['a', 'b']);
+      expect(order).toEqual(['a', 'b']);
+    });
+
     it('SHOULD reuse the open transaction WHEN runInTransaction is nested', async () => {
       const { transaction } = mockTransaction();
 
