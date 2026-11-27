@@ -16,6 +16,7 @@
       "@/*": ["src/*"],
       "@shared/*": ["src/shared/*"],
       "@api/*": ["src/api/*"],
+      "@activity/*": ["src/modules/activity/*"],
       "@finance/*": ["src/modules/finance/*"],
       "@family/*": ["src/modules/family/*"],
       "@investment/*": ["src/modules/investment/*"],
