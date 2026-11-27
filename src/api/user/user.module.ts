@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 
+import { ActivityModule } from '@activity/activity.module';
+import { PurgeActivityByOwnerUseCase } from '@activity/application/use-case/PurgeActivityByOwnerUseCase';
 import { AccountDeletionService } from '@api/user/v1/account-deletion.service';
 import { OWNED_RECORDS_PURGES, OwnedRecordsPurgeEntry } from '@api/user/v1/owned-records-purges';
 import { UserController } from '@api/user/v1/user.controller';
@@ -18,6 +20,7 @@ import { UserModule } from '@user/user.module';
 @Module({
   controllers: [UserController],
   imports: [
+    ActivityModule,
     FamilyModule,
     FinanceModule,
     InvestmentModule,
@@ -34,6 +37,7 @@ import { UserModule } from '@user/user.module';
         DeleteStockItemsByOwnerUseCase,
         DeleteInvestmentsByOwnerUseCase,
         DeleteNotificationsByUserUseCase,
+        PurgeActivityByOwnerUseCase,
       ],
       provide: OWNED_RECORDS_PURGES,
       useFactory: (
@@ -41,11 +45,13 @@ import { UserModule } from '@user/user.module';
         deleteStockItems: DeleteStockItemsByOwnerUseCase,
         deleteInvestments: DeleteInvestmentsByOwnerUseCase,
         deleteNotifications: DeleteNotificationsByUserUseCase,
+        purgeActivity: PurgeActivityByOwnerUseCase,
       ): OwnedRecordsPurgeEntry[] => [
         { module: 'finance', purge: deleteFinanceData },
         { module: 'stock', purge: deleteStockItems },
         { module: 'investment', purge: deleteInvestments },
         { module: 'notification', purge: deleteNotifications },
+        { module: 'activity', purge: purgeActivity },
       ],
     },
     UserService,

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { ActivityModule } from '@activity/activity.module';
 import { FAMILY_OWNED_RECORDS_CHECKS } from '@api/family/v1/family-records-checks';
 import { FamilyController } from '@api/family/v1/family.controller';
 import { FamilyService } from '@api/family/v1/family.service';
@@ -16,6 +17,7 @@ import { UserModule } from '@user/user.module';
 @Module({
   controllers: [FamilyController],
   imports: [
+    ActivityModule,
     FamilyModule,
     FinanceModule,
     InvestmentModule,
