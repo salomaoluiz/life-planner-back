@@ -51,6 +51,7 @@ async function operation(client: PrismaClient, id: string): Promise<ActivitySnap
     entityId: row.id,
     entityType: ActivityEntityType.OPERATION,
     extra: {
+      assetId: row.asset_id,
       operationType: row.type,
       quantity: row.quantity?.toString(),
       unitPrice: row.unit_price?.toString(),
@@ -102,7 +103,7 @@ async function valuation(client: PrismaClient, id: string): Promise<ActivitySnap
     currency: row.asset.currency,
     entityId: row.id,
     entityType: ActivityEntityType.VALUATION,
-    extra: { unitPrice: row.unit_price.toString() },
+    extra: { assetId: row.asset_id, unitPrice: row.unit_price.toString() },
     fields: { date: day(row.date), unitPrice: row.unit_price.toString() },
     label: row.asset.ticker ?? row.asset.name,
     modules: INVESTMENT,
@@ -136,6 +137,7 @@ async function conversion(client: PrismaClient, id: string): Promise<ActivitySna
     currency: row.from.currency,
     entityId: row.id,
     entityType: ActivityEntityType.CONVERSION,
+    extra: { assetId: row.from_asset_id },
     fields: {
       cashAmount: row.cash_amount,
       date: day(row.date),
@@ -211,7 +213,7 @@ async function income(client: PrismaClient, id: string): Promise<ActivitySnapsho
     currency: row.currency,
     entityId: row.id,
     entityType: ActivityEntityType.INCOME,
-    extra: { incomeType: row.type },
+    extra: { assetId: row.asset_id, incomeType: row.type },
     fields: {
       amountCents: row.net_amount,
       exDate: day(row.ex_date),
@@ -244,7 +246,7 @@ async function incomeSeries(client: PrismaClient, id: string): Promise<ActivityS
     currency: row.currency,
     entityId: row.id,
     entityType: ActivityEntityType.INCOME_SERIES,
-    extra: { incomeType: row.type },
+    extra: { assetId: row.asset_id, incomeType: row.type },
     fields: {
       amountPerUnit: row.amount_per_unit.toString(),
       endDate: day(row.end_date),

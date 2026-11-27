@@ -387,6 +387,7 @@ describe('fixed income and valuation keys', () => {
     const income = build({
       investmentIncome: {
         asset,
+        asset_id: 'asset-1',
         currency: 'BRL',
         id: 'i-1',
         net_amount: 800,
@@ -402,6 +403,7 @@ describe('fixed income and valuation keys', () => {
       entityId: 'v-1',
     });
     await expect(income.read(ActivityEntityType.INCOME, 'i-1')).resolves.toMatchObject({
+      extra: { assetId: 'asset-1' },
       refs: { seriesId: 's-1' },
     });
   });
