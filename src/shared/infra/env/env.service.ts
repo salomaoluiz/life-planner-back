@@ -103,6 +103,14 @@ export class EnvService {
   }
 
   // Investment quotes (spec 104)
+  get activityRetentionDays(): Env['ACTIVITY_RETENTION_DAYS'] {
+    return this.nestConfigService.get('ACTIVITY_RETENTION_DAYS');
+  }
+
+  get activityRetentionJobEnabled(): Env['ACTIVITY_RETENTION_JOB_ENABLED'] {
+    return this.nestConfigService.get('ACTIVITY_RETENTION_JOB_ENABLED');
+  }
+
   get brapiToken(): Env['BRAPI_TOKEN'] {
     return this.nestConfigService.get('BRAPI_TOKEN');
   }
