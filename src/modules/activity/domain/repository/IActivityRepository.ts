@@ -7,6 +7,7 @@ import {
   EntityRefs,
   NewActivityEntry,
 } from '@activity/domain/entity/ActivityEntry';
+import { ActivityEntityType } from '@activity/domain/enum';
 import { OwnerType } from '@shared/domain/entity/owner/OwnerEntity';
 
 export type IActivityRepository = {
@@ -25,5 +26,7 @@ export type IActivityRepository = {
     id: string,
     owners: { ownerId: string; ownerType: OwnerType }[],
   ): Promise<ActivityEntryEntity | null>;
+  // Every `(entityType, entityId)` of a batch, for the "still exist" count of its header.
+  listItemRefs(entryId: string): Promise<{ entityId: string; entityType: ActivityEntityType }[]>;
   listItems(query: BatchItemsQuery, pageSize: number, withHeader: boolean): Promise<BatchItemsPage>;
 };

@@ -182,6 +182,17 @@ export class ActivityRepository implements IActivityRepository {
     return { hasMore: rows.length > pageSize, rows: rows.slice(0, pageSize).map(toEntry) };
   }
 
+  async listItemRefs(
+    entryId: string,
+  ): Promise<{ entityId: string; entityType: ActivityEntityType }[]> {
+    const rows = await this.datasource.findItemRefs(entryId);
+
+    return rows.map((row) => ({
+      entityId: row.entity_id,
+      entityType: row.entity_type as ActivityEntityType,
+    }));
+  }
+
   async listItems(
     query: BatchItemsQuery,
     pageSize: number,
