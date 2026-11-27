@@ -99,3 +99,47 @@ export function importGroup(
 
   return { id: `${importOwnerKey(context)}|${since}`, kind: ActivityGroupKind.CREATED_SINCE };
 }
+
+// An income of a series edited or removed with a scope beyond this one lists the incomes of the series (FR 3).
+export function incomeSeriesGroup(
+  context: ActivityContext,
+  before: ActivitySnapshot | null,
+): ReturnType<NonNullable<ActivityDescriptor['group']>> {
+  const scope = scopeOf(context);
+  const seriesId = before?.refs?.seriesId;
+
+  if (scope === undefined || scope === 'ONLY_THIS' || !seriesId) {
+    return undefined;
+  }
+
+  return { id: seriesId, kind: ActivityGroupKind.INCOME_SERIES_ROWS };
+}
+
+// `assetId:YYYY-MM-DD` of a valuation route.
+export function valuationKey(context: ActivityContext): string {
+  return `${context.params.id}:${context.params.date}`;
+}
+
+// `rate:<id>` / `adjustment:<id>` find the fixed-income title of that rate or adjustment; once the "before" is known the
+// title id is used (the row itself may be gone after a delete).
+export function adjustmentKey(context: ActivityContext, before: ActivitySnapshot | null): string {
+  return before?.entityId ?? `adjustment:${context.params.id}`;
+}
+export function rateKey(context: ActivityContext, before: ActivitySnapshot | null): string {
+  return before?.entityId ?? `rate:${context.params.id}`;
+}
+
+// The finance rows a stock purchase close posted (a split, or a single transaction): found from the close response.
+export function purchasePostingGroup(
+  context: ActivityContext,
+): ReturnType<NonNullable<ActivityDescriptor['group']>> {
+  const result = context.response as
+    | { splitId?: null | string; transactionId?: null | string }
+    | undefined;
+
+  if (result?.splitId) {
+    return { id: result.splitId, kind: ActivityGroupKind.SPLIT_ROWS };
+  }
+
+  return { id: result?.transactionId ?? undefined, kind: ActivityGroupKind.TRANSACTION_IDS };
+}

@@ -303,7 +303,7 @@ async function stockPurchase(client: PrismaClient, id: string): Promise<Activity
     entityId: row.id,
     entityType: ActivityEntityType.STOCK_PURCHASE_POSTING,
     extra: { market: row.market.name },
-    fields: {},
+    fields: { status: row.status },
     label: row.market.name,
     modules: FINANCE,
     owners: [await ownerRef(client, row.owner, row.owner_id)],

@@ -77,10 +77,15 @@ function operationAmount(type: string, total: number | undefined): number | unde
   return type === 'BUY' ? -total : total;
 }
 async function valuation(client: PrismaClient, id: string): Promise<ActivitySnapshot | null> {
-  const row = await client.investmentValuation.findUnique({
-    include: { asset: true },
-    where: { id },
-  });
+  // `assetId:YYYY-MM-DD` finds the valuation of an asset on a date (the PUT route carries both, not the row id).
+  const [assetId, date] = id.split(':');
+  const include = { asset: true };
+  const row = date
+    ? await client.investmentValuation.findFirst({
+        include,
+        where: { asset_id: assetId, date: new Date(`${date}T00:00:00.000Z`) },
+      })
+    : await client.investmentValuation.findUnique({ include, where: { id } });
 
   if (!row) {
     return null;
@@ -141,25 +146,34 @@ async function fixedIncomeTerms(
   client: PrismaClient,
   id: string,
 ): Promise<ActivitySnapshot | null> {
+  // `rate:<id>` / `adjustment:<id>` find the title of that rate or adjustment (their routes carry only their id).
+  const assetId = await titleOf(client, id);
   const row = await client.investmentFixedIncomeTerms.findUnique({
     include: { asset: true },
-    where: { asset_id: id },
+    where: { asset_id: assetId },
   });
 
   if (!row) {
     return null;
   }
 
-  const rates = await client.investmentFixedIncomeRate.findMany({
-    orderBy: { start_date: 'asc' },
-    where: { asset_id: id },
-  });
+  const [rates, adjustments] = await Promise.all([
+    client.investmentFixedIncomeRate.findMany({
+      orderBy: { start_date: 'asc' },
+      where: { asset_id: assetId },
+    }),
+    client.investmentFixedIncomeAdjustment.findMany({
+      orderBy: { date: 'asc' },
+      where: { asset_id: assetId },
+    }),
+  ]);
 
   return {
     currency: row.asset.currency,
     entityId: row.asset_id,
     entityType: ActivityEntityType.FIXED_INCOME_TERMS,
     fields: {
+      adjustments: adjustments.map((entry) => `${day(entry.date)}:${entry.gross_amount}`),
       liquidity: row.liquidity,
       liquidityDate: day(row.liquidity_date),
       maturityDate: day(row.maturity_date),
@@ -198,6 +212,7 @@ async function income(client: PrismaClient, id: string): Promise<ActivitySnapsho
     label: row.asset.ticker ?? row.asset.name,
     modules: row.transaction_id ? [ActivityModule.INVESTMENT, ActivityModule.FINANCE] : INVESTMENT,
     owners: [await ownerRef(client, row.asset.owner, row.asset.owner_id)],
+    refs: { seriesId: row.series_id },
     sources: [row.asset.name],
   };
 }
@@ -232,6 +247,23 @@ async function incomeSeries(client: PrismaClient, id: string): Promise<ActivityS
     owners: [await ownerRef(client, row.asset.owner, row.asset.owner_id)],
     sources: [row.asset.name],
   };
+}
+async function titleOf(client: PrismaClient, id: string): Promise<string> {
+  if (id.startsWith('rate:')) {
+    const rate = await client.investmentFixedIncomeRate.findUnique({ where: { id: id.slice(5) } });
+
+    return rate?.asset_id ?? '';
+  }
+
+  if (id.startsWith('adjustment:')) {
+    const entry = await client.investmentFixedIncomeAdjustment.findUnique({
+      where: { id: id.slice(11) },
+    });
+
+    return entry?.asset_id ?? '';
+  }
+
+  return id;
 }
 
 export const INVESTMENT_SNAPSHOTS: Partial<Record<ActivityEntityType, SnapshotReader>> = {

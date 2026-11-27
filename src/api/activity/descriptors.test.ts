@@ -2,15 +2,20 @@ import { ActivityGroupKind } from '@activity/domain/enum';
 
 import { ActivityContext } from './ActivityRecorder';
 import {
+  adjustmentKey,
   fromParam,
   fromResponse,
   importGroup,
   importOwnerKey,
+  incomeSeriesGroup,
   invoiceKey,
   planKey,
+  purchasePostingGroup,
+  rateKey,
   scopeOf,
   seriesGroup,
   seriesScopeGroup,
+  valuationKey,
   wholeGroup,
 } from './descriptors';
 
@@ -106,5 +111,42 @@ describe('import', () => {
       id: 'USER|u-1|2026-11-27T12:00:00.000Z',
       kind: 'CREATED_SINCE',
     });
+  });
+});
+
+describe('investment keys and groups', () => {
+  it('SHOULD build the valuation, rate and adjustment keys, preferring the known title', () => {
+    const params = { date: '2026-10-01', id: 'a-1' };
+
+    expect(valuationKey(context({ params }))).toBe('a-1:2026-10-01');
+    expect(rateKey(context({ params }), null)).toBe('rate:a-1');
+    expect(adjustmentKey(context({ params }), null)).toBe('adjustment:a-1');
+    expect(rateKey(context({ params }), { entityId: 'asset-9' } as never)).toBe('asset-9');
+    expect(adjustmentKey(context({ params }), { entityId: 'asset-9' } as never)).toBe('asset-9');
+  });
+
+  it('SHOULD group the incomes of a series only WHEN the scope reaches beyond this one', () => {
+    const income = { refs: { seriesId: 's-1' } } as never;
+
+    expect(incomeSeriesGroup(context({ body: { scope: 'ALL' } }), income)).toEqual({
+      id: 's-1',
+      kind: 'INCOME_SERIES_ROWS',
+    });
+    expect(incomeSeriesGroup(context({ body: { scope: 'ONLY_THIS' } }), income)).toBeUndefined();
+    expect(
+      incomeSeriesGroup(context({ body: { scope: 'ALL' } }), { refs: {} } as never),
+    ).toBeUndefined();
+  });
+
+  it('SHOULD find the rows a stock purchase close posted', () => {
+    expect(purchasePostingGroup(context({ response: { splitId: 's-1' } }))).toEqual({
+      id: 's-1',
+      kind: 'SPLIT_ROWS',
+    });
+    expect(purchasePostingGroup(context({ response: { transactionId: 't-1' } }))).toEqual({
+      id: 't-1',
+      kind: 'TRANSACTION_IDS',
+    });
+    expect(purchasePostingGroup(context())).toEqual({ id: undefined, kind: 'TRANSACTION_IDS' });
   });
 });

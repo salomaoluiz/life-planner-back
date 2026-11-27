@@ -185,18 +185,4 @@ describe('ActivityRecorderInterceptor', () => {
     expect(group.execute).not.toHaveBeenCalled();
     expect(record.execute.mock.calls[0][0]).toMatchObject({ batch: false, items: [] });
   });
-
-  it('SHOULD use the snapshot override instead of reading the after item', async () => {
-    reflector.get.mockReturnValue(
-      descriptor({
-        action: ActivityAction.CREATE,
-        snapshot: async () => snapshot('import') as never,
-      }),
-    );
-
-    await run(async () => ({}));
-
-    expect(reader.execute).not.toHaveBeenCalled();
-    expect(record.execute.mock.calls[0][0].after).toEqual(snapshot('import'));
-  });
 });

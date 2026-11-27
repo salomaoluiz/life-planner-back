@@ -45,11 +45,13 @@ export interface ActivitySnapshots {
 
 // Spec 127: what one write route records. See the plan, Task 5.
 export interface ActivityDescriptor {
+  // What the request does to the item (decides what is read); the entry records `entryAction` when it differs.
   action: ActivityAction;
   entityType: ActivityEntityType;
+  entryAction?: ActivityAction;
   extra?: (context: ActivityContext, snapshots: ActivitySnapshots) => Record<string, unknown>;
   // Id handed to the reader (before and after). Default: `:id` of the route, else `response.id`.
-  idFrom?: (context: ActivityContext) => string | undefined;
+  idFrom?: (context: ActivityContext, before: ActivitySnapshot | null) => string | undefined;
   // A request that writes several rows (FR 3): the rows are read before and after, the changed ones are the items.
   // Returning `undefined` makes it a single-item entry (for example scope ONLY_THIS).
   group?: (
@@ -57,9 +59,7 @@ export interface ActivityDescriptor {
     before: ActivitySnapshot | null,
   ) => { id: string | undefined; kind: ActivityGroupKind } | undefined;
   // The route did not write (dry run, nothing created): the request records nothing.
-  skipWhen?: (context: ActivityContext) => boolean;
-  // Replaces the "after" read for a request that has no single item to read (CSV import).
-  snapshot?: (context: ActivityContext) => Promise<ActivitySnapshot | null>;
+  skipWhen?: (context: ActivityContext, before: ActivitySnapshot | null) => boolean;
 }
 
 // Method decorator: the route runs inside one transaction with its history entry (FR 1).
@@ -137,15 +137,14 @@ export class ActivityRecorderInterceptor implements NestInterceptor {
   private async readAfter(
     descriptor: ActivityDescriptor,
     context: ActivityContext,
-    idFrom: (context: ActivityContext) => string | undefined,
+    before: ActivitySnapshot | null,
+    idFrom: NonNullable<ActivityDescriptor['idFrom']>,
   ): Promise<ActivitySnapshot | null> {
     if (descriptor.action === ActivityAction.DELETE) {
       return null;
     }
 
-    return descriptor.snapshot
-      ? descriptor.snapshot(context)
-      : this.read(descriptor.entityType, idFrom(context));
+    return this.read(descriptor.entityType, idFrom(context, before));
   }
 
   private async readGroup(
@@ -177,22 +176,22 @@ export class ActivityRecorderInterceptor implements NestInterceptor {
     const before =
       descriptor.action === ActivityAction.CREATE
         ? null
-        : await this.read(descriptor.entityType, idFrom(beforeContext));
+        : await this.read(descriptor.entityType, idFrom(beforeContext, null));
     const beforeItems = await this.readGroup(descriptor, beforeContext, before);
     const response = await lastValueFrom(next.handle());
     const after = { ...base, response };
 
-    if (descriptor.skipWhen?.(after)) {
+    if (descriptor.skipWhen?.(after, before)) {
       return response;
     }
 
-    const afterSnapshot = await this.readAfter(descriptor, after, idFrom);
+    const afterSnapshot = await this.readAfter(descriptor, after, before, idFrom);
     const items = diffItems(beforeItems, await this.readGroup(descriptor, after, before));
     const snapshots = { after: afterSnapshot, before };
     const actor = await this.get(FindUserByIdUseCase).execute({ id: request.user.id });
 
     await this.get(RecordActivityUseCase).execute({
-      action: descriptor.action,
+      action: descriptor.entryAction ?? descriptor.action,
       actor: { id: actor.id, name: actor.name },
       after: afterSnapshot,
       batch: descriptor.group?.(after, before) !== undefined && items.length > 0,

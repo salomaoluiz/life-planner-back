@@ -10,7 +10,8 @@ const account = { name: 'Conta corrente', ...owner };
 function build(rows: Record<string, unknown>) {
   const client = {
     family: find({ name: 'Família Silva' }),
-    investmentFixedIncomeRate: find(null),
+    investmentFixedIncomeAdjustment: find({ asset_id: 'asset-2' }),
+    investmentFixedIncomeRate: find({ asset_id: 'asset-1' }),
     user: find({ name: 'Ana' }),
     ...Object.fromEntries(Object.entries(rows).map(([model, row]) => [model, find(row)])),
   };
@@ -349,6 +350,59 @@ describe('composite ids and special readers', () => {
     ).resolves.toMatchObject({
       entityId: '',
       owners: [expect.objectContaining({ ownerId: 'f-1', ownerName: 'Família Silva' })],
+    });
+  });
+});
+
+describe('fixed income and valuation keys', () => {
+  const terms = {
+    asset,
+    asset_id: 'asset-1',
+    liquidity: 'DAILY',
+    liquidity_date: null,
+    maturity_date: date,
+    product: 'CDB',
+    tax_exempt: false,
+  };
+
+  it('SHOULD find the title of a rate AND of an adjustment by their ids', async () => {
+    const reader = build({ investmentFixedIncomeTerms: terms });
+
+    await expect(
+      reader.read(ActivityEntityType.FIXED_INCOME_TERMS, 'rate:r-1'),
+    ).resolves.toMatchObject({
+      entityId: 'asset-1',
+    });
+    await expect(
+      reader.read(ActivityEntityType.FIXED_INCOME_TERMS, 'adjustment:a-1'),
+    ).resolves.toMatchObject({
+      entityId: 'asset-1',
+    });
+  });
+
+  it('SHOULD find a valuation by asset and date AND an income with its series', async () => {
+    const valuation = build({
+      investmentValuation: { asset, date, id: 'v-1', unit_price: { toString: () => '12.5' } },
+    });
+    const income = build({
+      investmentIncome: {
+        asset,
+        currency: 'BRL',
+        id: 'i-1',
+        net_amount: 800,
+        payment_date: date,
+        series_id: 's-1',
+        type: 'DIVIDEND',
+      },
+    });
+
+    await expect(
+      valuation.read(ActivityEntityType.VALUATION, 'asset-1:2026-10-01'),
+    ).resolves.toMatchObject({
+      entityId: 'v-1',
+    });
+    await expect(income.read(ActivityEntityType.INCOME, 'i-1')).resolves.toMatchObject({
+      refs: { seriesId: 's-1' },
     });
   });
 });

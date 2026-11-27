@@ -14,6 +14,9 @@ import {
 import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 
+import { ActivityAction, ActivityEntityType, ActivityGroupKind } from '@activity/domain/enum';
+import { RecordsActivity } from '@api/activity/ActivityRecorder';
+import { fromParam, fromResponse, wholeGroup } from '@api/activity/descriptors';
 import { ConversionService } from '@api/investment/v1/conversion.service';
 import {
   ConversionOutput,
@@ -36,6 +39,12 @@ export class ConversionController {
   constructor(private readonly conversionService: ConversionService) {}
 
   @Post('assets/:id/conversions')
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.CONVERSION,
+    group: wholeGroup(ActivityGroupKind.CONVERSION_ROWS, fromResponse('item.id')),
+    idFrom: fromResponse('item.id'),
+  })
   @ZodResponse({ status: 201, type: ConversionWriteOutput })
   async create(
     @Request() req: JwtPayload & Request,
@@ -52,6 +61,11 @@ export class ConversionController {
   @ApiNoContentResponse()
   @Delete('conversions/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RecordsActivity({
+    action: ActivityAction.DELETE,
+    entityType: ActivityEntityType.CONVERSION,
+    group: wholeGroup(ActivityGroupKind.CONVERSION_ROWS, fromParam('id')),
+  })
   async delete(@Request() req: JwtPayload & Request, @Param('id', ParseUUIDPipe) id: string) {
     await this.conversionService.delete(req.user.id, id);
   }
@@ -63,6 +77,11 @@ export class ConversionController {
   }
 
   @Patch('conversions/:id')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.CONVERSION,
+    group: wholeGroup(ActivityGroupKind.CONVERSION_ROWS, fromParam('id')),
+  })
   @ZodResponse({ status: 200, type: ConversionWriteOutput })
   async update(
     @Request() req: JwtPayload & Request,

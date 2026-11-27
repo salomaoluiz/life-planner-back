@@ -108,6 +108,18 @@ describe('RecordActivityUseCase', () => {
     expect(repository.insert.mock.calls[0][0]).toMatchObject({ action: 'DELETE', changes: null });
   });
 
+  it('SHOULD record a create WHEN an update finds nothing before (a valuation put on a new date)', async () => {
+    await setup.execute({
+      action: ActivityAction.UPDATE,
+      actor,
+      after: snapshot(),
+      batch: false,
+      before: null,
+    });
+
+    expect(repository.insert.mock.calls[0][0]).toMatchObject({ action: 'CREATE', changes: null });
+  });
+
   it('SHOULD write one entry per owner touched WHEN the owner changed', async () => {
     const family = { ownerId: 'f-1', ownerName: 'Família', ownerType: OwnerType.FAMILY };
 

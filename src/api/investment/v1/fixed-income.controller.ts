@@ -14,6 +14,9 @@ import {
 import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 
+import { ActivityAction, ActivityEntityType } from '@activity/domain/enum';
+import { RecordsActivity } from '@api/activity/ActivityRecorder';
+import { adjustmentKey, fromResponse, rateKey } from '@api/activity/descriptors';
 import {
   AdjustmentApiSchema,
   AdjustmentBody,
@@ -51,6 +54,11 @@ export class FixedIncomeController {
   constructor(private readonly fixedIncomeService: FixedIncomeService) {}
 
   @Post('assets/:id/fixed-income/contributions')
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.OPERATION,
+    idFrom: fromResponse('item.id'),
+  })
   @ZodResponse({ status: 201, type: FixedIncomeWriteOutput })
   async createContribution(
     @Request() req: JwtPayload & Request,
@@ -65,6 +73,10 @@ export class FixedIncomeController {
   }
 
   @Post('assets/:id/fixed-income/rates')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.FIXED_INCOME_TERMS,
+  })
   @ZodResponse({ status: 201, type: AssetDetailOutput })
   async createRate(
     @Request() req: JwtPayload & Request,
@@ -75,6 +87,11 @@ export class FixedIncomeController {
   }
 
   @Post('assets/:id/fixed-income/redemptions')
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.OPERATION,
+    idFrom: fromResponse('item.id'),
+  })
   @ZodResponse({ status: 201, type: FixedIncomeWriteOutput })
   async createRedemption(
     @Request() req: JwtPayload & Request,
@@ -89,6 +106,11 @@ export class FixedIncomeController {
   }
 
   @Post('fixed-income')
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.ASSET,
+    idFrom: fromResponse('item.id'),
+  })
   @ZodResponse({ status: 201, type: AssetDetailOutput })
   async createTitle(
     @Request() req: JwtPayload & Request,
@@ -103,6 +125,11 @@ export class FixedIncomeController {
   @ApiNoContentResponse()
   @Delete('fixed-income/adjustments/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.FIXED_INCOME_TERMS,
+    idFrom: adjustmentKey,
+  })
   async deleteAdjustment(
     @Request() req: JwtPayload & Request,
     @Param('id', ParseUUIDPipe) id: string,
@@ -113,6 +140,11 @@ export class FixedIncomeController {
   @ApiNoContentResponse()
   @Delete('fixed-income/rates/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.FIXED_INCOME_TERMS,
+    idFrom: rateKey,
+  })
   async deleteRate(@Request() req: JwtPayload & Request, @Param('id', ParseUUIDPipe) id: string) {
     await this.fixedIncomeService.deleteRate(req.user.id, id);
   }
@@ -140,6 +172,11 @@ export class FixedIncomeController {
   }
 
   @Patch('fixed-income/rates/:id')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.FIXED_INCOME_TERMS,
+    idFrom: rateKey,
+  })
   @ZodResponse({ status: 200, type: AssetDetailOutput })
   async updateRate(
     @Request() req: JwtPayload & Request,
@@ -150,6 +187,10 @@ export class FixedIncomeController {
   }
 
   @Put('assets/:id/fixed-income/adjustments/:date')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.FIXED_INCOME_TERMS,
+  })
   @ZodResponse({ status: 200, type: AdjustmentWriteOutput })
   async upsertAdjustment(
     @Request() req: JwtPayload & Request,
@@ -166,6 +207,10 @@ export class FixedIncomeController {
   }
 
   @Put('assets/:id/fixed-income/terms')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.FIXED_INCOME_TERMS,
+  })
   @ZodResponse({ status: 200, type: AssetDetailOutput })
   async upsertTerms(
     @Request() req: JwtPayload & Request,

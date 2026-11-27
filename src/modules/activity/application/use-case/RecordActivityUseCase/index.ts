@@ -23,6 +23,8 @@ export interface RecordActivityInput {
   now?: Date;
 }
 
+// An update after which the item is gone (a split left with one part dissolves) is a delete of it; an update of an
+// item that did not exist (a valuation put on a new date) is a create.
 function distinctOwners(snapshots: (ActivitySnapshot | null)[]): ActivityOwnerRef[] {
   const owners = new Map<string, ActivityOwnerRef>();
 
@@ -32,6 +34,17 @@ function distinctOwners(snapshots: (ActivitySnapshot | null)[]): ActivityOwnerRe
 
   return [...owners.values()];
 }
+function effectiveAction(input: RecordActivityInput): ActivityAction {
+  if (input.action !== ActivityAction.UPDATE) {
+    return input.action;
+  }
+
+  if (!input.after && input.before) {
+    return ActivityAction.DELETE;
+  }
+
+  return input.before ? input.action : ActivityAction.CREATE;
+}
 
 // Spec 127 FR 1, 3, 6, 7: one entry per owner touched, in the transaction of the request (the repository uses the
 // ambient `Database.client`). A change that changes nothing records nothing.
@@ -39,11 +52,7 @@ export class RecordActivityUseCase implements UseCaseWithParams<RecordActivityIn
   constructor(@Inject('IActivityRepository') private readonly repository: IActivityRepository) {}
 
   async execute(input: RecordActivityInput): Promise<void> {
-    // An update after which the item is gone (a split left with one part dissolves) is a delete of it.
-    const action =
-      input.action === ActivityAction.UPDATE && !input.after && input.before
-        ? ActivityAction.DELETE
-        : input.action;
+    const action = effectiveAction(input);
     const snapshot = action === ActivityAction.DELETE ? input.before : input.after;
     const items = input.items ?? [];
 
