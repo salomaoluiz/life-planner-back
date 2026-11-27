@@ -7,14 +7,13 @@ import { ActivityDescriptor, ActivityRecorderInterceptor } from './ActivityRecor
 
 const reflector = { get: jest.fn() };
 const database = { runInTransaction: jest.fn(async (work: () => Promise<unknown>) => work()) };
-const reader = { entityType: ActivityEntityType.TRANSACTION, read: jest.fn() };
-const registry = { get: jest.fn() };
+const reader = { execute: jest.fn() };
 const record = { execute: jest.fn() };
 const findUser = { execute: jest.fn() };
 const setup = new ActivityRecorderInterceptor(
   reflector as never,
   database as never,
-  registry as never,
+  reader as never,
   record as never,
   findUser as never,
 );
@@ -42,9 +41,8 @@ function snapshot(label: string) {
 beforeEach(() => {
   jest.clearAllMocks();
   record.execute.mockReset();
-  registry.get.mockReturnValue(reader);
   findUser.execute.mockResolvedValue({ id: 'user-1', name: 'Ana' });
-  reader.read.mockImplementation(async () => snapshot('x'));
+  reader.execute.mockImplementation(async () => snapshot('x'));
 });
 
 describe('ActivityRecorderInterceptor', () => {
@@ -58,12 +56,14 @@ describe('ActivityRecorderInterceptor', () => {
 
   it('SHOULD read before and after, run the handler AND record, all in one transaction', async () => {
     reflector.get.mockReturnValue(descriptor());
-    reader.read.mockResolvedValueOnce(snapshot('before')).mockResolvedValueOnce(snapshot('after'));
+    reader.execute
+      .mockResolvedValueOnce(snapshot('before'))
+      .mockResolvedValueOnce(snapshot('after'));
 
     await expect(run(async () => ({ id: 't-1' }))).resolves.toEqual({ id: 't-1' });
 
     expect(database.runInTransaction).toHaveBeenCalledTimes(1);
-    expect(reader.read).toHaveBeenNthCalledWith(1, 't-1');
+    expect(reader.execute).toHaveBeenNthCalledWith(1, { entityType: 'TRANSACTION', id: 't-1' });
     expect(record.execute).toHaveBeenCalledWith({
       action: 'UPDATE',
       actor: { id: 'user-1', name: 'Ana' },
@@ -81,8 +81,8 @@ describe('ActivityRecorderInterceptor', () => {
 
     await run(async () => ({ id: 'new-1' }));
 
-    expect(reader.read).toHaveBeenCalledTimes(1);
-    expect(reader.read).toHaveBeenCalledWith('new-1');
+    expect(reader.execute).toHaveBeenCalledTimes(1);
+    expect(reader.execute).toHaveBeenCalledWith({ entityType: 'TRANSACTION', id: 'new-1' });
     expect(record.execute.mock.calls[0][0].before).toBeNull();
     request.params = { id: 't-1' };
   });
@@ -92,7 +92,7 @@ describe('ActivityRecorderInterceptor', () => {
 
     await run(async () => undefined);
 
-    expect(reader.read).toHaveBeenCalledTimes(1);
+    expect(reader.execute).toHaveBeenCalledTimes(1);
     expect(record.execute.mock.calls[0][0].after).toBeNull();
   });
 
@@ -112,13 +112,6 @@ describe('ActivityRecorderInterceptor', () => {
     record.execute.mockRejectedValue(new Error('insert failed'));
 
     await expect(run(async () => ({}))).rejects.toThrow('insert failed');
-  });
-
-  it('SHOULD fail WHEN no reader is registered for the entity type', async () => {
-    reflector.get.mockReturnValue(descriptor());
-    registry.get.mockReturnValue(undefined);
-
-    await expect(run(async () => ({}))).rejects.toThrow('No activity reader registered');
   });
 
   it('SHOULD skip recording WHEN skipWhen says the route did not write', async () => {
@@ -163,7 +156,7 @@ describe('ActivityRecorderInterceptor', () => {
 
     await run(async () => ({}));
 
-    expect(reader.read).not.toHaveBeenCalled();
+    expect(reader.execute).not.toHaveBeenCalled();
     expect(record.execute.mock.calls[0][0].after).toEqual(snapshot('import'));
   });
 });

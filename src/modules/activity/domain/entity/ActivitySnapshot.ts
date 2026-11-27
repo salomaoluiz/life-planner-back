@@ -22,10 +22,3 @@ export interface ActivitySnapshot {
   owners: ActivityOwnerRef[];
   sources?: string[];
 }
-
-// Registered by the module that owns the item (finance, investment, stock). The recorder reads the snapshot before
-// and after the request; `null` when the item is gone.
-export interface ActivitySnapshotReader {
-  entityType: ActivityEntityType;
-  read(id: string): Promise<ActivitySnapshot | null>;
-}

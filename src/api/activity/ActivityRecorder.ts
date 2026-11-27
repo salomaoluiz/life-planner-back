@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
-import { ActivityReaderRegistry } from '@activity/application/service/ActivityReaderRegistry';
+import { ReadActivitySnapshotUseCase } from '@activity/application/use-case/ReadActivitySnapshotUseCase';
 import { RecordActivityUseCase } from '@activity/application/use-case/RecordActivityUseCase';
 import { ActivityItemInput } from '@activity/domain/entity/ActivityEntry';
 import { ActivitySnapshot } from '@activity/domain/entity/ActivitySnapshot';
@@ -67,7 +67,7 @@ export class ActivityRecorderInterceptor implements NestInterceptor {
   constructor(
     private readonly reflector: Reflector,
     private readonly database: Database,
-    private readonly registry: ActivityReaderRegistry,
+    private readonly readActivitySnapshotUseCase: ReadActivitySnapshotUseCase,
     private readonly recordActivityUseCase: RecordActivityUseCase,
     private readonly findUserByIdUseCase: FindUserByIdUseCase,
   ) {}
@@ -93,13 +93,7 @@ export class ActivityRecorderInterceptor implements NestInterceptor {
     entityType: ActivityEntityType,
     id: string | undefined,
   ): Promise<ActivitySnapshot | null> {
-    const reader = this.registry.get(entityType);
-
-    if (!reader) {
-      throw new Error(`No activity reader registered for ${entityType}`);
-    }
-
-    return id === undefined ? null : reader.read(id);
+    return id === undefined ? null : this.readActivitySnapshotUseCase.execute({ entityType, id });
   }
 
   private async readAfter(
