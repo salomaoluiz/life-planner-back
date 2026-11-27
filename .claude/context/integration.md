@@ -181,3 +181,7 @@ Spec 123 (stock forecast and waste, additive): item and list responses gain the 
 ## Notifications (spec 124)
 
 New contract under `/api/v1/notifications` (see `api.md`). Enums UPPER_CASE, same values in both repos: types `STOCK_EXPIRING`, `STOCK_OPENED_EXPIRING`, `FINANCE_BILL_DUE`, `FINANCE_INVOICE_DUE`; kinds `SUMMARY`, `URGENT`; states `DUE_TODAY`, `OVERDUE`, `UPCOMING`; providers `EXPO`, `WEB_PUSH`; platforms `IOS`, `ANDROID`, `WEB`. The frontend registers its device after the OS permission (`POST devices`), sends `X-Device-Id` on notification calls, calls `PATCH devices/:id/seen` (time zone and locale) at most hourly and `DELETE devices/:id` before logout. Items carry a `route` the app opens (mapped to its own screens) and a display snapshot (amounts only in the center, never in the push body). Push payload `data: { notificationId, route }`.
+
+## Activity history (spec 127)
+
+New contract `GET /api/v1/activity` and `GET /api/v1/activity/:id/items` (see `api.md`). Enums identical in the frontend: `ActivityModule`, `ActivityAction` (+ filter value `BATCH`), `ActivityEntityType`. Existing write routes keep their responses; the CSV import now sends its response after commit (same status and body).
