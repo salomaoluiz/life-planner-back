@@ -1,4 +1,5 @@
 export type PerfModule =
+  | 'activity'
   | 'family'
   | 'finance'
   | 'health'
@@ -9,6 +10,7 @@ export type PerfModule =
   | 'version';
 
 export const PERF_MODULES: PerfModule[] = [
+  'activity',
   'family',
   'finance',
   'health',
@@ -21,6 +23,7 @@ export const PERF_MODULES: PerfModule[] = [
 
 // Folder name (under src/modules and src/api) -> perf module.
 const FOLDER_TO_MODULE: Record<string, PerfModule> = {
+  activity: 'activity',
   auth: 'user',
   family: 'family',
   'family-member': 'family',

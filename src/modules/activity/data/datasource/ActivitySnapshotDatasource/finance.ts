@@ -38,6 +38,7 @@ async function balanceAdjustment(
 async function account(client: PrismaClient, id: string): Promise<ActivitySnapshot | null> {
   const row = await client.financialAccount.findUnique({
     include: { favorites: { select: { user_id: true } } },
+    relationLoadStrategy: 'join',
     where: { id },
   });
 
@@ -65,6 +66,7 @@ async function account(client: PrismaClient, id: string): Promise<ActivitySnapsh
 async function category(client: PrismaClient, id: string): Promise<ActivitySnapshot | null> {
   const row = await client.financialCategory.findUnique({
     include: { parent: true },
+    relationLoadStrategy: 'join',
     where: { id },
   });
 
@@ -93,6 +95,7 @@ async function category(client: PrismaClient, id: string): Promise<ActivitySnaps
 async function creditCard(client: PrismaClient, id: string): Promise<ActivitySnapshot | null> {
   const row = await client.financialCreditCard.findUnique({
     include: { payment_account: true },
+    relationLoadStrategy: 'join',
     where: { id },
   });
 
@@ -123,6 +126,7 @@ async function creditCard(client: PrismaClient, id: string): Promise<ActivitySna
 async function installmentPlan(client: PrismaClient, id: string): Promise<ActivitySnapshot | null> {
   const row = await client.financialInstallmentPlan.findUnique({
     include: { category: true, credit_card: true },
+    relationLoadStrategy: 'join',
     where: { id },
   });
 
@@ -159,9 +163,14 @@ async function invoicePayment(client: PrismaClient, id: string): Promise<Activit
   const row = month
     ? await client.financialInvoicePayment.findFirst({
         include,
+        relationLoadStrategy: 'join',
         where: { credit_card_id: cardId, invoice_month: month },
       })
-    : await client.financialInvoicePayment.findUnique({ include, where: { id } });
+    : await client.financialInvoicePayment.findUnique({
+        include,
+        relationLoadStrategy: 'join',
+        where: { id },
+      });
 
   if (!row) {
     return null;
@@ -195,9 +204,14 @@ async function prepayment(client: PrismaClient, id: string): Promise<ActivitySna
   const row = id.startsWith('plan:')
     ? await client.financialInstallmentPrepayment.findFirst({
         include,
+        relationLoadStrategy: 'join',
         where: { installment_plan_id: id.slice(5) },
       })
-    : await client.financialInstallmentPrepayment.findUnique({ include, where: { id } });
+    : await client.financialInstallmentPrepayment.findUnique({
+        include,
+        relationLoadStrategy: 'join',
+        where: { id },
+      });
 
   if (!row) {
     return null;
@@ -221,6 +235,7 @@ async function prepayment(client: PrismaClient, id: string): Promise<ActivitySna
 async function recurrence(client: PrismaClient, id: string): Promise<ActivitySnapshot | null> {
   const row = await client.financialRecurrence.findUnique({
     include: { account: true, category: true, credit_card: true, to_account: true },
+    relationLoadStrategy: 'join',
     where: { id },
   });
 
@@ -258,6 +273,7 @@ async function recurrence(client: PrismaClient, id: string): Promise<ActivitySna
 async function split(client: PrismaClient, id: string): Promise<ActivitySnapshot | null> {
   const row = await client.financialSplit.findUnique({
     include: { account: true, credit_card: true, transactions: true },
+    relationLoadStrategy: 'join',
     where: { id },
   });
 
@@ -290,7 +306,11 @@ async function split(client: PrismaClient, id: string): Promise<ActivitySnapshot
   };
 }
 async function stockPurchase(client: PrismaClient, id: string): Promise<ActivitySnapshot | null> {
-  const row = await client.stockPurchase.findUnique({ include: { market: true }, where: { id } });
+  const row = await client.stockPurchase.findUnique({
+    include: { market: true },
+    relationLoadStrategy: 'join',
+    where: { id },
+  });
 
   if (!row) {
     return null;
@@ -334,6 +354,7 @@ function transaction(entityType: ActivityEntityType): SnapshotReader {
         credit_card: true,
         tags: { include: { tag: true } },
       },
+      relationLoadStrategy: 'join',
       where: { id },
     });
 
@@ -386,6 +407,7 @@ async function transactionImport(
 async function transfer(client: PrismaClient, id: string): Promise<ActivitySnapshot | null> {
   const row = await client.financialTransfer.findUnique({
     include: { from_account: true, to_account: true },
+    relationLoadStrategy: 'join',
     where: { id },
   });
   const account = row?.from_account ?? row?.to_account;

@@ -1,0 +1,19 @@
+{
+  "GET /api/v1/activity": {
+    "indexes": null,
+    "kind": "read",
+    "maxBytes": 4096,
+    "maxQueries": 6,
+    "p50Ms": 50,
+    "scenario": "module=FINANCE"
+  },
+  "GET /api/v1/activity/:id/items": {
+    "indexes": null,
+    "kind": "unmeasured",
+    "maxBytes": null,
+    "maxQueries": 0,
+    "p50Ms": null,
+    "reason": "Needs a batch entry, and perf tests only read a pinned dataset that has none (spec 093); the route pages 50 items by (entry_id, booking_date) and runs at most one existence query per entity type.",
+    "scenario": ""
+  }
+}

@@ -114,7 +114,7 @@
     "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
-    "maxQueriesInTx": 10,
+    "maxQueriesInTx": 13,
     "p50Ms": null,
     "reason": "Writes are not measured: perf tests only read (spec 093).",
     "scenario": ""
@@ -707,7 +707,7 @@
     "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
-    "maxQueriesInTx": 15,
+    "maxQueriesInTx": 21,
     "p50Ms": null,
     "reason": "Writes are not measured: perf tests only read (spec 093).",
     "scenario": ""
@@ -855,7 +855,7 @@
     "kind": "unmeasured",
     "maxBytes": null,
     "maxQueries": 0,
-    "maxQueriesInTx": 15,
+    "maxQueriesInTx": 19,
     "p50Ms": null,
     "reason": "Writes are not measured: perf tests only read (spec 093).",
     "scenario": ""

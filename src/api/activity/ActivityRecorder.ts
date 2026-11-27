@@ -111,8 +111,10 @@ export class ActivityRecorderInterceptor implements NestInterceptor {
     const response = context.switchToHttp().getResponse<HttpResponse>();
 
     return fromPromise(async () => {
+      // The actor's name is read before the transaction opens: it is not part of what the request writes.
+      const user = await this.get(FindUserByIdUseCase).execute({ id: request.user.id });
       const result = await this.get(Database).runInTransaction(async () =>
-        this.record(descriptor, request, next),
+        this.record(descriptor, request, next, { id: user.id, name: user.name }),
       );
 
       if (result instanceof DeferredJson) {
@@ -163,6 +165,7 @@ export class ActivityRecorderInterceptor implements NestInterceptor {
     descriptor: ActivityDescriptor,
     request: HttpRequest & JwtPayload,
     next: CallHandler,
+    actor: { id: string; name: string },
   ): Promise<unknown> {
     const base = {
       body: request.body as unknown,
@@ -188,11 +191,9 @@ export class ActivityRecorderInterceptor implements NestInterceptor {
     const afterSnapshot = await this.readAfter(descriptor, after, before, idFrom);
     const items = diffItems(beforeItems, await this.readGroup(descriptor, after, before));
     const snapshots = { after: afterSnapshot, before };
-    const actor = await this.get(FindUserByIdUseCase).execute({ id: request.user.id });
-
     await this.get(RecordActivityUseCase).execute({
       action: descriptor.entryAction ?? descriptor.action,
-      actor: { id: actor.id, name: actor.name },
+      actor,
       after: afterSnapshot,
       batch: descriptor.group?.(after, before) !== undefined && items.length > 0,
       before,

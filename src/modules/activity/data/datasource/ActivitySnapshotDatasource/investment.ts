@@ -34,6 +34,7 @@ async function asset(client: PrismaClient, id: string): Promise<ActivitySnapshot
 async function operation(client: PrismaClient, id: string): Promise<ActivitySnapshot | null> {
   const row = await client.investmentOperation.findUnique({
     include: { account: true, asset: true },
+    relationLoadStrategy: 'join',
     where: { id },
   });
 
@@ -83,9 +84,14 @@ async function valuation(client: PrismaClient, id: string): Promise<ActivitySnap
   const row = date
     ? await client.investmentValuation.findFirst({
         include,
+        relationLoadStrategy: 'join',
         where: { asset_id: assetId, date: new Date(`${date}T00:00:00.000Z`) },
       })
-    : await client.investmentValuation.findUnique({ include, where: { id } });
+    : await client.investmentValuation.findUnique({
+        include,
+        relationLoadStrategy: 'join',
+        where: { id },
+      });
 
   if (!row) {
     return null;
@@ -109,6 +115,7 @@ async function valuation(client: PrismaClient, id: string): Promise<ActivitySnap
 async function conversion(client: PrismaClient, id: string): Promise<ActivitySnapshot | null> {
   const row = await client.investmentConversion.findUnique({
     include: { from: true, to: true },
+    relationLoadStrategy: 'join',
     where: { id },
   });
 
@@ -150,6 +157,7 @@ async function fixedIncomeTerms(
   const assetId = await titleOf(client, id);
   const row = await client.investmentFixedIncomeTerms.findUnique({
     include: { asset: true },
+    relationLoadStrategy: 'join',
     where: { asset_id: assetId },
   });
 
@@ -187,7 +195,11 @@ async function fixedIncomeTerms(
   };
 }
 async function income(client: PrismaClient, id: string): Promise<ActivitySnapshot | null> {
-  const row = await client.investmentIncome.findUnique({ include: { asset: true }, where: { id } });
+  const row = await client.investmentIncome.findUnique({
+    include: { asset: true },
+    relationLoadStrategy: 'join',
+    where: { id },
+  });
 
   if (!row) {
     return null;
@@ -219,6 +231,7 @@ async function income(client: PrismaClient, id: string): Promise<ActivitySnapsho
 async function incomeSeries(client: PrismaClient, id: string): Promise<ActivitySnapshot | null> {
   const row = await client.investmentIncomeSeries.findUnique({
     include: { asset: true },
+    relationLoadStrategy: 'join',
     where: { id },
   });
 

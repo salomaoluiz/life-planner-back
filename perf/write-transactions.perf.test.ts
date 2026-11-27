@@ -20,7 +20,8 @@ import { measure } from './support/measure';
 const FINANCE = '/api/v1/finance';
 const BUDGETS = loadRegistry(join(__dirname, 'budgets'), ['finance']).finance;
 const maxInTx = (key: string): number => BUDGETS[key].maxQueriesInTx as number;
-const MAX_CREATE_TOTAL = 20;
+// Spec 127: +4 statements in the transaction (item read, owner name, entry insert) and +1 for the actor name.
+const MAX_CREATE_TOTAL = 25;
 const PARALLEL = 10;
 const runsFinance = (process.env.PERF_MODULES ?? '').split(',').includes('finance');
 let app: NestExpressApplication;
