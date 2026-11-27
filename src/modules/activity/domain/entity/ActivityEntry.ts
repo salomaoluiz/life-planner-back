@@ -23,6 +23,8 @@ export interface ActivityItemInput {
   entityId: string;
   entityType: ActivityEntityType;
   label: string;
+  // Only for the before/after comparison of a batch (never stored): what changed besides the shown columns.
+  signature?: string;
   sourceName?: null | string;
 }
 export interface ActivityListFilter {

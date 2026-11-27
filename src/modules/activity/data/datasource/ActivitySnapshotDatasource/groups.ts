@@ -8,18 +8,17 @@ type GroupReader = (client: PrismaClient, id: string) => Promise<ActivityItemInp
 const TX_INCLUDE = { account: true, credit_card: true } as const;
 
 async function categorySubtree(client: PrismaClient, id: string): Promise<ActivityItemInput[]> {
-  const root = await client.financialCategory.findUnique({ where: { id } });
-  const children = root
-    ? await client.financialCategory.findMany({
-        where: { OR: [{ parent_id: id }, { parent: { parent_id: id } }] },
-      })
-    : [];
+  // The descendants only: the category itself is the main item of the entry.
+  const children = await client.financialCategory.findMany({
+    where: { OR: [{ parent_id: id }, { parent: { parent_id: id } }] },
+  });
 
-  return [...(root ? [root] : []), ...children].map((row) => ({
+  return children.map((row) => ({
     action: ActivityAction.CREATE,
     entityId: row.id,
     entityType: ActivityEntityType.CATEGORY,
-    label: `${row.name}${row.status === 'ACTIVE' ? '' : ' (archived)'}:${row.icon_color}:${row.icon}`,
+    label: row.name,
+    signature: `${row.status}:${row.icon_color}:${row.icon}`,
   }));
 }
 async function conversionRows(client: PrismaClient, id: string): Promise<ActivityItemInput[]> {
@@ -40,6 +39,38 @@ async function conversionRows(client: PrismaClient, id: string): Promise<Activit
     sourceName: row.asset.name,
   }));
 }
+
+// Rows a CSV import created: transactions (not the legs of a transfer or split), transfers and splits stamped after
+// the start of the request for that owner.
+async function createdSince(client: PrismaClient, id: string): Promise<ActivityItemInput[]> {
+  const [owner, ownerId, since] = id.split('|');
+  const where = {
+    created_at: { gte: new Date(since) },
+    owner: owner as 'FAMILY' | 'USER',
+    owner_id: ownerId,
+  };
+  const [rows, splits] = await Promise.all([
+    transactions(client, { ...where, split_id: null, transfer_id: null }),
+    client.financialSplit.findMany({
+      include: { account: true, credit_card: true, transactions: true },
+      where,
+    }),
+  ]);
+
+  return [
+    ...rows,
+    ...splits.map((row) => ({
+      action: ActivityAction.CREATE,
+      amountCents: row.transactions.reduce((sum, part) => sum + signed(part.value, part.type), 0),
+      bookingDate: day(row.date),
+      currency: row.currency,
+      entityId: row.id,
+      entityType: ActivityEntityType.SPLIT,
+      label: row.description,
+      sourceName: row.account?.name ?? row.credit_card?.title ?? null,
+    })),
+  ];
+}
 async function incomeSeriesRows(client: PrismaClient, id: string): Promise<ActivityItemInput[]> {
   const rows = await client.investmentIncome.findMany({
     include: { asset: true },
@@ -54,7 +85,8 @@ async function incomeSeriesRows(client: PrismaClient, id: string): Promise<Activ
     currency: row.currency,
     entityId: row.id,
     entityType: ActivityEntityType.INCOME,
-    label: `${row.asset.ticker ?? row.asset.name}${row.received ? ' ✓' : ''}`,
+    label: row.asset.ticker ?? row.asset.name,
+    signature: String(row.received),
     sourceName: row.asset.name,
   }));
 }
@@ -120,6 +152,7 @@ async function transactions(
 export const GROUP_READERS: Record<ActivityGroupKind, GroupReader> = {
   [ActivityGroupKind.CATEGORY_SUBTREE]: categorySubtree,
   [ActivityGroupKind.CONVERSION_ROWS]: conversionRows,
+  [ActivityGroupKind.CREATED_SINCE]: createdSince,
   [ActivityGroupKind.INCOME_SERIES_ROWS]: incomeSeriesRows,
   [ActivityGroupKind.INSTALLMENT_PLAN_ROWS]: async (client, id) =>
     transactions(client, { installment_plan_id: id }),

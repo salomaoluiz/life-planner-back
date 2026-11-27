@@ -2,6 +2,9 @@ import { Body, Controller, Get, Header, Post, Query, Request, Res } from '@nestj
 import { ApiBearerAuth, ApiProduces } from '@nestjs/swagger';
 import { createZodDto, ZodResponse } from 'nestjs-zod';
 
+import { ActivityAction, ActivityEntityType } from '@activity/domain/enum';
+import { DeferredJson, RecordsActivity } from '@api/activity/ActivityRecorder';
+import { importGroup, importOwnerKey } from '@api/activity/descriptors';
 import {
   ExportCountOutputSchema,
   ExportCountQuerySchema,
@@ -11,6 +14,7 @@ import {
 } from '@api/finance/v1/dto/transaction-csv.dto';
 import { TodayQuerySchema } from '@api/finance/v1/finance-query';
 import { TransactionCsvService } from '@api/finance/v1/transaction-csv.service';
+import { HttpResponse } from '@shared/infra/http/request-context';
 import { JwtPayload } from '@shared/infra/jwt/types';
 import { validate } from '@shared/infra/validation';
 
@@ -51,26 +55,35 @@ export class TransactionCsvController {
   // Dry run → 200 `{ errors, duplicates }`; for real → 201 `{ created }` (422 `{ errors }` writes nothing).
   // The status depends on the body, so the response is written here (Nest would overwrite a passthrough status).
   @Post('import')
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.TRANSACTION_IMPORT,
+    group: importGroup,
+    idFrom: importOwnerKey,
+    skipWhen: (context) => (context.body as { dryRun?: boolean }).dryRun === true,
+  })
   async import(
     @Request() req: JwtPayload & Request,
     @Body() body: ImportTransactionsBody,
     @Query() query: Record<string, unknown>,
-    @Res() res: { status(code: number): { json(payload: unknown): void } },
-  ): Promise<void> {
+    // Library mode: the response is sent by the activity interceptor once the import and its entry have committed.
+    @Res() response: HttpResponse,
+  ): Promise<DeferredJson> {
+    // Money data is never cached (the global interceptor only sets this header on handlers that return normally).
+    response.setHeader('Cache-Control', 'private, no-cache');
+
     const input = validate(ImportTransactionsApiSchema, body);
     const { today } = validate(TodayQuerySchema, query);
     const result = await this.transactionCsvService.import(req.user.id, input, today);
 
     if (input.dryRun) {
-      res.status(200).json({
+      return new DeferredJson(200, {
         duplicates: result.duplicates,
         errors: result.errors,
         invoices: result.invoices,
       });
-
-      return;
     }
 
-    res.status(201).json({ created: result.created });
+    return new DeferredJson(201, { created: result.created });
   }
 }

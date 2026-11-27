@@ -15,6 +15,9 @@ import {
 import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 
+import { ActivityAction, ActivityEntityType } from '@activity/domain/enum';
+import { RecordsActivity } from '@api/activity/ActivityRecorder';
+import { fromResponse } from '@api/activity/descriptors';
 import { AccountService } from '@api/finance/v1/account.service';
 import {
   AccountOutput,
@@ -53,6 +56,10 @@ export class AccountController {
 
   @HttpCode(HttpStatus.OK)
   @Post(':id/balance-adjustment')
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.BALANCE_ADJUSTMENT,
+  })
   @ZodResponse({ status: 200, type: AccountOutput })
   async adjustBalance(
     @Request() req: JwtPayload & Request,
@@ -67,6 +74,11 @@ export class AccountController {
   }
 
   @Post()
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.ACCOUNT,
+    idFrom: fromResponse('id'),
+  })
   @ZodResponse({ status: 201, type: AccountOutput })
   async create(@Request() req: JwtPayload & Request, @Body() body: CreateAccountBody) {
     const input = validate(CreateAccountApiSchema, body);
@@ -77,6 +89,10 @@ export class AccountController {
   @ApiNoContentResponse()
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RecordsActivity({
+    action: ActivityAction.DELETE,
+    entityType: ActivityEntityType.ACCOUNT,
+  })
   async delete(@Request() req: JwtPayload & Request, @Param('id', ParseUUIDPipe) id: string) {
     await this.accountService.delete(req.user.id, id);
   }
@@ -108,6 +124,10 @@ export class AccountController {
   }
 
   @Patch(':id')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.ACCOUNT,
+  })
   @ZodResponse({ status: 200, type: AccountOutput })
   async update(
     @Request() req: JwtPayload & Request,

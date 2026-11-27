@@ -16,6 +16,9 @@ import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 import { z } from 'zod';
 
+import { ActivityAction, ActivityEntityType } from '@activity/domain/enum';
+import { RecordsActivity } from '@api/activity/ActivityRecorder';
+import { fromResponse } from '@api/activity/descriptors';
 import {
   CreateTagApiSchema,
   CreateTagBody,
@@ -44,6 +47,11 @@ export class TagController {
   constructor(private readonly tagService: TagService) {}
 
   @Post()
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.TAG,
+    idFrom: fromResponse('id'),
+  })
   @ZodResponse({ status: 201, type: TagOutput })
   async create(@Request() req: JwtPayload & Request, @Body() body: CreateTagBody) {
     const input = validate(CreateTagApiSchema, body);
@@ -54,6 +62,10 @@ export class TagController {
   @ApiNoContentResponse()
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RecordsActivity({
+    action: ActivityAction.DELETE,
+    entityType: ActivityEntityType.TAG,
+  })
   async delete(@Request() req: JwtPayload & Request, @Param('id', ParseUUIDPipe) id: string) {
     await this.tagService.delete(req.user.id, id);
   }
@@ -67,6 +79,10 @@ export class TagController {
   }
 
   @Patch(':id')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.TAG,
+  })
   @ZodResponse({ status: 200, type: TagOutput })
   async update(
     @Request() req: JwtPayload & Request,

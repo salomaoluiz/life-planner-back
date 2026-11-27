@@ -10,6 +10,31 @@ import { ActivitySnapshot } from '@activity/domain/entity/ActivitySnapshot';
 import { ActivityEntityType } from '@activity/domain/enum';
 import { PrismaClient } from '@db/client';
 
+// The route adjusts the balance of an account: the entry is about that account (`id` is the account id).
+async function balanceAdjustment(
+  client: PrismaClient,
+  id: string,
+): Promise<ActivitySnapshot | null> {
+  const row = await client.financialAccount.findUnique({ where: { id } });
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    amountCents: row.ledger_balance,
+    currency: row.currency,
+    entityId: row.id,
+    entityType: ActivityEntityType.BALANCE_ADJUSTMENT,
+    fields: {},
+    label: row.name,
+    modules: FINANCE,
+    owners: [await ownerRef(client, row.owner, row.owner_id)],
+    sources: [row.name],
+  };
+}
+
+// `ownerType|ownerId` of a CSV import: the owner is the whole content of the snapshot (the rows are the batch items).
 async function account(client: PrismaClient, id: string): Promise<ActivitySnapshot | null> {
   const row = await client.financialAccount.findUnique({
     include: { favorites: { select: { user_id: true } } },
@@ -128,10 +153,15 @@ async function installmentPlan(client: PrismaClient, id: string): Promise<Activi
   };
 }
 async function invoicePayment(client: PrismaClient, id: string): Promise<ActivitySnapshot | null> {
-  const row = await client.financialInvoicePayment.findUnique({
-    include: { account: true, credit_card: true },
-    where: { id },
-  });
+  // `cardId:YYYY-MM` finds the payment of an invoice (the routes do not carry the payment id).
+  const [cardId, month] = id.split(':');
+  const include = { account: true, credit_card: true };
+  const row = month
+    ? await client.financialInvoicePayment.findFirst({
+        include,
+        where: { credit_card_id: cardId, invoice_month: month },
+      })
+    : await client.financialInvoicePayment.findUnique({ include, where: { id } });
 
   if (!row) {
     return null;
@@ -157,10 +187,17 @@ async function invoicePayment(client: PrismaClient, id: string): Promise<Activit
   };
 }
 async function prepayment(client: PrismaClient, id: string): Promise<ActivitySnapshot | null> {
-  const row = await client.financialInstallmentPrepayment.findUnique({
-    include: { discount_transaction: true, installment_plan: { include: { credit_card: true } } },
-    where: { id },
-  });
+  // `plan:<planId>` finds the prepayment of a plan (the routes carry the plan id).
+  const include = {
+    discount_transaction: true,
+    installment_plan: { include: { credit_card: true } },
+  };
+  const row = id.startsWith('plan:')
+    ? await client.financialInstallmentPrepayment.findFirst({
+        include,
+        where: { installment_plan_id: id.slice(5) },
+      })
+    : await client.financialInstallmentPrepayment.findUnique({ include, where: { id } });
 
   if (!row) {
     return null;
@@ -207,6 +244,7 @@ async function recurrence(client: PrismaClient, id: string): Promise<ActivitySna
       frequencyInterval: row.frequency_interval,
       frequencyUnit: row.frequency_unit,
       notes: row.notes,
+      skippedNumbers: [...row.skipped_numbers].sort((a, b) => a - b),
       startDate: day(row.start_date),
       status: row.status,
       toAccount: row.to_account?.name ?? null,
@@ -319,13 +357,30 @@ function transaction(entityType: ActivityEntityType): SnapshotReader {
         invoiceMonth: row.invoice_month,
         notes: row.notes,
         paid: row.paid,
+        projected: row.projected,
         tags: row.tags.map((link) => link.tag.name).sort(),
       },
       label: row.description,
       modules: FINANCE,
       owners: [await ownerRef(client, row.owner, row.owner_id)],
+      refs: { installmentPlanId: row.installment_plan_id, recurrenceId: row.recurrence_id },
       sources: names(row.account?.name, row.credit_card?.title),
     };
+  };
+}
+async function transactionImport(
+  client: PrismaClient,
+  id: string,
+): Promise<ActivitySnapshot | null> {
+  const [owner, ownerId] = id.split('|');
+
+  return {
+    entityId: '',
+    entityType: ActivityEntityType.TRANSACTION_IMPORT,
+    fields: {},
+    label: 'CSV',
+    modules: FINANCE,
+    owners: [await ownerRef(client, owner as 'FAMILY' | 'USER', ownerId)],
   };
 }
 async function transfer(client: PrismaClient, id: string): Promise<ActivitySnapshot | null> {
@@ -367,13 +422,14 @@ async function transfer(client: PrismaClient, id: string): Promise<ActivitySnaps
         ? [await ownerRef(client, row.to_account.owner, row.to_account.owner_id)]
         : []),
     ],
+    refs: { recurrenceId: row.recurrence_id },
     sources: names(row.from_account?.name, row.to_account?.name),
   };
 }
 
 export const FINANCE_SNAPSHOTS: Partial<Record<ActivityEntityType, SnapshotReader>> = {
   [ActivityEntityType.ACCOUNT]: account,
-  [ActivityEntityType.BALANCE_ADJUSTMENT]: transaction(ActivityEntityType.BALANCE_ADJUSTMENT),
+  [ActivityEntityType.BALANCE_ADJUSTMENT]: balanceAdjustment,
   [ActivityEntityType.CARD_EARLY_PAYMENT]: transaction(ActivityEntityType.CARD_EARLY_PAYMENT),
   [ActivityEntityType.CARD_REFUND]: transaction(ActivityEntityType.CARD_REFUND),
   [ActivityEntityType.CATEGORY]: category,
@@ -386,5 +442,6 @@ export const FINANCE_SNAPSHOTS: Partial<Record<ActivityEntityType, SnapshotReade
   [ActivityEntityType.STOCK_PURCHASE_POSTING]: stockPurchase,
   [ActivityEntityType.TAG]: tag,
   [ActivityEntityType.TRANSACTION]: transaction(ActivityEntityType.TRANSACTION),
+  [ActivityEntityType.TRANSACTION_IMPORT]: transactionImport,
   [ActivityEntityType.TRANSFER]: transfer,
 };

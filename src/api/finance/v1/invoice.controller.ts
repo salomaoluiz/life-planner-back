@@ -15,6 +15,9 @@ import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 import { z } from 'zod';
 
+import { ActivityAction, ActivityEntityType } from '@activity/domain/enum';
+import { RecordsActivity } from '@api/activity/ActivityRecorder';
+import { invoiceKey } from '@api/activity/descriptors';
 import {
   InvoiceDetailOutput,
   InvoiceMonthParamSchema,
@@ -62,6 +65,11 @@ export class InvoiceController {
   @ApiNoContentResponse()
   @Delete(':id/invoices/:month/payment')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RecordsActivity({
+    action: ActivityAction.DELETE,
+    entityType: ActivityEntityType.INVOICE_PAYMENT,
+    idFrom: invoiceKey,
+  })
   async deletePayment(
     @Request() req: JwtPayload & Request,
     @Param('id', ParseUUIDPipe) id: string,
@@ -106,6 +114,11 @@ export class InvoiceController {
   }
 
   @Post(':id/invoices/:month/payment')
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.INVOICE_PAYMENT,
+    idFrom: invoiceKey,
+  })
   @ZodResponse({ status: 201, type: InvoicePaymentOutput })
   async pay(
     @Request() req: JwtPayload & Request,

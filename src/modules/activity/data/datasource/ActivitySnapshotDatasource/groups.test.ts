@@ -77,23 +77,34 @@ describe('readGroup', () => {
     expect(rows[2]).toMatchObject({ amountCents: -100, sourceName: 'Cartão' });
   });
 
-  it('SHOULD read a category with its descendants, marking the archived ones', async () => {
-    client.financialCategory.findUnique.mockResolvedValue({
-      icon: 'a',
-      icon_color: 'red',
-      id: 'c-1',
-      name: 'Casa',
-      status: 'ACTIVE',
-    });
+  it('SHOULD read the descendants of a category with a signature of their appearance', async () => {
     client.financialCategory.findMany.mockResolvedValue([
       { icon: 'a', icon_color: 'red', id: 'c-2', name: 'Luz', status: 'ARCHIVED' },
     ]);
 
     const rows = await setup.readGroup(ActivityGroupKind.CATEGORY_SUBTREE, 'c-1');
 
-    expect(rows.map((row) => row.label)).toEqual(['Casa:red:a', 'Luz (archived):red:a']);
-    client.financialCategory.findUnique.mockResolvedValue(null);
-    await expect(setup.readGroup(ActivityGroupKind.CATEGORY_SUBTREE, 'gone')).resolves.toEqual([]);
+    expect(rows.map((row) => [row.label, row.signature])).toEqual([['Luz', 'ARCHIVED:red:a']]);
+    client.financialCategory.findMany.mockResolvedValue([]);
+    await expect(setup.readGroup(ActivityGroupKind.CATEGORY_SUBTREE, 'leaf')).resolves.toEqual([]);
+  });
+
+  it('SHOULD read what a CSV import created for the owner since the request started', async () => {
+    client.financialSplit.findMany.mockResolvedValue([]);
+
+    const rows = await setup.readGroup(
+      ActivityGroupKind.CREATED_SINCE,
+      'USER|u-1|2026-11-27T12:00:00.000Z',
+    );
+
+    expect(rows).toHaveLength(1);
+    expect(client.financialTransaction.findMany.mock.calls[0][0].where).toEqual({
+      created_at: { gte: new Date('2026-11-27T12:00:00.000Z') },
+      owner: 'USER',
+      owner_id: 'u-1',
+      split_id: null,
+      transfer_id: null,
+    });
   });
 
   it('SHOULD read the incomes of a series AND the operations of a conversion', async () => {
@@ -118,7 +129,7 @@ describe('readGroup', () => {
     ]);
 
     await expect(setup.readGroup(ActivityGroupKind.INCOME_SERIES_ROWS, 's')).resolves.toEqual([
-      expect.objectContaining({ entityType: 'INCOME', label: 'PETR4 ✓' }),
+      expect.objectContaining({ entityType: 'INCOME', label: 'PETR4', signature: 'true' }),
     ]);
     await expect(setup.readGroup(ActivityGroupKind.CONVERSION_ROWS, 'c')).resolves.toEqual([
       expect.objectContaining({ entityType: 'OPERATION', label: 'CONVERSION_OUT Petrobras' }),

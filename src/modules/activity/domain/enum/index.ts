@@ -49,6 +49,8 @@ export const ACTIVITY_PAGE_SIZE = 50;
 export enum ActivityGroupKind {
   CATEGORY_SUBTREE = 'CATEGORY_SUBTREE',
   CONVERSION_ROWS = 'CONVERSION_ROWS',
+  // Rows a CSV import created: id is `ownerType|ownerId|<ISO start of the request>`.
+  CREATED_SINCE = 'CREATED_SINCE',
   INCOME_SERIES_ROWS = 'INCOME_SERIES_ROWS',
   INSTALLMENT_PLAN_ROWS = 'INSTALLMENT_PLAN_ROWS',
   PREPAYMENT_ROWS = 'PREPAYMENT_ROWS',

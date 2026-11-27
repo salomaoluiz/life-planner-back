@@ -7,6 +7,7 @@ function key(item: ActivityItemInput): string {
 function same(a: ActivityItemInput, b: ActivityItemInput): boolean {
   return (
     a.label === b.label &&
+    (a.signature ?? '') === (b.signature ?? '') &&
     (a.amountCents ?? null) === (b.amountCents ?? null) &&
     (a.bookingDate ?? null) === (b.bookingDate ?? null) &&
     (a.sourceName ?? null) === (b.sourceName ?? null)

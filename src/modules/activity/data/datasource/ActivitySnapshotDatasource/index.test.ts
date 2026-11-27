@@ -19,6 +19,7 @@ function build(rows: Record<string, unknown>) {
 }
 function find(row: unknown) {
   return {
+    findFirst: jest.fn().mockResolvedValue(row),
     findMany: jest.fn().mockResolvedValue([]),
     findUnique: jest.fn().mockResolvedValue(row),
   };
@@ -80,6 +81,7 @@ const cases: [ActivityEntityType, string, unknown][] = [
       currency: 'BRL',
       description: 'Aluguel',
       id: 'e-1',
+      skipped_numbers: [],
       start_date: date,
       to_account: null,
       type: 'EXPENSE',
@@ -286,6 +288,71 @@ const cases: [ActivityEntityType, string, unknown][] = [
   ],
 ];
 
+describe('composite ids and special readers', () => {
+  it('SHOULD find an invoice payment by card and month, AND a prepayment by plan', async () => {
+    const payment = build({
+      financialInvoicePayment: {
+        account: { name: 'Conta' },
+        amount: 900,
+        credit_card: { currency: 'BRL', title: 'Cartão Roxo' },
+        id: 'p-1',
+        invoice_month: '2026-11',
+        method: 'ACCOUNT',
+        paid_on: date,
+        ...owner,
+      },
+    });
+    const prepayment = build({
+      financialInstallmentPrepayment: {
+        date,
+        discount_transaction: null,
+        id: 'pp-1',
+        installment_plan: {
+          credit_card: { title: 'Cartão Roxo' },
+          currency: 'BRL',
+          description: 'Sofá',
+        },
+        target_invoice_month: '2026-12',
+        ...owner,
+      },
+    });
+
+    await expect(
+      payment.read(ActivityEntityType.INVOICE_PAYMENT, 'card-1:2026-11'),
+    ).resolves.toMatchObject({
+      entityId: 'p-1',
+    });
+    await expect(
+      prepayment.read(ActivityEntityType.INSTALLMENT_PREPAYMENT, 'plan:plan-1'),
+    ).resolves.toMatchObject({
+      entityId: 'pp-1',
+    });
+  });
+
+  it('SHOULD describe a balance adjustment by the account AND a CSV import by its owner', async () => {
+    const adjust = build({
+      financialAccount: {
+        currency: 'BRL',
+        id: 'a-1',
+        ledger_balance: 1500,
+        name: 'Conta',
+        ...owner,
+      },
+    });
+
+    await expect(adjust.read(ActivityEntityType.BALANCE_ADJUSTMENT, 'a-1')).resolves.toMatchObject({
+      amountCents: 1500,
+      label: 'Conta',
+    });
+    await expect(
+      build({}).read(ActivityEntityType.TRANSACTION_IMPORT, 'FAMILY|f-1'),
+    ).resolves.toMatchObject({
+      entityId: '',
+      owners: [expect.objectContaining({ ownerId: 'f-1', ownerName: 'Família Silva' })],
+    });
+  });
+});
+
 describe('ActivitySnapshotDatasource', () => {
   it.each(cases)('SHOULD read a %s snapshot with its owner AND label', async (type, model, row) => {
     const snapshot = await build({ [model]: row }).read(type, 'e-1');
@@ -345,7 +412,7 @@ describe('ActivitySnapshotDatasource', () => {
     await expect(
       build({ financialCategory: system }).read(ActivityEntityType.CATEGORY, 'e-1'),
     ).resolves.toBeNull();
-    await expect(build({}).read(ActivityEntityType.TRANSACTION_IMPORT, 'x')).rejects.toThrow(
+    await expect(build({}).read(ActivityEntityType.CORPORATE_EVENT, 'x')).rejects.toThrow(
       'No activity snapshot reader',
     );
   });

@@ -29,7 +29,7 @@ function tx(model: string): EntityLookup {
 export const ENTITY_LOOKUP: Record<ActivityEntry['entity_type'], EntityLookup | null> = {
   ACCOUNT: tx('financialAccount'),
   ASSET: tx('investmentAsset'),
-  BALANCE_ADJUSTMENT: tx('financialTransaction'),
+  BALANCE_ADJUSTMENT: tx('financialAccount'),
   CARD_EARLY_PAYMENT: tx('financialTransaction'),
   CARD_REFUND: tx('financialTransaction'),
   CATEGORY: tx('financialCategory'),

@@ -16,6 +16,9 @@ import {
 import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 
+import { ActivityAction, ActivityEntityType, ActivityGroupKind } from '@activity/domain/enum';
+import { RecordsActivity } from '@api/activity/ActivityRecorder';
+import { fromParam, fromResponse, seriesScopeGroup, wholeGroup } from '@api/activity/descriptors';
 import {
   CreateRecurrenceApiSchema,
   CreateRecurrenceBody,
@@ -52,6 +55,11 @@ export class RecurrenceController {
   constructor(private readonly recurrenceService: RecurrenceService) {}
 
   @Post()
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.RECURRENCE,
+    idFrom: fromResponse('recurrence.id'),
+  })
   @ZodResponse({ status: 201, type: CreateRecurrenceResultOutput })
   async create(
     @Request() req: JwtPayload & Request,
@@ -66,6 +74,11 @@ export class RecurrenceController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
+  @RecordsActivity({
+    action: ActivityAction.DELETE,
+    entityType: ActivityEntityType.RECURRENCE,
+    group: wholeGroup(ActivityGroupKind.RECURRENCE_ROWS, fromParam('id')),
+  })
   @ZodResponse({ status: 200, type: DeleteRecurrenceResultOutput })
   async delete(
     @Request() req: JwtPayload & Request,
@@ -80,6 +93,11 @@ export class RecurrenceController {
   @ApiNoContentResponse()
   @Delete(':id/occurrences/:number')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.RECURRENCE,
+    group: seriesScopeGroup(ActivityGroupKind.RECURRENCE_ROWS),
+  })
   async deleteOccurrence(
     @Request() req: JwtPayload & Request,
     @Param('id', ParseUUIDPipe) id: string,
@@ -119,6 +137,11 @@ export class RecurrenceController {
   }
 
   @Post(':id/occurrences/:number')
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.TRANSACTION,
+    idFrom: fromResponse('id'),
+  })
   @ZodResponse({ status: 201, type: TransactionOutput })
   async materializeOccurrence(
     @Request() req: JwtPayload & Request,
@@ -141,6 +164,11 @@ export class RecurrenceController {
 
   @HttpCode(HttpStatus.OK)
   @Post(':id/split')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.RECURRENCE,
+    group: wholeGroup(ActivityGroupKind.RECURRENCE_ROWS, fromParam('id')),
+  })
   @ZodResponse({ status: 200, type: SplitRecurrenceResultOutput })
   async split(
     @Request() req: JwtPayload & Request,
@@ -155,6 +183,11 @@ export class RecurrenceController {
   }
 
   @Patch(':id')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.RECURRENCE,
+    group: wholeGroup(ActivityGroupKind.RECURRENCE_ROWS, fromParam('id')),
+  })
   @ZodResponse({ status: 200, type: RecurrenceOutput })
   async update(
     @Request() req: JwtPayload & Request,

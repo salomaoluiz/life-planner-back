@@ -20,5 +20,7 @@ export interface ActivitySnapshot {
   label: string;
   modules: ActivityModule[];
   owners: ActivityOwnerRef[];
+  // Ids the recorder needs to find the rows of a batch (never stored): the series or plan a row belongs to.
+  refs?: Record<string, null | string>;
   sources?: string[];
 }

@@ -16,6 +16,9 @@ import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 import { z } from 'zod';
 
+import { ActivityAction, ActivityEntityType } from '@activity/domain/enum';
+import { RecordsActivity } from '@api/activity/ActivityRecorder';
+import { fromResponse, seriesGroup } from '@api/activity/descriptors';
 import { CalendarDateApiSchema, CurrencyApiSchema } from '@api/finance/v1/dto/finance-fields';
 import {
   ConfirmTransactionApiSchema,
@@ -92,6 +95,7 @@ export class TransactionController {
 
   @HttpCode(HttpStatus.OK)
   @Post(':id/confirm')
+  @RecordsActivity({ action: ActivityAction.UPDATE, entityType: ActivityEntityType.TRANSACTION })
   @ZodResponse({ status: 200, type: TransactionWithLookupsOutput })
   async confirm(
     @Request() req: JwtPayload & Request,
@@ -106,6 +110,11 @@ export class TransactionController {
   }
 
   @Post()
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.TRANSACTION,
+    idFrom: fromResponse('item.id'),
+  })
   @ZodResponse({ status: 201, type: TransactionWithLookupsOutput })
   async create(
     @Request() req: JwtPayload & Request,
@@ -121,6 +130,11 @@ export class TransactionController {
   @ApiNoContentResponse()
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RecordsActivity({
+    action: ActivityAction.DELETE,
+    entityType: ActivityEntityType.TRANSACTION,
+    group: seriesGroup,
+  })
   async delete(
     @Request() req: JwtPayload & Request,
     @Param('id', ParseUUIDPipe) id: string,
@@ -164,6 +178,11 @@ export class TransactionController {
   }
 
   @Patch(':id')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.TRANSACTION,
+    group: seriesGroup,
+  })
   @ZodResponse({ status: 200, type: TransactionWithLookupsOutput })
   async update(
     @Request() req: JwtPayload & Request,

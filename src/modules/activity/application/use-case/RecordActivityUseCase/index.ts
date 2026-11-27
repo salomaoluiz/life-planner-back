@@ -39,7 +39,12 @@ export class RecordActivityUseCase implements UseCaseWithParams<RecordActivityIn
   constructor(@Inject('IActivityRepository') private readonly repository: IActivityRepository) {}
 
   async execute(input: RecordActivityInput): Promise<void> {
-    const snapshot = input.action === ActivityAction.DELETE ? input.before : input.after;
+    // An update after which the item is gone (a split left with one part dissolves) is a delete of it.
+    const action =
+      input.action === ActivityAction.UPDATE && !input.after && input.before
+        ? ActivityAction.DELETE
+        : input.action;
+    const snapshot = action === ActivityAction.DELETE ? input.before : input.after;
     const items = input.items ?? [];
 
     if (!snapshot) {
@@ -47,13 +52,13 @@ export class RecordActivityUseCase implements UseCaseWithParams<RecordActivityIn
     }
 
     const changes =
-      input.action === ActivityAction.UPDATE && input.before && input.after
+      action === ActivityAction.UPDATE && input.before && input.after
         ? buildChanges(input.before.fields, input.after.fields, [
             ...new Set([...Object.keys(input.after.fields), ...Object.keys(input.before.fields)]),
           ])
         : null;
 
-    if (input.action === ActivityAction.UPDATE && changes?.length === 0 && items.length === 0) {
+    if (action === ActivityAction.UPDATE && changes?.length === 0 && items.length === 0) {
       return;
     }
 
@@ -78,7 +83,7 @@ export class RecordActivityUseCase implements UseCaseWithParams<RecordActivityIn
 
     for (const owner of distinctOwners([input.after, input.before])) {
       await this.repository.insert({
-        action: input.action,
+        action,
         actorId: input.actor.id,
         actorName: input.actor.name,
         batch: input.batch,

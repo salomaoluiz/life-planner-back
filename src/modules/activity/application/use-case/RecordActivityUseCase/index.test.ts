@@ -96,6 +96,18 @@ describe('RecordActivityUseCase', () => {
     expect(repository.insert.mock.calls[0][0]).toMatchObject({ action: 'DELETE', entityId: 't-1' });
   });
 
+  it('SHOULD record a delete WHEN an update leaves the item gone (a dissolved split)', async () => {
+    await setup.execute({
+      action: ActivityAction.UPDATE,
+      actor,
+      after: null,
+      batch: false,
+      before: snapshot(),
+    });
+
+    expect(repository.insert.mock.calls[0][0]).toMatchObject({ action: 'DELETE', changes: null });
+  });
+
   it('SHOULD write one entry per owner touched WHEN the owner changed', async () => {
     const family = { ownerId: 'f-1', ownerName: 'Família', ownerType: OwnerType.FAMILY };
 

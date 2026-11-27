@@ -1,9 +1,14 @@
 import { CallHandler, ExecutionContext } from '@nestjs/common';
 
+import { ReadActivityGroupUseCase } from '@activity/application/use-case/ReadActivityGroupUseCase';
+import { ReadActivitySnapshotUseCase } from '@activity/application/use-case/ReadActivitySnapshotUseCase';
+import { RecordActivityUseCase } from '@activity/application/use-case/RecordActivityUseCase';
 import { ActivityAction, ActivityEntityType, ActivityGroupKind } from '@activity/domain/enum';
+import { Database } from '@shared/infra/db/Database';
 import { fromPromise, lastValueFrom, valueStream } from '@shared/infra/http/request-context';
+import { FindUserByIdUseCase } from '@user/application/use-case/FindUserByIdUseCase';
 
-import { ActivityDescriptor, ActivityRecorderInterceptor } from './ActivityRecorder';
+import { ActivityDescriptor, ActivityRecorderInterceptor, DeferredJson } from './ActivityRecorder';
 
 const reflector = { get: jest.fn() };
 const database = { runInTransaction: jest.fn(async (work: () => Promise<unknown>) => work()) };
@@ -11,18 +16,20 @@ const reader = { execute: jest.fn() };
 const group = { execute: jest.fn() };
 const record = { execute: jest.fn() };
 const findUser = { execute: jest.fn() };
-const setup = new ActivityRecorderInterceptor(
-  reflector as never,
-  database as never,
-  group as never,
-  reader as never,
-  record as never,
-  findUser as never,
-);
+const dependencies = new Map<unknown, unknown>([
+  [Database, database],
+  [FindUserByIdUseCase, findUser],
+  [ReadActivityGroupUseCase, group],
+  [ReadActivitySnapshotUseCase, reader],
+  [RecordActivityUseCase, record],
+]);
+const moduleRef = { get: (token: unknown) => dependencies.get(token) };
+const setup = new ActivityRecorderInterceptor(reflector as never, moduleRef as never);
 const request = { body: { a: 1 }, params: { id: 't-1' }, query: {}, user: { id: 'user-1' } };
+const response = { json: jest.fn(), status: jest.fn().mockReturnThis() };
 const context = {
   getHandler: () => 'handler',
-  switchToHttp: () => ({ getRequest: () => request }),
+  switchToHttp: () => ({ getRequest: () => request, getResponse: () => response }),
 } as unknown as ExecutionContext;
 function descriptor(overrides: Partial<ActivityDescriptor> = {}): ActivityDescriptor {
   return {
@@ -48,6 +55,22 @@ beforeEach(() => {
 });
 
 describe('ActivityRecorderInterceptor', () => {
+  it('SHOULD send a deferred JSON body only after the transaction committed', async () => {
+    reflector.get.mockReturnValue(descriptor({ skipWhen: () => true }));
+    database.runInTransaction.mockImplementationOnce(async (work: () => Promise<unknown>) => {
+      const result = await work();
+
+      expect(response.json).not.toHaveBeenCalled();
+
+      return result;
+    });
+
+    await expect(run(async () => new DeferredJson(201, { created: 2 }))).resolves.toBeUndefined();
+
+    expect(response.status).toHaveBeenCalledWith(201);
+    expect(response.json).toHaveBeenCalledWith({ created: 2 });
+  });
+
   it('SHOULD pass an undecorated route through untouched', async () => {
     reflector.get.mockReturnValue(undefined);
     const next: CallHandler = { handle: () => valueStream('ok') };
