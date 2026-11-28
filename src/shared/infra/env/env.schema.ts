@@ -95,6 +95,16 @@ export const envSchema = z.object({
     .optional()
     .transform((value) => value !== 'false'),
 
+  // Activity history (spec 127): retention window and its daily purge job
+  ACTIVITY_RETENTION_DAYS: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.coerce.number().int().min(1).default(183),
+  ),
+  ACTIVITY_RETENTION_JOB_ENABLED: z
+    .enum(['true', 'false', ''])
+    .optional()
+    .transform((value) => value !== 'false'),
+
   // Notifications (spec 124): the tick job and the push providers (empty VAPID keys disable Web Push)
   EXPO_ACCESS_TOKEN: emptyToUndefined,
   NOTIFICATION_JOB_ENABLED: z

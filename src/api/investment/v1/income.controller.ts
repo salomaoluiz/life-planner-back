@@ -15,6 +15,9 @@ import {
 import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 
+import { ActivityAction, ActivityEntityType } from '@activity/domain/enum';
+import { RecordsActivity } from '@api/activity/ActivityRecorder';
+import { fromResponse, incomeSeriesGroup } from '@api/activity/descriptors';
 import {
   ApproveSuggestionApiSchema,
   ApproveSuggestionBody,
@@ -47,6 +50,11 @@ export class IncomeController {
   constructor(private readonly incomeService: IncomeService) {}
 
   @Post('income-suggestions/:id/approve')
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.INCOME,
+    idFrom: fromResponse('item.id'),
+  })
   @ZodResponse({ status: 201, type: IncomeWriteOutput })
   async approveSuggestion(
     @Request() req: JwtPayload & Request,
@@ -61,6 +69,11 @@ export class IncomeController {
   }
 
   @Post('incomes')
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.INCOME,
+    idFrom: fromResponse('item.id'),
+  })
   @ZodResponse({ status: 201, type: IncomeWriteOutput })
   async createIncome(@Request() req: JwtPayload & Request, @Body() body: CreateIncomeBody) {
     return this.incomeService.createIncome(req.user.id, validate(CreateIncomeApiSchema, body));
@@ -69,6 +82,11 @@ export class IncomeController {
   @ApiNoContentResponse()
   @Delete('incomes/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RecordsActivity({
+    action: ActivityAction.DELETE,
+    entityType: ActivityEntityType.INCOME,
+    group: incomeSeriesGroup,
+  })
   async deleteIncome(
     @Request() req: JwtPayload & Request,
     @Param('id', ParseUUIDPipe) id: string,
@@ -120,6 +138,10 @@ export class IncomeController {
 
   @HttpCode(HttpStatus.OK)
   @Post('incomes/:id/receive')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.INCOME,
+  })
   @ZodResponse({ status: 200, type: IncomeWriteOutput })
   async receiveIncome(
     @Request() req: JwtPayload & Request,
@@ -144,6 +166,11 @@ export class IncomeController {
   }
 
   @Patch('incomes/:id')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.INCOME,
+    group: incomeSeriesGroup,
+  })
   @ZodResponse({ status: 200, type: IncomeWriteOutput })
   async updateIncome(
     @Request() req: JwtPayload & Request,

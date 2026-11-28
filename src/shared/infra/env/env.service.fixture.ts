@@ -17,6 +17,8 @@ class EnvServiceFixture {
 
   withDefault() {
     this.value = {
+      activityRetentionDays: 183,
+      activityRetentionJobEnabled: true,
       appEnvironment: 'development',
       brapiToken: undefined,
       corsOrigins: '',

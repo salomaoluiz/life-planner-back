@@ -16,6 +16,9 @@ import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 import { z } from 'zod';
 
+import { ActivityAction, ActivityEntityType, ActivityGroupKind } from '@activity/domain/enum';
+import { RecordsActivity } from '@api/activity/ActivityRecorder';
+import { fromParam, fromResponse, wholeGroup } from '@api/activity/descriptors';
 import { CategoryService } from '@api/finance/v1/category.service';
 import {
   CategoryOutput,
@@ -47,6 +50,11 @@ export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
   @Post()
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.CATEGORY,
+    idFrom: fromResponse('id'),
+  })
   @ZodResponse({ status: 201, type: CategoryOutput })
   async create(@Request() req: JwtPayload & Request, @Body() body: CreateCategoryBody) {
     const input = validate(CreateCategoryApiSchema, body);
@@ -57,6 +65,11 @@ export class CategoryController {
   @ApiNoContentResponse()
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RecordsActivity({
+    action: ActivityAction.DELETE,
+    entityType: ActivityEntityType.CATEGORY,
+    group: wholeGroup(ActivityGroupKind.CATEGORY_SUBTREE, fromParam('id')),
+  })
   async delete(@Request() req: JwtPayload & Request, @Param('id', ParseUUIDPipe) id: string) {
     await this.categoryService.delete(req.user.id, id);
   }
@@ -70,6 +83,11 @@ export class CategoryController {
   }
 
   @Patch(':id')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.CATEGORY,
+    group: wholeGroup(ActivityGroupKind.CATEGORY_SUBTREE, fromParam('id')),
+  })
   @ZodResponse({ status: 200, type: CategoryOutput })
   async update(
     @Request() req: JwtPayload & Request,
@@ -83,6 +101,11 @@ export class CategoryController {
 
   // Spec 058: the category and the icon / color of its descendants in one transaction.
   @Patch(':id/appearance')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.CATEGORY,
+    group: wholeGroup(ActivityGroupKind.CATEGORY_SUBTREE, fromParam('id')),
+  })
   @ZodResponse({ status: 200, type: [CategoryOutput] })
   async updateAppearance(
     @Request() req: JwtPayload & Request,

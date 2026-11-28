@@ -70,6 +70,15 @@ describe('create', () => {
     });
   });
 
+  it('SHOULD drop the activity history of the deleted family (spec 127)', async () => {
+    await setup.delete(mocks.userId, mocks.familyId);
+
+    expect(mocks.purgeActivity.execute).toHaveBeenCalledWith({
+      owner: 'FAMILY',
+      ownerId: mocks.familyId,
+    });
+  });
+
   it('SHOULD propagate NotFoundException WHEN the JWT user no longer exists AND create nothing', async () => {
     mocks.findUserByIdUseCase.execute.mockRejectedValueOnce(new NotFoundException());
 

@@ -14,6 +14,9 @@ import {
 import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 
+import { ActivityAction, ActivityEntityType } from '@activity/domain/enum';
+import { RecordsActivity } from '@api/activity/ActivityRecorder';
+import { fromParam, fromResponse } from '@api/activity/descriptors';
 import { CardCreditService } from '@api/finance/v1/card-credit.service';
 import {
   CreateEarlyPaymentApiSchema,
@@ -41,6 +44,11 @@ export class CardCreditController {
   constructor(private readonly cardCreditService: CardCreditService) {}
 
   @Post(':id/early-payments')
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.CARD_EARLY_PAYMENT,
+    idFrom: fromResponse('id'),
+  })
   @ZodResponse({ status: 201, type: EarlyPaymentOutput })
   async createEarlyPayment(
     @Request() req: JwtPayload & Request,
@@ -55,6 +63,11 @@ export class CardCreditController {
   }
 
   @Post(':id/refunds')
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.CARD_REFUND,
+    idFrom: fromResponse('id'),
+  })
   @ZodResponse({ status: 201, type: RefundOutput })
   async createRefund(
     @Request() req: JwtPayload & Request,
@@ -71,6 +84,11 @@ export class CardCreditController {
   @ApiNoContentResponse()
   @Delete(':id/early-payments/:earlyPaymentId')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RecordsActivity({
+    action: ActivityAction.DELETE,
+    entityType: ActivityEntityType.CARD_EARLY_PAYMENT,
+    idFrom: fromParam('earlyPaymentId'),
+  })
   async deleteEarlyPayment(
     @Request() req: JwtPayload & Request,
     @Param('id', ParseUUIDPipe) id: string,
@@ -82,6 +100,11 @@ export class CardCreditController {
   @ApiNoContentResponse()
   @Delete(':id/refunds/:refundId')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RecordsActivity({
+    action: ActivityAction.DELETE,
+    entityType: ActivityEntityType.CARD_REFUND,
+    idFrom: fromParam('refundId'),
+  })
   async deleteRefund(
     @Request() req: JwtPayload & Request,
     @Param('id', ParseUUIDPipe) id: string,
@@ -91,6 +114,11 @@ export class CardCreditController {
   }
 
   @Patch(':id/early-payments/:earlyPaymentId')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.CARD_EARLY_PAYMENT,
+    idFrom: fromParam('earlyPaymentId'),
+  })
   @ZodResponse({ status: 200, type: EarlyPaymentOutput })
   async updateEarlyPayment(
     @Request() req: JwtPayload & Request,
@@ -106,6 +134,11 @@ export class CardCreditController {
   }
 
   @Patch(':id/refunds/:refundId')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.CARD_REFUND,
+    idFrom: fromParam('refundId'),
+  })
   @ZodResponse({ status: 200, type: RefundOutput })
   async updateRefund(
     @Request() req: JwtPayload & Request,

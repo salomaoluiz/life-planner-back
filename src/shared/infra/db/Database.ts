@@ -7,6 +7,25 @@ import { EnvService } from '@shared/infra/env/env.service';
 
 import { QueryCounter } from './QueryCounter';
 
+// A `$transaction` inside the open one: the callback form gets the open client; the batch form (an array of lazy
+// queries) runs them one after the other, in order, like Prisma does.
+async function runJoined<T>(
+  tx: T,
+  arg: ((client: T) => Promise<unknown>) | PromiseLike<unknown>[],
+): Promise<unknown> {
+  if (Array.isArray(arg)) {
+    const results: unknown[] = [];
+
+    for (const query of arg) {
+      results.push(await query);
+    }
+
+    return results;
+  }
+
+  return arg(tx);
+}
+
 @Injectable()
 export class Database {
   prisma: PrismaClient;
@@ -49,7 +68,8 @@ export class Database {
         const scoped = new Proxy(tx, {
           get: (target, property, receiver) =>
             property === '$transaction'
-              ? async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)
+              ? async (arg: ((client: typeof tx) => Promise<unknown>) | PromiseLike<unknown>[]) =>
+                  runJoined(tx, arg)
               : Reflect.get(target, property, receiver),
         }) as unknown as PrismaClient;
 

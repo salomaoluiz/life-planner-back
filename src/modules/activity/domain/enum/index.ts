@@ -1,0 +1,60 @@
+export enum ActivityAction {
+  CREATE = 'CREATE',
+  DELETE = 'DELETE',
+  UPDATE = 'UPDATE',
+}
+export enum ActivityModule {
+  FINANCE = 'FINANCE',
+  INVESTMENT = 'INVESTMENT',
+}
+
+// The list filter also accepts BATCH (`batch = true`); it is not an action of an entry.
+export enum ActivityActionFilter {
+  BATCH = 'BATCH',
+  CREATE = 'CREATE',
+  DELETE = 'DELETE',
+  UPDATE = 'UPDATE',
+}
+export enum ActivityEntityType {
+  ACCOUNT = 'ACCOUNT',
+  ASSET = 'ASSET',
+  BALANCE_ADJUSTMENT = 'BALANCE_ADJUSTMENT',
+  CARD_EARLY_PAYMENT = 'CARD_EARLY_PAYMENT',
+  CARD_REFUND = 'CARD_REFUND',
+  CATEGORY = 'CATEGORY',
+  CONVERSION = 'CONVERSION',
+  CORPORATE_EVENT = 'CORPORATE_EVENT',
+  CREDIT_CARD = 'CREDIT_CARD',
+  FIXED_INCOME_TERMS = 'FIXED_INCOME_TERMS',
+  INCOME = 'INCOME',
+  INCOME_SERIES = 'INCOME_SERIES',
+  INSTALLMENT_PLAN = 'INSTALLMENT_PLAN',
+  INSTALLMENT_PREPAYMENT = 'INSTALLMENT_PREPAYMENT',
+  INVOICE_PAYMENT = 'INVOICE_PAYMENT',
+  OPERATION = 'OPERATION',
+  RECURRENCE = 'RECURRENCE',
+  SPLIT = 'SPLIT',
+  STOCK_PURCHASE_POSTING = 'STOCK_PURCHASE_POSTING',
+  TAG = 'TAG',
+  TRANSACTION = 'TRANSACTION',
+  TRANSACTION_IMPORT = 'TRANSACTION_IMPORT',
+  TRANSFER = 'TRANSFER',
+  VALUATION = 'VALUATION',
+}
+
+export const ACTIVITY_PAGE_SIZE = 50;
+
+// A set of rows a batch request writes together; the recorder reads it before and after the request and lists what
+// changed (spec 127 FR 3, 8).
+export enum ActivityGroupKind {
+  CATEGORY_SUBTREE = 'CATEGORY_SUBTREE',
+  CONVERSION_ROWS = 'CONVERSION_ROWS',
+  // Rows a CSV import created: id is `ownerType|ownerId|<ISO start of the request>`.
+  CREATED_SINCE = 'CREATED_SINCE',
+  INCOME_SERIES_ROWS = 'INCOME_SERIES_ROWS',
+  INSTALLMENT_PLAN_ROWS = 'INSTALLMENT_PLAN_ROWS',
+  PREPAYMENT_ROWS = 'PREPAYMENT_ROWS',
+  RECURRENCE_ROWS = 'RECURRENCE_ROWS',
+  SPLIT_ROWS = 'SPLIT_ROWS',
+  TRANSACTION_IDS = 'TRANSACTION_IDS',
+}

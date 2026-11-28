@@ -23,6 +23,7 @@ module.exports = {
   moduleDirectories: ['node_modules', 'src'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^@activity/(.*)$': '<rootDir>/src/modules/activity/$1',
     '^@api/(.*)$': '<rootDir>/src/api/$1',
     '^@family/(.*)$': '<rootDir>/src/modules/family/$1',
     '^@investment/(.*)$': '<rootDir>/src/modules/investment/$1',

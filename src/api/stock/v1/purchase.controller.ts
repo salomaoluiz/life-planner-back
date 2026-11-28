@@ -19,6 +19,9 @@ import {
 import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 
+import { ActivityAction, ActivityEntityType } from '@activity/domain/enum';
+import { RecordsActivity } from '@api/activity/ActivityRecorder';
+import { purchasePostingGroup } from '@api/activity/descriptors';
 import {
   AddRowByCodeApiSchema,
   AddRowByCodeBody,
@@ -137,6 +140,16 @@ export class PurchaseController {
 
   @HttpCode(HttpStatus.OK)
   @Post(':id/close')
+  // Spec 127 FR 4: the only stock action recorded is the finance posting a close creates (one batch entry in
+  // FINANCE). Nothing is recorded WHEN the close made no posting or was an idempotent replay of a closed purchase.
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.STOCK_PURCHASE_POSTING,
+    entryAction: ActivityAction.CREATE,
+    group: purchasePostingGroup,
+    skipWhen: (context, before) =>
+      before?.fields.status === 'CLOSED' || purchasePostingGroup(context)?.id === undefined,
+  })
   @ZodResponse({ type: ClosedPurchaseOutput })
   async close(
     @Request() req: JwtPayload & Request,

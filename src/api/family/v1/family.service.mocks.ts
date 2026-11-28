@@ -1,6 +1,7 @@
 import { faker } from '@faker-js/faker';
 import { Test } from '@nestjs/testing';
 
+import { PurgeActivityByOwnerUseCase } from '@activity/application/use-case/PurgeActivityByOwnerUseCase';
 import { FAMILY_OWNED_RECORDS_CHECKS } from '@api/family/v1/family-records-checks';
 import { FamilyService } from '@api/family/v1/family.service';
 import { CreateFamilyUseCase } from '@family/application/use-case/CreateFamilyUseCase';
@@ -43,6 +44,7 @@ const familyApiMock = {
 const addFamilyToCategoryScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const addFamilyToTagScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const removeFamilyAccountFavoritesMock = { execute: jest.fn().mockResolvedValue(undefined) };
+const purgeActivityMock = { execute: jest.fn().mockResolvedValue(0) };
 const removeFamilyNotificationsMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const removeFamilyFromTagScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
 const removeFamilyFromCategoryScopesMock = { execute: jest.fn().mockResolvedValue(undefined) };
@@ -89,6 +91,7 @@ beforeEach(async () => {
         useValue: removeFamilyAccountFavoritesMock,
       },
       { provide: RemoveFamilyFromTagScopesUseCase, useValue: removeFamilyFromTagScopesMock },
+      { provide: PurgeActivityByOwnerUseCase, useValue: purgeActivityMock },
       { provide: RemoveFamilyNotificationsUseCase, useValue: removeFamilyNotificationsMock },
       {
         provide: RemoveFamilyFromCategoryScopesUseCase,
@@ -125,6 +128,7 @@ const mocks = {
   getFamilyPendingInvitesUseCase: getFamilyPendingInvitesUseCaseMock,
   getUserFamiliesUseCase: getUserFamiliesUseCaseMock,
   noBlockers,
+  purgeActivity: purgeActivityMock,
   recordsCheck: recordsCheckMock,
   removeFamilyAccountFavorites: removeFamilyAccountFavoritesMock,
   removeFamilyFromCategoryScopes: removeFamilyFromCategoryScopesMock,

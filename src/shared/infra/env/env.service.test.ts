@@ -34,6 +34,8 @@ const testCases: { key: EnvVarKey; method: EnvServiceKey }[] = [
   { key: 'INVESTMENT_INCOME_SERIES_JOB_ENABLED', method: 'investmentIncomeSeriesJobEnabled' },
   { key: 'MARKET_INDEX_JOB_ENABLED', method: 'marketIndexJobEnabled' },
   { key: 'EXPO_ACCESS_TOKEN', method: 'expoAccessToken' },
+  { key: 'ACTIVITY_RETENTION_DAYS', method: 'activityRetentionDays' },
+  { key: 'ACTIVITY_RETENTION_JOB_ENABLED', method: 'activityRetentionJobEnabled' },
   { key: 'NOTIFICATION_JOB_ENABLED', method: 'notificationJobEnabled' },
   { key: 'NOTIFICATION_TICK_MINUTES', method: 'notificationTickMinutes' },
   { key: 'VAPID_PRIVATE_KEY', method: 'vapidPrivateKey' },

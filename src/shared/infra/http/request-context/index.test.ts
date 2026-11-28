@@ -1,4 +1,4 @@
-import { lastValueFrom, RequestContextStore, valueStream } from './index';
+import { fromPromise, lastValueFrom, RequestContextStore, valueStream } from './index';
 
 const store = new RequestContextStore<string>();
 
@@ -48,4 +48,17 @@ it('SHOULD NOT call onSuccess WHEN the handler fails', async () => {
     ),
   ).rejects.toThrow('boom');
   expect(onSuccess).not.toHaveBeenCalled();
+});
+
+describe('fromPromise', () => {
+  it('SHOULD emit the resolved value AND error with the rejection', async () => {
+    await expect(lastValueFrom(fromPromise(async () => 7))).resolves.toBe(7);
+    await expect(
+      lastValueFrom(
+        fromPromise(async () => {
+          throw new Error('boom');
+        }),
+      ),
+    ).rejects.toThrow('boom');
+  });
 });

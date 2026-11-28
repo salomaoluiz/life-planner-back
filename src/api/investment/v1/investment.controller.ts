@@ -16,6 +16,9 @@ import {
 import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 
+import { ActivityAction, ActivityEntityType } from '@activity/domain/enum';
+import { RecordsActivity } from '@api/activity/ActivityRecorder';
+import { fromResponse, valuationKey } from '@api/activity/descriptors';
 import { resolveToday, toOwnerIds } from '@api/finance/v1/finance-query';
 import {
   AssetDetailOutput,
@@ -60,12 +63,22 @@ export class InvestmentController {
   constructor(private readonly investmentService: InvestmentService) {}
 
   @Post('assets')
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.ASSET,
+    idFrom: fromResponse('id'),
+  })
   @ZodResponse({ status: 201, type: AssetItemOutput })
   async createAsset(@Request() req: JwtPayload & Request, @Body() body: CreateAssetBody) {
     return this.investmentService.createAsset(req.user.id, validate(CreateAssetApiSchema, body));
   }
 
   @Post('assets/:id/operations')
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.OPERATION,
+    idFrom: fromResponse('item.id'),
+  })
   @ZodResponse({ status: 201, type: OperationWriteOutput })
   async createOperation(
     @Request() req: JwtPayload & Request,
@@ -82,6 +95,10 @@ export class InvestmentController {
   @ApiNoContentResponse()
   @Delete('assets/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RecordsActivity({
+    action: ActivityAction.DELETE,
+    entityType: ActivityEntityType.ASSET,
+  })
   async deleteAsset(@Request() req: JwtPayload & Request, @Param('id', ParseUUIDPipe) id: string) {
     await this.investmentService.deleteAsset(req.user.id, id);
   }
@@ -89,6 +106,10 @@ export class InvestmentController {
   @ApiNoContentResponse()
   @Delete('operations/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RecordsActivity({
+    action: ActivityAction.DELETE,
+    entityType: ActivityEntityType.OPERATION,
+  })
   async deleteOperation(
     @Request() req: JwtPayload & Request,
     @Param('id', ParseUUIDPipe) id: string,
@@ -99,6 +120,10 @@ export class InvestmentController {
   @ApiNoContentResponse()
   @Delete('valuations/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RecordsActivity({
+    action: ActivityAction.DELETE,
+    entityType: ActivityEntityType.VALUATION,
+  })
   async deleteValuation(
     @Request() req: JwtPayload & Request,
     @Param('id', ParseUUIDPipe) id: string,
@@ -179,6 +204,10 @@ export class InvestmentController {
   }
 
   @Patch('assets/:id')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.ASSET,
+  })
   @ZodResponse({ status: 200, type: AssetItemOutput })
   async updateAsset(
     @Request() req: JwtPayload & Request,
@@ -193,6 +222,10 @@ export class InvestmentController {
   }
 
   @Patch('operations/:id')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.OPERATION,
+  })
   @ZodResponse({ status: 200, type: OperationWriteOutput })
   async updateOperation(
     @Request() req: JwtPayload & Request,
@@ -207,6 +240,11 @@ export class InvestmentController {
   }
 
   @Put('assets/:id/valuations/:date')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.VALUATION,
+    idFrom: valuationKey,
+  })
   @ZodResponse({ status: 200, type: ValuationWriteOutput })
   async upsertValuation(
     @Request() req: JwtPayload & Request,

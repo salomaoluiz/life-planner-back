@@ -15,6 +15,9 @@ import {
 import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 
+import { ActivityAction, ActivityEntityType, ActivityGroupKind } from '@activity/domain/enum';
+import { RecordsActivity } from '@api/activity/ActivityRecorder';
+import { fromParam, fromResponse, wholeGroup } from '@api/activity/descriptors';
 import {
   CreateSplitApiSchema,
   CreateSplitBody,
@@ -40,6 +43,12 @@ export class SplitController {
   constructor(private readonly splitService: SplitService) {}
 
   @Post()
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.SPLIT,
+    group: wholeGroup(ActivityGroupKind.SPLIT_ROWS, fromResponse('item.id')),
+    idFrom: fromResponse('item.id'),
+  })
   @ZodResponse({ status: 201, type: SplitWithLookupsOutput })
   async create(
     @Request() req: JwtPayload & Request,
@@ -54,6 +63,11 @@ export class SplitController {
   @ApiNoContentResponse()
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RecordsActivity({
+    action: ActivityAction.DELETE,
+    entityType: ActivityEntityType.SPLIT,
+    group: wholeGroup(ActivityGroupKind.SPLIT_ROWS, fromParam('id')),
+  })
   async delete(@Request() req: JwtPayload & Request, @Param('id', ParseUUIDPipe) id: string) {
     await this.splitService.delete(req.user.id, id);
   }
@@ -65,6 +79,11 @@ export class SplitController {
   }
 
   @Patch(':id')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.SPLIT,
+    group: wholeGroup(ActivityGroupKind.SPLIT_ROWS, fromParam('id')),
+  })
   @ZodResponse({ status: 200, type: SplitUpdateResultOutput })
   async update(
     @Request() req: JwtPayload & Request,

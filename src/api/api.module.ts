@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { ActivityAPIModule } from '@api/activity/activity.module';
 import { AuthAPIModule } from '@api/auth/auth.module';
 import { UserExistsCheckModule } from '@api/auth/user-exists-check.module';
 import { FamilyMemberAPIModule } from '@api/family-member/family-member.module';
@@ -17,6 +18,7 @@ import { HealthModule } from './health/health.module';
 @Module({
   imports: [
     HealthModule,
+    ActivityAPIModule,
     ExternalProjectionModule,
     AuthAPIModule,
     FamilyAPIModule,

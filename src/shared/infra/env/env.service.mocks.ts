@@ -6,6 +6,8 @@ import { EnvService } from './env.service';
 // region Mocks
 
 const envVarsMock = {
+  ACTIVITY_RETENTION_DAYS: 183,
+  ACTIVITY_RETENTION_JOB_ENABLED: true,
   APP_ENVIRONMENT: 'staging',
   BRAPI_TOKEN: 'your-brapi-token',
   CORS_ORIGINS: 'http://localhost:8081',

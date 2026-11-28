@@ -12,6 +12,9 @@ import {
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 
+import { ActivityAction, ActivityEntityType, ActivityGroupKind } from '@activity/domain/enum';
+import { RecordsActivity } from '@api/activity/ActivityRecorder';
+import { fromParam, fromResponse, wholeGroup } from '@api/activity/descriptors';
 import {
   CreateIncomeSeriesApiSchema,
   CreateIncomeSeriesBody,
@@ -39,6 +42,11 @@ export class IncomeSeriesController {
   constructor(private readonly incomeSeriesService: IncomeSeriesService) {}
 
   @Post()
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.INCOME_SERIES,
+    idFrom: fromResponse('item.id'),
+  })
   @ZodResponse({ status: 201, type: IncomeSeriesCreatedOutput })
   async create(@Request() req: JwtPayload & Request, @Body() body: CreateIncomeSeriesBody) {
     return this.incomeSeriesService.create(
@@ -81,6 +89,11 @@ export class IncomeSeriesController {
   }
 
   @Patch(':id')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.INCOME_SERIES,
+    group: wholeGroup(ActivityGroupKind.INCOME_SERIES_ROWS, fromParam('id')),
+  })
   @ZodResponse({ status: 200, type: IncomeSeriesItemOutput })
   async update(
     @Request() req: JwtPayload & Request,

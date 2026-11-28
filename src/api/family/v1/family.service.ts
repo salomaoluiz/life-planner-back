@@ -1,5 +1,6 @@
 import { ConflictException, Inject, Injectable } from '@nestjs/common';
 
+import { PurgeActivityByOwnerUseCase } from '@activity/application/use-case/PurgeActivityByOwnerUseCase';
 import { CreateFamilyInput, FamilyOutput, UpdateFamilyInput } from '@api/family/v1/dto/family.dto';
 import {
   FAMILY_OWNED_RECORDS_CHECKS,
@@ -49,6 +50,7 @@ export class FamilyService {
     private readonly getFamilyByIdUseCase: GetFamilyByIdUseCase,
     private readonly getFamilyPendingInvitesUseCase: GetFamilyPendingInvitesUseCase,
     private readonly getUserFamiliesUseCase: GetUserFamiliesUseCase,
+    private readonly purgeActivityByOwnerUseCase: PurgeActivityByOwnerUseCase,
     private readonly removeFamilyAccountFavoritesUseCase: RemoveFamilyAccountFavoritesUseCase,
     private readonly removeFamilyFromCategoryScopesUseCase: RemoveFamilyFromCategoryScopesUseCase,
     private readonly removeFamilyFromTagScopesUseCase: RemoveFamilyFromTagScopesUseCase,
@@ -123,6 +125,8 @@ export class FamilyService {
     await this.removeFamilyAccountFavoritesUseCase.execute({ familyId });
     // Spec 124 section 4: nobody keeps notice items of the deleted family.
     await this.removeFamilyNotificationsUseCase.execute({ familyId });
+    // Spec 127 FR 15: the history of the deleted family goes with it.
+    await this.purgeActivityByOwnerUseCase.execute({ owner: OwnerType.FAMILY, ownerId: familyId });
   }
 
   async findAll(userId: string): Promise<FamilyOutput[]> {

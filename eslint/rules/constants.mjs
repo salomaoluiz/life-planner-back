@@ -1,5 +1,6 @@
 export const internalModules = [
   '@shared',
+  '@activity',
   '@api',
   '@auth',
   '@db',

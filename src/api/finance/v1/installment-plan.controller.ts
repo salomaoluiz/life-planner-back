@@ -15,6 +15,9 @@ import {
 import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 
+import { ActivityAction, ActivityEntityType, ActivityGroupKind } from '@activity/domain/enum';
+import { RecordsActivity } from '@api/activity/ActivityRecorder';
+import { fromParam, fromResponse, planKey, wholeGroup } from '@api/activity/descriptors';
 import {
   CreateInstallmentPlanApiSchema,
   CreateInstallmentPlanBody,
@@ -42,6 +45,12 @@ export class InstallmentPlanController {
   constructor(private readonly installmentPlanService: InstallmentPlanService) {}
 
   @Post()
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.INSTALLMENT_PLAN,
+    group: wholeGroup(ActivityGroupKind.INSTALLMENT_PLAN_ROWS, fromResponse('id')),
+    idFrom: fromResponse('id'),
+  })
   @ZodResponse({ status: 201, type: InstallmentPlanOutput })
   async create(
     @Request() req: JwtPayload & Request,
@@ -57,6 +66,11 @@ export class InstallmentPlanController {
   @ApiNoContentResponse()
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RecordsActivity({
+    action: ActivityAction.DELETE,
+    entityType: ActivityEntityType.INSTALLMENT_PLAN,
+    group: wholeGroup(ActivityGroupKind.INSTALLMENT_PLAN_ROWS, fromParam('id')),
+  })
   async delete(@Request() req: JwtPayload & Request, @Param('id', ParseUUIDPipe) id: string) {
     await this.installmentPlanService.delete(req.user.id, id);
   }
@@ -64,6 +78,12 @@ export class InstallmentPlanController {
   @ApiNoContentResponse()
   @Delete(':id/prepayment')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RecordsActivity({
+    action: ActivityAction.DELETE,
+    entityType: ActivityEntityType.INSTALLMENT_PREPAYMENT,
+    group: wholeGroup(ActivityGroupKind.INSTALLMENT_PLAN_ROWS, fromParam('id')),
+    idFrom: planKey,
+  })
   async deletePrepayment(
     @Request() req: JwtPayload & Request,
     @Param('id', ParseUUIDPipe) id: string,
@@ -101,6 +121,12 @@ export class InstallmentPlanController {
   }
 
   @Post(':id/prepayment')
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.INSTALLMENT_PREPAYMENT,
+    group: wholeGroup(ActivityGroupKind.INSTALLMENT_PLAN_ROWS, fromParam('id')),
+    idFrom: planKey,
+  })
   @ZodResponse({ status: 201, type: InstallmentPlanOutput })
   async prepay(
     @Request() req: JwtPayload & Request,
@@ -115,6 +141,11 @@ export class InstallmentPlanController {
   }
 
   @Patch(':id')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.INSTALLMENT_PLAN,
+    group: wholeGroup(ActivityGroupKind.INSTALLMENT_PLAN_ROWS, fromParam('id')),
+  })
   @ZodResponse({ status: 200, type: InstallmentPlanOutput })
   async update(
     @Request() req: JwtPayload & Request,

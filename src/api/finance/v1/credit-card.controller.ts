@@ -16,6 +16,9 @@ import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 import { z } from 'zod';
 
+import { ActivityAction, ActivityEntityType } from '@activity/domain/enum';
+import { RecordsActivity } from '@api/activity/ActivityRecorder';
+import { fromResponse } from '@api/activity/descriptors';
 import { CreditCardService } from '@api/finance/v1/credit-card.service';
 import {
   CreateCreditCardApiSchema,
@@ -49,6 +52,11 @@ export class CreditCardController {
   constructor(private readonly creditCardService: CreditCardService) {}
 
   @Post()
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.CREDIT_CARD,
+    idFrom: fromResponse('id'),
+  })
   @ZodResponse({ status: 201, type: CreditCardOutput })
   async create(@Request() req: JwtPayload & Request, @Body() body: CreateCreditCardBody) {
     const input = validate(CreateCreditCardApiSchema, body);
@@ -59,6 +67,10 @@ export class CreditCardController {
   @ApiNoContentResponse()
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RecordsActivity({
+    action: ActivityAction.DELETE,
+    entityType: ActivityEntityType.CREDIT_CARD,
+  })
   async delete(@Request() req: JwtPayload & Request, @Param('id', ParseUUIDPipe) id: string) {
     await this.creditCardService.delete(req.user.id, id);
   }
@@ -90,6 +102,10 @@ export class CreditCardController {
   }
 
   @Patch(':id')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.CREDIT_CARD,
+  })
   @ZodResponse({ status: 200, type: CreditCardOutput })
   async update(
     @Request() req: JwtPayload & Request,

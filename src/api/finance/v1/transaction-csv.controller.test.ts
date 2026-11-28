@@ -1,6 +1,7 @@
 import { PATH_METADATA, VERSION_METADATA } from '@nestjs/common/constants';
 import { Test } from '@nestjs/testing';
 
+import { DeferredJson } from '@api/activity/ActivityRecorder';
 import { TransactionCsvController } from '@api/finance/v1/transaction-csv.controller';
 import { TransactionCsvService } from '@api/finance/v1/transaction-csv.service';
 import { ValidationError } from '@shared/domain/error/ValidationError';
@@ -87,34 +88,30 @@ describe('import', () => {
   };
 
   function response() {
-    const json = jest.fn();
-
-    return { json, res: { status: jest.fn().mockReturnValue({ json }) } };
+    return { res: { setHeader: jest.fn() } as never };
   }
 
   it('SHOULD answer the dry run with 200, errors and duplicates only', async () => {
     const setup = await build();
-    const { json, res } = response();
+    const { res } = response();
 
     serviceMock.import.mockResolvedValueOnce({ created: 0, duplicates: [2], errors: [] });
 
-    await setup.import(request, body as never, { today: '2026-10-21' }, res);
+    const result = await setup.import(request, body as never, { today: '2026-10-21' }, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(json).toHaveBeenCalledWith({ duplicates: [2], errors: [] });
+    expect(result).toEqual(new DeferredJson(200, { duplicates: [2], errors: [] }));
     expect(serviceMock.import).toHaveBeenCalledWith('user-1', expect.anything(), '2026-10-21');
   });
 
   it('SHOULD answer the real run with 201 and the created count', async () => {
     const setup = await build();
-    const { json, res } = response();
+    const { res } = response();
 
     serviceMock.import.mockResolvedValueOnce({ created: 1, duplicates: [], errors: [] });
 
-    await setup.import(request, { ...body, dryRun: false } as never, {}, res);
+    const result = await setup.import(request, { ...body, dryRun: false } as never, {}, res);
 
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(json).toHaveBeenCalledWith({ created: 1 });
+    expect(result).toEqual(new DeferredJson(201, { created: 1 }));
   });
 
   it('SHOULD refuse an empty rows list and more than 2,000 rows', async () => {

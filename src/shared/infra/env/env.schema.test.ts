@@ -6,6 +6,8 @@ describe('validateEnvironment', () => {
 
     expect(result).toEqual({
       ...mocks.validConfig,
+      ACTIVITY_RETENTION_DAYS: 183,
+      ACTIVITY_RETENTION_JOB_ENABLED: true,
       APP_ENVIRONMENT: 'development',
       CORS_ORIGINS: '',
       DB_POOL_CONNECTION_TIMEOUT_MS: 0,
@@ -283,5 +285,26 @@ describe('GIVEN the notification variables (spec 124)', () => {
 
     expect(result.NOTIFICATION_JOB_ENABLED).toBe(false);
     expect(result.VAPID_PUBLIC_KEY).toBeUndefined();
+  });
+});
+
+describe('GIVEN the activity history variables (spec 127)', () => {
+  it('SHOULD default the retention to 183 days AND the job to enabled', () => {
+    const result = setup(mocks.validConfig);
+
+    expect(result.ACTIVITY_RETENTION_DAYS).toBe(183);
+    expect(result.ACTIVITY_RETENTION_JOB_ENABLED).toBe(true);
+  });
+
+  it('SHOULD read the retention days AND turn the job off only with false', () => {
+    const result = setup({
+      ...mocks.validConfig,
+      ACTIVITY_RETENTION_DAYS: '90',
+      ACTIVITY_RETENTION_JOB_ENABLED: 'false',
+    });
+
+    expect(result.ACTIVITY_RETENTION_DAYS).toBe(90);
+    expect(result.ACTIVITY_RETENTION_JOB_ENABLED).toBe(false);
+    expect(() => setup({ ...mocks.validConfig, ACTIVITY_RETENTION_DAYS: '0' })).toThrow();
   });
 });

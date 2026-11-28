@@ -16,6 +16,9 @@ import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 import { z } from 'zod';
 
+import { ActivityAction, ActivityEntityType } from '@activity/domain/enum';
+import { RecordsActivity } from '@api/activity/ActivityRecorder';
+import { fromResponse, seriesGroup } from '@api/activity/descriptors';
 import {
   CreateTransferApiSchema,
   CreateTransferBody,
@@ -44,6 +47,11 @@ export class TransferController {
   constructor(private readonly transferService: TransferService) {}
 
   @Post()
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.TRANSFER,
+    idFrom: fromResponse('item.id'),
+  })
   @ZodResponse({ status: 201, type: TransferWithRowsOutput })
   async create(
     @Request() req: JwtPayload & Request,
@@ -58,6 +66,11 @@ export class TransferController {
   @ApiNoContentResponse()
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @RecordsActivity({
+    action: ActivityAction.DELETE,
+    entityType: ActivityEntityType.TRANSFER,
+    group: seriesGroup,
+  })
   async delete(
     @Request() req: JwtPayload & Request,
     @Param('id', ParseUUIDPipe) id: string,
@@ -75,6 +88,11 @@ export class TransferController {
   }
 
   @Patch(':id')
+  @RecordsActivity({
+    action: ActivityAction.UPDATE,
+    entityType: ActivityEntityType.TRANSFER,
+    group: seriesGroup,
+  })
   @ZodResponse({ status: 200, type: TransferWithRowsOutput })
   async update(
     @Request() req: JwtPayload & Request,

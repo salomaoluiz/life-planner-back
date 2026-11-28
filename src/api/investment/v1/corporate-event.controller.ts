@@ -13,6 +13,9 @@ import {
 import { ApiBearerAuth, ApiNoContentResponse } from '@nestjs/swagger';
 import { ZodResponse } from 'nestjs-zod';
 
+import { ActivityAction, ActivityEntityType } from '@activity/domain/enum';
+import { RecordsActivity } from '@api/activity/ActivityRecorder';
+import { fromResponse } from '@api/activity/descriptors';
 import { CorporateEventService } from '@api/investment/v1/corporate-event.service';
 import {
   ApproveEventSuggestionApiSchema,
@@ -36,6 +39,11 @@ export class CorporateEventController {
   constructor(private readonly corporateEventService: CorporateEventService) {}
 
   @Post('event-suggestions/:id/approve')
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.OPERATION,
+    idFrom: fromResponse('item.id'),
+  })
   @ZodResponse({ status: 201, type: OperationWriteOutput })
   async approveSuggestion(
     @Request() req: JwtPayload & Request,
@@ -50,6 +58,11 @@ export class CorporateEventController {
   }
 
   @Post('operations/:id/fraction-sale')
+  @RecordsActivity({
+    action: ActivityAction.CREATE,
+    entityType: ActivityEntityType.OPERATION,
+    idFrom: fromResponse('item.id'),
+  })
   @ZodResponse({ status: 201, type: OperationWriteOutput })
   async createFractionSale(
     @Request() req: JwtPayload & Request,

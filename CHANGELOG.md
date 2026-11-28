@@ -3,6 +3,18 @@
 All notable changes to this project are documented here, newest first.
 Format: [Keep a Changelog](https://keepachangelog.com).
 
+## [7.1.0] - 2026-11-27
+
+### Added
+
+- `GET /activity` and `GET /activity/:id/items`: a read-only history of every create, edit and delete done in Finance and Investments (when, who, what, before → after, batch detail), kept for 6 months (spec 127).
+- Every write route of Finance and Investments, and the stock purchase close that posts to finance, records its history entry in the same database transaction as the write; automatic writes record nothing.
+- `ACTIVITY_RETENTION_DAYS` (default 183) and `ACTIVITY_RETENTION_JOB_ENABLED` (default true) for the daily purge; account and family deletion remove their entries.
+
+### Changed
+
+- Write transactions of Finance and Investments run a few more statements (item read before and after, entry insert); `POST /finance/transactions/import` sends its response after the transaction commits (same status and body).
+
 ## [7.0.0] - 2026-11-26
 
 ### Changed
