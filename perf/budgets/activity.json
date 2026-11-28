@@ -2,9 +2,9 @@
   "GET /api/v1/activity": {
     "indexes": null,
     "kind": "read",
-    "maxBytes": 4096,
-    "maxQueries": 6,
-    "p50Ms": 50,
+    "maxBytes": 31000,
+    "maxQueries": 5,
+    "p50Ms": 30,
     "scenario": "module=FINANCE"
   },
   "GET /api/v1/activity/:id/items": {
